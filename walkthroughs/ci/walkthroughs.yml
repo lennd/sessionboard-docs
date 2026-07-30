@@ -1,0 +1,46 @@
+# Copy to .github/workflows/walkthroughs.yml in the docs repo.
+# Regenerates a section's walkthrough when its feature area changes, against an
+# ephemeral seeded sandbox, and posts the clip for review. The spec doubles as an
+# E2E smoke test — a broken flow fails the job.
+name: walkthroughs
+on:
+  pull_request:
+    paths:
+      - 'walkthroughs/specs/**'
+      - 'sessions/**'        # extend: map each feature dir to the specs it affects
+  workflow_dispatch:
+    inputs:
+      spec: { description: 'spec file to regenerate', required: true }
+
+jobs:
+  regenerate:
+    runs-on: macos-14   # macOS gives the `say` fallback; ElevenLabs used when secret present
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20.17' }
+      - run: brew install ffmpeg
+      - working-directory: walkthroughs
+        run: |
+          npm ci
+          npx playwright install chromium
+      - name: Seed an ephemeral sandbox
+        run: ./scripts/seed-sandbox.sh   # reuse SandboxSeeder; exports SB_APP_URL + SB_AUTH_STORAGE
+        env:
+          SB_SEED_TOKEN: ${{ secrets.SB_SEED_TOKEN }}
+      - name: Regenerate affected walkthroughs
+        working-directory: walkthroughs
+        env:
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          ELEVENLABS_VOICE_ID: ${{ secrets.ELEVENLABS_VOICE_ID }}
+          SB_APP_URL: ${{ env.SB_APP_URL }}
+          SB_AUTH_STORAGE: ${{ env.SB_AUTH_STORAGE }}
+        run: |
+          for spec in $(git diff --name-only origin/${{ github.base_ref }}... | grep 'walkthroughs/specs/' || true); do
+            node src/generate.mjs "../$spec"
+          done
+      - name: Upload clips as PR artifacts for review
+        uses: actions/upload-artifact@v4
+        with: { name: walkthroughs, path: media/walkthroughs/*.mp4 }
+      # On merge to main, a follow-up job runs generate.mjs with AWS creds to upload
+      # to S3/CloudFront and commit the updated MDX embeds.

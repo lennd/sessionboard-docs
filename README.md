@@ -1,55 +1,42 @@
-# Mintlify Starter Kit
+# Sessionboard Help Center (Mintlify)
 
-Use the starter kit to get your docs deployed and ready to customize.
+Proof-of-concept migration of the Sessionboard support docs from the HubSpot Knowledge Base (`learn.sessionboard.com`) to Mintlify (docs-as-code).
 
-Click the green **Use this template** button at the top of this repo to copy the Mintlify starter kit. The starter kit contains examples with
+## What's here
 
-- Guide pages
-- Navigation
-- Customizations
-- API reference pages
-- Use of popular components
+- **220 published articles live** (35 hand-crafted + 185 bulk-imported from the HubSpot export), plus home, Agents, and App Marketplace overview pages — **223 MDX files**, build validated, **0 broken links**.
+- A **new IA that mirrors the admin nav** (Guides → Program/CRM/Marketing/CMS/Awards/Reports/Agents/Event Team/Settings · Participant guide · Apps & API · Help) — see `docs.json`.
+- **`redirects-301.csv`** — the complete `old_url → new_path` map for all 264 articles (drop-in for 301s).
+- **`MIGRATION.md`** — coverage summary, IA rationale, and the 44 drafts / 10 archived held for review.
+- **`AGENTS.md`** — instructions for agents/humans editing these docs.
 
-**[Follow the full quickstart guide](https://starter.mintlify.com/quickstart)**
+The 35 hand-crafted pages (e.g. `sessions/`, `speaker-crm/pipeline`, `integrations/api-tokens`) show the target quality bar; the 185 bulk-imported pages are faithful conversions that keep their original screenshots (hosted on HubSpot's CDN, so they render) and need a light editorial pass.
 
-## AI-assisted writing
-
-Set up your AI coding tool to work with Mintlify:
+## Run locally
 
 ```bash
-npx skills add https://mintlify.com/docs
-```
-
-This command installs Mintlify's documentation skill for your configured AI tools like Claude Code, Cursor, Windsurf, and others. The skill includes component reference, writing standards, and workflow guidance.
-
-See the [AI tools guides](/ai-tools) for tool-specific setup.
-
-## Development
-
-Install the [Mintlify CLI](https://www.npmjs.com/package/mint) to preview your documentation changes locally. To install, use the following command:
-
-```
-npm i -g mint
-```
-
-Run the following command at the root of your documentation, where your `docs.json` is located:
-
-```
+npm i -g mint   # already installed here as `mint`
 mint dev
 ```
 
-View your local preview at `http://localhost:3000`.
+Then open `http://localhost:3000`.
 
-## Publishing changes
+## Structure
 
-Install our GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app) to propagate changes from your repo to your deployment. Changes are deployed to production automatically after pushing to the default branch.
+```
+docs.json                  # navigation, theme, branding, agent features
+index.mdx                  # help-center home
+get-started/  concepts/  events/  sessions/  speakers/  evaluations/
+speaker-crm/  awards/  sponsors-exhibitors/  portals/  contacts/
+communications/  reporting/  site/            # organizer/admin docs
+participants/                                  # end-user portal docs
+integrations/                                  # connectors, API, MCP, webhooks
+faq/                                           # troubleshooting
+```
 
-## Need help?
+## Notes on this POC
 
-### Troubleshooting
-
-- If your dev environment isn't running: Run `mint update` to ensure you have the most recent version of the CLI.
-- If a page loads as a 404: Make sure you are running in a folder with a valid `docs.json`.
-
-### Resources
-- [Mintlify documentation](https://mintlify.com/docs)
+- **Branding colors** in `docs.json` (`#2563EB` blue) are a placeholder — swap for the exact Sessionboard brand hex. Logos in `/logo` are still the starter assets; replace with Sessionboard logos.
+- **Screenshots** are not migrated yet; pages note where visuals belong.
+- Content is faithful to the current KB as of migration, using Mintlify components (`Steps`, `Tabs`, `Accordion`, `CardGroup`, callouts).
+- The remaining ~160 articles are mapped to their new home in `MIGRATION.md` for a mechanical full migration.
