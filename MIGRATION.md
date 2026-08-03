@@ -1,19 +1,26 @@
-# HubSpot KB → Mintlify: coverage & 301 map
+# HubSpot KB → docs-as-code: coverage & 301 map
 
-Authoritative source: `hubspot-knowledge-base-export-2026-07-09.xlsx` (264 articles).
+Authoritative source: `hubspot-knowledge-base-export-2026-07-09.xlsx` (264 articles), plus live-sitemap parity audits.
 Full machine-readable map (every article → new path): [`redirects-301.csv`](redirects-301.csv).
+
+## Parity audit log
+
+| Date | Result |
+| --- | --- |
+| 2026-08-03 | Live sitemap (220 articles) vs map: imported 1 new article (*Why am I not receiving emails?* → `/faq/why-am-i-not-receiving-emails`); re-synced 3 updated articles (*How are tasks ordered within the portal* — full feature rewrite for the new Task display order setting; *ADD ON: Custom Email Domain* — new Deliverability & Allowlisting section + FAQ; *Bizzabo* — Speaker Label mapping change + Custom Participant Roles section); removed *"Why does my computer say 'This site can't be reached'?"* (unpublished in HubSpot since export). Note: the live Custom Email Domain article ends mid-sentence in HubSpot (FAQ 3) — completed minimally here; fix the HubSpot source. |
 
 ## Coverage summary
 
 | | Count |
 | --- | --- |
-| Total articles in export | 264 |
-| Published | 220 |
+| Total articles mapped (export + post-export additions) | 265 |
+| Published in HubSpot (live sitemap, 2026-08-03) | 220 |
 | **Live in this build** (imported + hand-migrated) | **220** |
 | &nbsp;&nbsp;— hand-crafted (polished) | 35 |
-| &nbsp;&nbsp;— bulk-imported from export | 185 |
+| &nbsp;&nbsp;— bulk-imported | 186 |
 | Draft (held — not published in HubSpot) | 44 |
 | Archived in HubSpot | 10 |
+| Unpublished after export (removed from build) | 1 |
 
 Every published, non-archived article is **live in the Mintlify build** and reachable in the nav. Cross-links between articles have been rewritten to the new paths (0 broken links). Draft and archived articles are mapped but not published — see below.
 
