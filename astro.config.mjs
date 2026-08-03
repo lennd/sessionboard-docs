@@ -29,7 +29,7 @@ export default defineConfig({
       },
       sidebar,
       plugins: [starlightLlmsTxt(), starlightLinksValidator({ errorOnRelativeLinks: false })],
-      pagination: false,
+      pagination: true,
       lastUpdated: false,
       social: [{ icon: 'external', label: 'sessionboard.com', href: 'https://www.sessionboard.com' }],
     }),
