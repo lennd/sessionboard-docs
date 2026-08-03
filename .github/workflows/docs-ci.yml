@@ -1,0 +1,44 @@
+name: Docs CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    name: Build, links, images, redirects
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: No external images
+        run: node scripts/check-images.mjs
+
+      - name: Build (fails on broken internal links)
+        run: npm run build
+
+      - name: Redirect map is valid against this build
+        run: |
+          node scripts/redirects-to-map.mjs
+          git diff --exit-code redirects-map.json || {
+            echo '::error::redirects-map.json is stale — run `node scripts/redirects-to-map.mjs` after building and commit the result.'
+            exit 1
+          }
+
+  prose:
+    name: Vale prose lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: errata-ai/vale-action@v2
+        with:
+          files: src/content/docs
+          fail_on_error: false
