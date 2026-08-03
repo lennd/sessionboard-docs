@@ -1,0 +1,55 @@
+---
+/**
+ * Embeds an auto-generated walkthrough clip (see walkthroughs/README.md).
+ *
+ * - Micro loops (silent, looping) autoplay muted.
+ * - Narrated walkthroughs show controls and captions when a `captions`
+ *   WebVTT track is provided.
+ */
+interface Props {
+  /** Video source: local (/media/walkthroughs/...) or CDN URL. */
+  src: string;
+  /** Short accessible description of what the clip shows. */
+  title: string;
+  /** Optional poster image. */
+  poster?: string;
+  /** Optional WebVTT captions track URL (narrated tier). */
+  captions?: string;
+  /** Silent looping micro-clip. Defaults to false (narrated). */
+  loop?: boolean;
+}
+const { src, title, poster, captions, loop = false } = Astro.props;
+---
+
+<figure class="sb-walkthrough">
+  <video
+    src={src}
+    poster={poster}
+    title={title}
+    controls={!loop}
+    autoplay={loop}
+    loop={loop}
+    muted={loop}
+    playsinline
+    preload="metadata"
+  >
+    {captions && <track kind="captions" src={captions} label="English" default />}
+  </video>
+  <figcaption>{title}</figcaption>
+</figure>
+
+<style>
+  .sb-walkthrough {
+    margin: 1.5rem 0;
+  }
+  .sb-walkthrough video {
+    width: 100%;
+    border: 1px solid var(--sl-color-hairline);
+    border-radius: 0.75rem;
+  }
+  .sb-walkthrough figcaption {
+    font-size: var(--sl-text-sm);
+    color: var(--sl-color-gray-3);
+    margin-top: 0.375rem;
+  }
+</style>

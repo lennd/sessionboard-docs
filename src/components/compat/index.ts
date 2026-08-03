@@ -8,3 +8,5 @@ export { default as Card } from './Card.astro';
 export { default as CardGroup } from './CardGroup.astro';
 export { default as Accordion } from './Accordion.astro';
 export { default as AccordionGroup } from './AccordionGroup.astro';
+export { default as AddOnNote } from './AddOnNote.astro';
+export { default as Walkthrough } from './Walkthrough.astro';
