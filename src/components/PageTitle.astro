@@ -1,0 +1,69 @@
+---
+/**
+ * PageTitle override: breadcrumb trail above the H1 (growth-page pattern).
+ * Trail data comes from src/breadcrumbs.json (scripts/build-breadcrumbs.mjs);
+ * matching BreadcrumbList JSON-LD is emitted by Head.astro.
+ */
+import breadcrumbs from '../breadcrumbs.json';
+
+const { entry, id } = Astro.locals.starlightRoute;
+const slug = id === 'index' ? '' : id;
+const trail = (breadcrumbs as Record<string, { trail: { label: string; href: string | null }[] }>)[slug]?.trail ?? [];
+---
+
+{
+  trail.length > 0 && (
+    <nav class="sb-breadcrumbs" aria-label="Breadcrumb">
+      <ol>
+        <li><a href="/">Help Center</a></li>
+        {trail.map((crumb) => (
+          <li>{crumb.href ? <a href={crumb.href}>{crumb.label}</a> : crumb.label}</li>
+        ))}
+      </ol>
+    </nav>
+  )
+}
+<h1 id="_top">{entry.data.title}</h1>
+
+<style>
+  .sb-breadcrumbs {
+    margin-bottom: 0.75rem;
+  }
+  .sb-breadcrumbs ol {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-size: var(--sl-text-sm);
+    font-weight: 500;
+    color: var(--sb-muted);
+  }
+  .sb-breadcrumbs li {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  .sb-breadcrumbs li + li::before {
+    content: '/';
+    color: var(--sb-border-strong);
+    padding: 0 0.125rem;
+  }
+  .sb-breadcrumbs a {
+    color: var(--sb-muted);
+    text-decoration: none;
+  }
+  .sb-breadcrumbs a:hover {
+    color: var(--sl-color-accent);
+  }
+  h1 {
+    margin-top: 0;
+    font-size: var(--sl-text-h1);
+    line-height: var(--sl-line-height-headings);
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    color: var(--sl-color-white);
+  }
+</style>

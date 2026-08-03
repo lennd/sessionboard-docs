@@ -15,12 +15,18 @@ export default defineConfig({
     starlight({
       title: 'Sessionboard Help Center',
       logo: {
-        light: './src/assets/light.svg',
-        dark: './src/assets/dark.svg',
+        light: './src/assets/wordmark-light.png',
+        dark: './src/assets/wordmark-dark.png',
         replacesTitle: true,
+        alt: 'Sessionboard',
       },
       favicon: '/favicon.png',
       customCss: ['./src/styles/custom.css'],
+      components: {
+        Head: './src/components/Head.astro',
+        PageTitle: './src/components/PageTitle.astro',
+        Footer: './src/components/Footer.astro',
+      },
       sidebar,
       plugins: [starlightLlmsTxt(), starlightLinksValidator({ errorOnRelativeLinks: false })],
       pagination: false,

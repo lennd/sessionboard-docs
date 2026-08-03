@@ -19,8 +19,16 @@ jobs:
 
       - run: npm ci
 
-      - name: No external images
+      - name: No external images, every page has a share image
         run: node scripts/check-images.mjs
+
+      - name: Breadcrumb data is fresh
+        run: |
+          node scripts/build-breadcrumbs.mjs
+          git diff --exit-code src/breadcrumbs.json || {
+            echo '::error::src/breadcrumbs.json is stale — run `npm run breadcrumbs` and commit the result.'
+            exit 1
+          }
 
       - name: Build (fails on broken internal links)
         run: npm run build

@@ -1,0 +1,132 @@
+---
+/**
+ * Head override: growth-page-grade meta for every docs page.
+ *
+ * - Patches Starlight defaults (canonical/og:url leak `.html` with build.format 'file')
+ * - Branded per-page OG/Twitter share images (public/og, scripts/generate-og.py)
+ * - JSON-LD @graph: Organization, WebSite, TechArticle/WebPage, BreadcrumbList
+ * - GA4 + GTM (same container as www.sessionboard.com), deferred until first paint
+ */
+import breadcrumbs from '../breadcrumbs.json';
+
+const SITE = 'https://learn.sessionboard.com';
+const WWW = 'https://www.sessionboard.com';
+const GA4_ID = 'G-Y3H82ZJMKG';
+const GTM_ID = 'GTM-T69ZL692';
+
+const { head, entry, id } = Astro.locals.starlightRoute;
+
+const cleanUrl = (url: string) => url.replace(/\/index\.html$/, '/').replace(/\.html$/, '');
+
+// Patch canonical + og:url emitted by Starlight core.
+const patchedHead = head.map((tag) => {
+  if (tag.tag === 'link' && tag.attrs?.rel === 'canonical' && typeof tag.attrs.href === 'string') {
+    return { ...tag, attrs: { ...tag.attrs, href: cleanUrl(tag.attrs.href) } };
+  }
+  if (tag.tag === 'meta' && tag.attrs?.property === 'og:url' && typeof tag.attrs.content === 'string') {
+    return { ...tag, attrs: { ...tag.attrs, content: cleanUrl(tag.attrs.content) } };
+  }
+  return tag;
+});
+
+const slug = id === 'index' ? '' : id;
+const canonical = slug ? `${SITE}/${slug}` : `${SITE}/`;
+const title = entry.data.title;
+const description = entry.data.description ?? '';
+const ogKey = slug === '' ? 'home' : slug.replace(/\//g, '--');
+const ogImage = `${SITE}/og/${ogKey}.png`;
+const ogAlt = `${title} — Sessionboard Help Center`;
+
+const crumbData = (breadcrumbs as Record<string, { trail: { label: string; href: string | null }[] }>)[slug];
+const crumbList = [
+  { name: 'Help Center', item: `${SITE}/` },
+  ...(crumbData?.trail ?? [])
+    .filter((c) => c.href)
+    .map((c) => ({ name: c.label, item: `${SITE}${c.href}` })),
+  { name: title, item: canonical },
+];
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'Organization',
+      '@id': `${WWW}/#organization`,
+      name: 'Sessionboard',
+      url: WWW,
+      logo: `${SITE}/logo/sessionboard.png`,
+      sameAs: ['https://www.linkedin.com/company/sessionboard'],
+    },
+    {
+      '@type': 'WebSite',
+      '@id': `${SITE}/#website`,
+      url: SITE,
+      name: 'Sessionboard Help Center',
+      publisher: { '@id': `${WWW}/#organization` },
+    },
+    {
+      '@type': slug ? 'TechArticle' : 'WebPage',
+      '@id': `${canonical}#webpage`,
+      url: canonical,
+      headline: title,
+      name: title,
+      description,
+      inLanguage: 'en',
+      isPartOf: { '@id': `${SITE}/#website` },
+      publisher: { '@id': `${WWW}/#organization` },
+      primaryImageOfPage: { '@type': 'ImageObject', url: ogImage, width: 1200, height: 630 },
+      speakable: { '@type': 'SpeakableSpecification', cssSelector: ['h1', '.sl-markdown-content > p:first-of-type'] },
+    },
+    {
+      '@type': 'BreadcrumbList',
+      '@id': `${canonical}#breadcrumbs`,
+      itemListElement: crumbList.map((c, i) => ({
+        '@type': 'ListItem',
+        position: i + 1,
+        name: c.name,
+        item: c.item,
+      })),
+    },
+  ],
+};
+
+// Deferred marketing tags — mirrors growth-pages marketing_head_snippet().
+const marketingJs = `
+(function(){
+  function loadMarketing(){
+    (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});
+    var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';
+    j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','${GTM_ID}');
+    var g=document.createElement('script');g.async=true;
+    g.src='https://www.googletagmanager.com/gtag/js?id=${GA4_ID}';
+    document.head.appendChild(g);
+    window.dataLayer=window.dataLayer||[];
+    function gtag(){dataLayer.push(arguments);}
+    window.gtag=gtag;
+    gtag('js', new Date());
+    gtag('config', '${GA4_ID}', {send_page_view:true,linker:{domains:['sessionboard.com','www.sessionboard.com','learn.sessionboard.com']}});
+    if(/[?&]ga_debug=1(?:&|$)/.test(location.search)){gtag('config','${GA4_ID}',{debug_mode:true});}
+  }
+  if(document.readyState==='complete'){setTimeout(loadMarketing,0);}
+  else{window.addEventListener('load',function(){setTimeout(loadMarketing,0);});}
+})();`;
+---
+
+{patchedHead.map(({ tag: Tag, attrs, content }) => <Tag {...attrs} set:html={content} />)}
+
+<meta name="robots" content="index, follow" />
+<meta name="theme-color" content="#1e62d8" />
+<link rel="alternate" type="text/plain" href="/llms.txt" title="LLM-readable page index" />
+<meta property="og:image" content={ogImage} />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content={ogAlt} />
+<meta property="og:image:type" content="image/png" />
+<meta name="twitter:site" content="@sessionboard" />
+<meta name="twitter:title" content={title} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={ogImage} />
+<meta name="twitter:image:alt" content={ogAlt} />
+<script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+<script set:html={marketingJs} />
