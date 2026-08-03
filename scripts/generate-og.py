@@ -39,25 +39,20 @@ PRIMARY = '#1e62d8'
 PILL_BG = '#e9f1fe'
 WHITE = '#ffffff'
 CARD_BORDER = '#e9eaf0'
-# Signature hero gradient + pastel card-border palette
+# Signature hero gradient + blue bubble shades
 GRAD_A = '#efedff'
 GRAD_B = '#e2ecff'
-PASTELS = ['#b8d1ff', '#bfe6c8', '#ffd9a8', '#f7c6d3', '#c1baff']
+BLUES = ['#b8d1ff', '#cbdcff', '#9cc0f4']
 
 # (font-size, line-height, max-chars, max-lines) — centered card fits ~2 lines
 TITLE_CONFIGS = [(56, 68, 30, 2), (48, 60, 36, 2), (42, 52, 42, 2), (36, 46, 46, 3)]
 
-# Deterministic bubble layout: (cx, cy, r, pastel index, opacity)
+# Deterministic bubble layout: (cx, cy, r, blue index, opacity) — few, subtle
 BUBBLES = [
-    (108, 96, 64, 0, 0.50),
-    (1120, 84, 44, 4, 0.45),
-    (1156, 208, 90, 0, 0.35),
-    (64, 420, 80, 4, 0.35),
-    (170, 560, 40, 1, 0.50),
-    (1050, 556, 60, 1, 0.40),
-    (1176, 470, 34, 2, 0.55),
-    (250, 40, 26, 3, 0.50),
-    (960, 30, 22, 2, 0.50),
+    (96, 88, 78, 0, 0.40),
+    (1144, 176, 104, 1, 0.45),
+    (150, 552, 48, 2, 0.30),
+    (1076, 556, 66, 0, 0.35),
 ]
 
 
@@ -119,8 +114,8 @@ def fit_title(title: str) -> tuple[list[str], int, int]:
 
 def bubbles_svg() -> str:
     out = ''
-    for cx, cy, r, pi, op in BUBBLES:
-        out += f'<circle cx="{cx}" cy="{cy}" r="{r}" fill="{PASTELS[pi]}" opacity="{op}"/>\n  '
+    for cx, cy, r, bi, op in BUBBLES:
+        out += f'<circle cx="{cx}" cy="{cy}" r="{r}" fill="{BLUES[bi]}" opacity="{op}"/>\n  '
     return out
 
 
