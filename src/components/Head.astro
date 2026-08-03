@@ -7,6 +7,8 @@
  * - JSON-LD @graph: Organization, WebSite, TechArticle/WebPage, BreadcrumbList
  * - GA4 + GTM (same container as www.sessionboard.com), deferred until first paint
  */
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import breadcrumbs from '../breadcrumbs.json';
 
 const SITE = 'https://learn.sessionboard.com';
@@ -34,7 +36,15 @@ const canonical = slug ? `${SITE}/${slug}` : `${SITE}/`;
 const title = entry.data.title;
 const description = entry.data.description ?? '';
 const ogKey = slug === '' ? 'home' : slug.replace(/\//g, '--');
-const ogImage = `${SITE}/og/${ogKey}.png`;
+// Content-hash version param busts edge + social-scraper caches when a card changes.
+let ogVersion = '';
+try {
+  const png = readFileSync(`${process.cwd()}/public/og/${ogKey}.png`);
+  ogVersion = `?v=${createHash('md5').update(png).digest('hex').slice(0, 8)}`;
+} catch {
+  // missing card is caught by scripts/check-images.mjs in CI
+}
+const ogImage = `${SITE}/og/${ogKey}.png${ogVersion}`;
 const ogAlt = `${title} — Sessionboard Help Center`;
 
 const crumbData = (breadcrumbs as Record<string, { trail: { label: string; href: string | null }[] }>)[slug];
