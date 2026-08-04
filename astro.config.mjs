@@ -27,6 +27,7 @@ export default defineConfig({
         PageTitle: './src/components/PageTitle.astro',
         Footer: './src/components/Footer.astro',
         ThemeSelect: './src/components/ThemeSelect.astro',
+        SocialIcons: './src/components/SocialIcons.astro',
       },
       sidebar,
       plugins: [starlightLlmsTxt(), starlightLinksValidator({ errorOnRelativeLinks: false })],
