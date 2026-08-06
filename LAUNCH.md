@@ -6,6 +6,22 @@ URL (`learn.sessionboard.com/en/knowledge-base/<slug>`) keeps its domain and onl
 needs a **path-level 301** served by our own Worker. No cross-domain redirects, no
 HubSpot URL-mapping tool, no SEO authority split.
 
+## Launch readiness (verified 2026-08-06)
+
+| Gate | State |
+|---|---|
+| Content parity with live HubSpot KB | ✅ 220/220 published articles live in the build; 0 missing |
+| Legacy URL → new article 301s | ✅ all 220 verified end-to-end through the Worker |
+| In-app help links keep working | ✅ 24/25 resolve; the 25th 404s in HubSpot today |
+| Build / link validation | ✅ 224 pages, 0 broken internal links |
+| Push to GitHub so Docs CI gates edits | ⬜ **21 commits unpushed** |
+| HubSpot KB authoring freeze announced | ⬜ needs support team |
+| DNS flip + Worker route | ⬜ needs Cloudflare change (≈15 min) |
+| Breeze agent repointed at new domain | ⬜ do at cutover (see below) |
+
+Nothing on the content or redirect side is blocking. The remaining gates are a
+push, a team announcement, and a 15-minute DNS change.
+
 ## Current state (verified 2026-08-03)
 
 | Thing | State |
@@ -77,8 +93,44 @@ Best window: low-traffic weekday morning, US time, with an hour of attention aft
     - Update Service Hub assets that link to old KB URLs — chat snippets, bot flows,
       email templates, help-widget links. (Old links still 301 correctly, but native
       links avoid the hop.)
-11. **Update in-app links** — grep web-ui-v2 / web-api emails for
-    `learn.sessionboard.com/en/knowledge-base` and repoint to new paths.
+11. **In-app links — no code change required.** 83 references across
+    `web-ui-v2` / `web-ui` / `web-api` resolve to 25 unique legacy KB URLs; all
+    24 that exist today 301 to the correct new article (verified 2026-08-06).
+    Repointing them to native paths is a nice-to-have that removes one hop.
+    The 25th, `docusign-integration` (`web-ui-v2` OrgSettings integrations),
+    **404s in HubSpot today** — the Worker improves it to the support page.
+    Real fix is writing that article; see `PRODUCT-DELTA-AUDIT.md`.
+
+### Support chat (Breeze AI) — do this at cutover, not after
+
+This is how the Help Center replaces HubSpot KB as the answer source for chat.
+**Breeze Customer Agent can crawl a public domain**, so no article-by-article sync
+and no keeping a shadow copy in HubSpot.
+
+Setup (Service → **Customer Agent** → **Train → Knowledge** → **Add content**):
+
+1. **Import from public URLs** → `https://learn.sessionboard.com`
+   - Toggle **Import related URLs** ON (crawls up to 5,000 URLs; we have ~224).
+   - **Which pages to import** → **This subdomain only** (excludes `www` and the
+     marketing site, which the Marketing Site Chatflow already covers).
+   - Leave **citations ON** so answers link customers to the real article.
+2. **Remove the HubSpot Knowledge Base source** in the same screen once the KB is
+   archived. If both remain, the agent will answer from — and cite — archived
+   articles that now 301 elsewhere.
+3. Assign the agent on the chatflow that should use it. The Help Desk inbox already
+   has two inactive **AI Agent Tester** Live Chat flows to validate on before
+   pointing **Support Chatflow** at it.
+4. Re-crawl cadence is **weekly, automatic**. After a large docs push, hit
+   **Refresh** on the imported URL source instead of waiting.
+
+Ordering matters: the crawler only reads publicly accessible pages, and every
+non-`learn` host serves `Disallow: /` + `X-Robots-Tag: noindex` (see `worker.js`).
+So the crawl cannot be configured until the domain is cut over. To evaluate the
+agent **before** cutover, upload `dist/llms-small.txt` as a file source (`.txt` is
+supported) — it is the whole Help Center as one document, regenerated on every build.
+
+Also update the **canned chat snippets and bot flows** that paste old KB links.
+They still 301 correctly, so this is cleanup, not a blocker.
 
 ### T-plus 1–2 weeks
 12. `gsc_health_check.py` — watch for index coverage issues, soft-404s, and the
