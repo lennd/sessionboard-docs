@@ -51,7 +51,11 @@ for (const line of lines.slice(1)) {
     skipped++;
     continue;
   }
-  const slug = new URL(oldUrl).pathname.replace(/\/$/, '').split('/').pop();
+  // Some HubSpot slugs contain a slash (e.g. `video-accept/decline-sessions`),
+  // so keep everything after /knowledge-base/ rather than the last segment.
+  const slug = new URL(oldUrl).pathname
+    .replace(/\/$/, '')
+    .replace(/^\/(?:en\/)?knowledge-base\//, '');
   map[slug] = newPath;
 }
 
