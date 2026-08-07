@@ -1,6 +1,6 @@
 # Sessionboard Help Center
 
-Self-hosted documentation site for Sessionboard, live at **https://help.sessionboard.com**, replacing the HubSpot Knowledge Base at `learn.sessionboard.com` (still served by HubSpot — see `LAUNCH.md`). Built with [Astro Starlight](https://starlight.astro.build), deployed to Cloudflare Workers.
+Self-hosted documentation site for Sessionboard, live at **https://learn.sessionboard.com**, replacing the HubSpot Knowledge Base that previously served that hostname. `help.sessionboard.com` 301s to it. Built with [Astro Starlight](https://starlight.astro.build), deployed to Cloudflare Workers.
 
 ## What's here
 

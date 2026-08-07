@@ -5,7 +5,7 @@
 - Self-hosted documentation site for **Sessionboard**, built on [Astro Starlight](https://starlight.astro.build) and deployed to Cloudflare Workers.
 - Pages are MDX files with YAML frontmatter in `src/content/docs/`; the sidebar lives in `src/sidebar.json` (regenerate legacy nav with `npm run sidebar`); site config in `astro.config.mjs`.
 - The published host lives in `site.json` (`canonicalHost` / `legacyHosts`) — never hardcode a hostname; `astro.config.mjs`, `Head.astro`, `worker.js`, and `generate-og.py` all read it, and the Worker 301s any legacy host to the canonical one. Changing hosts means editing that one file, then `npm run og -- --force && npm run build && npx wrangler deploy`.
-- Live at `help.sessionboard.com`. Migrated from the HubSpot Knowledge Base at `learn.sessionboard.com`, which HubSpot still serves — it cannot be pointed at this Worker until a HubSpot admin releases the hostname (`LAUNCH.md` explains why, and what breaks if you try). See `MIGRATION.md` for the old→new map and `redirects-301.csv` for 301s; `scripts/hubspot-article-to-md.py` converts live HubSpot articles for parity syncs.
+- Live at `learn.sessionboard.com`, migrated off the HubSpot Knowledge Base that used to serve that hostname; `help.sessionboard.com` 301s to it. The canonical host is `site.json` — never hardcode a hostname, since every consumer reads that file. See `MIGRATION.md` for the old→new map and `redirects-301.csv` for 301s; `scripts/hubspot-article-to-md.py` converts live HubSpot articles for parity syncs.
 - **Read `STYLE.md` before writing or editing any page.** It defines voice, terminology, formatting, and the component decision table.
 
 ## Commands

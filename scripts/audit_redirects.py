@@ -45,15 +45,15 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 TAM = ROOT.parent / "sessionboard-tam"
 LIVE_SITEMAP = "https://learn.sessionboard.com/sitemap.xml"
-# Where the Worker answers. The legacy `learn` host is a URL *source*, not a base:
-# HubSpot still serves it (see the 1034 note in LAUNCH.md), so legacy paths are
-# verified against the canonical host, which handles them identically.
-DEFAULT_BASE = "https://help.sessionboard.com"
+DEFAULT_BASE = "https://learn.sessionboard.com"
 FALLBACK = "/faq/who-can-i-contact-for-additional-assistance"
 UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/126"
 # Image assets HubSpot serves on this domain. Redirecting an <img> request to an
 # HTML page is worse than letting it 404, so these are excluded by design.
 ASSET_PREFIXES = ("/hs-fs/", "/hubfs/", "/_hcms/", "/hs/")
+# Machine-readable files reached by crawling our own sitemap index. They serve 200
+# but have no article target, so article-resolution checks report a false failure.
+MACHINE_SUFFIXES = (".xml", ".txt", ".json")
 
 
 def _default_credentials() -> str | None:
@@ -209,9 +209,12 @@ def main() -> int:
                 print(f"  {'Search Console':20} skipped ({exc})")
 
     assets = {p for p in paths if p.startswith(ASSET_PREFIXES)}
-    targets = sorted(p for p in paths if p.startswith("/") and p not in assets)
+    machine = {p for p in paths if p.lower().endswith(MACHINE_SUFFIXES)} - assets
+    skipped = assets | machine
+    targets = sorted(p for p in paths if p.startswith("/") and p not in skipped)
     print(f"\nverifying {len(targets)} URLs against {args.base} "
-          f"({len(assets)} HubSpot asset URLs excluded by design)\n")
+          f"({len(assets)} HubSpot asset URLs, {len(machine)} machine files "
+          f"excluded by design)\n")
 
     with ThreadPoolExecutor(max_workers=args.workers) as ex:
         results = list(ex.map(lambda p: check(args.base, p), targets))
