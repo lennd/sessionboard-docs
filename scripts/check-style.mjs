@@ -93,6 +93,13 @@ for (const file of files) {
       add(file, 'alt', `alt text just repeats the title: ${a}`);
     } else if (/^(image|screenshot|screen shot|img)[\s_.-]|^[a-f0-9]{8,}/i.test(a)) {
       add(file, 'alt', `alt text is a filename, not a description: ${a}`);
+    } else if (a.includes(':')) {
+      // HubSpot prefixed every image with the page title. Renaming a page leaves
+      // that prefix behind pointing at a title that no longer exists anywhere.
+      const prefix = a.split(':')[0].trim();
+      if (prefix.length > 24 && prefix.toLowerCase() !== title.toLowerCase()) {
+        add(file, 'alt', `alt text is prefixed with a stale page title: ${a}`);
+      }
     }
   }
 }

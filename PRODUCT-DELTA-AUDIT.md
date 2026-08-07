@@ -79,6 +79,63 @@ feature-gated or early-access; confirm GA status before writing articles.
 - **Cvent Org integration** — in development.
 - Internal surfaces: sandbox seeder, impersonation, CSM/billing-admin dashboards, dev-tools.
 
+## Apr–Aug 2026 platform delta — Aug 7, 2026
+
+A second, wider sweep: every user-facing change in `sessionboard-web-api`
+(~419 commits, ~400 migrations) and `sessionboard-web-ui-v2` (~590 non-merge
+commits) between 2026-04-01 and 2026-08-07.
+
+### Two claims that did not survive verification
+
+The sweep surfaced both of these as shipped capabilities. Neither is, and
+documenting them would have been actively wrong.
+
+| Claimed | Reality | Evidence |
+|---|---|---|
+| **Public API rate limits** — 100 req/15 min for new tokens, 1000 for grandfathered ones | **Not implemented.** The migration adds a `rate_limit` column and nothing reads it. The model does not even expose the field, and the commit is titled `chore: add rate_limit column`. No enforcement, no 429 path. | `web-api db/migrations/20260411120000-add-rate-limit-to-api-tokens.js`; absent from `models/organization/organization_api_token.js`; no consumer anywhere in the repo |
+| **Org admins can require 2FA** for all members | **Staff-operated, not self-serve.** The toggle is real and works, but it renders inside the **Admin Settings** tab, which is `adminOnly` and gated on `useSuperUser()`. No customer admin can reach it. | `web-ui-v2 OrgSettings.tsx` (`showAdminSettings={useSuperUser()}`), `SettingsNav.tsx` (`{ id: 'admin', adminOnly: true }`), `AdminSettings.tsx:850` renders `<SecuritySettings />` |
+
+### Fixed in this pass
+
+| # | Delta | Docs change | Product evidence |
+|---|-------|-------------|------------------|
+| 6 | Org-wide 2FA enforcement shipped (May 2026) and the 2FA article did not mention it — while asserting "your event organizer has enabled 2FA as a requirement" as though it were universal | `get-started/how-to-set-up-two-factor-authentication-2fa-...mdx` — added a **When 2FA is required for everyone** section stating the enforcement scope (org + all child events, prompt on next sign-in) and routing admins to support, since the control is staff-only. Rewrote the grayed-out-toggle FAQ answer to match. | `web-api db/migrations/20260501000001-add-require-two-factor-to-organizations.js`, `services/organizations/methods/security/{get,put}.js`, `two_factor_required` in `/user/me`; copy verified verbatim from `web-ui-v2 public/locales/en/admin.json` `security.enforce.*` |
+| 7 | Same article's setup instructions were broken by the HubSpot export — "Step 2/3/4" were bare paragraphs, so only step 1 was a heading and the sequence was invisible | Converted to `<Steps>`, sentence-cased the remaining Title Case headings, replaced the emoji contact footer | — |
+| 8 | 106 image alt texts were prefixed with a page title that no longer exists, orphaned by the title rename pass | Prefixes stripped across 22 files; `scripts/check-style.mjs` now fails on any alt prefix >24 chars that is not the current page title, so a future rename cannot orphan them again | — |
+
+### Verified real, not yet documented (ranked backlog)
+
+Each of these was checked against source and is genuinely customer-reachable.
+None is written yet.
+
+| Priority | Feature | Verified evidence | Why it matters |
+|---|---|---|---|
+| 1 | **Notifications & Messaging** — bell, inbox, per-type preferences, org policy, session Messages tab | `web-ui-v2 features/Notifications/`, `features/Messaging/SessionMessagesTab.tsx` | Self-serve Preview, org-wide, and entirely undocumented |
+| 2 | **Early Access program** — join, Preview self-toggle vs Beta hand-raise | `pages/EarlyAccess/{EarlyAccessPage.tsx,data.ts}` | Now the front door to ~10 gated features the docs already reference |
+| 3 | **Portal participation sections** (SB-8160) — custom section titles, show subsessions, hide Confirmed Participation | `Portals/components/steps/ConfigurationStep.tsx:355–419` | Changes what every speaker sees in the portal |
+| 4 | **Session withdrawal** — "Allow Submission Withdrawal" + withdrawn state | `EventSettings/ParticipantAcceptanceSection.tsx`, `portal/methods/.../withdraw/put.js`, `notifications/triggers/session-withdrawn` | New participant-initiated action with an email trigger |
+| 5 | **Cross-field character limits** on submission forms | `web-api services/utils/forms/cross-field-char-rules.js` (enforced, with a user-visible error string) | Submitters hit the error with no doc to explain it |
+| 6 | **Magic links are now multi-use** — `revoked_at` replaces `used_at` as the validity gate | `db/migrations/20260729230000-magic-links-multi-use.js` | Directly contradicts existing "single-use link" troubleshooting advice |
+| 7 | **SSO additions** — OAuth 2.0 Password (ROPC), OIDC PKCE, SAML AuthnRequest Binding | `OrgSettings/components/{SsoSettings,AddOidcConfigSidebar,AddSamlConfigSidebar}.tsx` | Admin configuration reference |
+| 8 | **Abstain reason settings** in Awards rounds and evaluation plans | `Awards/Program/Rounds/Round/RoundSettings/RoundSettingsPage.tsx` | New reviewer-facing workflow |
+| 9 | **Clone event branding** (SB-8014) — opt out of copying branding, post-clone audit banner | `CloneEventSidebar.tsx`, `BrandingCloneAuditBanner.tsx` | Prevents wrong logos going live in portals |
+| 10 | **Integration Reporting tab** (SB-7648) — Incremental / Full refresh / Snapshot | `OrgSettings/components/ReportingStep.tsx` | Gated by `integration_reporting` |
+| 11 | **Sessionboard Imports wizard** replacing CSVBox | `components/shared/NativeImportWizard.tsx` | Screenshots in every import article go stale when the flag flips |
+| 12 | **Org Portal Forms & Tasks** | `pages/org/OrgPortalForms.tsx`, `features/OrgPortalTasks/` | Needs `crm` + `org_portal_tasks` |
+
+### Confirmed not documentable (staff-only or stub)
+
+Beyond the earlier list, the sweep confirmed these are **not** customer surfaces
+despite looking shipped:
+
+- **Community** (Discussions / Ideas / Roadmap) — super-user only; non-staff deep links bounce to the dashboard.
+- **CFP invoice refunds** — Sessionboard super users only, not org event admins.
+- **Voices** — super-admin / demo-first.
+- **Sessions 2.0 preview route** — renders a flag on/off message, not a product surface.
+- **Lite Event sub-pages** (Presenters, Recordings, Registration, Integrations) — stub "Coming in Wave 4+" panels.
+- **Attend** — Early Access card is hidden from the catalog; locked upsell only.
+- **Org Settings → Admin Settings tab** — entirely super-user gated, so nothing inside it (including 2FA enforcement) is a self-serve customer path.
+
 ## Method
 
 1. Two codebase inventories (web-api services + limits/emails; web-ui-v2 features/labels).
