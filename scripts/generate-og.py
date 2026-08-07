@@ -13,16 +13,40 @@ from __future__ import annotations
 
 import base64
 import html
+import os
 import re
+import subprocess
 import sys
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parent.parent
+
+
+def _reexec_with_cairosvg() -> None:
+    """
+    cairosvg needs the Homebrew libcairo, which the system python3 cannot load.
+    Rather than make the caller know that, find an interpreter that can import it
+    and hand over to it — same trick as scripts/audit_redirects.py.
+    """
+    if os.environ.get('_OG_REEXEC') == '1':
+        sys.exit('cairosvg required: pip install cairosvg (or use growth-pages/.venv)')
+    tam = ROOT.parent / 'sessionboard-tam'
+    for py in (tam / 'growth-pages' / '.venv' / 'bin' / 'python', tam / '.venv' / 'bin' / 'python'):
+        if not py.exists():
+            continue
+        if subprocess.run([str(py), '-c', 'import cairosvg'], capture_output=True).returncode == 0:
+            raise SystemExit(subprocess.run(
+                [str(py), __file__, *sys.argv[1:]],
+                env={**os.environ, '_OG_REEXEC': '1'},
+            ).returncode)
+    sys.exit('cairosvg required: pip install cairosvg (or use growth-pages/.venv)')
+
+
 try:
     import cairosvg
-except ImportError:
-    sys.exit('cairosvg required: pip install cairosvg (or run with growth-pages .venv python)')
+except (ImportError, OSError):  # OSError = cairosvg imported but libcairo is missing
+    _reexec_with_cairosvg()
 
-ROOT = Path(__file__).resolve().parent.parent
 DOCS = ROOT / 'src/content/docs'
 OUT = ROOT / 'public/og'
 FONTS = ROOT / 'assets/fonts'
