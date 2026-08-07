@@ -13,12 +13,28 @@
 ```bash
 npm run build            # full build: MDX compile, Pagefind index, link validation
 npm run dev              # local preview at localhost:4321
+npm run check:style      # STYLE.md rules Vale can't see: titles, structure, alt text
 npm run sidebar          # regenerate src/sidebar.json from legacy docs.json
 npm run audit:redirects  # verify every legacy HubSpot URL still 301s to a live page
+npm run cf:check         # Cloudflare anti-scraping rules: show drift (--apply to deploy)
 python3 scripts/rehost-images.py   # download + localize any external images
 ```
 
 The build fails on broken internal links (starlight-links-validator). Always run `npm run build` after content changes.
+
+`npm run check:style` enforces the mechanical half of `STYLE.md` — title form and length, first heading level, stranded tables of contents, image alt text, truncated descriptions. It runs in CI beside Vale, which only sees prose. Everything it flags is a HubSpot migration artifact, so fix the page rather than loosening the rule.
+
+**Purge the cache after deploying content changes.** `wrangler deploy` updates the Worker, but Cloudflare keeps serving the previous HTML from its edge cache (`CF-Cache-Status: HIT`) — a renamed title can stay stale on a handful of pages while the rest update, which looks like a partial deploy and is not. The deploy token can purge:
+
+```bash
+ZONE=$(curl -s "https://api.cloudflare.com/client/v4/zones?name=sessionboard.com" \
+  -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" | python3 -c 'import sys,json;print(json.load(sys.stdin)["result"][0]["id"])')
+curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$ZONE/purge_cache" \
+  -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json" \
+  --data '{"purge_everything":true}'
+```
+
+Verify against the live host afterwards, not `dist/` — the build being right is what makes a stale page confusing.
 
 `npm run audit:redirects` is the gate on the 301 surface. It enumerates legacy URLs from the live HubSpot sitemap, Search Console, `redirects-301.csv`, and in-app links in the product repos, then drives every one through the deployed Worker. It exits non-zero if any URL would 404 or loop, so run it after renaming a slug, adding or removing an article, or touching `worker.js`. Regenerate the map first (`node scripts/redirects-to-map.mjs`) so it reflects the current build. No credentials or venv to set up — it finds them. Details in `AGENT_TOOLBELT.md` §9.
 
