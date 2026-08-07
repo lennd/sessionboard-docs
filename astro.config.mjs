@@ -4,9 +4,10 @@ import starlight from '@astrojs/starlight';
 import starlightLlmsTxt from 'starlight-llms-txt';
 import starlightLinksValidator from 'starlight-links-validator';
 import sidebar from './src/sidebar.json' with { type: 'json' };
+import site from './site.json' with { type: 'json' };
 
 export default defineConfig({
-  site: 'https://help.sessionboard.com',
+  site: `https://${site.canonicalHost}`,
   trailingSlash: 'never',
   // Emit /path.html instead of /path/index.html so Workers assets serve
   // /sessions/create-a-session without a trailing-slash redirect hop.

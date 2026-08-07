@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import base64
 import html
+import json
 import os
 import re
 import subprocess
@@ -51,6 +52,8 @@ DOCS = ROOT / 'src/content/docs'
 OUT = ROOT / 'public/og'
 FONTS = ROOT / 'assets/fonts'
 WORDMARK = ROOT / 'assets/sessionboard-wordmark.webp.b64.txt'
+
+CANONICAL_HOST = json.loads((ROOT / 'site.json').read_text())['canonicalHost']
 
 OG_W, OG_H = 1200, 630
 FONT = "'Plus Jakarta Sans', sans-serif"
@@ -223,7 +226,7 @@ def main() -> None:
         fm = frontmatter(mdx)
         title = fm.get('title') or slug
         section = (crumbs.get(slug) or {}).get('section') or 'Help Center'
-        path_label = f'help.sessionboard.com/{slug}' if slug else 'help.sessionboard.com'
+        path_label = f'{CANONICAL_HOST}/{slug}' if slug else CANONICAL_HOST
 
         png = OUT / f'{og_key(slug)}.png'
         if not force and png.exists() and png.stat().st_mtime > mdx.stat().st_mtime:

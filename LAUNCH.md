@@ -21,7 +21,7 @@ implements that redirect, so finishing the job is a DNS change and nothing else.
 | Pushed to GitHub so Docs CI gates edits | ✅ |
 | Live on a host we control | ✅ `help.sessionboard.com` (Worker Custom Domain) |
 | Crawler policy (search/AEO in, scrapers out) | ✅ enforced in the Worker; ⬜ Cloudflare bot + rate-limit rules |
-| **HubSpot releases `learn.sessionboard.com`** | ⬜ **needs a HubSpot admin — the one remaining blocker** |
+| **HubSpot releases `learn.sessionboard.com`** | ⬜ **needs a HubSpot admin — the one remaining blocker.** `learn` is the intended canonical host; flipping to it is one value in `site.json` |
 | HubSpot KB authoring freeze announced | ⬜ needs support team |
 | Breeze agent repointed at the new domain | ⬜ can be done now (see below) |
 
@@ -57,36 +57,60 @@ DNS was verified correct throughout — `learn` resolved to the same anycast IPs
 403s on `learn` during the attempt.** If you retry this, do it in a maintenance
 window, because you cannot verify it without breaking the domain briefly.
 
-### To finish the cutover (HubSpot admin required)
+### To finish the cutover
 
-Either option works; the first is cleaner.
+**Decision (2026-08-07): `learn` becomes the canonical host once released**, and
+`help` 301s to it. `help` was a forced move, not the plan.
 
-1. **Detach the domain in HubSpot** — Settings → Content → Domains & URLs, remove
-   `learn.sessionboard.com`. Wait for HubSpot to release the custom hostname, then:
+Only step 1 needs a person; the rest is mechanical.
 
-   ```toml
-   # wrangler.toml — uncomment
-   [[routes]]
-   pattern = "learn.sessionboard.com/*"
-   zone_name = "sessionboard.com"
+1. **Release the domain in HubSpot.** Portal 657654 → [domain manager](https://app.hubspot.com/domains/657654/manage)
+   (Settings → Content → Domains & URLs) → remove `learn.sessionboard.com`. HubSpot
+   will likely refuse while the Knowledge Base is still assigned to it, so unassign
+   the KB from that domain first. This drops HubSpot's Cloudflare-for-SaaS claim,
+   which is the only thing preventing us from serving the hostname.
+
+   This is **HubSpot settings, not HubSpot support** — no ticket unless the claim
+   survives the UI removal. HubSpot's Domains API is read-only and no MCP tool
+   exposes it, so it cannot be automated.
+
+2. **Confirm the release without touching anything.** Once HubSpot lets go,
+   `learn` (still CNAME'd to them) starts returning HubSpot's "domain not
+   configured" response instead of KB articles. Poll for that rather than
+   flipping DNS to find out — a failed attempt takes the domain down.
+
+3. **Flip the host.** One value in `site.json`, which every consumer reads:
+
+   ```jsonc
+   { "canonicalHost": "learn.sessionboard.com", "legacyHosts": ["help.sessionboard.com"] }
    ```
 
-   …point the DNS record at the Worker (proxied), `npx wrangler deploy`, and run
-   `npm run audit:redirects -- --base https://learn.sessionboard.com`. The Worker
-   already 301s every `learn` request to the same path on `help` in a single hop,
-   resolving legacy KB slugs on the way — no code change needed.
+   Swapping the two also reverses the redirect for free: the Worker 301s any
+   legacy host to the canonical one, so `help` starts pointing at `learn` with no
+   further change. Then uncomment the `learn` route in `wrangler.toml`, point the
+   DNS record at the Worker (proxied), and:
 
-2. **Have HubSpot serve the redirect** — a domain-level 301 from
-   `learn.sessionboard.com/*` to `help.sessionboard.com/*` preserving the path. Our
-   Worker handles `/en/knowledge-base/<slug>` on `help` identically, so this works
-   without per-article mapping. Slightly worse (two hops, and we stay dependent on
-   HubSpot) but it needs no DNS coordination.
+   ```bash
+   npm run og -- --force        # share-image footer labels carry the host
+   npm run build && npx wrangler deploy
+   npm run audit:redirects -- --base https://learn.sessionboard.com
+   ```
 
-Until one of these happens, `learn` keeps serving the old KB and the same content
-exists on both hosts. That is a duplicate-content overlap, not a penalty: `learn`
-has the history and will keep the rankings, and authority consolidates onto `help`
-as soon as the 301s are in place. This is the reason to prioritize the HubSpot
-action rather than let it sit.
+4. **Re-submit the sitemap** for the new canonical host and expect a few weeks of
+   Google reshuffling which host it indexes.
+
+Sequencing matters: **do not flip `site.json` before `learn` actually serves**, or
+the live site advertises canonicals on a host HubSpot still owns.
+
+The alternative — leaving the domain with HubSpot and having them 301 `learn/*` to
+`help/*` — also works and needs no DNS coordination, but it is two hops and keeps
+us dependent on HubSpot. Not the chosen path.
+
+Until this happens, `learn` keeps serving the old KB and the same content exists on
+both hosts. That is a duplicate-content overlap, not a penalty: `learn` has the
+history and will keep the rankings. Doing it **soon** is materially cheaper than
+doing it later, because very little is indexed on `help` yet — the window where
+switching costs almost nothing is measured in days.
 
 ## Current state
 
@@ -95,7 +119,7 @@ action rather than let it sit.
 | `help.sessionboard.com` | **Live.** Worker Custom Domain → `sessionboard-docs`; DNS `AAAA → 100::` (the no-origin placeholder wrangler creates — there is no origin to fail) |
 | `learn.sessionboard.com` DNS | CNAME → `657654.group4.sites.hubspot.net`, **DNS-only** (HubSpot KB, still live) |
 | `sessionboard.com` zone | On Cloudflare, same account as this Worker (`7ada9117…`) |
-| Canonicals / OG / sitemap | Emit `https://help.sessionboard.com/...` |
+| Canonical host | `site.json` → `canonicalHost`. Single source of truth for `astro.config.mjs`, `Head.astro` (canonical/og:url/JSON-LD/GA4 linker), `worker.js` (`PROD_HOST`, legacy-host 301s), and `generate-og.py` (share-image label). Currently `help.sessionboard.com` |
 | Redirect map | 265 live slugs in `redirects-map.json`; matches on exact slug, numeric-prefix-stripped slug, then numeric article ID; unknown slugs → FAQ contact page; `/en/knowledge-base` root → `/`; `/sitemap.xml` → Starlight sitemap |
 | robots.txt | Served by the Worker: allowlist/denylist policy + Sitemap on `help.…` and `learn.…`; `Disallow: /` + `X-Robots-Tag: noindex` on the workers.dev preview host |
 | Analytics | GA4 `G-Y3H82ZJMKG` + GTM `GTM-T69ZL692` (same container as www), cross-domain linker includes both `help.` and `learn.` |
@@ -127,8 +151,10 @@ link and Google result points there. That argument still holds — it is exactly
 
 ## What remains
 
-1. **HubSpot admin: release `learn.sessionboard.com`** — the one real blocker.
-   Two options, both in [the blocker section](#to-finish-the-cutover-hubspot-admin-required).
+1. **Release `learn.sessionboard.com` in HubSpot settings** — the one real blocker,
+   and the only step that needs a person. Procedure and the reason it can't be
+   automated: [To finish the cutover](#to-finish-the-cutover). `learn` then becomes
+   the canonical host and `help` 301s to it.
 2. **Freeze HubSpot KB authoring** — announce to the support team; new and edited
    articles land in this repo instead (PR + CI). Until this happens, HubSpot edits
    are invisible on `help`.

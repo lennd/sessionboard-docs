@@ -8,6 +8,7 @@
  */
 
 import redirects from './redirects-map.json';
+import site from './site.json';
 
 // `/en/migrated/knowledge-base/…` is a live path prefix left over from an
 // earlier HubSpot migration; Google still has URLs under it.
@@ -19,8 +20,8 @@ const FALLBACK = '/faq/who-can-i-contact-for-additional-assistance';
 // we cannot serve it yet (Cloudflare answers 1034). Once a HubSpot admin detaches
 // it and it is routed here, every request 301s to the same path on the canonical
 // host in a single hop — so the cutover needs DNS only, no code change.
-const PROD_HOST = 'help.sessionboard.com';
-const LEGACY_HOSTS = new Set(['learn.sessionboard.com']);
+const PROD_HOST = site.canonicalHost;
+const LEGACY_HOSTS = new Set(site.legacyHosts);
 
 // ── Crawler policy ──────────────────────────────────────────────────────
 // The Help Center is a growth surface: we want to rank in search and be cited
