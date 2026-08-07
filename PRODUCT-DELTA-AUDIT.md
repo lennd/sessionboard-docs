@@ -28,6 +28,32 @@ the evidence.
 | Round-based evaluations doc: 4-step wizard (Overview → Rounds → Evaluators → Assignments), Funnel vs. Parallel rounds | Current — matches v2 exactly | `evaluations/setting-up-round-based-evaluations.mdx` vs `web-ui-v2 evalPlanV2Constants.ts` |
 | Print agendas doc | Current | `marketing/print-agendas.mdx` vs `features/Documents` (print_agenda) |
 
+## Marketing module pass — Aug 7, 2026
+
+The Marketing module had 4 docs pages against ~15 shipped surfaces. Eleven
+articles were added and the section was restructured to mirror the product's
+Source & produce / Distribute / Set up grouping. Print and the agenda builder
+moved to Program, and Remix moved to Agents, matching where they actually live.
+
+Whole module is Early Access (`marketing` carries `beta: true`), so every page
+carries a gating note. Dispatch needs a second flag on top of it.
+
+**Documented as not-yet-working**, because these look finished in the UI and
+would otherwise generate tickets:
+
+| Surface | Reality | Where noted |
+|---|---|---|
+| Advocacy **Attendees** audience | Assign API throws "Attendees audience is not available yet" | `marketing/advocacy.mdx` warning |
+| Advocacy conversions | Funnel and KPIs deliberately stop at Clicked | `marketing/advocacy.mdx` note |
+| Dispatch **Source** dropdown | Not persisted; no auto-generation from it | `marketing/dispatch.mdx` warning |
+| Plan **Publish** | Creates an Advocacy link only — no recipients, no notify, no LinkedIn post | `marketing/content-plan.mdx` warning |
+| Create **Post to LinkedIn** | Clipboard + composer redirect, not an OAuth publish | `marketing/create.mdx` warning |
+| Posts "ready to schedule" | No scheduling anywhere in Posts | `marketing/posts.mdx` |
+| Clips **AI / Yours / Imported** tabs | All exports record as user clips, so the filter misleads | `marketing/clips.mdx` warning |
+
+Skipped by decision (gated or unfinished, not customer-reachable): Voices,
+Stories, Intelligence, Creators, and the demo-only clip detail page.
+
 ## Deltas identified — pending decision or GA confirmation
 
 These are real product surfaces with **no docs coverage**. Most look
@@ -36,10 +62,7 @@ feature-gated or early-access; confirm GA status before writing articles.
 | Feature | Signal | Notes for review |
 |---------|--------|------------------|
 | **Goldcast integration** | `web-api services/integrations/conferences/goldcast/` mounted; appears in v2 Apps catalog but referenced from `EarlyAccess/` and `featureUtils` | Not in the apps docs section. Add an integration article once GA. |
-| **Ready Room / Live Transcribe** | Full service (`services/ready-room/`), magic-link emails live in registry | No docs section. Magic links: standard 30 min TTL, named invites 30 days. |
 | **Portal Communication (messaging)** | `services/messaging/` — segmented message threads, digest notifications | Docs only cover file-request messages. |
-| **Amplify (advocacy campaigns, short links, clips)** | `services/amplify/`, `/r/:slug` redirects | No docs. Likely early access. |
-| **Media Hub (recordings/clips/transcripts)** | `services/media/`; 50 GB recording upload cap | No docs. |
 | **Org Portal (external reviewer/awards site)** | `services/org-portal/` with magic-link auth | Awards docs mention reviewers but not the org-portal surface. |
 | **Paid submission forms** | `cfp-invoice-receipt` email, PAYMENT step in public CFP flow | Only sponsor/exhibitor payments FAQ exists. Consider a "collect submission payments" article. |
 | **Public CFP flow changes** | New "Your Information" submitter step (SB-8146), review + payment steps | `participants/` docs describe the older flow loosely; screenshots predate. |
