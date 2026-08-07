@@ -46,6 +46,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      # Vale shells out to mdx2vast to parse .mdx. Without it every run dies with
+      # "mdx2vast not found" before linting anything, and fail_on_error does not
+      # cover that — it suppresses findings, not a crash.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install -g mdx2vast
+
       - uses: errata-ai/vale-action@v2
         with:
           files: src/content/docs
