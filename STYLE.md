@@ -126,6 +126,34 @@ One-paragraph answer to "what is this and when do I need it".
 - End troubleshooting pages with a "Still having issues?" section pointing to
   [support@sessionboard.com](mailto:support@sessionboard.com) and what to include.
 
+## Never advertise what isn't finished
+
+Documentation is read by prospects evaluating us and by customers deciding how
+much to trust the product. A page that volunteers "this part isn't ready" costs
+far more than the reader gains, and it dates badly — the caveat outlives the gap
+it described.
+
+So: **describe what the product does.** Never write "coming soon", "not
+available yet", "still being built", "rough edges", or "you can't do X at this
+time". `check-style` fails the build on these.
+
+| Instead of | Write |
+| --- | --- |
+| "The Attendees audience is not usable yet. Use Speakers for now." | Document Speakers and Groups; leave Attendees out until it works. |
+| "Conversions are not reported yet." | List the metrics that are reported. |
+| "Community Voting is coming soon." | Say nothing about it. |
+| "Sessions cannot have tasks assigned at this time." | "Tasks are assigned to contacts, sponsors, and exhibitors." |
+
+A real limitation still gets documented — just state it as how the product
+works, without the hedge that implies a fix is imminent. If a customer needs the
+gap explained, that is a support conversation, not a published page.
+
+Two things this rule is **not** about, and both stay fine to write:
+
+- Limits in someone else's product — "emojis are not supported in Swapcard".
+- Facts about the reader's own account — "if your organization doesn't have
+  access yet, contact support".
+
 ## Content boundaries
 
 - Don't document internal-only admin/superuser tooling.
