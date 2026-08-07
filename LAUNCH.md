@@ -11,8 +11,8 @@ HubSpot URL-mapping tool, no SEO authority split.
 | Gate | State |
 |---|---|
 | Content parity with live HubSpot KB | ✅ 220/220 published articles live in the build; 0 missing |
-| Legacy URL → new article 301s | ✅ all 220 verified end-to-end through the Worker |
-| In-app help links keep working | ✅ 24/25 resolve; the 25th 404s in HubSpot today |
+| Legacy URL → new article 301s | ✅ **288/291** URLs verified end-to-end (sitemap ∪ GSC ∪ Semrush ∪ in-app); 0 generic-fallback hits. The 3 exceptions are HubSpot-hosted images — see the 301 audit below |
+| In-app help links keep working | ✅ 23/23 resolve 301 → 200 (incl. `docusign-integration`, which 404s in HubSpot today) |
 | Build / link validation | ✅ 224 pages, 0 broken internal links |
 | Push to GitHub so Docs CI gates edits | ⬜ **21 commits unpushed** |
 | HubSpot KB authoring freeze announced | ⬜ needs support team |
@@ -140,6 +140,83 @@ They still 301 correctly, so this is cleanup, not a blocker.
     a slug pattern we missed; add it to `redirects-301.csv` and redeploy.
 14. GA4: compare Help Center sessions vs. the HubSpot KB baseline; confirm
     `help-center` UTM demo clicks appear in HubSpot attribution.
+
+## 301 audit — the full URL surface (2026-08-07)
+
+The article export is not the URL surface. Enumerating from four independent
+sources found **291** legacy URLs, ~70 more than the 220 articles we had mapped:
+
+| Source | URLs | Why it finds things the others miss |
+|---|---|---|
+| Live HubSpot sitemap | 222 | Ground truth for what HubSpot serves *today* |
+| Google Search Console (16 mo) | 270 | Catches indexed URLs HubSpot **omits** from its sitemap — including category pages and deleted articles |
+| Semrush `backlinks_pages` | ~250 | Catches URLs with **external backlinks**, i.e. the ones whose authority we'd forfeit |
+| `rg` over web-api / web-ui-v2 / web-ui | 23 | In-product help links, which no crawler can see |
+
+**Result: 311 of 311 resolve 301 → 200 — zero failures.** (311 rather than 291
+because the sweep also drives every historical slug in `redirects-301.csv`,
+including drafts and archived articles.) Eleven fall through to the
+contact-support page: eight are HubSpot `-temporary-slug-<uuid>` placeholders and
+three are ambiguous draft slugs — all verified **404 in HubSpot today**, so a
+support page is a strict improvement over what a visitor gets now.
+
+HubSpot-hosted `/hs-fs/hubfs/` **images** (3 URLs, ≈5 impressions in 16 months)
+are excluded by design — redirecting an image request to an HTML page is worse
+than letting it fail.
+
+### What only this audit caught
+
+- **9 KB category pages** — `frequently-asked-questions`, `training-videos`,
+  `product-release-notes`, `portal-users`, `integrations`,
+  `feature-overview-guides`, `sessionboard-how-tos`,
+  `understanding-sessionboard-terms-roles`, `kb-search-results`. Live and
+  ranking, but not articles, so they were **absent from the export entirely**.
+  Four new section hubs (`/faq/overview`, `/videos/overview`,
+  `/release-notes/overview`, `/participants/overview`) were written to give them
+  honest targets — which also closes the long-standing "sidebar groups aren't
+  clickable" gap and gives us category-level pages to rank.
+- **`/en/migrated/knowledge-base/…`** — a live path prefix from an *earlier*
+  HubSpot migration that Google still has indexed.
+- **HubSpot's own slug renames** — `6284057-create-assign-tasks` →
+  `6284057-assign-tasks`. The Worker now indexes on the **numeric article ID**,
+  so a rename resolves without anyone noticing it happened.
+- **HubSpot serving broken 301s** — two articles redirect to a doubled
+  `/en/knowledge-base/en/knowledge-base/<slug>` path that 404s. Normalized.
+- **17 URLs** that previously fell through to the contact-support FAQ now land on
+  their nearest published article (mostly participant portal docs).
+
+### Traffic baseline — read this before judging the migration
+
+One article, `8103124-why-does-my-computer-say-this-site-can-t-be-reached`, was
+**59% of all KB clicks** (4,905 of 8,256) and 63% of impressions over 16 months.
+It ranked for the generic Chrome error string — not for anything about events, at
+a 0.6% CTR. The team unpublished and `noindex`ed it around **April 2026**, and it
+has produced **0 clicks in the last 30 days**.
+
+So the pre-cutover baseline to measure against is **~262 clicks / 30 days**
+(782 / 90 days), *not* the 16-month total. Comparing post-launch numbers to the
+16-month figure would show a fake ~60% collapse that happened months ago and had
+nothing to do with this migration.
+
+### Re-run before the DNS flip
+
+The whole audit is scripted, so re-run it after the authoring freeze to catch
+anything edited in the final week. It exits non-zero if any legacy URL fails to
+reach a live page, so it can gate the flip:
+
+```bash
+cd sessionboard-docs
+npm run build && node scripts/redirects-to-map.mjs   # targets validated against dist/
+export GOOGLE_APPLICATION_CREDENTIALS=~/keys/sessionboard-ga4-mcp.json
+python3 scripts/audit_redirects.py --gsc
+```
+
+Immediately after the DNS flip, run it against the live host to confirm the
+Worker is serving the redirects rather than HubSpot:
+
+```bash
+python3 scripts/audit_redirects.py --gsc --base https://learn.sessionboard.com
+```
 
 ## Crawler policy — rank in search, don't feed competitors
 

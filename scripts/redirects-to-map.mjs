@@ -53,9 +53,11 @@ for (const line of lines.slice(1)) {
   }
   // Some HubSpot slugs contain a slash (e.g. `video-accept/decline-sessions`),
   // so keep everything after /knowledge-base/ rather than the last segment.
+  // `/en/migrated/knowledge-base/` is an older HubSpot path prefix that Google
+  // still has indexed; it resolves to the same slug namespace.
   const slug = new URL(oldUrl).pathname
     .replace(/\/$/, '')
-    .replace(/^\/(?:en\/)?knowledge-base\//, '');
+    .replace(/^\/(?:en\/)?(?:migrated\/)?knowledge-base\//, '');
   map[slug] = newPath;
 }
 

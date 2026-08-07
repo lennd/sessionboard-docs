@@ -9,7 +9,9 @@
 
 import redirects from './redirects-map.json';
 
-const KB_PREFIX = /^\/(?:en\/)?knowledge-base(?:\/(.*))?$/;
+// `/en/migrated/knowledge-base/…` is a live path prefix left over from an
+// earlier HubSpot migration; Google still has URLs under it.
+const KB_PREFIX = /^\/(?:en\/)?(?:migrated\/)?knowledge-base(?:\/(.*))?$/;
 const PROD_HOST = 'learn.sessionboard.com';
 const FALLBACK = '/faq/who-can-i-contact-for-additional-assistance';
 
@@ -86,12 +88,29 @@ const BULK_EXPORTS = new Set(['/llms.txt', '/llms-full.txt', '/llms-small.txt'])
 // (e.g. `9156219-cvent-integration` vs `cvent-integration`). Index both forms;
 // prefix-stripped keys are collision-free (verified against the full map).
 const strippedRedirects = {};
+// HubSpot renames article slugs while keeping the numeric article ID, and it
+// serves its own 301s for the old text (`6284057-create-assign-tasks` →
+// `6284057-assign-tasks`). Indexing by ID means a rename resolves without
+// anyone having to notice it happened, and it also absorbs the punctuation
+// variants Google has indexed (`can-t` vs `can't` vs `cant`).
+const byArticleId = {};
 for (const [slug, target] of Object.entries(redirects)) {
   strippedRedirects[slug.replace(/^\d+-/, '')] = target;
+  const id = slug.match(/^(\d+)-/)?.[1];
+  if (id) byArticleId[id] = target;
 }
 
-function resolveKbSlug(slug) {
-  return redirects[slug] ?? strippedRedirects[slug.replace(/^\d+-/, '')] ?? null;
+function resolveKbSlug(rawSlug) {
+  // HubSpot serves 301s to doubled paths for a few articles
+  // (`/en/knowledge-base/en/knowledge-base/<slug>`), which Google has indexed.
+  const slug = rawSlug.replace(/^(?:en\/)?(?:migrated\/)?knowledge-base\//, '');
+  const id = slug.match(/^(\d+)-/)?.[1];
+  return (
+    redirects[slug] ??
+    strippedRedirects[slug.replace(/^\d+-/, '')] ??
+    (id ? byArticleId[id] : null) ??
+    null
+  );
 }
 
 function robotsResponse(isProd) {
