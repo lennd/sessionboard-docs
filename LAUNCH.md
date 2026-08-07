@@ -1,134 +1,192 @@
-# Launch plan — learn.sessionboard.com cutover
+# Launch — live on help.sessionboard.com
 
-The new Help Center takes over **learn.sessionboard.com** — the exact domain the
-HubSpot Knowledge Base lives on today. This is deliberate: every legacy article
-URL (`learn.sessionboard.com/en/knowledge-base/<slug>`) keeps its domain and only
-needs a **path-level 301** served by our own Worker. No cross-domain redirects, no
-HubSpot URL-mapping tool, no SEO authority split.
+**The Help Center is live at https://help.sessionboard.com** (2026-08-07).
 
-## Launch readiness (verified 2026-08-06)
+The original plan was to take over `learn.sessionboard.com` in place, so legacy
+article URLs would keep their domain and need only a path-level 301. That turned
+out not to be possible while HubSpot still holds the hostname — see
+[the `learn` blocker](#the-learn-blocker-cloudflare-1034) below. So the site
+launched on `help.sessionboard.com`, which we control end to end, and `learn`
+becomes a cross-host 301 the moment HubSpot releases it. The Worker already
+implements that redirect, so finishing the job is a DNS change and nothing else.
+
+## Launch readiness
 
 | Gate | State |
 |---|---|
-| Content parity with live HubSpot KB | ✅ 220/220 published articles live in the build; 0 missing |
-| Legacy URL → new article 301s | ✅ **288/291** URLs verified end-to-end (sitemap ∪ GSC ∪ Semrush ∪ in-app); 0 generic-fallback hits. The 3 exceptions are HubSpot-hosted images — see the 301 audit below |
+| Content parity with live HubSpot KB | ✅ 220/220 published articles live; 0 missing |
+| Legacy URL → new article 301s | ✅ **311/311** verified end-to-end against the live host (sitemap ∪ GSC ∪ Semrush ∪ in-app); 0 failures |
 | In-app help links keep working | ✅ 23/23 resolve 301 → 200 (incl. `docusign-integration`, which 404s in HubSpot today) |
-| Build / link validation | ✅ 224 pages, 0 broken internal links |
-| Push to GitHub so Docs CI gates edits | ⬜ **21 commits unpushed** |
+| Build / link validation | ✅ 228 pages, 0 broken internal links |
+| Pushed to GitHub so Docs CI gates edits | ✅ |
+| Live on a host we control | ✅ `help.sessionboard.com` (Worker Custom Domain) |
+| Crawler policy (search/AEO in, scrapers out) | ✅ enforced in the Worker; ⬜ Cloudflare bot + rate-limit rules |
+| **HubSpot releases `learn.sessionboard.com`** | ⬜ **needs a HubSpot admin — the one remaining blocker** |
 | HubSpot KB authoring freeze announced | ⬜ needs support team |
-| DNS flip + Worker route | ⬜ needs Cloudflare change (≈15 min) |
-| Breeze agent repointed at new domain | ⬜ do at cutover (see below) |
-| Crawler policy (search/AEO in, scrapers out) | ✅ enforced in the Worker; ⬜ Cloudflare bot + rate-limit rules at cutover |
+| Breeze agent repointed at the new domain | ⬜ can be done now (see below) |
 
-Nothing on the content or redirect side is blocking. The remaining gates are a
-push, a team announcement, and a 15-minute DNS change.
+Content, redirects, and hosting are done. What is left is one HubSpot admin action
+and a team announcement.
 
-## Current state (verified 2026-08-03)
+## The `learn` blocker (Cloudflare 1034)
 
-| Thing | State |
-|---|---|
-| `learn.sessionboard.com` DNS | CNAME → `657654.group4.sites.hubspot.net` (HubSpot KB, live) |
-| `sessionboard.com` zone | On Cloudflare, same account as this Worker (`7ada9117…`) |
-| New site | Deployed at `sessionboard-docs.sessionboard.workers.dev` (noindexed) |
-| Canonicals / OG / sitemap | Already emit `https://learn.sessionboard.com/...` |
-| Redirect map | 220 live slugs in `redirects-map.json`; prefix-insensitive matching (`9156219-cvent-integration` ≡ `cvent-integration`); unknown slugs → FAQ contact page; `/en/knowledge-base` root → `/`; `/sitemap.xml` → Starlight sitemap |
-| robots.txt | Served by the Worker: allowlist/denylist policy + Sitemap on `learn.…`, `Disallow: /` + `X-Robots-Tag: noindex` everywhere else. See "Crawler policy" below |
-| Analytics | GA4 `G-Y3H82ZJMKG` + GTM `GTM-T69ZL692` (same container as www), cross-domain linker includes `learn.sessionboard.com` |
+`learn.sessionboard.com` **cannot be served from our zone while HubSpot holds it.**
+This was established the hard way on 2026-08-07, and it is worth recording because
+the failure mode is not obvious and the first two fixes look correct but aren't.
 
-## Why this domain
+What was tried, in order:
 
-- **Zero redirect debt for the domain itself** — all inbound links, chat snippets,
-  and Google results already point at `learn.sessionboard.com`.
-- **Subdomain of the marketing site** — GA4 cross-domain linker and GSC domain
-  property (`sc-domain:sessionboard.com`) cover it without new setup.
-- `docs.` / `help.` were considered and rejected: they'd force cross-domain 301s
-  from a domain we'd still have to keep pointed at something.
+1. **Proxy our DNS record and add a Worker route.** The route registered fine, but
+   HubSpot kept answering — responses still carried `x-hs-portal-id` and HubSpot's
+   own `robots.txt`. Our proxied CNAME pointed *into HubSpot's Cloudflare zone*, so
+   their configuration won and our Worker never ran (orange-to-orange).
+2. **Repoint the record away from HubSpot** (`A → 192.0.2.1`, proxied) so there was
+   nothing of HubSpot's to defer to. Every request then returned **Cloudflare error
+   1034, Edge IP Restricted** — including `robots.txt`, which only our Worker can
+   serve. So the Worker was still not running.
+3. **Repoint to a real resolvable origin** in case the reserved IP was the problem.
+   Still 1034.
 
-## Cutover runbook
+The cause is that HubSpot has `learn.sessionboard.com` registered as a **Cloudflare
+for SaaS custom hostname** in their own account. While that registration exists,
+Cloudflare refuses to let our zone serve the hostname, no matter what our DNS says.
+DNS was verified correct throughout — `learn` resolved to the same anycast IPs as
+`www.sessionboard.com`, which has a working Worker route in this zone.
 
-Total downtime: none (DNS flip; both origins serve HTTPS).
-Best window: low-traffic weekday morning, US time, with an hour of attention after.
+`learn` was rolled back to HubSpot and is serving normally. **Cost: ~6 minutes of
+403s on `learn` during the attempt.** If you retry this, do it in a maintenance
+window, because you cannot verify it without breaking the domain briefly.
 
-### T-minus 1 week
-1. **Freeze HubSpot KB authoring** — announce to support team; new/edited articles
-   after the freeze must land in this repo instead (PR + CI).
-2. **Final parity sync** — re-run the audit (`MIGRATION.md` § parity audit) against
-   the live KB; import any articles published since the last sync
-   (`scripts/hubspot-article-to-md.py`), regenerate share images (`npm run og`),
-   rebuild redirect map (`node scripts/redirects-to-map.mjs`).
-3. **Push repo to GitHub** so Docs CI gates future edits.
+### To finish the cutover (HubSpot admin required)
 
-### Cutover day (≈15 minutes of work)
-4. **Deploy latest build** to the Worker (`npm run build && npx wrangler deploy`).
-5. **Enable the route** — in `wrangler.toml` uncomment:
+Either option works; the first is cleaner.
+
+1. **Detach the domain in HubSpot** — Settings → Content → Domains & URLs, remove
+   `learn.sessionboard.com`. Wait for HubSpot to release the custom hostname, then:
+
    ```toml
+   # wrangler.toml — uncomment
    [[routes]]
    pattern = "learn.sessionboard.com/*"
    zone_name = "sessionboard.com"
    ```
-   and `npx wrangler deploy` again.
-6. **Flip DNS** — in the Cloudflare `sessionboard.com` zone, set the `learn`
-   CNAME to **Proxied** (orange cloud). Target can stay `657654.group4.sites.hubspot.net`;
-   once proxied, the Worker route intercepts every request before it reaches HubSpot.
-7. **Smoke test** (all should pass within minutes of the DNS TTL):
-   - `https://learn.sessionboard.com/` → new home page
-   - `https://learn.sessionboard.com/en/knowledge-base/9156219-cvent-integration` → 301 → `/integrations/cvent`
-   - Same URL **without** the numeric prefix → same 301
-   - Unknown slug → 301 → `/faq/who-can-i-contact-for-additional-assistance`
-   - `/robots.txt` → allow-all + sitemap; `/sitemap.xml` → sitemap index
-   - Spot-check GA4 realtime for page_view events from the new domain
-8. **Purge Cloudflare cache** for the zone (old HubSpot HTML may be edge-cached).
 
-### T-plus same day
-9. **GSC**: verify `learn.sessionboard.com` is covered (domain property
-   `sc-domain:sessionboard.com` covers it; otherwise add URL-prefix property), then
-   submit the sitemap:
-   ```bash
-   export GOOGLE_APPLICATION_CREDENTIALS=~/keys/sessionboard-ga4-mcp.json
-   python3 ../sessionboard-tam/scripts/gsc_submit_sitemap.py --sitemap sitemap.xml  # against learn property
-   ```
-10. **HubSpot cleanup**:
-    - Content Settings → remove `learn` subdomain from the Knowledge Base content type
-      (prevents HubSpot serving a competing copy at any hostname).
-    - Archive the KB articles in HubSpot (keeps history, removes their internal search/AI surfaces).
-    - Update Service Hub assets that link to old KB URLs — chat snippets, bot flows,
-      email templates, help-widget links. (Old links still 301 correctly, but native
-      links avoid the hop.)
-11. **In-app links — no code change required.** 83 references across
-    `web-ui-v2` / `web-ui` / `web-api` resolve to 25 unique legacy KB URLs; all
-    24 that exist today 301 to the correct new article (verified 2026-08-06).
-    Repointing them to native paths is a nice-to-have that removes one hop.
-    The 25th, `docusign-integration` (`web-ui-v2` OrgSettings integrations),
-    **404s in HubSpot today** — the Worker improves it to the support page.
-    Real fix is writing that article; see `PRODUCT-DELTA-AUDIT.md`.
+   …point the DNS record at the Worker (proxied), `npx wrangler deploy`, and run
+   `npm run audit:redirects -- --base https://learn.sessionboard.com`. The Worker
+   already 301s every `learn` request to the same path on `help` in a single hop,
+   resolving legacy KB slugs on the way — no code change needed.
 
-### Support chat (Breeze AI) — do this at cutover, not after
+2. **Have HubSpot serve the redirect** — a domain-level 301 from
+   `learn.sessionboard.com/*` to `help.sessionboard.com/*` preserving the path. Our
+   Worker handles `/en/knowledge-base/<slug>` on `help` identically, so this works
+   without per-article mapping. Slightly worse (two hops, and we stay dependent on
+   HubSpot) but it needs no DNS coordination.
+
+Until one of these happens, `learn` keeps serving the old KB and the same content
+exists on both hosts. That is a duplicate-content overlap, not a penalty: `learn`
+has the history and will keep the rankings, and authority consolidates onto `help`
+as soon as the 301s are in place. This is the reason to prioritize the HubSpot
+action rather than let it sit.
+
+## Current state
+
+| Thing | State |
+|---|---|
+| `help.sessionboard.com` | **Live.** Worker Custom Domain → `sessionboard-docs`; DNS `AAAA → 100::` (the no-origin placeholder wrangler creates — there is no origin to fail) |
+| `learn.sessionboard.com` DNS | CNAME → `657654.group4.sites.hubspot.net`, **DNS-only** (HubSpot KB, still live) |
+| `sessionboard.com` zone | On Cloudflare, same account as this Worker (`7ada9117…`) |
+| Canonicals / OG / sitemap | Emit `https://help.sessionboard.com/...` |
+| Redirect map | 265 live slugs in `redirects-map.json`; matches on exact slug, numeric-prefix-stripped slug, then numeric article ID; unknown slugs → FAQ contact page; `/en/knowledge-base` root → `/`; `/sitemap.xml` → Starlight sitemap |
+| robots.txt | Served by the Worker: allowlist/denylist policy + Sitemap on `help.…` and `learn.…`; `Disallow: /` + `X-Robots-Tag: noindex` on the workers.dev preview host |
+| Analytics | GA4 `G-Y3H82ZJMKG` + GTM `GTM-T69ZL692` (same container as www), cross-domain linker includes both `help.` and `learn.` |
+
+## Why this domain
+
+`help.` is the better name regardless — it says what the site is, and `learn.`
+was inherited from HubSpot rather than chosen. Both are subdomains of the
+marketing site, so GA4 cross-domain linking and the GSC domain property
+(`sc-domain:sessionboard.com`) cover them with no new setup.
+
+The original argument for `learn.` was avoiding redirect debt, since every inbound
+link and Google result points there. That argument still holds — it is exactly why
+`learn` must end up 301ing to `help` rather than being abandoned.
+
+## What shipped on 2026-08-07
+
+1. **Pushed the repo to GitHub** (26 commits) so Docs CI gates every future edit.
+2. **Bound `help.sessionboard.com`** to the Worker as a Custom Domain and deployed
+   the full build (228 pages, 1,740 assets).
+3. **Made `help` the canonical host** — `astro.config.mjs` `site`, the JSON-LD and
+   canonical tags in `Head.astro`, the GA4 cross-domain linker, the share-image
+   footer label, and `PROD_HOST` in `worker.js`. All 228 OG images regenerated.
+4. **Verified the whole legacy URL surface** against the live host:
+   **311/311 resolve 301 → 200**, 0 failures.
+5. **Purged the zone cache** for the hostname, so no pre-cutover `noindex`
+   response can be served to a crawler.
+6. **Attempted and rolled back the `learn` takeover** — see the blocker above.
+
+## What remains
+
+1. **HubSpot admin: release `learn.sessionboard.com`** — the one real blocker.
+   Two options, both in [the blocker section](#to-finish-the-cutover-hubspot-admin-required).
+2. **Freeze HubSpot KB authoring** — announce to the support team; new and edited
+   articles land in this repo instead (PR + CI). Until this happens, HubSpot edits
+   are invisible on `help`.
+3. **Point Breeze at the new domain** — can be done now, `help` is publicly
+   crawlable (see below).
+4. **Cloudflare bot + rate-limit rules** — see "Still to do" under Crawler policy.
+5. **HubSpot cleanup**, after the domain is released:
+   - Archive the KB articles (keeps history, removes their internal search/AI surfaces).
+   - Update Service Hub assets linking to old KB URLs — chat snippets, bot flows,
+     email templates, help-widget links. Old links still 301, but native links
+     avoid the hop.
+6. **In-app links — no code change required.** 83 references across
+   `web-ui-v2` / `web-ui` / `web-api` resolve to 23 unique legacy KB URLs, all of
+   which 301 to the correct new article. Repointing them to native `help.` paths
+   removes one hop and is a nice-to-have. `docusign-integration` (`web-ui-v2`
+   OrgSettings integrations) **404s in HubSpot today** — the Worker improves it to
+   the support page. The real fix is writing that article; see
+   `PRODUCT-DELTA-AUDIT.md`.
+
+### Smoke test (re-run after any deploy)
+
+```bash
+npm run audit:redirects                      # 311 legacy URLs, exits non-zero on failure
+curl -sI https://help.sessionboard.com/ | grep -i x-robots   # must be empty
+curl -s  https://help.sessionboard.com/robots.txt | tail -2  # Sitemap on help.
+curl -s -o /dev/null -w '%{http_code}\n' -A GPTBot https://help.sessionboard.com/   # 403
+```
+
+Then spot-check GA4 realtime for `page_view` events from `help.sessionboard.com`.
+
+### Support chat (Breeze AI) — can be done now
 
 This is how the Help Center replaces HubSpot KB as the answer source for chat.
 **Breeze Customer Agent can crawl a public domain**, so no article-by-article sync
 and no keeping a shadow copy in HubSpot.
 
+`help.sessionboard.com` is live and publicly crawlable, and `HubSpot` is on the
+Worker's allowlist, so this no longer waits on the `learn` cutover.
+
 Setup (Service → **Customer Agent** → **Train → Knowledge** → **Add content**):
 
-1. **Import from public URLs** → `https://learn.sessionboard.com`
-   - Toggle **Import related URLs** ON (crawls up to 5,000 URLs; we have ~224).
+1. **Import from public URLs** → `https://help.sessionboard.com`
+   - Toggle **Import related URLs** ON (crawls up to 5,000 URLs; we have 228).
    - **Which pages to import** → **This subdomain only** (excludes `www` and the
      marketing site, which the Marketing Site Chatflow already covers).
    - Leave **citations ON** so answers link customers to the real article.
 2. **Remove the HubSpot Knowledge Base source** in the same screen once the KB is
-   archived. If both remain, the agent will answer from — and cite — archived
-   articles that now 301 elsewhere.
+   archived. If both remain, the agent will answer from — and cite — articles on a
+   domain we are retiring.
 3. Assign the agent on the chatflow that should use it. The Help Desk inbox already
    has two inactive **AI Agent Tester** Live Chat flows to validate on before
    pointing **Support Chatflow** at it.
 4. Re-crawl cadence is **weekly, automatic**. After a large docs push, hit
    **Refresh** on the imported URL source instead of waiting.
 
-Ordering matters: the crawler only reads publicly accessible pages, and every
-non-`learn` host serves `Disallow: /` + `X-Robots-Tag: noindex` (see `worker.js`).
-So the crawl cannot be configured until the domain is cut over. To evaluate the
-agent **before** cutover, upload `dist/llms-small.txt` as a file source (`.txt` is
-supported) — it is the whole Help Center as one document, regenerated on every build.
+Note the crawler only reads publicly accessible pages, so point it at `help.` and
+not at the workers.dev preview host, which serves `Disallow: /` and
+`X-Robots-Tag: noindex` (see `worker.js`).
 
 Also update the **canned chat snippets and bot flows** that paste old KB links.
 They still 301 correctly, so this is cleanup, not a blocker.
@@ -198,23 +256,23 @@ So the pre-cutover baseline to measure against is **~262 clicks / 30 days**
 16-month figure would show a fake ~60% collapse that happened months ago and had
 nothing to do with this migration.
 
-### Re-run before the DNS flip
+### Re-run it
 
 The whole audit is `scripts/audit_redirects.py`, registered in the agent toolbelt
 ([`AGENT_TOOLBELT.md`](../sessionboard-tam/growth-org/AGENT_TOOLBELT.md) §9) so
 it gets re-run as part of doing the work rather than as a step someone has to
-remember. It exits non-zero if any legacy URL fails to reach a live page, so it
-can gate the flip. No credentials or venv to set up.
+remember. It exits non-zero if any legacy URL fails to reach a live page. No
+credentials or venv to set up.
 
 ```bash
 cd sessionboard-docs
 npm run build && node scripts/redirects-to-map.mjs   # targets validated against dist/
-npm run audit:redirects                              # after the authoring freeze
-npm run audit:redirects -- --base https://learn.sessionboard.com   # after the DNS flip
+npm run audit:redirects                              # defaults to help.sessionboard.com
+npm run audit:redirects -- --base https://learn.sessionboard.com   # once HubSpot releases learn
 ```
 
-The second run matters: it confirms our Worker is answering on the real host
-rather than HubSpot still serving the domain.
+The second run only becomes meaningful after the `learn` blocker is cleared; it
+confirms our Worker is answering on that host rather than HubSpot.
 
 ## Crawler policy — rank in search, don't feed competitors
 
@@ -266,7 +324,7 @@ faster than we would notice adding them to an allowlist. The teeth are at the ed
 
 The Worker stops crawlers that identify themselves honestly. A determined competitor
 will send a browser User-Agent instead, and only volume-based controls catch that.
-On the `sessionboard.com` zone, for `learn.sessionboard.com/*`:
+On the `sessionboard.com` zone, for `help.sessionboard.com/*`:
 
 1. **Security → Bots → Block AI Scrapers and Crawlers: ON.** Cloudflare's own
    maintained list, updated far more often than ours, and it verifies bots by
@@ -278,19 +336,35 @@ On the `sessionboard.com` zone, for `learn.sessionboard.com/*`:
    browser UA.
 
 Skipping these leaves the policy roughly as strong as `robots.txt` alone against
-anyone acting in bad faith. Do them the same day as the DNS flip.
+anyone acting in bad faith. The site is live, so these are outstanding now rather
+than scheduled.
 
 ## Rollback
 
-Flip the `learn` DNS record back to **DNS only** (grey cloud) — traffic returns to
-HubSpot unchanged. Remove/disable the Worker route. Nothing in HubSpot is deleted
-until T-plus cleanup, so rollback is instant during the watch window.
+**`help.sessionboard.com`** is a new hostname that never served anything else, so
+there is nothing to roll back to — reverting means deleting the Custom Domain
+(`npx wrangler deploy` with the `[[routes]]` block removed), which takes the Help
+Center offline rather than restoring a previous state. Roll forward instead.
+
+**`learn.sessionboard.com`** is untouched and still served by HubSpot. If a future
+cutover attempt breaks it, restore the original record — `CNAME` →
+`657654.group4.sites.hubspot.net`, **DNS only** (grey cloud), TTL 3600 — and
+remove the Worker route. That is the exact state it is in today, and it recovers
+within seconds.
 
 ## Known gaps / accepted risks
 
 - **HubSpot KB search URLs** (`/en/knowledge-base?q=…` etc.) → redirect to `/` root;
   acceptable, Pagefind search is on every page.
-- **Article slugs renamed inside HubSpot after the last sync** would miss the map and
-  hit the FAQ fallback — mitigated by the T-minus-1-week freeze + final sync.
-- **learn.sessionboard.com HTTPS during flip**: proxied Cloudflare cert covers the
-  subdomain (universal SSL); no cert provisioning wait.
+- **Article slugs renamed inside HubSpot after the last sync** are largely absorbed:
+  the Worker falls back to matching on the numeric article ID, which HubSpot keeps
+  across renames. A slug renamed *and* re-IDed would still miss and hit the FAQ
+  fallback — the authoring freeze closes that.
+- **The same content is live on both `help` and `learn`** until HubSpot releases the
+  domain. Duplicate content across hosts is not penalized, but `learn` holds the
+  history and will keep the rankings, so `help` will not rank meaningfully until the
+  301s are in place. This is the cost of launching before the HubSpot action, and it
+  is recoverable in full once the redirect exists.
+- **`help.sessionboard.com` has no origin** (`AAAA → 100::`). If the Worker is ever
+  deleted or its Custom Domain unbound, the hostname fails closed rather than
+  serving something stale. That is the intended trade.

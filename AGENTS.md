@@ -4,7 +4,7 @@
 
 - Self-hosted documentation site for **Sessionboard**, built on [Astro Starlight](https://starlight.astro.build) and deployed to Cloudflare Workers.
 - Pages are MDX files with YAML frontmatter in `src/content/docs/`; the sidebar lives in `src/sidebar.json` (regenerate legacy nav with `npm run sidebar`); site config in `astro.config.mjs`.
-- Migrated from the HubSpot Knowledge Base at `learn.sessionboard.com` (see `MIGRATION.md` for the old→new map and `redirects-301.csv` for 301s). Until cutover, `scripts/hubspot-article-to-md.py` converts live HubSpot articles for parity syncs.
+- Live at `help.sessionboard.com`. Migrated from the HubSpot Knowledge Base at `learn.sessionboard.com`, which HubSpot still serves — it cannot be pointed at this Worker until a HubSpot admin releases the hostname (`LAUNCH.md` explains why, and what breaks if you try). See `MIGRATION.md` for the old→new map and `redirects-301.csv` for 301s; `scripts/hubspot-article-to-md.py` converts live HubSpot articles for parity syncs.
 - **Read `STYLE.md` before writing or editing any page.** It defines voice, terminology, formatting, and the component decision table.
 
 ## Commands

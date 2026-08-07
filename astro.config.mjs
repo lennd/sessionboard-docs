@@ -6,7 +6,7 @@ import starlightLinksValidator from 'starlight-links-validator';
 import sidebar from './src/sidebar.json' with { type: 'json' };
 
 export default defineConfig({
-  site: 'https://learn.sessionboard.com',
+  site: 'https://help.sessionboard.com',
   trailingSlash: 'never',
   // Emit /path.html instead of /path/index.html so Workers assets serve
   // /sessions/create-a-session without a trailing-slash redirect hop.

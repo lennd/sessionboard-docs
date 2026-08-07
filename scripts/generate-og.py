@@ -223,7 +223,7 @@ def main() -> None:
         fm = frontmatter(mdx)
         title = fm.get('title') or slug
         section = (crumbs.get(slug) or {}).get('section') or 'Help Center'
-        path_label = f'learn.sessionboard.com/{slug}' if slug else 'learn.sessionboard.com'
+        path_label = f'help.sessionboard.com/{slug}' if slug else 'help.sessionboard.com'
 
         png = OUT / f'{og_key(slug)}.png'
         if not force and png.exists() and png.stat().st_mtime > mdx.stat().st_mtime:

@@ -18,7 +18,7 @@ Usage:
   cd sessionboard-docs
   npm run audit:redirects                                   # sitemap + CSV + GSC
   python3 scripts/audit_redirects.py --no-gsc               # skip Search Console
-  python3 scripts/audit_redirects.py --base https://learn.sessionboard.com
+  python3 scripts/audit_redirects.py --base https://sessionboard-docs.sessionboard.workers.dev
 
 Search Console needs `googleapiclient` and a service-account key; both are found
 automatically (see `_gsc_interpreter` and `_default_credentials`), so no venv or
@@ -45,7 +45,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 TAM = ROOT.parent / "sessionboard-tam"
 LIVE_SITEMAP = "https://learn.sessionboard.com/sitemap.xml"
-DEFAULT_BASE = "https://sessionboard-docs.sessionboard.workers.dev"
+# Where the Worker answers. The legacy `learn` host is a URL *source*, not a base:
+# HubSpot still serves it (see the 1034 note in LAUNCH.md), so legacy paths are
+# verified against the canonical host, which handles them identically.
+DEFAULT_BASE = "https://help.sessionboard.com"
 FALLBACK = "/faq/who-can-i-contact-for-additional-assistance"
 UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/126"
 # Image assets HubSpot serves on this domain. Redirecting an <img> request to an

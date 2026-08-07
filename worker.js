@@ -12,8 +12,15 @@ import redirects from './redirects-map.json';
 // `/en/migrated/knowledge-base/…` is a live path prefix left over from an
 // earlier HubSpot migration; Google still has URLs under it.
 const KB_PREFIX = /^\/(?:en\/)?(?:migrated\/)?knowledge-base(?:\/(.*))?$/;
-const PROD_HOST = 'learn.sessionboard.com';
 const FALLBACK = '/faq/who-can-i-contact-for-additional-assistance';
+
+// The Help Center lives on help.sessionboard.com. `learn` is the old HubSpot
+// hostname: HubSpot still holds it as a Cloudflare-for-SaaS custom hostname, so
+// we cannot serve it yet (Cloudflare answers 1034). Once a HubSpot admin detaches
+// it and it is routed here, every request 301s to the same path on the canonical
+// host in a single hop — so the cutover needs DNS only, no code change.
+const PROD_HOST = 'help.sessionboard.com';
+const LEGACY_HOSTS = new Set(['learn.sessionboard.com']);
 
 // ── Crawler policy ──────────────────────────────────────────────────────
 // The Help Center is a growth surface: we want to rank in search and be cited
@@ -157,7 +164,8 @@ function textResponse(body) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    const isProd = url.hostname === PROD_HOST;
+    const isLegacyHost = LEGACY_HOSTS.has(url.hostname);
+    const isProd = url.hostname === PROD_HOST || isLegacyHost;
 
     // robots.txt is served before any gating so crawlers can always read the policy.
     if (url.pathname === '/robots.txt') {
@@ -179,13 +187,21 @@ export default {
       });
     }
 
+    // A request on the legacy host resolves its legacy KB path and lands on the
+    // canonical host in one hop, rather than chaining two 301s.
+    const targetOrigin = isLegacyHost ? `https://${PROD_HOST}` : url.origin;
+
     const match = url.pathname.match(KB_PREFIX);
 
     if (match) {
       const slug = decodeURIComponent(match[1] ?? '').replace(/\/$/, '');
-      if (!slug) return Response.redirect(`${url.origin}/`, 301);
+      if (!slug) return Response.redirect(`${targetOrigin}/`, 301);
       // Unknown KB slugs (drafts, typos) land on the FAQ hub rather than a 404.
-      return Response.redirect(`${url.origin}${resolveKbSlug(slug) ?? FALLBACK}`, 301);
+      return Response.redirect(`${targetOrigin}${resolveKbSlug(slug) ?? FALLBACK}`, 301);
+    }
+
+    if (isLegacyHost) {
+      return Response.redirect(`${targetOrigin}${url.pathname}${url.search}`, 301);
     }
 
     // HubSpot KB sitemap path → Starlight sitemap
@@ -196,7 +212,7 @@ export default {
 
     const response = await env.ASSETS.fetch(request);
 
-    // Preview hosts (workers.dev) must never be indexed — canonical is learn.
+    // Preview hosts (workers.dev) must never be indexed — canonical is help.
     if (!isProd) {
       const headers = new Headers(response.headers);
       headers.set('X-Robots-Tag', 'noindex, nofollow');
