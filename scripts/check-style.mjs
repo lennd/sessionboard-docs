@@ -93,6 +93,12 @@ for (const file of files) {
       add(file, 'alt', `alt text just repeats the title: ${a}`);
     } else if (/^(image|screenshot|screen shot|img)[\s_.-]|^[a-f0-9]{8,}/i.test(a)) {
       add(file, 'alt', `alt text is a filename, not a description: ${a}`);
+    } else if (/\(\d+\)$/.test(a)) {
+      // A run of screenshots under one heading used to be numbered off that
+      // heading. "(2)" tells a screen reader nothing — describe the image.
+      add(file, 'alt', `alt text is a numbered duplicate, not a description: ${a}`);
+    } else if (/^[^\p{L}\p{N}"'“‘([]/u.test(a)) {
+      add(file, 'alt', `alt text starts with a symbol or emoji: ${a}`);
     } else if (a.includes(':')) {
       // HubSpot prefixed every image with the page title. Renaming a page leaves
       // that prefix behind pointing at a title that no longer exists anywhere.

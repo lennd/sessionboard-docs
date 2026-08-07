@@ -220,6 +220,7 @@ def main() -> None:
     crumbs = json.loads((ROOT / 'src/breadcrumbs.json').read_text())
 
     made = skipped = 0
+    live = set()
     for mdx in sorted(DOCS.rglob('*.mdx')):
         slug = str(mdx.relative_to(DOCS)).removesuffix('.mdx')
         slug = '' if slug == 'index' else slug
@@ -229,13 +230,26 @@ def main() -> None:
         path_label = f'{CANONICAL_HOST}/{slug}' if slug else CANONICAL_HOST
 
         png = OUT / f'{og_key(slug)}.png'
+        live.add(png.name)
         if not force and png.exists() and png.stat().st_mtime > mdx.stat().st_mtime:
             skipped += 1
             continue
         svg = render_svg(title, section, path_label)
         cairosvg.svg2png(bytestring=svg.encode(), write_to=str(png), output_width=OG_W, output_height=OG_H)
         made += 1
-    print(f'og images: generated {made}, up-to-date {skipped}')
+
+    # Delete a page and its card stays behind forever, because this script only
+    # ever wrote. The orphans are unreachable but still deployed, and they creep
+    # up with every rename — retiring the sixteen release-notes pages left
+    # fourteen. Anything not claimed by a page above is gone from the source of
+    # truth, so it goes.
+    pruned = 0
+    for png in OUT.glob('*.png'):
+        if png.name not in live:
+            png.unlink()
+            pruned += 1
+
+    print(f'og images: generated {made}, up-to-date {skipped}, pruned {pruned}')
 
 
 if __name__ == '__main__':
