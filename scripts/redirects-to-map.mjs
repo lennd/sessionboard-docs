@@ -39,6 +39,11 @@ if (!existsSync(distDir)) {
   process.exit(1);
 }
 
+// The release notes were retired in favour of the Canny changelog, so no page
+// is built for them — but the worker still needs these slugs in the map to
+// recognise them and send them onward, or they would fall back to the FAQ hub.
+const routedOffSite = (path) => path.startsWith('/release-notes');
+
 const map = {};
 let skipped = 0;
 for (const line of lines.slice(1)) {
@@ -47,7 +52,11 @@ for (const line of lines.slice(1)) {
   const newPath = cols[newPathIdx];
   // Rows whose target page isn't in the build are drafts/archived articles that
   // were never publicly live — the worker's fallback covers their slugs.
-  if (!oldUrl || !newPath || !newPath.startsWith('/') || !pageExists(newPath)) {
+  if (!oldUrl || !newPath || !newPath.startsWith('/')) {
+    skipped++;
+    continue;
+  }
+  if (!pageExists(newPath) && !routedOffSite(newPath)) {
     skipped++;
     continue;
   }
