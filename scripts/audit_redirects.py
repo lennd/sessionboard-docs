@@ -16,13 +16,17 @@ Sources:
 
 Usage:
   cd sessionboard-docs
-  python3 scripts/audit_redirects.py                        # sitemap + CSV
-  python3 scripts/audit_redirects.py --gsc                  # + Search Console
+  npm run audit:redirects                                   # sitemap + CSV + GSC
+  python3 scripts/audit_redirects.py --no-gsc               # skip Search Console
   python3 scripts/audit_redirects.py --base https://learn.sessionboard.com
 
+Search Console needs `googleapiclient` and a service-account key; both are found
+automatically (see `_gsc_interpreter` and `_default_credentials`), so no venv or
+env var has to be set by hand.
+
 Exit code is non-zero if any URL fails to reach a live page, so this can gate a
-release. URLs that land on the generic fallback are reported but do not fail the
-run — for genuinely deleted articles that is the correct destination.
+release. URLs that fall through to the generic support page are reported but do
+not fail the run — for genuinely deleted articles that is the right destination.
 """
 
 from __future__ import annotations
@@ -39,6 +43,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+TAM = ROOT.parent / "sessionboard-tam"
 LIVE_SITEMAP = "https://learn.sessionboard.com/sitemap.xml"
 DEFAULT_BASE = "https://sessionboard-docs.sessionboard.workers.dev"
 FALLBACK = "/faq/who-can-i-contact-for-additional-assistance"
@@ -46,6 +51,33 @@ UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/
 # Image assets HubSpot serves on this domain. Redirecting an <img> request to an
 # HTML page is worse than letting it 404, so these are excluded by design.
 ASSET_PREFIXES = ("/hs-fs/", "/hubfs/", "/_hcms/", "/hs/")
+
+
+def _default_credentials() -> str | None:
+    """The GA4/GSC service-account key, wherever it already lives."""
+    env = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+    if env and Path(env).expanduser().exists():
+        return str(Path(env).expanduser())
+    key = Path.home() / "keys" / "sessionboard-ga4-mcp.json"
+    return str(key) if key.exists() else None
+
+
+def _gsc_interpreter() -> str | None:
+    """
+    An interpreter that can import googleapiclient. The Search Console deps live
+    in the growth-pages venv rather than this repo, so rather than make the
+    caller remember that path, find it and re-exec into it.
+    """
+    candidates = [sys.executable,
+                  str(TAM / "growth-pages" / ".venv" / "bin" / "python"),
+                  str(TAM / ".venv" / "bin" / "python")]
+    for py in candidates:
+        if not Path(py).exists():
+            continue
+        probe = subprocess.run([py, "-c", "import googleapiclient"], capture_output=True)
+        if probe.returncode == 0:
+            return py
+    return None
 
 
 def curl(url: str, fmt: str = "%{http_code} %{redirect_url}") -> str:
@@ -78,7 +110,7 @@ def csv_paths() -> set[str]:
 
 def gsc_paths(days: int = 480) -> set[str]:
     """Pages with search data. Catches URLs absent from HubSpot's sitemap."""
-    sys.path.insert(0, str(ROOT.parent / "sessionboard-tam" / "scripts"))
+    sys.path.insert(0, str(TAM / "scripts"))
     from googleapiclient.discovery import build  # noqa: E402
     from gsc_submit_sitemap import _load_credentials  # noqa: E402
 
@@ -132,9 +164,22 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default=DEFAULT_BASE, help="host serving the Worker")
     ap.add_argument("--sitemap", default=LIVE_SITEMAP)
-    ap.add_argument("--gsc", action="store_true", help="include Search Console URLs")
+    ap.add_argument("--no-gsc", dest="gsc", action="store_false",
+                    help="skip Search Console (offline / no credentials)")
     ap.add_argument("--workers", type=int, default=10)
+    ap.set_defaults(gsc=True)
     args = ap.parse_args()
+
+    if args.gsc and os.environ.get("_AUDIT_REEXEC") != "1":
+        py = _gsc_interpreter()
+        if py and py != sys.executable:
+            env = {**os.environ, "_AUDIT_REEXEC": "1"}
+            creds = _default_credentials()
+            if creds:
+                env["GOOGLE_APPLICATION_CREDENTIALS"] = creds
+            return subprocess.run([py, __file__, *sys.argv[1:]], env=env).returncode
+        if creds := _default_credentials():
+            os.environ.setdefault("GOOGLE_APPLICATION_CREDENTIALS", creds)
 
     paths = set()
     for label, fn in (
@@ -151,7 +196,7 @@ def main() -> int:
 
     if args.gsc:
         if not os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
-            print("  Search Console      skipped (set GOOGLE_APPLICATION_CREDENTIALS)")
+            print("  Search Console       skipped (no service-account key found)")
         else:
             try:
                 found = gsc_paths()

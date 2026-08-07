@@ -200,23 +200,21 @@ nothing to do with this migration.
 
 ### Re-run before the DNS flip
 
-The whole audit is scripted, so re-run it after the authoring freeze to catch
-anything edited in the final week. It exits non-zero if any legacy URL fails to
-reach a live page, so it can gate the flip:
+The whole audit is `scripts/audit_redirects.py`, registered in the agent toolbelt
+([`AGENT_TOOLBELT.md`](../sessionboard-tam/growth-org/AGENT_TOOLBELT.md) §9) so
+it gets re-run as part of doing the work rather than as a step someone has to
+remember. It exits non-zero if any legacy URL fails to reach a live page, so it
+can gate the flip. No credentials or venv to set up.
 
 ```bash
 cd sessionboard-docs
 npm run build && node scripts/redirects-to-map.mjs   # targets validated against dist/
-export GOOGLE_APPLICATION_CREDENTIALS=~/keys/sessionboard-ga4-mcp.json
-python3 scripts/audit_redirects.py --gsc
+npm run audit:redirects                              # after the authoring freeze
+npm run audit:redirects -- --base https://learn.sessionboard.com   # after the DNS flip
 ```
 
-Immediately after the DNS flip, run it against the live host to confirm the
-Worker is serving the redirects rather than HubSpot:
-
-```bash
-python3 scripts/audit_redirects.py --gsc --base https://learn.sessionboard.com
-```
+The second run matters: it confirms our Worker is answering on the real host
+rather than HubSpot still serving the domain.
 
 ## Crawler policy — rank in search, don't feed competitors
 
