@@ -64,6 +64,49 @@ Decision table:
 
 Component sources: [src/components/compat/](src/components/compat/).
 
+## Titles
+
+The title is the H1, the `<title>`, the search result, and what an AI answer
+engine quotes. The sidebar label is what people navigate by. They are different
+jobs, so they are different fields.
+
+- **Task pages: imperative, no question mark.** "Compress headshots", not "How to
+  compress headshots?". A help center is already answering "how to" — the words
+  are dead weight in every search result.
+- **Genuine FAQ pages: ask the actual question**, question mark included. "What
+  access do evaluators have?" earns its `?`. This is the one place question form
+  is right, because it matches how the question is typed.
+- **Never open with a narrative.** Not "I created a new contact. Why do I not see
+  them in the speakers module?" — that is a support ticket, not a title.
+- **Keep enablement and section names out of the title.** Not "Settings – email
+  themes (enabled upon request)". The section is already in the URL and the
+  breadcrumb; enablement belongs in `<AddOnNote>` or a `<Note>`.
+- **Over ~48 characters, add a short `sidebar.label`** (about 3–5 words). Under
+  that, skip the label — the title is already the right length for the nav.
+
+## Structure
+
+- **The first body heading is `##`.** The H1 comes from `title`. Pages that open
+  at `###` came from HubSpot and render a broken outline.
+- **Headings are sentence case** and are labels, not sentences. "There are two
+  methods for unlocking an account:" is a paragraph — writing it as a heading
+  puts a sentence in the table of contents.
+- **Never paste a list of the page's own headings at the top.** Starlight renders
+  a table of contents already; HubSpot's jump links do not survive migration and
+  become a linkless duplicate.
+
+## Images
+
+- **Alt text describes the image**, not the page. "The Set Submission Limit
+  setting in Form Settings", not "Building your submission form: Settings" and
+  never "<page title> in Sessionboard".
+- Filenames are not alt text. `Screenshot 2025-05-28 at 12.00.42 PM` tells a
+  screen-reader user nothing.
+
+`node scripts/check-style.mjs` enforces everything in these three sections and
+runs in CI. Vale covers voice and terminology. If a rule fires, fix the page —
+these are all migration artifacts, not judgement calls.
+
 ## Page anatomy
 
 ```mdx
