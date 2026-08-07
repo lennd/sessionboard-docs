@@ -18,6 +18,7 @@ HubSpot URL-mapping tool, no SEO authority split.
 | HubSpot KB authoring freeze announced | ⬜ needs support team |
 | DNS flip + Worker route | ⬜ needs Cloudflare change (≈15 min) |
 | Breeze agent repointed at new domain | ⬜ do at cutover (see below) |
+| Crawler policy (search/AEO in, scrapers out) | ✅ enforced in the Worker; ⬜ Cloudflare bot + rate-limit rules at cutover |
 
 Nothing on the content or redirect side is blocking. The remaining gates are a
 push, a team announcement, and a 15-minute DNS change.
@@ -31,7 +32,7 @@ push, a team announcement, and a 15-minute DNS change.
 | New site | Deployed at `sessionboard-docs.sessionboard.workers.dev` (noindexed) |
 | Canonicals / OG / sitemap | Already emit `https://learn.sessionboard.com/...` |
 | Redirect map | 220 live slugs in `redirects-map.json`; prefix-insensitive matching (`9156219-cvent-integration` ≡ `cvent-integration`); unknown slugs → FAQ contact page; `/en/knowledge-base` root → `/`; `/sitemap.xml` → Starlight sitemap |
-| robots.txt | Served by the Worker: allow-all + Sitemap on `learn.…`, `Disallow: /` + `X-Robots-Tag: noindex` everywhere else |
+| robots.txt | Served by the Worker: allowlist/denylist policy + Sitemap on `learn.…`, `Disallow: /` + `X-Robots-Tag: noindex` everywhere else. See "Crawler policy" below |
 | Analytics | GA4 `G-Y3H82ZJMKG` + GTM `GTM-T69ZL692` (same container as www), cross-domain linker includes `learn.sessionboard.com` |
 
 ## Why this domain
@@ -139,6 +140,70 @@ They still 301 correctly, so this is cleanup, not a blocker.
     a slug pattern we missed; add it to `redirects-301.csv` and redeploy.
 14. GA4: compare Help Center sessions vs. the HubSpot KB baseline; confirm
     `help-center` UTM demo clicks appear in HubSpot attribution.
+
+## Crawler policy — rank in search, don't feed competitors
+
+The goal is asymmetric: stay visible to engines that send readers back to us,
+while denying the bulk-copy paths a competitor would actually use.
+
+**There is no version of this where the docs rank but cannot be read.** Ranking in
+Google and being cited by ChatGPT/Perplexity both require those crawlers to fetch
+the full page text, and anything they can fetch, a person can fetch. So the lever
+is not *whether* content is readable — it is *who* gets to read it, *how cheaply*,
+and *at what volume*.
+
+### What the Worker enforces (live)
+
+| Class | Examples | Treatment |
+|---|---|---|
+| Search engines | Googlebot, Bingbot, Applebot, DuckDuckBot | Allowed |
+| AI engines that cite + link | OAI-SearchBot, ChatGPT-User, PerplexityBot, Claude-SearchBot, Google-Extended | Allowed |
+| Our own tooling | SemrushBot, SiteAuditBot, HubSpot (Breeze) | Allowed |
+| AI training corpora | GPTBot, ClaudeBot, CCBot, Bytespider, Meta-ExternalAgent | **403 at edge** |
+| Competitor recon | AhrefsBot, DataForSeoBot, MJ12bot, Diffbot, ZoominfoBot, Scrapy | **403 at edge** |
+| Bulk exports | `/llms.txt`, `/llms-full.txt`, `/llms-small.txt` | **404 for everyone** |
+
+Two deliberate choices worth knowing about:
+
+- **`GPTBot` blocked, `OAI-SearchBot` allowed.** OpenAI uses separate agents for
+  model training and for the index behind ChatGPT search citations. Same split for
+  `ClaudeBot` vs. `Claude-SearchBot`. We keep every citation path and give up only
+  the training copy. `Google-Extended` stays allowed because it powers Gemini
+  grounding, which cites; it has no bearing on Search rank either way.
+- **The `llms-*.txt` dumps are the real exposure**, not the HTML. They are the whole
+  Help Center in one GET — the single most valuable thing on the domain to a
+  competitor, and cheaper for them than crawling 224 pages. Google has said it does
+  not use `llms.txt`, so withholding them costs no ranking. We still generate them:
+  `dist/llms-small.txt` is what we upload to Breeze, and it is the corpus for our
+  own chat later. They just aren't fetchable from the internet.
+
+The denylist is enforced by User-Agent at the edge, not only in `robots.txt`, because
+`robots.txt` is advisory. Both lists live in one place: `ALLOWED_BOTS` / `BLOCKED_BOTS`
+in `worker.js`. Adding a crawler means adding one string.
+
+`robots.txt` leaves the default `User-agent: *` group on `Allow: /` (pages only,
+never the dumps). A blanket `Disallow: /` would be the intuitive move, but it buys
+nothing — a competitor scraping us ignores `robots.txt` entirely — while risking the
+silent loss of a search surface that matters later, since new AI engines appear
+faster than we would notice adding them to an allowlist. The teeth are at the edge.
+
+### Still to do (needs Cloudflare dashboard access, at cutover)
+
+The Worker stops crawlers that identify themselves honestly. A determined competitor
+will send a browser User-Agent instead, and only volume-based controls catch that.
+On the `sessionboard.com` zone, for `learn.sessionboard.com/*`:
+
+1. **Security → Bots → Block AI Scrapers and Crawlers: ON.** Cloudflare's own
+   maintained list, updated far more often than ours, and it verifies bots by
+   signature rather than trusting the User-Agent string.
+2. **Rate limiting rule:** >120 requests/minute per IP → managed challenge. Normal
+   readers hit a handful of pages; a full-site scrape is hundreds in a minute.
+   Exempt verified bots (`cf.client.bot`) so Googlebot is never throttled.
+3. **Bot Fight Mode: ON** — challenges headless/automated clients that spoof a
+   browser UA.
+
+Skipping these leaves the policy roughly as strong as `robots.txt` alone against
+anyone acting in bad faith. Do them the same day as the DNS flip.
 
 ## Rollback
 

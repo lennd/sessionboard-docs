@@ -6,7 +6,7 @@ Self-hosted documentation site for Sessionboard, replacing the HubSpot Knowledge
 
 - **220 published articles** (parity-audited against the live KB) plus home, Agents, and App Marketplace overview pages — all MDX in `src/content/docs/`, build-validated with **0 broken internal links** and **all screenshots hosted locally** (no HubSpot CDN dependency).
 - An **IA that mirrors the admin nav** (Guides → Program/CRM/Marketing/CMS/Awards/Reports/Agents/Event Team/Settings · Participant guide · Apps · Help) — sidebar in `src/sidebar.json`.
-- **Pagefind search**, **llms.txt / llms-full.txt** for AI agents, sitemap, dark mode.
+- **Pagefind search**, sitemap, dark mode. `llms.txt` / `llms-full.txt` are still generated into `dist/` for our own use (Breeze knowledge source, future in-house chat) but are **not served publicly** — see the crawler policy in `LAUNCH.md`.
 - **Growth-grade page chrome** — styling matches the growth pages design system (`sessionboard-tam/growth-org/assets/DESIGN.md`), breadcrumbed titles + BreadcrumbList JSON-LD, branded per-page share images (`public/og/`, `npm run og`), full OG/Twitter meta, TechArticle structured data, GA4 + GTM (same container as www.sessionboard.com), and a UTM-attributed demo CTA in every footer.
 - **`redirects-301.csv`** — the complete `old_url → new_path` map for every HubSpot article (backs the 301s at cutover).
 - **`MIGRATION.md`** — coverage summary, parity audit log, and the 44 drafts / 10 archived held for review.
