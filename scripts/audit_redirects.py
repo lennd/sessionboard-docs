@@ -159,7 +159,15 @@ def check(base: str, path: str) -> dict:
     out = curl(f"{base}{path}{sep}cb=audit").split(" ", 1)
     code = out[0]
     loc = (out[1] if len(out) > 1 else "").strip().replace(base, "").split("?")[0]
-    target_code = curl(base + loc, "%{http_code}") if code == "301" and loc else ""
+    target_code = ""
+    if code == "301" and loc:
+        # Some redirects deliberately leave the Help Center — /release-notes/*
+        # goes to the Canny changelog. Those keep their absolute URL after the
+        # base is stripped, so they must be fetched as-is; prefixing the base
+        # would build nonsense like https://learn…/https://feedback… and report
+        # a spurious 000.
+        target_code = curl(loc if loc.startswith("http") else base + loc,
+                           "%{http_code}")
     return {"path": path, "code": code, "target": loc, "target_code": target_code}
 
 

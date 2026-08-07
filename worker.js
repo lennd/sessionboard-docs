@@ -108,6 +108,14 @@ for (const [slug, target] of Object.entries(redirects)) {
   if (id) byArticleId[id] = target;
 }
 
+// Release notes are not maintained here any more. Sixteen monthly pages had
+// drifted more than a year out of date, and the changelog is published on Canny,
+// which is already linked from the home page. Everything that used to be under
+// /release-notes goes there instead of rotting or 404ing — including the 18
+// legacy HubSpot slugs whose redirect targets were those pages.
+const CHANGELOG = 'https://feedback.sessionboard.com/changelog';
+const RELEASE_NOTES_PREFIX = /^\/release-notes(?:\/|$)/;
+
 function resolveKbSlug(rawSlug) {
   // HubSpot serves 301s to doubled paths for a few articles
   // (`/en/knowledge-base/en/knowledge-base/<slug>`), which Google has indexed.
@@ -198,7 +206,16 @@ export default {
       const slug = decodeURIComponent(match[1] ?? '').replace(/\/$/, '');
       if (!slug) return Response.redirect(`${targetOrigin}/`, 301);
       // Unknown KB slugs (drafts, typos) land on the FAQ hub rather than a 404.
-      return Response.redirect(`${targetOrigin}${resolveKbSlug(slug) ?? FALLBACK}`, 301);
+      const resolved = resolveKbSlug(slug) ?? FALLBACK;
+      // Resolved here rather than after the redirect, so a legacy release-notes
+      // URL reaches the changelog in one hop instead of bouncing through a path
+      // that no longer exists.
+      if (RELEASE_NOTES_PREFIX.test(resolved)) return Response.redirect(CHANGELOG, 301);
+      return Response.redirect(`${targetOrigin}${resolved}`, 301);
+    }
+
+    if (RELEASE_NOTES_PREFIX.test(url.pathname)) {
+      return Response.redirect(CHANGELOG, 301);
     }
 
     if (isLegacyHost) {

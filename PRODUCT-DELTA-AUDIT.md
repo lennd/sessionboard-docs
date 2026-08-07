@@ -123,6 +123,47 @@ None is written yet.
 | 11 | **Sessionboard Imports wizard** replacing CSVBox | `components/shared/NativeImportWizard.tsx` | Screenshots in every import article go stale when the flag flips |
 | 12 | **Org Portal Forms & Tasks** | `pages/org/OrgPortalForms.tsx`, `features/OrgPortalTasks/` | Needs `crm` + `org_portal_tasks` |
 
+### Backlog written up — Aug 7, 2026 (second pass)
+
+| Item | Docs change | Product evidence |
+|---|---|---|
+| **Notifications & Messaging** | New `communications/notifications.mdx` — bell, inbox, the three delivery channels, email cadence, org policy, session messages | `web-ui-v2 features/Notifications/*` (copy is inline `t()` defaults, so the extracted English **is** the shipped text); cadence + Slack behaviour from `web-api src/notifications/README.md` and `delivery-pipeline.js` |
+| **Early Access** | New `get-started/early-access.mdx` — Preview vs Beta, both scopes, the `Manage Early Access` permission, the full catalogue | `pages/EarlyAccess/{EarlyAccessPage.tsx,data.ts}` |
+| **Participant acceptance** | `speakers/speaker-acceptance.mdx` rewritten — see corrections below | `EventSettings/components/ParticipantAcceptanceSection.tsx` |
+| **Portal participation sections** | New section in `portals/portals-101.mdx` — grouping toggles, custom titles, the acceptance precondition | `Portals/components/steps/ConfigurationStep.tsx:334–440` |
+| **Cross-field character limits** | New section in `applications/building-your-submission-form.mdx` | `web-api services/utils/forms/cross-field-char-rules.js`; `formEditor/CrossFieldCharRulesPanel.tsx` |
+| **SSO additions** | `integrations/sso.mdx` — OAuth 2.0 Password, PKCE, AuthnRequest Binding, Enforced Authentication | `OrgSettings/components/{SsoSettings,AddOidcConfigSidebar,AddSamlConfigSidebar,AddOAuth2PasswordConfigSidebar}.tsx` |
+| **Abstain settings** | New section in `evaluations/setting-up-round-based-evaluations.mdx` | `Awards/.../RoundSettings/RoundSettingsPage.tsx:2090–2160` |
+| **Clone event branding** | `faq/clone-an-event.mdx` rewritten — see corrections below | `components/CloneEventSidebar.tsx:660–690`, `EventSettings/components/BrandingCloneAuditBanner.tsx` |
+| **Multi-language portals** | New section in `settings/language-translation-variant.mdx`, cross-linked both ways with language variants | `ConfigurationStep.tsx:744–780` |
+| **Magic links are multi-use** | `marketing/ready-room.mdx` troubleshooting updated | `db/migrations/20260729230000-magic-links-multi-use.js` |
+| **Rebuilt import wizard** | Advisory note in `settings/importing-data.mdx` — deliberately *not* an instruction, because `sessionboard_imports` is staff-enabled from the super-user Admin Settings tab | `components/shared/NativeImportWizard.tsx`, `lib/featureUtils.ts` |
+
+### Stale content corrected in the same pass
+
+| Was | Now | Why it was wrong |
+|---|---|---|
+| `faq/clone-an-event.mdx`: "reach out to our support team… our team will handle the cloning process for you" | Self-serve steps from **Org → Events** | Cloning is a per-event action in `OrgEvents.tsx`; only *deletion* is permission-gated. The article also had a typo'd support address (`sessioboard.com`) that would have bounced. |
+| `speaker-acceptance.mdx`: "**Allow Session Withdrawal**"; FAQ "Can the Withdraw button be removed? **No**" | "**Allow Submission Withdrawal**"; FAQ answers **Yes** | The article contradicted itself — one line said the button could be hidden, the FAQ said it could not. The setting exists and its tooltip says "Turn off to hide the Withdraw button." |
+| Same article: "statuses are supported for speakers only" | Acceptance covers every role, confirmed separately | `enableSpeakerAcceptance` tooltip: "accept or decline **each of their roles** on a submission" |
+| Same article: "custom speaker statuses aren't available" | Status *names* are fixed; the pending wording is editable | **Portal Status Verbiage** (60-char overrides) shipped |
+| `setting-up-round-based-evaluations.mdx`: "Confirm with the product team whether this setting can be changed after plan creation" | Rewritten as guidance | An internal note to self had shipped to customers |
+| `events/event-details.mdx`: "Enable session speaker acceptance" | "Enable Participant Acceptance" | Section and label were renamed |
+| `language-translation-variant.mdx`: portals "cannot be accessed" for translation | Cross-linked to multi-language portals | True of *field-label variants*, but readers looking to translate a portal were told it was impossible |
+| `portals-101.mdx`: "invite users to the event portal" linked to itself | Points at `inviting-users-to-the-event-portal` | Self-referencing link |
+
+### Removed: Release notes
+
+Sixteen monthly release-notes pages, newest dated June 2025, were deleted along
+with their sidebar section. Release notes are published on Canny
+(`feedback.sessionboard.com/changelog`), which the home page already linked.
+
+`worker.js` now 301s anything under `/release-notes` to the changelog, and
+resolves the redirect *before* the hop so the 18 legacy HubSpot KB slugs that
+pointed at those pages reach Canny in one hop rather than landing on a 404. The
+home page links the changelog and the roadmap separately, since they are
+different pages.
+
 ### Confirmed not documentable (staff-only or stub)
 
 Beyond the earlier list, the sweep confirmed these are **not** customer surfaces
