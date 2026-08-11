@@ -1,0 +1,197 @@
+<div class="hs-callout-type-warning" data-hs-callout-type="warning">
+<p>⚠️ <strong>For advanced and expert users.</strong> API tokens give programmatic access to your organization's event data. They're meant for technical users building integrations, connecting AI assistants, or syncing Sessionboard data with external systems. Before generating a token, we recommend reviewing our full API documentation: <a href="https://apidocs.sessionboard.com/introduction">apidocs.sessionboard.com/introduction</a>. It covers authentication, rate limiting, MCP, webhooks, and the SbQL query language in depth.</p>
+</div>
+<p>In this article</p>
+<p><a href="#CanDo" rel="noopener">What you can do with an API token</a></p>
+<p><a href="#Generate" rel="noopener">How to generate an API token</a></p>
+<p><a href="#Works" rel="noopener">How it works</a></p>
+<p><a href="#AI" rel="noopener">Configuring your AI client</a></p>
+<p><a href="#MCP" rel="noopener">Prerequisites for MCP access</a></p>
+<p><a href="#Security" rel="noopener">Security and best practices</a></p>
+<p><a href="#TOKEN" rel="noopener">Managing and revoking tokens</a></p>
+<hr><a id="CanDo" data-hs-anchor="true"></a>
+<h3><strong>What you can do with an API token</strong></h3>
+<p>API tokens let you:</p>
+<ul>
+<li>Sync your event data with external systems (CRMs, BI tools, custom dashboards)</li>
+<li>Build custom integrations using the <a href="https://apidocs.sessionboard.com/introduction">Sessionboard Public API</a></li>
+<li>Connect AI assistants (Claude, ChatGPT, and other Model Context Protocol–compatible clients) to your Sessionboard organization so they can query and act on your event data in natural language</li>
+<li>Run scheduled or programmatic reports through SbQL</li>
+</ul>
+<div class="hs-callout-type-tip" data-hs-callout-type="tip">
+<p><strong>💡TIP- Before you start</strong></p>
+<ul>
+<li><strong>Tokens are generated at the organization level</strong>, not per event. Each token has access scoped to your org. You must be an organization administrator to generate, edit, or revoke tokens.</li>
+<li><strong>Tokens are sensitive.</strong> Treat them like passwords — never share them in public channels, never commit them to source control, and store them in a secrets manager or environment variable.</li>
+</ul>
+</div>
+<h4>&nbsp;</h4>
+<a id="Generate" data-hs-anchor="true"></a><hr>
+<h3><strong>How to generate an API token</strong></h3>
+<h4><strong>1. Open Organization Settings</strong></h4>
+<p>Log in to the Sessionboard admin dashboard and click <strong>Organization Settings</strong> in the sidebar.</p>
+<h4><strong>2. Go to API Tokens</strong></h4>
+<p>In the Organization Settings menu, select the <strong>API Tokens</strong> section.</p>
+<p><img height="236" style="height: auto; width: 670px;" src="https://657654.fs1.hubspotusercontent-na1.net/hubfs/657654/image-png-May-05-2026-07-54-14-1264-PM.png" width="670" loading="lazy"></p>
+<h4><strong>3. Generate a new token</strong></h4>
+<p>Click <strong>Generate Token</strong>. You'll be asked for:</p>
+<ul>
+<li><strong>A descriptive name: </strong>e.g."Tableau dashboard." This helps you identify the token later when reviewing or revoking it.</li>
+<li><strong>Scopes:</strong>&nbsp;see the next section.</li>
+<li><strong>MCP Access:</strong>&nbsp;toggle this on if the token will be used by an AI assistant (Claude, ChatGPT, etc.) via Sessionboard's MCP server.</li>
+<li><strong>Hide PII (Personally Identifiable Information): </strong>recommended. See the dedicated section below.</li>
+<li><strong>Event restrictions</strong> <em>(optional)</em> :&nbsp;limit the token to specific events instead of your whole organization.</li>
+</ul>
+<p><img height="235" style="height: auto; width: 670px;" src="https://657654.fs1.hubspotusercontent-na1.net/hubfs/657654/image-png-May-05-2026-07-53-04-0808-PM.png" width="670" loading="lazy"></p>
+<h4><strong>4. Choose token scopes</strong></h4>
+<p>API tokens use scopes to control what the token can read or write. Grant only the scopes your integration actually needs.</p>
+<div>
+<table style="border-collapse: collapse; table-layout: fixed; margin-left: auto; margin-right: auto; border: 1px solid #99acc2;">
+<thead>
+<tr>
+<th>Scope</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Default (read access)</strong></td>
+<td>Read-only access to events, sessions, speakers, contacts, sponsors, and exhibitors. Granted automatically to every token.</td>
+</tr>
+<tr>
+<td><strong>read:insights</strong></td>
+<td>Required for Insights endpoints, SbQL queries, and any MCP / AI assistant connection.</td>
+</tr>
+<tr>
+<td><strong>write:sessions</strong></td>
+<td>Allows creating and updating sessions.</td>
+</tr>
+<tr>
+<td><strong>write:contacts</strong></td>
+<td>Allows creating and updating contacts.</td>
+</tr>
+<tr>
+<td><strong>write:events</strong></td>
+<td>Allows managing event-level configuration (rules, dashboards, reports, drafts).</td>
+</tr>
+<tr>
+<td><strong>write:metadata / write:fields</strong></td>
+<td>Allows managing rooms, tracks, tags, formats, levels, languages, statuses, and custom fields.</td>
+</tr>
+<tr>
+<td><strong>write:exhibitors / write:sponsors</strong></td>
+<td>Allows managing exhibitor and sponsor records.</td>
+</tr>
+</tbody>
+</table>
+<p><img height="298" style="height: auto; margin-left: auto; margin-right: auto; display: block; width: 670px;" src="https://657654.fs1.hubspotusercontent-na1.net/hubfs/657654/image-png-May-05-2026-07-55-14-8716-PM.png" width="670" loading="lazy"></p>
+</div>
+<div class="hs-callout-type-note" data-hs-callout-type="note">
+<p><strong>📌 Note: </strong>If you don't know which scopes you need, start with the default read access and add write scopes only when you have a clear use case for them.</p>
+</div>
+<h4><strong>5. Enable Hide PII (recommended)</strong></h4>
+<p>Sessionboard includes a <strong>Hide PII (Personally Identifiable Information)</strong> setting that obfuscates personal contact data when the token is used.</p>
+<ul>
+<li><strong>Enabled (default and recommended):</strong> Email addresses are returned as <code>j***@a***.com</code>, phone numbers as <code>***-***-4567</code>, and similar masking applies to other personal fields.</li>
+<li><strong>Disabled:</strong> Full PII is returned in API responses.</li>
+</ul>
+<p><img height="754" style="height: auto; margin-left: auto; margin-right: auto; display: block; width: 660px;" src="https://657654.fs1.hubspotusercontent-na1.net/hubfs/657654/image-png-May-05-2026-07-58-28-2747-PM.png" width="660" loading="lazy"></p>
+<div class="hs-callout-type-warning" data-hs-callout-type="warning">
+<p>We <strong>strongly recommend leaving Hide PII enabled</strong>, especially for tokens used by AI assistants or any third-party integration. It protects your speakers' and contacts' personal information from being exposed in logs, AI conversation histories, or downstream systems.</p>
+<p>You can toggle Hide PII per token, so different integrations can have different obfuscation rules depending on what they need to do.</p>
+</div>
+<p>&nbsp;</p>
+<h4><strong>6. Copy the token immediately</strong></h4>
+<p>&nbsp;</p>
+<div class="hs-callout-type-note" data-hs-callout-type="note">
+<p>🔒 <strong>Note:&nbsp;copy your token now.</strong> When you click <strong>Generate</strong>, the full token value is displayed <strong>only once</strong>. After you close the dialog, the full token is hidden for security and cannot be retrieved again. Copy it immediately and store it in a secure location (a password manager, secrets vault, or environment variable). If you lose it, you'll need to generate a new one.</p>
+</div>
+<blockquote>
+<p>&nbsp;</p>
+</blockquote>
+<p>This is intentional behavior,&nbsp;we never store the full token in a way that can be displayed back to you, so even Sessionboard staff can't recover it for you.</p>
+<h4><strong>Using your token</strong></h4>
+<p>Include the token in the <code>x-access-token</code> header on every API request. Example:</p>
+<div aria-label="Código en bash" data-hsprotectrole="group">
+<div>
+<div><span style="background-color: transparent;">bash</span></div>
+</div>
+<div>
+<pre><code>curl -X GET https://public-api.sessionboard.com/v1/events \<br>  -H "x-access-token: YOUR_TOKEN"</code></pre>
+</div>
+</div>
+<p>Use <code>https://public-api.sessionboard.com</code> for US-hosted organizations and <code>https://public-api-eu.sessionboard.com</code> for EU-hosted organizations.</p>
+<div class="hs-callout-type-note" data-hs-callout-type="note">
+<p><strong>💡TIP- </strong>For full endpoint documentation, request and response schemas, and code samples in JavaScript and Python, see the <a href="https://apidocs.sessionboard.com/api-reference/overview">API Reference</a>.</p>
+</div>
+<p>&nbsp;</p>
+<h4><strong>Connecting AI assistants (Claude, ChatGPT, and other MCP clients)</strong></h4>
+<p>Sessionboard supports the <strong>Model Context Protocol (MCP)</strong>, an open standard developed by Anthropic that lets AI assistants securely query and act on external data. You can connect Claude Desktop, Claude Code, ChatGPT, or any MCP-compatible client to your Sessionboard organization so the AI can answer questions about your data, build reports, and (with write scopes) make changes on your behalf.</p>
+<hr><a id="Works" data-hs-anchor="true"></a>
+<h3><strong>How it works</strong></h3>
+<p>You have two paths to connect:</p>
+<ol>
+<li><strong>OAuth (recommended for most clients)</strong> :&nbsp;When you connect an MCP-compatible AI client to Sessionboard, the client walks you through an OAuth authorization flow automatically. You don't need to generate a token manually; the OAuth flow handles authentication for you. This is the easiest path for browser-based clients like Claude Desktop or ChatGPT.</li>
+<li><strong>Manual API token:</strong>&nbsp;If your client doesn't support OAuth (or you prefer manual control), generate an API token following the steps above. Make sure to enable the <strong>MCP Access</strong> toggle and grant the <strong>read:insights</strong> scope. Add write scopes (e.g., <code>write:sessions</code>) only if you want the AI to make changes.</li>
+</ol>
+<hr><a id="AI" data-hs-anchor="true"></a>
+<h3><strong>Configuring your AI client</strong></h3>
+<p>For AI clients that accept a remote MCP server URL, point them to:</p>
+<ul>
+<li><strong>US region:</strong> <code>https://mcp.sessionboard.com/mcp</code></li>
+<li><strong>EU region:</strong> <code>https://mcp-eu.sessionboard.com/mcp</code></li>
+</ul>
+<div class="hs-callout-type-tip" data-hs-callout-type="tip">
+<p>The MCP server exposes 27 tools covering search, read, and write operations. You can ask the AI things like <em>"How many sessions are accepted for our 2026 conference?"</em>, <em>"Show me the top 10 speakers by session count,"</em> or <em>"Create a new track called 'AI &amp; Machine Learning.'"</em></p>
+</div>
+<p>&nbsp;</p>
+<hr><a id="MCP" data-hs-anchor="true"></a>
+<h3><strong>Prerequisites for MCP access</strong></h3>
+<p>Before MCP requests will succeed, three things must be true on your account:</p>
+<ol>
+<li>AI features must be enabled for your organization. Contact Sessionboard support or your account manager if you're not sure.</li>
+<li>MCP access must be enabled on your organization (a separate feature flag).</li>
+<li>MCP must be enabled on the API token, with the <strong>read:insights</strong> scope (and any write scopes you need).</li>
+</ol>
+<p>If any of these are missing, MCP requests will return a <code>403 Forbidden</code> error.</p>
+<div class="hs-callout-type-note" data-hs-callout-type="note">
+<p>For full MCP details: available tools, prompt templates, security model, and example conversations ,see the <a href="https://apidocs.sessionboard.com/insights/mcp-server">MCP Server documentation</a>.</p>
+</div>
+<p>&nbsp;</p>
+<hr><a id="Security" data-hs-anchor="true"></a>
+<h3><strong>Security and best practices</strong></h3>
+<ul>
+<li><strong>Hide PII by default.</strong> Leave the Hide PII toggle on unless you have a specific reason to expose full personal data.</li>
+<li><strong>Scope tokens narrowly.</strong> Generate separate tokens for separate integrations and grant only the scopes each one actually needs. A read-only Tableau dashboard doesn't need write scopes; a sync job that only updates sessions doesn't need write access to contacts.</li>
+<li><strong>Restrict to specific events when possible.</strong> If a token only needs access to one event, scope it that way rather than giving it organization-wide access.</li>
+<li><strong>Rotate tokens periodically</strong> and revoke them as soon as an integration is decommissioned or a team member leaves.</li>
+<li><strong>Never commit tokens to source control or share them in chat.</strong> If a token is compromised, revoke it immediately from the API Tokens settings page and generate a replacement.</li>
+<li><strong>Audit log.</strong> All API calls are recorded with source, method, response time, and token ID. Organization administrators can review this log at any time.<br><br></li>
+</ul>
+<hr><a id="TOKEN" data-hs-anchor="true"></a>
+<h3><strong>Managing and revoking tokens</strong></h3>
+<p>From the <strong>Organization Settings → API Tokens</strong> page you can:</p>
+<ul>
+<li>Rename a token</li>
+<li>Edit its scopes, MCP access, event restrictions, and Hide PII setting</li>
+<li>Revoke a token immediately (any integration using it will stop working)</li>
+</ul>
+<p>Revoking a token cannot be undone. If you need to give the same integration access again, generate a new token and update the integration's configuration with the new value.</p>
+<h4><strong>Rate limits and caching</strong></h4>
+<p>The Sessionboard API enforces rate limits to ensure fair usage. Build your integration to handle <code>429 Too Many Requests</code> responses with exponential backoff. Some endpoints (individual session retrieval and session search) are cached for 3 minutes, so changes you make in Sessionboard may take up to 3 minutes to appear in API responses. Webhook notifications are not subject to this cache and are delivered in real time.</p>
+<div class="hs-callout-type-note" data-hs-callout-type="note">
+<p>For full details, see <a href="https://apidocs.sessionboard.com/rate-limiting">Rate Limiting</a>.</p>
+</div>
+<hr>
+<h4><strong>Need help?</strong></h4>
+<ul>
+<li><strong>Full API documentation:</strong> <a href="https://apidocs.sessionboard.com/introduction">apidocs.sessionboard.com/introduction</a></li>
+<li><strong>Authentication reference:</strong> <a href="https://apidocs.sessionboard.com/authentication">apidocs.sessionboard.com/authentication</a></li>
+<li><strong>MCP Server reference:</strong> <a href="https://apidocs.sessionboard.com/insights/mcp-server">apidocs.sessionboard.com/insights/mcp-server</a></li>
+<li><strong>Rate limiting:</strong> <a href="https://apidocs.sessionboard.com/rate-limiting">apidocs.sessionboard.com/rate-limiting</a></li>
+</ul>
+<p>If your integration isn't behaving as expected after following this guide, reach out to your Sessionboard account manager or support team and include the token name (never the token value) along with the error message you're seeing.</p>
+<div class="hs-callout-type-note" data-hs-callout-type="note">
+<p>Need help? Contact us at&nbsp;<a href="mailto:support@sessionboard.com">support@sessionboard.com</a></p>
+</div>
+<p>&nbsp;</p>

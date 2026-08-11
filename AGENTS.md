@@ -20,6 +20,42 @@ npm run cf:check         # Cloudflare anti-scraping rules: show drift (--apply t
 python3 scripts/rehost-images.py   # download + localize any external images
 ```
 
+Several scripts need Python 3.10+; the system `python3` on macOS is 3.9, so run them
+with `python3.13`.
+
+## Recovering content from the old HubSpot knowledge base
+
+The KB still exists inside HubSpot even though no domain serves it. It is reachable
+only through the CMS GraphQL collector (`KB { knowledge_article_collection }`), using
+`HUBSPOT_PRIVATE_APP_TOKEN` from `~/.zshrc`. There is no public REST API for knowledge
+articles, `/knowledge-content/v1/` refuses private-app tokens, and the Wayback Machine
+archived barely any of these pages — the collector is the only complete source.
+
+`.kb-archive/` is a committed snapshot of all 221 articles: original body HTML with
+screenshots, callouts and embeds intact. Refresh it with:
+
+```bash
+python3.13 scripts/hubspot_kb_export.py     # -> .kb-archive/{index.json,html/*.html}
+```
+
+35 pages were hand-rewritten during the migration rather than imported, which cost them
+their screenshots and most of their body copy (`disposition` in `redirects-301.csv` says
+which). To rebuild one from the archive:
+
+```bash
+python3.13 scripts/kb_restore.py --list              # what is missing, and by how much
+python3.13 scripts/kb_restore.py --path /x/y --write # keeps existing frontmatter
+python3.13 scripts/rehost-images.py                  # pull screenshots local
+python3.13 scripts/normalize_images.py --apply       # unwrap images from headings/tables
+python3.13 scripts/fix-alt-text.py --apply           # alt text from surrounding prose
+python3.13 scripts/fix_legacy_links.py --apply       # /en/knowledge-base/* + dead anchors
+npm run check:style && npm run build
+```
+
+Restoring overwrites the page, so check `git log` first: where a page has been edited
+since the migration for product accuracy, merge by hand instead — the archive predates
+those corrections and will silently undo them.
+
 The build fails on broken internal links (starlight-links-validator). Always run `npm run build` after content changes.
 
 `npm run check:style` enforces the mechanical half of `STYLE.md` — title form and length, first heading level, stranded tables of contents, image alt text, truncated descriptions. It runs in CI beside Vale, which only sees prose. Everything it flags is a HubSpot migration artifact, so fix the page rather than loosening the rule.

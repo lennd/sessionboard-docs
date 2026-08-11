@@ -3,52 +3,274 @@ title: "Cvent"
 description: "Sync sessions and speakers collected in Sessionboard to your Cvent event."
 ---
 
-import { Warning, Steps, Step } from '@compat';
+import { Note, Warning } from '@compat';
 
-<img src="/logo/apps/cvent.png" alt="Cvent logo" width="52" height="52" style={{borderRadius:"12px"}} />
+![Import { Note, Warning } from '@compat';](/images/kb/7f64819e-Integration-2.png)
 
-The Cvent integration lets you send session and speaker information collected in Sessionboard to Cvent.
+Through Sessionboard's integration with Cvent, event admins can easily send information for their sessions and speakers that were collected in Sessionboard to Cvent:
 
-## Setup
+## Integration Set Up
 
-### In Cvent
+First, complete the following steps to get set up in Cvent and Sessionboard:
 
-- Create a **Machine to Machine Application** in the Cvent developer portal (Client ID + Client Secret).
-- Grant API scopes for sessions, speakers, custom fields, program items, events, contacts, session categories, and bulk/file operations.
-- Enable **Agenda** and **Speakers** on the event (and **Attendee Hub** if syncing session content).
+### Cvent
+- Create a Machine to Machine Application that supports Client ID and Client Secret. You can do this in the Cvent developer portal: [https://developers.cvent.com/docs](https://developers.cvent.com/docs)
 
-### In Sessionboard
+  ![Create a Machine to Machine Application that supports Client ID and Client Secret](/images/kb/bf982b71-image-Sep-28-2024-02-31-34-5330-AM.png)
 
-<Steps>
-  <Step title="Open Integrations">Go to **Organization Dashboard → Settings → Integrations**.</Step>
-  <Step title="Enter credentials">
-    Add the Client ID, Client Secret, and endpoint:
-    - **North America:** `https://api-platform.cvent.com`
-    - **Europe:** `https://api-platform-eur.cvent.com`
-  </Step>
-  <Step title="Enable continuous sync">Turn on continuous sync for automatic updates every 30 minutes.</Step>
-</Steps>
+  You will need to give the application you create permission to the following scopes:
 
-## Event & field mapping
+  - event/sessions:read
 
-Map each Sessionboard event to a Cvent event. Event options: **Sync Subsessions to Session Programs**, **Skip Content Sync**, **Sync Moderators**, **Sync Chairpersons**.
+  - event/sessions:write
 
-| Session fields | Speaker fields |
-| --- | --- |
-| Title *(required)* | First Name *(required)* |
-| Starts At *(required)* | Last Name *(required)* |
-| Ends At *(required)* | Email *(required)* |
-| Description | Company |
-| Location | Job Title, Biography, Headshot (max 2MB, 300×300) |
+  - event/sessions:delete
 
-## Syncing
+  - event/custom-fields:read
 
-- **Manual:** **Sessions → Agenda → Options → Sync to Cvent** (or select individual sessions).
-- **Automatic:** new sessions are created, previously synced sessions updated, and only **future** sessions sync. Speakers are matched by email — existing Cvent records are reused, new ones create Contact records.
-- **Content:** requires Attendee Hub; max 10MB per file; avoid spaces in filenames.
+  - event/program-items:delete
+
+  - event/program-items:read
+
+  - event/program-items:write
+
+- event/speakers:write
+
+- event/speakers:read
+  - event/speaker-categories:write
+  - event/speaker-categories:read
+
+- event/events:read
+  - event/contacts:write
+  - event/session-categories:read
+  - event/session-categories:write
+  - bulk/bulk-jobs:write
+  - bulk/bulk-jobs:read
+  - file/file:write
+
+- In your Cvent event, you need to enable the features: "***Agenda***" and "***Speakers***"
+
+  ![In your Cvent event, you need to enable the features](/images/kb/9320856e-image-Sep-28-2024-02-31-32-7171-AM.png)
+
+  - If you would like to sync associated Session Content to Cvent, you will also need to enable the **"Attendee Hub"**.
+
+    ![If you would like to sync associated Session Content to Cvent, you will also need to enable the "Attendee Hub"](/images/kb/ce517148-image-Sep-28-2024-02-31-31-7067-AM.png)
+
+## Connect Integration
+
+Integrations are connected on the **organization level** in Sessionboard.
+
+After logging in, click “Organization Dashboard" to access your event's organization:
+
+![After logging in, click “Organization Dashboard" to access your event's organization](/images/kb/f5a64c87-image-png-Feb-26-2026-05-23-13-0299-PM.png)
+
+Or, from your event, you can click **Back to organization**:
+
+![From your event, you can click Back to organization](/images/kb/3ce332e9-image-png-Feb-26-2026-05-22-06-6541-PM.png)
+
+Select the '***Settings***' module to locate '***Integrations***'.
+
+![Select the 'Settings' module to locate 'Integrations'](/images/kb/cc340125-image-png-Feb-26-2026-05-26-46-7552-PM.png)
+
+There, you can connect new or manage existing integrations. To connect a new integration, click the “**Connect**” button below the integration.
+
+![There, you can connect new or manage existing integrations](/images/kb/5fc3d5d0-image-png-Feb-26-2026-06-34-23-5679-PM.png)
+
+For Cvent, enter the **Client ID**, **Client Secret** and **Cvent endpoint** that your Cvent instance is using:
+
+- North America — `https://api-platform.cvent.com`
+- Europe — `https://api-platform-eur.cvent.com`
+
+![Entering the Cvent client ID, client secret, and endpoint](/images/kb/2213eaab-image-png-Feb-26-2026-06-35-07-2127-PM.png)
+
+<Note>
+Enable continuous sync to create/update records on a regular interval (approx. 30 minutes) so that admins don't have to force sync them. The admin can still manually push a sync if they want to update between the sync intervals.
+</Note>
+
+## Map Events
+
+Once the integration is connected, a window will appear prompting you to map your Cvent events with Sessionboard ones. Select the Sessionboard Event from the dropdown list, then choose the Cvent Event in the right-hand dropdown.
+
+Click “**Add Mapping**” to complete the mapping process.
+
+![Click “Add Mapping” to complete the mapping process](/images/kb/05e12c9b-image-png-Feb-26-2026-06-36-15-5622-PM.png)
+
+Once your event is connected, you'll have access to four event-specific settings:
+
+- Sync Subsessions to Session Programs — Syncs subsessions of accepted sessions to the Cvent Programs feature.
+
+- Skip Content Sync — Allows you to collect session content files without syncing them to Cvent.
+
+- Sync Moderators — Syncs your Moderators to your Cvent speakers list.
+
+- Sync Chairpersons — Syncs your Chairpersons to your Cvent speakers list.
+
+![Sync Chairpersons — Syncs your Chairpersons to your Cvent speakers list](/images/kb/9b0b9c87-Screenshot-2026-04-02-at-4.33.36-PM.png)
+
+## Mapping Session Fields
+
+Once your events have been connected, your next window will allow you to map your designated session fields.
+Within the dropdown, be sure you have selected the correct event that you wish to map the session fields for.
+
+![Within the dropdown, be sure you have selected the correct event that you wish to map the session fields for](/images/kb/722aba8d-image-png-Feb-26-2026-06-42-00-9294-PM.png)
+
+The default fields will populate within the session field mapper. You will be able to map additional fields by selecting "**Add Field Mapping**". You will then be able to select the Sessionboard field and the destination field in Cvent that you wish to be mapped to.
+
+## Mapping Speaker Fields
+
+Once your session fields are mapped, you will then be prompted to map your speaker fields.
+
+The default fields will populate within the speaker field mapper. You will be able to map additional fields by selecting "**Add Field Mapping**". You will then be able to select the Sessionboard field and the destination field in Cvent that you wish to be mapped to.
+
+![The default fields will populate within the speaker field mapper](/images/kb/bd16339d-image-png-Feb-26-2026-06-42-38-3717-PM.png)
 
 <Warning>
-Deleting sessions/speakers in Sessionboard does **not** delete them from Cvent — remove them manually. Sessions added directly in Cvent aren't detected by Sessionboard.
+Cvent API Token Consumption
+
+The Sessionboard \<\> Cvent integration leverages Cvent's bulk endpoints wherever possible to minimize Cvent API Token consumption. This makes the integration friendly to whichever Cvent API plan you may be on.
 </Warning>
 
-Sync issues? Contact support@sessionboard.com with the event name, affected records/fields, and error screenshots.
+## Field Mapping
+
+By default, Sessionboard maps the following fields into Cvent (items in Bold are required):
+
+**Sessions**
+
+- **Title\***
+
+- **Starts At\***
+
+- **Ends At\***
+
+- Description
+  - Only the following formatting items are supported with the Cvent API - Bold, Italics, Underline, Strikethrough, Subscript, Post script, Text color, Fill color, Left/ center/right justify alignments, Bulleted lists, Numbered lists, Indent, Outdent, and Links
+  - Please note if you are looking to utilize formatting it is recommended to use standard formatting tools within the Sessionboard description field as copying and pasting does not hold accurate HTML formatting.
+
+- Location
+
+**Speakers**
+
+- **First Name\***
+
+- **Last Name\***
+
+- **Email\***
+
+- Company
+
+- Job Title
+
+- Biography
+
+- Headshot (Max 2MB 300x300 recommended)
+
+## How to Sync Data
+
+After working with your Sales Engineer representative to connect your Cvent integration with your Sessionboard event(s), you'll be able to begin syncing your session and speaker details.
+
+You can sync to Cvent manually by going to Sessions \> Agenda, clicking **Options,** and then clicking **Sync to Cvent**.
+
+![You can sync to Cvent manually by going to Sessions \> Agenda, clicking Options](/images/kb/b66146f9-image-png-Feb-26-2026-06-45-20-7189-PM.png)
+
+What happens when data is synced?
+
+During a sync, the following workflow takes place:
+
+- **Sessions**
+
+  - New sessions that Sessionboard is syncing to Cvent are created
+
+    - **Note:** Sessionboard only knows about the sessions that it has already synced. So, be mindful if you're also adding sessions directly to Cvent and know that Sessionboard will not automatically detect them.
+
+  - Sessions that Sessionboard has already synced are updated
+
+  - Only sessions in the future will sync. We will not be able to sync any sessions that have passed
+
+- **Speakers**
+
+  - Sessionboard attempts to find a Speaker in your Cvent Event by the same email address.
+
+    - If it finds one, it will use the found Speaker (and respective Cvent contact record)
+
+  - If no matching Speaker is found by email address, it will create a new Speaker record in your Cvent event
+
+    - Cvent automatically creates a Contact record for the speaker in your Cvent Address Book
+
+  - The updates are then performed against the Speaker record
+
+- **Sessions \<\> Speakers**
+
+  - Speakers are attached to Sessions
+
+  - If a speaker has been removed in Sessionboard for a session, that speaker will be removed from the synced session in Cvent
+
+- **Content**
+
+  - To sync content that is attached to your sessions to Cvent, you will need to ensure the "Attendee Hub" module is enabled in Event.
+
+  - Cvent allows the following file types to be synced over:
+
+    - ai, bmp, doc, docx, eml, eps, gif, ics, jpeg, msg, otf, ost, pdf, png, ppt, pptx, tif, tiff, ttf, txt, woff, woff2, xls, xlsx
+
+  - Cvent allows for files less than or equal to 10MB to be synced over
+
+  - To ensure efficient syncing of your content, please refrain from any spaces within your file naming conventions
+
+- **Locations**
+
+  - Sessionboard Locations are created in Cvent as Locations
+
+    - Sessions are associated with the proper Location based on the session's relationship with a Location in Sessionboard
+
+- **Subsessions \> Programs**
+  - **Title, Description, Speakers** and **Files** will all sync for your Subsessions to Programs
+    - The Order and duration of programs are controlled within the Cvent platform
+
+<Warning>
+**NOTE**: Sessions and/or speakers will not be removed from Cvent if speaker and/or session statuses are changed in Sessionboard. Admins will have to manually delete the session/speaker record in Cvent.
+
+Similarly, deleting a a session or speaker from Sessionboard, won't delete it from Cvent. You'll need to manually delete it from Cvent.
+</Warning>
+
+### Syncing only speakers
+
+Alternatively, if you wish to just sync speakers to Cvent, that can be completed under your **Speakers** view. This will sync only your speakers and no session details. Please note that if you later sync from your agenda tab, this will associate the speakers with their respective sessions in Cvent.
+![Alternatively, if you wish to just sync speakers to Cvent, that can be completed under your Speakers view](/images/kb/b70ffce8-image-png-Feb-26-2026-06-47-05-5983-PM.png)
+
+### Resync Behavior
+
+On resync, new sessions and speakers that have been added to the agenda in Sessionboard will be sent to Cvent. Any updates that are made to previously synced fields (such as correcting a speaker’s title or changing a session time) will also be applied.
+
+In addition to syncing all sessions and their speakers, you have the ability to choose **individual sessions to sync**. This can be done under the Sessions \> **Agenda** tab and by selecting the individual sessions you wish to sync. You will want to select your session(s) and then under '**More**' click 'Sync to Cvent'.
+
+![In addition to syncing all sessions and their speakers](/images/kb/6ac9c42e-image-png-Mar-03-2026-08-32-22-3650-PM.png)
+
+## Frequently Asked Questions
+
+- What data is synced over?
+
+  - You can decide what data should be mapped where to your Speakers and Sessions in Cvent in the setup of your integration, while working with your Customer Success representative.
+
+  - We support mapping standard and custom Sessionboard fields to Cvent standard and custom fields on Cvent Contact, Speaker, and Session records.
+
+- Deleting a session/speaker from Sessionboard deletes it from Cvent?
+  - No, deleting a a session or speaker from Sessionboard, won't delete it from Cvent. You'll need to manually delete it from Cvent.
+
+### Integration Support
+**If you are experiencing problems with syncing (i.e. error messages or data not appearing in Cvent),** email [support@sessionboard.com](mailto:support@sessionboard.com) with the following information:
+
+- Event Name
+
+- Session name(s)
+
+  - fields not appearing
+
+- Speaker name(s)
+
+  - fields not appearing
+
+- Image of any errors received when syncing *(if applicable)*
+
+*Example Email:*
+
+![Example support email reporting a Cvent sync error](/images/kb/444ba0ba-Screenshot-2024-04-18-at-2_43_25-PM-Sep-28-2024-02-32-46-7602-AM.png)

@@ -222,6 +222,14 @@ export default {
       return Response.redirect(`${targetOrigin}${url.pathname}${url.search}`, 301);
     }
 
+    // Legacy links point at /path.html. The assets handler answers those with a
+    // 307 to the clean URL, which is a temporary redirect and passes no ranking
+    // signal on to the page that replaced it — so redirect permanently here.
+    if (url.pathname.endsWith('.html')) {
+      const clean = url.pathname.replace(/\/?index\.html$/, '/').replace(/\.html$/, '');
+      return Response.redirect(`${targetOrigin}${clean || '/'}${url.search}`, 301);
+    }
+
     // HubSpot KB sitemap path → Starlight sitemap
     if (url.pathname === '/sitemap.xml') {
       const asset = await env.ASSETS.fetch(new Request(`${url.origin}/sitemap-index.xml`, request));

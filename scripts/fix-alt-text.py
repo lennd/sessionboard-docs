@@ -23,8 +23,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 DOCS = ROOT / 'src/content/docs'
 
-IMG = re.compile(r'^!\[([^\]]*)\]\(([^)]+)\)\s*$')
+# Screenshots that illustrate one step of a numbered list are indented under it,
+# so the indent has to be matched and then put back.
+IMG = re.compile(r'^([ \t]*)!\[([^\]]*)\]\(([^)]+)\)\s*$')
 COUNTER = re.compile(r'\s*\(\d+\)$')
+
+# Where HubSpot did store alt text it was usually the upload filename, which is
+# a timestamp. Same defect as a counter suffix: it describes nothing.
+FILENAME = re.compile(r'^(?:image|screenshot|screen shot|img)[\s_.-]|^[a-f0-9]{8,}', re.I)
 
 # Sentences that lead with these say nothing on their own once lifted out of
 # the flow of the page.
@@ -38,6 +44,9 @@ MIN_LEN = 20
 
 # A table row describes the page, not the screenshot.
 TABLE_ROW = re.compile(r'^\s*\|')
+
+HEADING = re.compile(r'^\s*#{2,6}\s+(.*\S)\s*$')
+JSX_TAG = re.compile(r'^</?[A-Z][A-Za-z]*\s*/?>$')
 
 # Admonitions are addressed to the reader rather than to the image, and the
 # migrated ones open with an emoji, so skip past any leading symbols.
@@ -108,17 +117,26 @@ def shorten(s: str, limit: int = MAX_LEN) -> str:
 
 def derive(lines: list[str], idx: int) -> str | None:
     """Best descriptive sentence in the few lines above image at `idx`."""
-    for j in range(idx - 1, max(-1, idx - 6), -1):
+    heading = None
+    for j in range(idx - 1, max(-1, idx - 12), -1):
         raw = lines[j]
+        # A <Tip>/<Note> block between the prose and its screenshot is three
+        # lines of scaffolding plus an aside to the reader. Step over it and
+        # keep looking for the sentence the screenshot actually illustrates.
+        if JSX_TAG.match(raw.strip()):
+            continue
+        if h := HEADING.match(raw):
+            heading = heading or h.group(1).strip()
+            continue
         if prev := IMG.match(raw):
             # A screenshot directly above with a real description means both
             # illustrate the same step, so inherit rather than invent. Earlier
             # images are fixed first, so the description has already landed.
-            above = prev.group(1).strip()
+            above = prev.group(2).strip()
             if above and not COUNTER.search(above):
                 return above
             continue
-        if raw.lstrip().startswith('#') or TABLE_ROW.match(raw):
+        if TABLE_ROW.match(raw):
             continue
         text = clean(raw)
         if not text or TABLE_ROW.match(text) or ADMONITION.match(text):
@@ -131,12 +149,17 @@ def derive(lines: list[str], idx: int) -> str | None:
             continue
         # Reference lists are written as "Setting: what it does", and the
         # screenshot belongs to the setting, so the label alone is the caption.
+        # A trailing "(NOTE: ...)" or "(Character Limit: 255)" is an aside to the
+        # reader, and the colon it carries reads as a stale title prefix.
+        text = re.sub(r'\s*\([^)]*:[^)]*\)\s*$', '', text).rstrip(' ,;:')
         term = re.match(r'^([A-Z][^:]{9,59}):\s+\S', text)
         text = term.group(1).rstrip() if term else shorten(text)
         # A leading lowercase letter means we sliced into the middle of a
         # thought; capitalise so it reads as a caption.
         return text[0].upper() + text[1:]
-    return None
+    # Nothing but scaffolding above: the section it sits under still says more
+    # to a screen reader than silence does.
+    return heading
 
 
 def main() -> None:
@@ -154,13 +177,16 @@ def main() -> None:
             m = IMG.match(line)
             if not m:
                 continue
-            alt = m.group(1).strip().replace('\u200b', '').replace('\ufeff', '')
+            alt = m.group(2).strip().replace('\u200b', '').replace('\ufeff', '')
 
-            if not COUNTER.search(alt):
+            # Empty alt is the same defect in its worst form: pages rebuilt from
+            # the HubSpot archive come back with bare ![](...), because HubSpot
+            # never stored alt text on an image in the first place.
+            if alt and not COUNTER.search(alt) and not FILENAME.match(alt):
                 # Invisible characters survived the migration inside otherwise
                 # fine alt text; drop them without touching the wording.
-                if alt != m.group(1).strip():
-                    lines[i] = f'![{alt}]({m.group(2)})'
+                if alt != m.group(2).strip():
+                    lines[i] = f'{m.group(1)}![{alt}]({m.group(3)})'
                     dirty = True
                     changed_imgs += 1
                 continue
@@ -172,7 +198,7 @@ def main() -> None:
 
             # Consecutive screenshots of one step share a description, and
             # repeating it is honest — the numbered variants said nothing.
-            lines[i] = f'![{new}]({m.group(2)})'
+            lines[i] = f'{m.group(1)}![{new}]({m.group(3)})'
             dirty = True
             changed_imgs += 1
             preview.append(f'{path.relative_to(DOCS)}\n  - {alt}\n  + {new}')

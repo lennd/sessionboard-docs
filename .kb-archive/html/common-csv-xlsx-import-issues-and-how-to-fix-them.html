@@ -1,0 +1,143 @@
+<hr>
+<p>In this article:</p>
+<ul>
+<li><a href="#silent-import-failure" rel="noopener">"All records valid" but the import still fails</a></li>
+<li><a href="#google-sheets-date-format" rel="noopener">Date/time fields fail after editing in Google Sheets</a></li>
+<li><a href="#data-overwrite" rel="noopener">Existing field data is getting overwritten or wiped</a></li>
+<li><a href="#client-id-field" rel="noopener">"Session Friendly ID" field — what is it and where does it come from?</a><a href="#bulk-status-csv" rel="noopener"></a></li>
+<li><a href="#excel-session-times" rel="noopener">Importing session times and rooms from Excel</a></li>
+<li><a href="#custom-fields-not-appearing" rel="noopener">Custom fields not appearing during import mapping</a><br><br></li>
+</ul>
+<hr><a id="silent-import-failure" data-hs-anchor="true"></a>
+<h3><br>"All records valid" but the import still fails</h3>
+<h4>Symptoms</h4>
+<p>Validation shows 0 invalid records and green checkmark → click Continue → "File upload was unable to be processed. Please check your records and try again." → no records imported</p>
+<p><img alt="bdf82fc3-0cca-4eeb-aeb9-43d3d2d65752" height="317" style="height: auto; max-width: 100%; width: 536px; margin-left: auto; margin-right: auto; display: block;" src="https://657654.fs1.hubspotusercontent-na1.net/hubfs/657654/bdf82fc3-0cca-4eeb-aeb9-43d3d2d65752.png" width="536" loading="lazy"></p>
+<h4>Why it happens</h4>
+<p>Validation checks field formatting, but not all backend constraints (duplicate detection, file size, temp system issues). Clean validation ≠ successful write.</p>
+<h4>Fix</h4>
+<ol>
+<li><strong>Reduce file size </strong>— Sessionboard supports max 1,000 records per import. Split into smaller files</li>
+<li><strong>Check for special characters</strong> — open CSV in a text editor, look for&nbsp;<code>"</code>,&nbsp;<code>&amp;</code>,&nbsp;<code>&lt;</code>,&nbsp;<code>&gt;</code> in field values
+<ol>
+<li>While these were recently allowed, some of these might still cause issues when reading the file.</li>
+</ol>
+</li>
+<li><strong>Re-export the template </strong>— download a fresh template from the import screen, copy data into it</li>
+<li><strong>Try a different browser </strong>— Chrome incognito or another browser</li>
+<li>If it persists, contact support with CSV attached&nbsp; + URL where you're importing&nbsp; + event name<br><br></li>
+</ol>
+<hr><a id="google-sheets-date-format" data-hs-anchor="true"></a>
+<h3><br>Date/time fields fail after editing in Google Sheets</h3>
+<h4>Symptoms</h4>
+<p>Export CSV → open in Google Sheets → edit → re-import → errors on all "Starts at" and "Ends at" fields. Dates look correct, but SB rejects them.</p>
+<p><img height="214" style="height: auto; margin-left: auto; margin-right: auto; display: block; width: 280px;" src="https://657654.fs1.hubspotusercontent-na1.net/hubfs/657654/image-png-Mar-10-2026-09-05-08-8156-PM.png" width="280" loading="lazy"></p>
+<h4>Why it happens</h4>
+<p>Google Sheets auto-converts date/time values. When re-exported, dates come out as e.g.&nbsp;<code>3/25/2026 9:00 AM</code> instead of the required <code>YYYY-MM-DD HH:mm</code>&nbsp;format.</p>
+<h4>Fix</h4>
+<ul>
+<li><strong>Option A:</strong> In Google Sheets, select date columns → Format &gt; Number &gt; Custom date and time → delete current logic using the backspace key → use the UI to match the needed format: <code>YYYY-MM-DD HH:mm</code><img height="265" style="height: auto; width: 664px;" src="https://657654.fs1.hubspotusercontent-na1.net/hubfs/657654/image-png-Mar-10-2026-07-44-05-4207-PM.png" width="664" loading="lazy"><br>
+<ul>
+<li>Add Day &gt; Click on Day &gt; Day with leading zero, add a slash: '/', add Month, etc.</li>
+<li><strong>This is how it needs to look before applying</strong>:<br><img height="140" style="height: auto; width: 498px;" src="https://657654.fs1.hubspotusercontent-na1.net/hubfs/657654/image-png-Mar-25-2026-07-52-42-5116-PM.png" width="498" loading="lazy"></li>
+<li>Once done: File &gt; Download as CSV</li>
+</ul>
+</li>
+<li><strong>Option B:</strong>&nbsp;Use Excel instead of Google Sheets — handles date formatting more predictably</li>
+<li><strong>Option C:</strong>&nbsp;Skip re-import, use Bulk Edit directly (Sessions &gt; select &gt; Bulk Edit &gt; Start/End Time)<br><br></li>
+</ul>
+<hr><a id="data-overwrite" data-hs-anchor="true"></a>
+<h3><br>Existing field data is getting overwritten or wiped</h3>
+<h4>Symptoms</h4>
+<p>After import, fields not in your spreadsheet are blanked out. Descriptions and custom fields are now empty. Only meant to update dates.</p>
+<h4>Why it happens</h4>
+<p>SB maps every column to a field. If a field like Description is present but empty, it overwrites existing data. An empty column means "set this field to empty," it doesn't mean "do not update."</p>
+<h4>Fix</h4>
+<ol>
+<li>Export existing data first — Sessions &gt; Export. The file includes the Session Friendly ID column.</li>
+<li>Add column "Update record if already exists" set to&nbsp;<code>TRUE</code>&nbsp;for every row you want to update. Without this, SB may create duplicates.</li>
+<li>Make your changes in the relevant columns.</li>
+<li>At the mapping screen, <strong>set "Ignore this column" </strong>for any column you're<strong> NOT intentionally changing.</strong></li>
+<li>Proceed with import.</li>
+</ol>
+<div class="hs-callout-type-warning" data-hs-callout-type="warning">
+<p>Always export a backup before importing updates: go to Sessions &gt; Options &gt; Export to download a full copy first.</p>
+</div>
+<hr><a id="client-id-field" data-hs-anchor="true"></a>
+<h3><br>"Session Friendly ID" field — what is it and where does it come from?</h3>
+<p>Session Friendly ID is an internal identifier SB uses to match CSV rows to existing session records.</p>
+<ul>
+<li><strong>Importing new records?</strong> Leave Session ID blank — SB generates IDs automatically.</li>
+<li><strong>Updating existing records?</strong> Use the Session ID from a previous SB export so the system matches the right record.</li>
+<li><strong>Do NOT</strong>&nbsp;invent your own Session ID values — only use values from a Sessionboard export.<br><br><img height="266" style="height: auto; width: 670px;" src="https://657654.fs1.hubspotusercontent-na1.net/hubfs/657654/image-png-Mar-10-2026-09-09-10-0478-PM.png" width="670" loading="lazy"><br><br></li>
+</ul>
+<hr><a id="excel-session-times" data-hs-anchor="true"></a>
+<h3><br>Importing session times and rooms from Excel</h3>
+<ol></ol>
+<div>
+<ol></ol>
+<div>
+<ol></ol>
+<div>
+<ol>
+<li>Download the Sessions import template: Sessions &gt; Import &gt; Download Template</li>
+<li>Copy session data into template, matching column headers exactly</li>
+<li>Date format: <code>YYYY-MM-DD HH:mm</code> (e.g.&nbsp;<code>2026-03-25 18:00</code>)</li>
+<li>For Room/Location, use exact room name as it appears in event settings</li>
+<li>Phone numbers must include country + area code in the following format:
+<ol>
+<li><code>+1 (123)456-7891</code></li>
+</ol>
+</li>
+<li>Save as .csv (UTF-8 encoding) as preferred instead of .xlsx</li>
+<li>At mapping step, use "Ignore this column" for any fields you're not setting<br><br></li>
+</ol>
+</div>
+<div><hr></div>
+<div>&nbsp;</div>
+</div>
+</div>
+<a id="custom-fields-not-appearing" data-hs-anchor="true"></a>
+<h3>Custom fields not appearing during import mapping</h3>
+<p><strong>Symptoms:</strong> You created custom fields in Sessionboard, but they don't appear as mapping options when importing a CSV.</p>
+<p><strong>Why:</strong>&nbsp;Custom fields must be added to your module's table view before they appear as import mapping options. If they're not visible in your Sessions, Contacts, or Speakers table, they won't show up during import.</p>
+<p><strong>Fix:</strong></p>
+<ol>
+<li>Go to the relevant module (e.g. Contacts)</li>
+<li>Click the <strong>Columns </strong>button to manage visible fields<img height="63" style="height: auto; width: 597px;" src="https://657654.fs1.hubspotusercontent-na1.net/hubfs/657654/image-png-Mar-10-2026-09-13-01-3267-PM.png" width="597" loading="lazy"></li>
+<li>Add your custom fields to the table view</li>
+<li>Re-download the import template via Import &gt; Template — your custom fields will now be included as column headers</li>
+<li>Re-attempt the import</li>
+</ol>
+<div>
+<div class="hs-callout-type-tip" data-hs-callout-type="tip">
+<p><strong>Before you import — checklist</strong></p>
+<ul>
+<li>Export a backup of existing data first</li>
+<li>Use the Sessionboard-provided template on Options &gt; Import &gt; Template (not a custom spreadsheet)</li>
+<li>Date/time format: <code>YYYY-MM-DD HH:mm</code> (e.g.&nbsp;<code>2026-03-25 18:00</code>)</li>
+<li>Set "Ignore this column" for every field you're not intentionally updating</li>
+<li>Keep files under the 1,000 record limit per import</li>
+<li>Try to avoid special characters (<code>"</code>,&nbsp;<code>&amp;</code>,&nbsp;<code>&lt;</code>,&nbsp;<code>&gt;</code>)
+<ul>
+<li>While these were recently allowed, some of these might still cause issues when reading the file.</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li>We suggest saving/exporting&nbsp;as <code>.csv</code> (UTF-8 encoding), instead of <code>.xlsx</code></li>
+</ul>
+</div>
+</div>
+<hr>
+<h3>Still having issues?</h3>
+<div>
+<p>Contact&nbsp;<strong>support@sessionboard.com</strong>&nbsp;with:</p>
+<ul>
+<li>Your CSV/XLSX file attached</li>
+<li>The name of the event you're importing into</li>
+<li>A screenshot of the error message</li>
+<li>Which columns were you trying to update</li>
+<li>The direct URL where you're importing</li>
+</ul>
+</div>

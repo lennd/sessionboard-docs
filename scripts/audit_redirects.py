@@ -240,11 +240,18 @@ def main() -> int:
             re.sub(r"^\d+-", "", s) for s in explicit
         }
 
-    ok = [r for r in results if r["code"] == "301" and r["target_code"] == "200"]
-    fallback = [r for r in ok if is_fallthrough(r)]
+    redirected = [r for r in results if r["code"] == "301" and r["target_code"] == "200"]
+    # In-app links point at canonical learn.sessionboard.com paths, which serve
+    # straight from the Worker with no hop. Those are the best possible outcome,
+    # not a failure — only legacy URLs are expected to arrive via a 301.
+    direct = [r for r in results if r["code"] == "200"]
+    ok = redirected + direct
+    fallback = [r for r in redirected if is_fallthrough(r)]
     failed = [r for r in results if r not in ok]
 
-    print(f"  reach a live page (301 -> 200): {len(ok)}/{len(results)}")
+    print(f"  reach a live page:              {len(ok)}/{len(results)}")
+    print(f"    already canonical (200):      {len(direct)}")
+    print(f"    redirected (301 -> 200):      {len(redirected)}")
     print(f"  fell through to the fallback:   {len(fallback)}")
     print(f"  FAILED:                         {len(failed)}")
 

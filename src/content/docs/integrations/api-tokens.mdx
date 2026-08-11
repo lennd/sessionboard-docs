@@ -3,85 +3,167 @@ title: "Generating API tokens"
 description: "Create and manage API tokens to connect external systems and AI assistants to your event data."
 ---
 
-import { Note, Tip, Warning, Steps, Step } from '@compat';
-
-API tokens let you:
-
-- Sync event data with external systems (CRMs, BI tools, custom dashboards)
-- Build custom integrations on the Sessionboard Public API
-- Connect AI assistants (Claude, ChatGPT, and other MCP-compatible clients) to query and act on your event data in natural language
-- Run scheduled or programmatic reports through SbQL
+import { Note, Tip, Warning } from '@compat';
 
 <Warning>
-Tokens are generated at the **organization** level, not per event. Treat them like passwords — never share them publicly. Only organization administrators can generate, edit, or revoke tokens.
+⚠️ **For advanced and expert users.** API tokens give programmatic access to your organization's event data. They're meant for technical users building integrations, connecting AI assistants, or syncing Sessionboard data with external systems. Before generating a token, we recommend reviewing our full API documentation: [apidocs.sessionboard.com/introduction](https://apidocs.sessionboard.com/introduction). It covers authentication, rate limiting, MCP, webhooks, and the SbQL query language in depth.
 </Warning>
 
-## Generate a token
-<Steps>
-  <Step title="Open Organization Settings">Log in to the admin dashboard and click **Organization Settings**.</Step>
-  <Step title="Go to API Tokens">Select the **API Tokens** section.</Step>
-  <Step title="Generate a new token">
-    Click **Generate Token** and provide:
-    - **Descriptive name** — e.g., "Tableau dashboard"
-    - **Scopes** — see below
-    - **MCP Access** — toggle on for AI assistants
-    - **Hide PII** — recommended
-    - **Event restrictions** (optional) — limit to specific events
-  </Step>
-  <Step title="Copy the token immediately">
-    The full token value is shown **only once**. Copy it and store it in a password manager, secrets vault, or environment variable. It cannot be retrieved later — even by Sessionboard staff.
-  </Step>
-</Steps>
+## What you can do with an API token
+API tokens let you:
 
-## Scopes
+- Sync your event data with external systems (CRMs, BI tools, custom dashboards)
+- Build custom integrations using the [Sessionboard Public API](https://apidocs.sessionboard.com/introduction)
+- Connect AI assistants (Claude, ChatGPT, and other Model Context Protocol–compatible clients) to your Sessionboard organization so they can query and act on your event data in natural language
+- Run scheduled or programmatic reports through SbQL
 
-Grant only the scopes your integration needs.
+<Tip>
+**💡TIP- Before you start**
+
+- **Tokens are generated at the organization level**, not per event. Each token has access scoped to your org. You must be an organization administrator to generate, edit, or revoke tokens.
+- **Tokens are sensitive.** Treat them like passwords — never share them in public channels, never commit them to source control, and store them in a secrets manager or environment variable.
+</Tip>
+
+## How to generate an API token
+### 1. Open Organization Settings
+Log in to the Sessionboard admin dashboard and click **Organization Settings** in the sidebar.
+
+### 2. Go to API Tokens
+In the Organization Settings menu, select the **API Tokens** section.
+
+![In the Organization Settings menu, select the API Tokens section](/images/kb/d6a38e5b-image-png-May-05-2026-07-54-14-1264-PM.png)
+
+### 3. Generate a new token
+Click **Generate Token**. You'll be asked for:
+
+- **A descriptive name:** e.g."Tableau dashboard." This helps you identify the token later when reviewing or revoking it.
+- **Scopes:** see the next section.
+- **MCP Access:** toggle this on if the token will be used by an AI assistant (Claude, ChatGPT, etc.) via Sessionboard's MCP server.
+- **Hide PII (Personally Identifiable Information):** recommended. See the dedicated section below.
+- **Event restrictions** *(optional)* : limit the token to specific events instead of your whole organization.
+
+![Event restrictions (optional)](/images/kb/31d4c602-image-png-May-05-2026-07-53-04-0808-PM.png)
+
+### 4. Choose token scopes
+API tokens use scopes to control what the token can read or write. Grant only the scopes your integration actually needs.
 
 | Scope | What it does |
-| --- | --- |
-| **Default (read access)** | Read-only access to events, sessions, speakers, contacts, sponsors, exhibitors. Granted automatically. |
-| **read:insights** | Required for Insights endpoints, SbQL, and any MCP / AI connection. |
-| **write:sessions** | Create and update sessions. |
-| **write:contacts** | Create and update contacts. |
-| **write:events** | Manage event-level config (rules, dashboards, reports, drafts). |
-| **write:metadata / write:fields** | Manage rooms, tracks, tags, formats, levels, languages, statuses, and custom fields. |
-| **write:exhibitors / write:sponsors** | Manage exhibitor and sponsor records. |
+|----|----|
+| **Default (read access)** | Read-only access to events, sessions, speakers, contacts, sponsors, and exhibitors. Granted automatically to every token. |
+| **read:insights** | Required for Insights endpoints, SbQL queries, and any MCP / AI assistant connection. |
+| **write:sessions** | Allows creating and updating sessions. |
+| **write:contacts** | Allows creating and updating contacts. |
+| **write:events** | Allows managing event-level configuration (rules, dashboards, reports, drafts). |
+| **write:metadata / write:fields** | Allows managing rooms, tracks, tags, formats, levels, languages, statuses, and custom fields. |
+| **write:exhibitors / write:sponsors** | Allows managing exhibitor and sponsor records. |
 
-<Tip>Not sure which scopes you need? Start with default read access and add write scopes only when you have a clear use case.</Tip>
-
-## Hide PII (recommended)
-
-When enabled (the default), personal data is obfuscated — emails return as `j***@a***.com`, phone numbers as `***-***-4567`. Leave it on, especially for tokens used by AI assistants or third-party integrations.
-
-## Use your token
-Include the token in the `x-access-token` header on every request:
-
-```bash
-curl -X GET https://public-api.sessionboard.com/v1/events \
-  -H "x-access-token: YOUR_TOKEN"
-```
-
-Use `https://public-api.sessionboard.com` for US-hosted orgs and `https://public-api-eu.sessionboard.com` for EU-hosted orgs.
-
-## Connect AI assistants (MCP)
-Sessionboard supports the **Model Context Protocol (MCP)**. Connect Claude, ChatGPT, or any MCP client via OAuth (recommended) or a manual token with **MCP Access** enabled and the **read:insights** scope.
-
-Point remote MCP clients to:
-
-- **US:** `https://mcp.sessionboard.com/mcp`
-- **EU:** `https://mcp-eu.sessionboard.com/mcp`
-
-The MCP server exposes 27 tools for search, read, and write. Ask things like *"How many sessions are accepted for our 2026 conference?"* or *"Create a new track called 'AI & Machine Learning.'"*
+![Selecting scopes while generating an API token](/images/kb/b43c840d-image-png-May-05-2026-07-55-14-8716-PM.png)
 
 <Note>
-MCP requires three things on your account: AI features enabled, MCP access enabled (a separate flag), and MCP enabled on the token with `read:insights`. Missing any returns `403 Forbidden`.
+**📌 Note:** If you don't know which scopes you need, start with the default read access and add write scopes only when you have a clear use case for them.
 </Note>
 
-## Manage & revoke
-From **Organization Settings → API Tokens** you can rename a token, edit scopes/MCP/PII/event restrictions, or revoke it (irreversible — any integration using it stops working). All API calls are recorded in an audit log with source, method, response time, and token ID.
+### 5. Enable Hide PII (recommended)
+Sessionboard includes a **Hide PII (Personally Identifiable Information)** setting that obfuscates personal contact data when the token is used.
 
-## Rate limits & caching
+- **Enabled (default and recommended):** Email addresses are returned as `j***@a***.com`, phone numbers as `***-***-4567`, and similar masking applies to other personal fields.
+- **Disabled:** Full PII is returned in API responses.
 
-Handle `429 Too Many Requests` with exponential backoff. Individual session retrieval and session search are cached for 3 minutes; webhook notifications are real-time and not cached.
+![Disabled: Full PII is returned in API responses](/images/kb/211f0e53-image-png-May-05-2026-07-58-28-2747-PM.png)
 
-Full docs: [apidocs.sessionboard.com](https://apidocs.sessionboard.com/introduction)
+<Warning>
+We **strongly recommend leaving Hide PII enabled**, especially for tokens used by AI assistants or any third-party integration. It protects your speakers' and contacts' personal information from being exposed in logs, AI conversation histories, or downstream systems.
+
+You can toggle Hide PII per token, so different integrations can have different obfuscation rules depending on what they need to do.
+</Warning>
+
+### 6. Copy the token immediately
+<Note>
+🔒 **Note: copy your token now.** When you click **Generate**, the full token value is displayed **only once**. After you close the dialog, the full token is hidden for security and cannot be retrieved again. Copy it immediately and store it in a secure location (a password manager, secrets vault, or environment variable). If you lose it, you'll need to generate a new one.
+</Note>
+
+> 
+
+This is intentional behavior, we never store the full token in a way that can be displayed back to you, so even Sessionboard staff can't recover it for you.
+
+### Using your token
+Include the token in the `x-access-token` header on every API request. Example:
+
+bash
+
+    curl -X GET https://public-api.sessionboard.com/v1/events
+      -H "x-access-token: YOUR_TOKEN"
+
+Use `https://public-api.sessionboard.com` for US-hosted organizations and `https://public-api-eu.sessionboard.com` for EU-hosted organizations.
+
+<Note>
+**💡TIP-** For full endpoint documentation, request and response schemas, and code samples in JavaScript and Python, see the [API Reference](https://apidocs.sessionboard.com/api-reference/overview).
+</Note>
+
+### Connecting AI assistants (Claude, ChatGPT, and other MCP clients)
+Sessionboard supports the **Model Context Protocol (MCP)**, an open standard developed by Anthropic that lets AI assistants securely query and act on external data. You can connect Claude Desktop, Claude Code, ChatGPT, or any MCP-compatible client to your Sessionboard organization so the AI can answer questions about your data, build reports, and (with write scopes) make changes on your behalf.
+
+## How it works
+You have two paths to connect:
+
+1.  **OAuth (recommended for most clients)** : When you connect an MCP-compatible AI client to Sessionboard, the client walks you through an OAuth authorization flow automatically. You don't need to generate a token manually; the OAuth flow handles authentication for you. This is the easiest path for browser-based clients like Claude Desktop or ChatGPT.
+2.  **Manual API token:** If your client doesn't support OAuth (or you prefer manual control), generate an API token following the steps above. Make sure to enable the **MCP Access** toggle and grant the **read:insights** scope. Add write scopes (e.g., `write:sessions`) only if you want the AI to make changes.
+
+## Configuring your AI client
+For AI clients that accept a remote MCP server URL, point them to:
+
+- **US region:** `https://mcp.sessionboard.com/mcp`
+- **EU region:** `https://mcp-eu.sessionboard.com/mcp`
+
+<Tip>
+The MCP server exposes 27 tools covering search, read, and write operations. You can ask the AI things like *"How many sessions are accepted for our 2026 conference?"*, *"Show me the top 10 speakers by session count,"* or *"Create a new track called 'AI & Machine Learning.'"*
+</Tip>
+
+## Prerequisites for MCP access
+Before MCP requests will succeed, three things must be true on your account:
+
+1.  AI features must be enabled for your organization. Contact Sessionboard support or your account manager if you're not sure.
+2.  MCP access must be enabled on your organization (a separate feature flag).
+3.  MCP must be enabled on the API token, with the **read:insights** scope (and any write scopes you need).
+
+If any of these are missing, MCP requests will return a `403 Forbidden` error.
+
+<Note>
+For full MCP details: available tools, prompt templates, security model, and example conversations ,see the [MCP Server documentation](https://apidocs.sessionboard.com/insights/mcp-server).
+</Note>
+
+## Security and best practices
+- **Hide PII by default.** Leave the Hide PII toggle on unless you have a specific reason to expose full personal data.
+- **Scope tokens narrowly.** Generate separate tokens for separate integrations and grant only the scopes each one actually needs. A read-only Tableau dashboard doesn't need write scopes; a sync job that only updates sessions doesn't need write access to contacts.
+- **Restrict to specific events when possible.** If a token only needs access to one event, scope it that way rather than giving it organization-wide access.
+- **Rotate tokens periodically** and revoke them as soon as an integration is decommissioned or a team member leaves.
+- **Never commit tokens to source control or share them in chat.** If a token is compromised, revoke it immediately from the API Tokens settings page and generate a replacement.
+- **Audit log.** All API calls are recorded with source, method, response time, and token ID. Organization administrators can review this log at any time.
+
+## Managing and revoking tokens
+From the **Organization Settings → API Tokens** page you can:
+
+- Rename a token
+- Edit its scopes, MCP access, event restrictions, and Hide PII setting
+- Revoke a token immediately (any integration using it will stop working)
+
+Revoking a token cannot be undone. If you need to give the same integration access again, generate a new token and update the integration's configuration with the new value.
+
+### Rate limits and caching
+The Sessionboard API enforces rate limits to ensure fair usage. Build your integration to handle `429 Too Many Requests` responses with exponential backoff. Some endpoints (individual session retrieval and session search) are cached for 3 minutes, so changes you make in Sessionboard may take up to 3 minutes to appear in API responses. Webhook notifications are not subject to this cache and are delivered in real time.
+
+<Note>
+For full details, see [Rate Limiting](https://apidocs.sessionboard.com/rate-limiting).
+</Note>
+
+### Need help?
+- **Full API documentation:** [apidocs.sessionboard.com/introduction](https://apidocs.sessionboard.com/introduction)
+- **Authentication reference:** [apidocs.sessionboard.com/authentication](https://apidocs.sessionboard.com/authentication)
+- **MCP Server reference:** [apidocs.sessionboard.com/insights/mcp-server](https://apidocs.sessionboard.com/insights/mcp-server)
+- **Rate limiting:** [apidocs.sessionboard.com/rate-limiting](https://apidocs.sessionboard.com/rate-limiting)
+
+If your integration isn't behaving as expected after following this guide, reach out to your Sessionboard account manager or support team and include the token name (never the token value) along with the error message you're seeing.
+
+<Note>
+Need help? Contact us at [support@sessionboard.com](mailto:support@sessionboard.com)
+</Note>
