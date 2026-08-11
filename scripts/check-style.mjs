@@ -128,6 +128,44 @@ for (const file of files) {
     add(file, 'lost-table', `pandoc dropped a table here: ${m[0].trim().slice(0, 80)}`);
   }
 
+  // CommonMark nests a child list item only when it reaches the parent's
+  // content column. HubSpot wrote parents as "-  Item" (two spaces) with
+  // children indented by 2, so every child rendered as a sibling — the ASP
+  // page listed sync caveats as if they were synced fields. Run
+  // scripts/fix_lists.py to re-indent.
+  {
+    const stack = [];
+    let fenced = false;
+    prose.split('\n').forEach((line, i) => {
+      if (/^\s*(```|~~~)/.test(line)) fenced = !fenced;
+      if (fenced) return;
+      const m = line.match(/^(\s*)([-*+]|\d+[.)])(\s+)(?=\S)/);
+      if (!m) return;
+      const indent = m[1].length;
+      const contentCol = m[0].length;
+      while (stack.length && indent < stack.at(-1).indent) stack.pop();
+      const parent = stack.at(-1);
+      if (parent && indent > parent.indent && indent < parent.contentCol) {
+        add(file, 'flat-list', `line ${i + 1}: sub-bullet indented ${indent} but its parent's text starts at ${parent.contentCol}, so it renders as a sibling`);
+      }
+      if (!parent || indent > parent.indent) stack.push({ indent, contentCol });
+      else stack[stack.length - 1] = { indent, contentCol };
+    });
+  }
+
+  // A numbered list can't open at 2, so a lone "1." above a deeper "2." is the
+  // conversion having stranded a sub-list's first item at the parent's level.
+  {
+    const items = [...prose.matchAll(/^([ \t]*)(\d+)[.)][ \t]+(.+)$/gm)];
+    items.forEach((m, i) => {
+      const next = items[i + 1];
+      if (!next || m[2] !== '1' || next[2] !== '2') return;
+      if (next[1].length > m[1].length) {
+        add(file, 'orphan-list-item', `"${m[3].slice(0, 60)}" belongs with the deeper-indented steps below it`);
+      }
+    });
+  }
+
   // Starlight renders its own table of contents, so a bullet list of the page's
   // own headings is duplication left over from HubSpot's jump links.
   const headings = [...prose.matchAll(/^(#{2,6})\s+(.+?)\s*$/gm)];

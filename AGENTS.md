@@ -49,8 +49,21 @@ python3.13 scripts/rehost-images.py                  # pull screenshots local
 python3.13 scripts/normalize_images.py --apply       # unwrap images from headings/tables
 python3.13 scripts/fix-alt-text.py --apply           # alt text from surrounding prose
 python3.13 scripts/fix_legacy_links.py --apply       # /en/knowledge-base/* + dead anchors
+python3.13 scripts/fix_lists.py --write              # nesting, step screenshots, ZWSP junk
+python3.13 scripts/restore_bold_labels.py --write    # **Label:** lead-ins, from the archive
 npm run check:style && npm run build
 ```
+
+`fix_lists.py` and `restore_bold_labels.py` repair what conversion did to lists, which is
+the single largest source of "the data is there but it's hard to read" feedback. HubSpot
+wrote parents as `-  Item` — two spaces — so children indented by 2 fell short of the
+parent's content column and rendered as siblings; the ASP page listed sync caveats as if
+they were synced fields. Both scripts move whitespace and emphasis only, never prose, and
+both are idempotent, so re-run them after any restore. `check:style` fails on what they
+fix (`flat-list`, `orphan-list-item`), so a regression cannot ship.
+
+Both skip frontmatter, and `fix_lists.py` never pulls a list out to column 0 — a list
+inside a `<Step>` is indented on purpose and de-indenting it closes the component early.
 
 Restoring overwrites the page, so check `git log` first: where a page has been edited
 since the migration for product accuracy, merge by hand instead — the archive predates
