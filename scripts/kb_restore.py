@@ -74,9 +74,32 @@ def take_embeds(s: str, sink: list) -> str:
     return re.sub(r"<iframe\b[^>]*>.*?</iframe>|<iframe\b[^>]*/?>", sub, s, flags=re.S)
 
 
+def flatten_untranslatable_tables(html: str) -> str:
+    """Keep the cells of tables pandoc would throw away.
+
+    A GFM pipe table can't hold block content, so when a cell contains a list
+    pandoc gives up and emits the literal string "[TABLE]" — silently losing
+    the whole table. HubSpot used tables for layout rather than data, so unwrap
+    exactly the ones pandoc refuses and let the cells stand on their own.
+    Cells are concatenated bare: wrapping them in <div> would break the
+    depth counting in balanced_div().
+    """
+    def sub(m: re.Match) -> str:
+        table = m.group(0)
+        probe = subprocess.run(
+            ["pandoc", "-f", "html", "-t", "gfm-raw_html", "--wrap=none"],
+            input=table, capture_output=True, text=True,
+        ).stdout.strip()
+        if probe != "[TABLE]":
+            return table
+        return "\n".join(re.findall(r"<t[dh]\b[^>]*>(.*?)</t[dh]>", table, re.S))
+    return re.sub(r"<table\b.*?</table>", sub, html, flags=re.S)
+
+
 def convert(body: str) -> tuple[str, set]:
     """HubSpot article HTML -> MDX body plus the set of components used."""
     embeds: list[str] = []
+    body = flatten_untranslatable_tables(body)
     body = take_embeds(body, embeds)
 
     used, parts, i = set(), [], 0
@@ -110,6 +133,9 @@ def convert(body: str) -> tuple[str, set]:
     md = tidy("\n\n".join(out))
     for n, frame in enumerate(embeds):
         md = md.replace(f"@@EMBED{n}@@", frame)
+    if "[TABLE]" in md:
+        raise SystemExit("pandoc dropped a table it could not represent; "
+                         "flatten_untranslatable_tables() missed a case")
     return md, used
 
 

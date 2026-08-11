@@ -120,6 +120,14 @@ for (const file of files) {
 
   const prose = body.replace(/```[\s\S]*?```/g, '');
 
+  // A GFM pipe table can't hold block content, so pandoc replaces any table
+  // whose cells contain lists with the literal string "[TABLE]" — quietly
+  // dropping the whole thing. The 2026-08 restore shipped 12 of these before
+  // anyone noticed. Recover the content from .kb-archive; see AGENTS.md.
+  for (const m of prose.matchAll(/^.*\[TABLE\].*$/gm)) {
+    add(file, 'lost-table', `pandoc dropped a table here: ${m[0].trim().slice(0, 80)}`);
+  }
+
   // Starlight renders its own table of contents, so a bullet list of the page's
   // own headings is duplication left over from HubSpot's jump links.
   const headings = [...prose.matchAll(/^(#{2,6})\s+(.+?)\s*$/gm)];
