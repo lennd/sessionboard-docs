@@ -61,6 +61,81 @@ jobs:
       - name: Every article still produces retrievable chunks
         run: npm run index:check
 
+  # Merging used to publish nothing: the site went live only when someone
+  # remembered to run `wrangler deploy` by hand, so main could sit ahead of
+  # learn.sessionboard.com indefinitely with nothing saying so.
+  #
+  # This lives in the CI workflow rather than its own so that `needs: build` is
+  # the gate — a broken link, a marker naming a deleted feature, or an article
+  # that stopped producing retrievable chunks cannot reach production. It does
+  # not wait on Vale, which is advisory by design (`fail_on_error: false`) and
+  # should not be able to hold up a publish.
+  deploy:
+    name: Publish to learn.sessionboard.com
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    # Two merges in quick succession would otherwise race to upload assets, and
+    # the loser could overwrite the newer deployment. Queue instead of cancel:
+    # every merged commit should reach production.
+    concurrency:
+      group: docs-deploy
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      # Rebuilt rather than carried over as an artifact: dist is ~2,000 files
+      # including the pagefind index, which costs more to upload and download
+      # than to regenerate, and postbuild has to emit _internal/help-index.json
+      # either way.
+      - run: npm run build
+
+      - name: Deploy Worker and assets
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+      # A deploy that returns success can still serve a broken site — the
+      # 2026-07 incident was a published stylesheet that hid every article while
+      # every status code stayed 200. These are the assertions that would have
+      # caught the failures we have actually had.
+      - name: Smoke test the published site
+        run: |
+          set -euo pipefail
+          base=https://learn.sessionboard.com
+
+          code=$(curl -s -o /dev/null -w '%{http_code}' --retry 3 --retry-delay 3 "$base/")
+          [ "$code" = 200 ] || { echo "::error::home returned $code"; exit 1; }
+
+          # The canonical host must never inherit the preview host's noindex.
+          # Headers are captured first rather than piped into grep: `grep -q`
+          # exits on the first match, curl takes SIGPIPE, and under pipefail that
+          # non-zero status would read as "no header found" — the check would
+          # pass precisely when it should fail.
+          headers=$(curl -sI --retry 3 --retry-delay 3 "$base/")
+          if grep -qi 'x-robots-tag' <<<"$headers"; then
+            echo "::error::canonical host is sending X-Robots-Tag — it would deindex the Help Center"
+            exit 1
+          fi
+
+          # The legacy KB host has to keep redirecting; 311 mapped URLs depend on it.
+          code=$(curl -s -o /dev/null -w '%{http_code}' https://help.sessionboard.com/)
+          [ "$code" = 301 ] || { echo "::error::help.sessionboard.com returned $code, expected 301"; exit 1; }
+
+          # The whole corpus in one GET. Unauthenticated callers get the same 404
+          # an unknown path gets, so a regression here is a data leak, not a 500.
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$base/_internal/help-index.json")
+          [ "$code" = 404 ] || { echo "::error::/_internal/ answered $code unauthenticated, expected 404"; exit 1; }
+
+          echo "Published and smoke-tested $base"
+
   prose:
     name: Vale prose lint
     runs-on: ubuntu-latest
