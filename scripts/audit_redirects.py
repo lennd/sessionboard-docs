@@ -8,8 +8,8 @@ own sitemap, keeps serving an older `/en/migrated/knowledge-base/` prefix, and
 independent sources and every one is driven through the deployed Worker.
 
 Sources:
-  1. Live HubSpot sitemap        — what HubSpot serves today
-  2. Google Search Console       — indexed URLs HubSpot omits from its sitemap
+  1. Live sitemap                — every page the deployed site advertises
+  2. Google Search Console       — indexed URLs the sitemap omits
                                    (optional; needs GOOGLE_APPLICATION_CREDENTIALS)
   3. redirects-301.csv           — every slug we have ever mapped
   4. In-app links                — grepped from the product repos (optional)
@@ -91,13 +91,32 @@ def curl(url: str, fmt: str = "%{http_code} %{redirect_url}") -> str:
     ).stdout.strip()
 
 
-def sitemap_paths(url: str) -> set[str]:
+def sitemap_paths(url: str, _depth: int = 0) -> set[str]:
+    """
+    Every page the live sitemap advertises, following the index down to the
+    child sitemaps that hold the actual URLs.
+
+    Astro emits `/sitemap.xml` as a <sitemapindex> whose only entry is
+    `/sitemap-0.xml`, so a parser that reads one level sees a single URL — the
+    child sitemap — and calls it the live corpus. That is what this source used
+    to report: 1 URL instead of the 226 articles behind it, which meant a newly
+    published article was only ever checked if it also happened to appear in the
+    redirect CSV, Search Console, or an in-app link. The audit passed while
+    covering almost none of what the site serves.
+    """
     xml = subprocess.run(["curl", "-s", "-A", UA, url], capture_output=True, text=True).stdout
-    return {
-        loc.split("learn.sessionboard.com", 1)[1]
-        for loc in re.findall(r"<loc>(.*?)</loc>", xml)
-        if "learn.sessionboard.com" in loc
-    }
+    locs = [loc for loc in re.findall(r"<loc>(.*?)</loc>", xml)
+            if "learn.sessionboard.com" in loc]
+    if "<sitemapindex" in xml:
+        # Depth-bounded: an index that lists itself would otherwise recurse forever.
+        if _depth >= 3:
+            return set()
+        out = set()
+        for child in locs:
+            out |= sitemap_paths(child, _depth + 1)
+        return out
+    # The home entry has no path component; normalize it the way in-app links are.
+    return {loc.split("learn.sessionboard.com", 1)[1] or "/" for loc in locs}
 
 
 def csv_paths() -> set[str]:
