@@ -1,0 +1,48 @@
+---
+/**
+ * Marks a block as depending on one or more event settings being switched on.
+ *
+ * Same contract as IfFeature: semantics here, behaviour in the reader. Fully
+ * visible on the public site; collapsed behind a summary naming the reader's
+ * event in the product, with a deep link to the setting that turns it on.
+ *
+ * Usage:
+ *   <IfSetting id="enable_speaker_acceptance">
+ *   Speakers confirm from their portal before the session is locked.
+ *   </IfSetting>
+ *
+ * Ids are boolean columns on the Event model, validated against
+ * src/data/product-contract.json at build time.
+ */
+import contract from '../../data/product-contract.json';
+
+interface Props {
+  /** One or more event setting ids, space separated. All must be true. */
+  id: string;
+  /** Render as this element instead of a div (use "span" mid-sentence). */
+  as?: string;
+}
+
+const { id, as = 'div' } = Astro.props;
+
+const ids = String(id ?? '')
+  .split(/\s+/)
+  .filter(Boolean);
+
+if (ids.length === 0) {
+  throw new Error('<IfSetting> needs at least one setting id in `id`.');
+}
+
+const unknown = ids.filter((setting) => !contract.eventSettings.includes(setting));
+if (unknown.length > 0) {
+  throw new Error(
+    `<IfSetting id="${id}"> names unknown setting(s): ${unknown.join(', ')}.\n` +
+      '  Valid ids live in src/data/product-contract.json (boolean columns on the Event model).\n' +
+      '  If the setting is new, run `npm run contract:pull` and commit the result.',
+  );
+}
+
+const Tag = as;
+---
+
+<Tag data-sb-setting={ids.join(' ')}><slot /></Tag>

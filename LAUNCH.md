@@ -288,6 +288,41 @@ competitor scraping us ignores `robots.txt` — while risking the silent loss of
 search surface that matters later, since new AI engines appear faster than we would
 notice adding them to an allowlist. The teeth are at the edge.
 
+### The machine index — `/_internal/help-index.json`
+
+`npm run build` also emits `dist/_internal/help-index.json`: every article, chunked
+by heading, with a `contentHash` per article and the sanitized body HTML. This is
+what `sessionboard-web-api` pulls in nightly (`HELP_DOCS_SYNC`) to embed for Team
+Lead and for the in-product reader. It is the same exposure as the `llms-*.txt`
+dumps — the whole corpus in one GET — so the Worker gates every `/_internal/`
+request on a bearer token and answers a wrong or missing one with the same 404 an
+unknown path gets.
+
+**Deploying it needs one secret on each side, and they must match:**
+
+```bash
+# Help Center Worker (this repo). NOT a [vars] entry — that would commit it.
+cd sessionboard-docs && npx wrangler secret put HELP_INDEX_TOKEN
+
+# sessionboard-web-api, per environment
+HELP_INDEX_URL=https://learn.sessionboard.com/_internal/help-index.json
+HELP_INDEX_TOKEN=<the same value>
+```
+
+Verify after a deploy — the first is the failure mode to recognize, because a
+missing secret looks exactly like a missing file:
+
+```bash
+curl -sI https://learn.sessionboard.com/_internal/help-index.json            # 404
+curl -sI -H "Authorization: Bearer $HELP_INDEX_TOKEN" \
+  https://learn.sessionboard.com/_internal/help-index.json                    # 200
+```
+
+Leaving `HELP_INDEX_URL`/`HELP_INDEX_TOKEN` unset in web-api is a supported state:
+the sync job logs and no-ops rather than failing, so a review app without a Help
+Center does not page anyone. A token that is set but *wrong* fails the job loudly,
+which is the intended asymmetry.
+
 ### Still to do (needs Cloudflare dashboard access)
 
 The Worker stops crawlers that identify themselves honestly. A determined competitor

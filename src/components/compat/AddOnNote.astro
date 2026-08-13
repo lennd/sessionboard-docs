@@ -3,17 +3,48 @@
  * Callout for features that require enablement (paid add-ons or
  * support-enabled features): Speaker CRM, Awards, SSO, Insights,
  * Program Site, Custom Email Domain, etc.
+ *
+ * Takes a validated feature slug so the same callout can be personalized. On
+ * the public site it renders exactly what it always did — "Awards requires
+ * enablement, contact support". In the product the reader knows whether this
+ * event actually has the feature, so a customer who already owns Awards is not
+ * told to email support about Awards.
+ *
+ * `feature` must exist in src/data/product-contract.json. A free-text label is
+ * still accepted via `label` for the handful of things that are sold but are not
+ * feature flags; that form gets no personalization.
  */
 import { Aside } from '@astrojs/starlight/components';
+import contract from '../../data/product-contract.json';
 
 interface Props {
+  /** Feature slug from the product contract — enables personalization. */
   feature?: string;
+  /** Free-text name, for sold things that have no feature flag. */
+  label?: string;
 }
-const { feature } = Astro.props;
+
+const { feature, label } = Astro.props;
+
+if (feature && !contract.features.includes(feature)) {
+  throw new Error(
+    `<AddOnNote feature="${feature}"> is not a known feature.\n` +
+      '  Valid slugs live in src/data/product-contract.json.\n' +
+      '  If the feature is new, run `npm run contract:pull` and commit the result.',
+  );
+}
+
+const name = feature ? (contract.featureNames as Record<string, string>)[feature] : null;
+const subject = name ?? label ?? null;
 ---
 
 <Aside type="note" title="Add-on feature">
-  {feature ? `${feature} requires` : 'This feature requires'} enablement for your
-  organization. Contact <a href="mailto:support@sessionboard.com">support@sessionboard.com</a>
-  to get started.<slot />
+  <span data-sb-addon={feature ?? undefined}>
+    <span data-sb-addon-body>
+      {subject ? `${subject} requires` : 'This feature requires'} enablement for your
+      organization.
+    </span>
+    {' '}Contact <a href="mailto:support@sessionboard.com">support@sessionboard.com</a>
+    to get started.<slot />
+  </span>
 </Aside>

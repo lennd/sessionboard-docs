@@ -10,3 +10,7 @@ export { default as Accordion } from './Accordion.astro';
 export { default as AccordionGroup } from './AccordionGroup.astro';
 export { default as AddOnNote } from './AddOnNote.astro';
 export { default as Walkthrough } from './Walkthrough.astro';
+// Personalization markers — inert and fully visible on the public site,
+// hydrated against the reader's real event in the product. See MARKER_SPEC.md.
+export { default as IfFeature } from './IfFeature.astro';
+export { default as IfSetting } from './IfSetting.astro';

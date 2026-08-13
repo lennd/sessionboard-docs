@@ -1,0 +1,56 @@
+---
+/**
+ * Marks a block as depending on one or more product features.
+ *
+ * Declares SEMANTICS only — it never decides what "not enabled" looks like.
+ * On the public site the content renders normally and fully visible, so there
+ * is one canonical page, no crawler variance, and nothing hidden from search or
+ * AI answer engines. In the product (and for a signed-in reader on the Help
+ * Center) the hydrator collapses it behind a summary naming the reader's own
+ * event, with a link to turn the feature on. Content is never removed from the
+ * DOM on any surface.
+ *
+ * Usage:
+ *   <IfFeature id="awards">
+ *   Only relevant to customers with Awards.
+ *   </IfFeature>
+ *
+ *   <IfFeature id="awards payments">…</IfFeature>   // needs both
+ *
+ * Slugs are validated against src/data/product-contract.json at build time.
+ * Note that scope is resolved from the contract, not written here: `awards` is
+ * an org-level feature and `coordinators` an event-level one, and an author
+ * should not have to know the difference.
+ */
+import contract from '../../data/product-contract.json';
+
+interface Props {
+  /** One or more feature slugs, space separated. All must be enabled. */
+  id: string;
+  /** Render as this element instead of a div (use "span" mid-sentence). */
+  as?: string;
+}
+
+const { id, as = 'div' } = Astro.props;
+
+const ids = String(id ?? '')
+  .split(/\s+/)
+  .filter(Boolean);
+
+if (ids.length === 0) {
+  throw new Error('<IfFeature> needs at least one feature slug in `id`.');
+}
+
+const unknown = ids.filter((slug) => !contract.features.includes(slug));
+if (unknown.length > 0) {
+  throw new Error(
+    `<IfFeature id="${id}"> names unknown feature(s): ${unknown.join(', ')}.\n` +
+      '  Valid slugs live in src/data/product-contract.json.\n' +
+      '  If the feature is new, run `npm run contract:pull` and commit the result.',
+  );
+}
+
+const Tag = as;
+---
+
+<Tag data-sb-feature={ids.join(' ')}><slot /></Tag>
