@@ -29,6 +29,9 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSy
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { absolutizeAssets } from '../src/lib/absolutize-assets.mjs';
+import { annotateImages, imageSize } from '../src/lib/annotate-images.mjs';
+
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const DOCS = join(ROOT, 'src', 'content', 'docs');
 const DIST = join(ROOT, 'dist');
@@ -328,6 +331,30 @@ function walk(dir) {
 const canonical = (slug, anchor) =>
   `https://${site.canonicalHost}${slug}${anchor ? `#${anchor}` : ''}`;
 
+/**
+ * Intrinsic size of an image the build already produced, memoized because the
+ * same screenshot appears in several articles and the corpus has 1,200 of them.
+ */
+const sizeCache = new Map();
+const localImageSize = (src) => {
+  const path = src.startsWith(`https://${site.canonicalHost}/`)
+    ? src.slice(`https://${site.canonicalHost}`.length)
+    : src;
+  if (!path.startsWith('/')) return null; // hosted elsewhere; nothing to measure
+
+  const file = join(DIST, decodeURIComponent(path.split('?')[0]).slice(1));
+  if (sizeCache.has(file)) return sizeCache.get(file);
+
+  let size = null;
+  try {
+    size = imageSize(readFileSync(file));
+  } catch {
+    // A missing file is check-images.mjs's job to report, not this script's.
+  }
+  sizeCache.set(file, size);
+  return size;
+};
+
 if (!existsSync(DIST)) {
   console.error('\n✖ No dist/ — run `npm run build` before building the help index.\n');
   process.exit(1);
@@ -348,7 +375,13 @@ for (const file of walk(DOCS).sort()) {
   }
 
   const front = readFrontmatter(readFileSync(file, 'utf8'));
-  const bodyHtml = extractArticleHtml(readFileSync(htmlPath, 'utf8'));
+  const extracted = extractArticleHtml(readFileSync(htmlPath, 'utf8'));
+  const bodyHtml =
+    extracted &&
+    annotateImages(
+      absolutizeAssets(extracted, site.canonicalHost),
+      localImageSize,
+    );
   if (!bodyHtml) {
     problems.push(`${rel}: could not find sl-markdown-content in the built page`);
     continue;
