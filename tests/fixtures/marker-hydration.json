@@ -1,0 +1,226 @@
+{
+  "//": "Shared corpus for the marker hydration spec. Vendored into sessionboard-web-ui-v2 by scripts/sync-marker-hydration.mjs and executed there (it has a DOM test runner). Cases carry their own miniature contract so that adding a real product feature can never break a fixture.",
+  "specVersion": 1,
+  "contract": {
+    "features": ["awards", "sessions", "coordinators", "marketing"],
+    "featureScopes": {
+      "awards": ["org"],
+      "sessions": ["event", "org"],
+      "coordinators": ["event"],
+      "marketing": ["event", "org"]
+    },
+    "featureIdBySlug": {
+      "event": {
+        "sessions": "ea57fa34-9f92-48f2-93f8-d3d76cbeab74",
+        "coordinators": "coordinators",
+        "marketing": "marketing"
+      },
+      "org": { "awards": "awards", "sessions": "sessions", "marketing": "marketing" }
+    },
+    "featureNames": {
+      "awards": "Awards",
+      "sessions": "Sessions",
+      "coordinators": "AI Event Agents",
+      "marketing": "Marketing"
+    }
+  },
+  "cases": [
+    {
+      "name": "event feature enabled renders normally",
+      "context": { "eventName": "Acme Summit", "features": { "event": ["coordinators"] } },
+      "input": "<div data-sb-feature=\"coordinators\"><p>Run the agent.</p></div>",
+      "expected": "<div data-sb-feature=\"coordinators\" data-sb-state=\"met\"><p>Run the agent.</p></div>"
+    },
+    {
+      "name": "event feature disabled collapses and names the event",
+      "context": { "eventName": "Acme Summit", "features": { "event": [] } },
+      "input": "<div data-sb-feature=\"coordinators\"><p>Run the agent.</p></div>",
+      "expected": "<details data-sb-collapse=\"\" class=\"sb-marker-collapsed\"><summary>AI Event Agents isn't enabled for Acme Summit</summary><div data-sb-feature=\"coordinators\" data-sb-state=\"unmet\" data-sb-reason=\"AI Event Agents\"><p>Run the agent.</p></div></details>"
+    },
+    {
+      "name": "no context at all leaves the block untouched and visible",
+      "context": {},
+      "input": "<div data-sb-feature=\"coordinators\"><p>Run the agent.</p></div>",
+      "expected": "<div data-sb-feature=\"coordinators\" data-sb-state=\"unknown\"><p>Run the agent.</p></div>"
+    },
+    {
+      "name": "sessions resolves through the module UUID rather than its slug",
+      "context": {
+        "eventName": "Acme Summit",
+        "features": { "event": ["ea57fa34-9f92-48f2-93f8-d3d76cbeab74"] }
+      },
+      "input": "<div data-sb-feature=\"sessions\"><p>Create a session.</p></div>",
+      "expected": "<div data-sb-feature=\"sessions\" data-sb-state=\"met\"><p>Create a session.</p></div>"
+    },
+    {
+      "name": "org-scope feature is satisfied by org entitlements",
+      "context": {
+        "eventName": "Acme Summit",
+        "features": { "event": [], "org": ["awards"] }
+      },
+      "input": "<div data-sb-feature=\"awards\"><p>Score a submission.</p></div>",
+      "expected": "<div data-sb-feature=\"awards\" data-sb-state=\"met\"><p>Score a submission.</p></div>"
+    },
+    {
+      "name": "org-scope feature collapses when org entitlements say no",
+      "context": { "eventName": "Acme Summit", "features": { "event": [], "org": [] } },
+      "input": "<div data-sb-feature=\"awards\"><p>Score a submission.</p></div>",
+      "expected": "<details data-sb-collapse=\"\" class=\"sb-marker-collapsed\"><summary>Awards isn't enabled for Acme Summit</summary><div data-sb-feature=\"awards\" data-sb-state=\"unmet\" data-sb-reason=\"Awards\"><p>Score a submission.</p></div></details>"
+    },
+    {
+      "name": "org-scope feature stays visible when only event data is loaded",
+      "context": { "eventName": "Acme Summit", "features": { "event": ["coordinators"] } },
+      "input": "<div data-sb-feature=\"awards\"><p>Score a submission.</p></div>",
+      "expected": "<div data-sb-feature=\"awards\" data-sb-state=\"unknown\"><p>Score a submission.</p></div>"
+    },
+    {
+      "name": "a slug missing from the contract fails open",
+      "context": { "eventName": "Acme Summit", "features": { "event": [], "org": [] } },
+      "input": "<div data-sb-feature=\"renamed_last_week\"><p>Legacy block.</p></div>",
+      "expected": "<div data-sb-feature=\"renamed_last_week\" data-sb-state=\"unknown\"><p>Legacy block.</p></div>"
+    },
+    {
+      "name": "setting on renders normally",
+      "context": {
+        "eventName": "Acme Summit",
+        "settings": { "enable_speaker_acceptance": true }
+      },
+      "input": "<div data-sb-setting=\"enable_speaker_acceptance\"><p>Speakers accept.</p></div>",
+      "expected": "<div data-sb-setting=\"enable_speaker_acceptance\" data-sb-state=\"met\"><p>Speakers accept.</p></div>"
+    },
+    {
+      "name": "setting off collapses with a link to the setting",
+      "context": {
+        "eventName": "Acme Summit",
+        "settings": { "enable_speaker_acceptance": false },
+        "settingHref": "/event/42/sessions/settings"
+      },
+      "input": "<div data-sb-setting=\"enable_speaker_acceptance\"><p>Speakers accept.</p></div>",
+      "expected": "<details data-sb-collapse=\"\" class=\"sb-marker-collapsed\"><summary>Speaker acceptance isn't enabled for Acme Summit</summary><div data-sb-setting=\"enable_speaker_acceptance\" data-sb-state=\"unmet\" data-sb-reason=\"Speaker acceptance\"><p>Speakers accept.</p></div><a data-sb-enable=\"\" class=\"sb-marker-enable\" href=\"/event/42/sessions/settings\">Open this setting</a></details>"
+    },
+    {
+      "name": "unknown setting stays visible",
+      "context": { "eventName": "Acme Summit", "settings": {} },
+      "input": "<div data-sb-setting=\"enable_speaker_acceptance\"><p>Speakers accept.</p></div>",
+      "expected": "<div data-sb-setting=\"enable_speaker_acceptance\" data-sb-state=\"unknown\"><p>Speakers accept.</p></div>"
+    },
+    {
+      "name": "one unmet token collapses the whole block",
+      "context": {
+        "eventName": "Acme Summit",
+        "features": { "event": ["coordinators"] },
+        "settings": { "enable_speaker_acceptance": false }
+      },
+      "input": "<div data-sb-feature=\"coordinators\" data-sb-setting=\"enable_speaker_acceptance\"><p>Both needed.</p></div>",
+      "expected": "<details data-sb-collapse=\"\" class=\"sb-marker-collapsed\"><summary>Speaker acceptance isn't enabled for Acme Summit</summary><div data-sb-feature=\"coordinators\" data-sb-setting=\"enable_speaker_acceptance\" data-sb-state=\"unmet\" data-sb-reason=\"Speaker acceptance\"><p>Both needed.</p></div></details>"
+    },
+    {
+      "name": "two unmet tokens read as a sentence",
+      "context": {
+        "eventName": "Acme Summit",
+        "features": { "event": [] },
+        "settings": { "enable_speaker_acceptance": false }
+      },
+      "input": "<div data-sb-feature=\"coordinators\" data-sb-setting=\"enable_speaker_acceptance\"><p>Both needed.</p></div>",
+      "expected": "<details data-sb-collapse=\"\" class=\"sb-marker-collapsed\"><summary>AI Event Agents and Speaker acceptance aren't enabled for Acme Summit</summary><div data-sb-feature=\"coordinators\" data-sb-setting=\"enable_speaker_acceptance\" data-sb-state=\"unmet\" data-sb-reason=\"AI Event Agents, Speaker acceptance\"><p>Both needed.</p></div></details>"
+    },
+    {
+      "name": "collapsed summary omits the event when none is known",
+      "context": { "features": { "event": [] } },
+      "input": "<div data-sb-feature=\"coordinators\"><p>Run the agent.</p></div>",
+      "expected": "<details data-sb-collapse=\"\" class=\"sb-marker-collapsed\"><summary>AI Event Agents isn't enabled</summary><div data-sb-feature=\"coordinators\" data-sb-state=\"unmet\" data-sb-reason=\"AI Event Agents\"><p>Run the agent.</p></div></details>"
+    },
+    {
+      "name": "app link resolves to this event",
+      "context": { "routes": { "EventSessionForms": "/event/42/sessions/forms" } },
+      "input": "<p>Open the <a data-sb-route=\"EventSessionForms\" href=\"#\">form builder</a>.</p>",
+      "expected": "<p>Open the <a data-sb-route=\"EventSessionForms\" href=\"/event/42/sessions/forms\" data-sb-state=\"resolved\">form builder</a>.</p>"
+    },
+    {
+      "name": "unresolvable app link keeps its sentence but loses the href",
+      "context": {},
+      "input": "<p>Open the <a data-sb-route=\"EventSessionForms\" href=\"#\">form builder</a>.</p>",
+      "expected": "<p>Open the <a data-sb-route=\"EventSessionForms\" data-sb-state=\"unresolved\">form builder</a>.</p>"
+    },
+    {
+      "name": "unresolvable app link with no label falls back to the route label",
+      "context": { "routeLabels": { "EventSessionForms": "the session form builder" } },
+      "input": "<p>Open <a data-sb-route=\"EventSessionForms\" href=\"#\"></a>.</p>",
+      "expected": "<p>Open <a data-sb-route=\"EventSessionForms\" data-sb-state=\"unresolved\">the session form builder</a>.</p>"
+    },
+    {
+      "name": "add-on callout tells an entitled customer they already have it",
+      "context": { "eventName": "Acme Summit", "features": { "org": ["awards"] } },
+      "input": "<aside data-sb-addon=\"awards\"><p data-sb-addon-body>Awards requires enablement. Contact support.</p></aside>",
+      "expected": "<aside data-sb-addon=\"awards\" data-sb-state=\"met\"><p data-sb-addon-body=\"\">Awards is enabled for Acme Summit.</p></aside>"
+    },
+    {
+      "name": "add-on callout names the event when not entitled",
+      "context": { "eventName": "Acme Summit", "features": { "org": [] } },
+      "input": "<aside data-sb-addon=\"awards\"><p data-sb-addon-body>Awards requires enablement. Contact support.</p></aside>",
+      "expected": "<aside data-sb-addon=\"awards\" data-sb-state=\"unmet\"><p data-sb-addon-body=\"\">Awards isn't enabled for Acme Summit.</p></aside>"
+    },
+    {
+      "name": "add-on callout is left alone with no entitlement data",
+      "context": { "eventName": "Acme Summit" },
+      "input": "<aside data-sb-addon=\"awards\"><p data-sb-addon-body>Awards requires enablement. Contact support.</p></aside>",
+      "expected": "<aside data-sb-addon=\"awards\" data-sb-state=\"unknown\"><p data-sb-addon-body=\"\">Awards requires enablement. Contact support.</p></aside>"
+    },
+    {
+      "name": "sibling blocks are all visited when an earlier one collapses",
+      "context": { "eventName": "Acme Summit", "features": { "event": ["marketing"] } },
+      "input": "<div><div data-sb-feature=\"coordinators\"><p>One.</p></div><div data-sb-feature=\"marketing\"><p>Two.</p></div></div>",
+      "expected": "<div><details data-sb-collapse=\"\" class=\"sb-marker-collapsed\"><summary>AI Event Agents isn't enabled for Acme Summit</summary><div data-sb-feature=\"coordinators\" data-sb-state=\"unmet\" data-sb-reason=\"AI Event Agents\"><p>One.</p></div></details><div data-sb-feature=\"marketing\" data-sb-state=\"met\"><p>Two.</p></div></div>"
+    },
+    {
+      "name": "nested markers each evaluate independently",
+      "context": { "eventName": "Acme Summit", "features": { "event": ["marketing"], "org": [] } },
+      "input": "<div data-sb-feature=\"marketing\"><p>Outer.</p><div data-sb-feature=\"awards\"><p>Inner.</p></div></div>",
+      "expected": "<div data-sb-feature=\"marketing\" data-sb-state=\"met\"><p>Outer.</p><details data-sb-collapse=\"\" class=\"sb-marker-collapsed\"><summary>Awards isn't enabled for Acme Summit</summary><div data-sb-feature=\"awards\" data-sb-state=\"unmet\" data-sb-reason=\"Awards\"><p>Inner.</p></div></details></div>"
+    },
+    {
+      "name": "re-hydrating an unmet block as met removes the collapse",
+      "context": { "eventName": "Acme Summit", "features": { "event": ["coordinators"] } },
+      "input": "<details data-sb-collapse=\"\" class=\"sb-marker-collapsed\"><summary>AI Event Agents isn't enabled for Acme Summit</summary><div data-sb-feature=\"coordinators\" data-sb-state=\"unmet\" data-sb-reason=\"AI Event Agents\"><p>Run the agent.</p></div></details>",
+      "expected": "<div data-sb-feature=\"coordinators\" data-sb-state=\"met\"><p>Run the agent.</p></div>"
+    },
+    {
+      "name": "re-hydrating a collapsed block for a different event renames the summary",
+      "context": { "eventName": "Globex Congress", "features": { "event": [] } },
+      "input": "<details data-sb-collapse=\"\" class=\"sb-marker-collapsed\"><summary>AI Event Agents isn't enabled for Acme Summit</summary><div data-sb-feature=\"coordinators\" data-sb-state=\"unmet\" data-sb-reason=\"AI Event Agents\"><p>Run the agent.</p></div></details>",
+      "expected": "<details data-sb-collapse=\"\" class=\"sb-marker-collapsed\"><summary>AI Event Agents isn't enabled for Globex Congress</summary><div data-sb-feature=\"coordinators\" data-sb-state=\"unmet\" data-sb-reason=\"AI Event Agents\"><p>Run the agent.</p></div></details>"
+    },
+    {
+      "name": "unmarked content is never touched",
+      "context": { "eventName": "Acme Summit", "features": { "event": [] } },
+      "input": "<div><h2>Heading</h2><p>Plain paragraph with <a href=\"/other\">a link</a>.</p></div>",
+      "expected": "<div><h2>Heading</h2><p>Plain paragraph with <a href=\"/other\">a link</a>.</p></div>"
+    }
+  ],
+  "applicabilityCases": [
+    {
+      "name": "no frontmatter features applies to everyone",
+      "features": [],
+      "context": { "features": { "event": [] } },
+      "expected": { "state": "met", "missing": [] }
+    },
+    {
+      "name": "entitled reader sees no banner",
+      "features": ["coordinators"],
+      "context": { "features": { "event": ["coordinators"] } },
+      "expected": { "state": "met", "missing": [] }
+    },
+    {
+      "name": "unentitled reader gets a named banner",
+      "features": ["awards"],
+      "context": { "features": { "org": [] } },
+      "expected": { "state": "unmet", "missing": ["Awards"] }
+    },
+    {
+      "name": "no context means no banner rather than a wrong one",
+      "features": ["awards"],
+      "context": {},
+      "expected": { "state": "unknown", "missing": [] }
+    }
+  ]
+}

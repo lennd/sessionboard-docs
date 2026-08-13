@@ -5,6 +5,7 @@ import starlightLlmsTxt from 'starlight-llms-txt';
 import starlightLinksValidator from 'starlight-links-validator';
 import sidebar from './src/sidebar.json' with { type: 'json' };
 import site from './site.json' with { type: 'json' };
+import rehypeAppLinks from './plugins/rehype-app-links.mjs';
 
 export default defineConfig({
   site: `https://${site.canonicalHost}`,
@@ -12,6 +13,11 @@ export default defineConfig({
   // Emit /path.html instead of /path/index.html so Workers assets serve
   // /sessions/create-a-session without a trailing-slash redirect hop.
   build: { format: 'file' },
+  markdown: {
+    // Turns `[label](app:RouteId)` into a data-sb-route marker the in-app
+    // reader resolves against the reader's own event. Throws on an unknown id.
+    rehypePlugins: [rehypeAppLinks],
+  },
   integrations: [
     starlight({
       title: 'Sessionboard Help Center',

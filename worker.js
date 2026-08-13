@@ -92,6 +92,57 @@ const BLOCKED_UA_RE = new RegExp(
 // not from these, so withholding them costs no visibility.
 const BULK_EXPORTS = new Set(['/llms.txt', '/llms-full.txt', '/llms-small.txt']);
 
+// ── Machine surface ─────────────────────────────────────────────────────
+// dist/_internal/help-index.json is the whole corpus, chunked, that web-api
+// pulls in to embed for Team Lead. The ASSETS binding would happily serve it to
+// anyone who guessed the path — it is the single most valuable bulk export on
+// the site — so every /_internal/ request needs a bearer token.
+const INTERNAL_PREFIX = '/_internal/';
+
+/**
+ * Compare a presented token against the configured one without leaking its
+ * length or matching prefix through response timing. Workers has no
+ * timingSafeEqual, so both sides are SHA-256'd to a fixed width first and the
+ * digests compared with a branch-free loop.
+ */
+async function tokenMatches(presented, expected) {
+  if (!presented || !expected) return false;
+  const digest = async (value) =>
+    new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value)));
+  const [a, b] = await Promise.all([digest(presented), digest(expected)]);
+  let diff = 0;
+  for (let i = 0; i < a.length; i += 1) diff |= a[i] ^ b[i];
+  return diff === 0;
+}
+
+/**
+ * Serve the machine index to an authorized caller.
+ *
+ * A wrong or missing token gets the same 404 an unknown path would, so probing
+ * cannot confirm the endpoint exists. Deliberately absent from robots.txt for
+ * the same reason — a Disallow line would advertise the path, and the token is
+ * the actual control. Never cached: the sync job diffs by contentHash and a
+ * stale edge copy would silently pin retrieval to an old corpus.
+ */
+async function internalResponse(request, url, env) {
+  const presented = (request.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');
+  const notFound = new Response('Not found\n', {
+    status: 404,
+    headers: { 'Content-Type': 'text/plain; charset=utf-8', 'X-Robots-Tag': 'noindex' },
+  });
+
+  if (!(await tokenMatches(presented, env.HELP_INDEX_TOKEN))) return notFound;
+
+  const asset = await env.ASSETS.fetch(new Request(url.toString(), { method: 'GET' }));
+  if (!asset.ok) return notFound;
+
+  const headers = new Headers(asset.headers);
+  headers.set('Content-Type', 'application/json; charset=utf-8');
+  headers.set('Cache-Control', 'no-store');
+  headers.set('X-Robots-Tag', 'noindex, nofollow');
+  return new Response(asset.body, { status: 200, headers });
+}
+
 // HubSpot slugs sometimes appear with and without their numeric ID prefix
 // (e.g. `9156219-cvent-integration` vs `cvent-integration`). Index both forms;
 // prefix-stripped keys are collision-free (verified against the full map).
@@ -179,6 +230,12 @@ export default {
     // robots.txt is served before any gating so crawlers can always read the policy.
     if (url.pathname === '/robots.txt') {
       return robotsResponse(isProd);
+    }
+
+    // Ahead of the crawler gate: this is a service-to-service call, and it must
+    // not be judged by a User-Agent it does not set.
+    if (url.pathname.startsWith(INTERNAL_PREFIX)) {
+      return internalResponse(request, url, env);
     }
 
     const ua = request.headers.get('User-Agent') ?? '';
