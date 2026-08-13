@@ -140,6 +140,14 @@ def gsc_paths(days: int = 480) -> set[str]:
 
 
 def inapp_paths() -> set[str]:
+    """
+    Help Center URLs the product actually sends people to.
+
+    Test fixtures and doc comments are excluded, and they are the reason this
+    filtering exists at all: a made-up slug in a unit test is not a link any user
+    can follow, but it reports here as a hard failure indistinguishable from a real
+    broken redirect. An audit that cries wolf stops being read.
+    """
     dirs = [ROOT.parent / r / "src" for r in
             ("sessionboard-web-api", "sessionboard-web-ui-v2", "sessionboard-web-ui")]
     dirs = [str(d) for d in dirs if d.exists()]
@@ -147,11 +155,16 @@ def inapp_paths() -> set[str]:
         return set()
     res = subprocess.run(
         ["rg", "-o", "--no-heading", "--no-filename",
+         "--glob", "!*.test.*", "--glob", "!*.spec.*", "--glob", "!*.stories.*",
+         "--glob", "!**/__tests__/**", "--glob", "!**/__mocks__/**",
+         "--glob", "!**/tests/**", "--glob", "!**/fixtures/**",
          r"https?://learn\.sessionboard\.com[^\"'\` <)\\]*", *dirs],
         capture_output=True, text=True,
     )
-    return {ln.split("learn.sessionboard.com", 1)[1] or "/"
-            for ln in res.stdout.splitlines() if ln.strip()}
+    paths = {ln.split("learn.sessionboard.com", 1)[1] or "/"
+             for ln in res.stdout.splitlines() if ln.strip()}
+    # A prose placeholder such as `https://learn.sessionboard.com/…` is not a URL.
+    return {p for p in paths if p.isascii()}
 
 
 def check(base: str, path: str) -> dict:
@@ -160,7 +173,11 @@ def check(base: str, path: str) -> dict:
     code = out[0]
     loc = (out[1] if len(out) > 1 else "").strip().replace(base, "").split("?")[0]
     target_code = ""
-    if code == "301" and loc:
+    # 307/308 as well as 301: the Worker runs `html_handling = auto-trailing-slash`,
+    # so `/sessions/agenda/` normalizes to `/sessions/agenda` with a temporary
+    # redirect. That is the configured behavior, and following it is what tells a
+    # normalization apart from a loop.
+    if code in ("301", "307", "308") and loc:
         # Some redirects deliberately leave the Help Center — /release-notes/*
         # goes to the Canny changelog. Those keep their absolute URL after the
         # base is stripped, so they must be fetched as-is; prefixing the base
@@ -245,13 +262,17 @@ def main() -> int:
     # straight from the Worker with no hop. Those are the best possible outcome,
     # not a failure — only legacy URLs are expected to arrive via a 301.
     direct = [r for r in results if r["code"] == "200"]
-    ok = redirected + direct
+    # Trailing-slash normalization by the Worker's own asset handling.
+    normalized = [r for r in results
+                  if r["code"] in ("307", "308") and r["target_code"] == "200"]
+    ok = redirected + direct + normalized
     fallback = [r for r in redirected if is_fallthrough(r)]
     failed = [r for r in results if r not in ok]
 
     print(f"  reach a live page:              {len(ok)}/{len(results)}")
     print(f"    already canonical (200):      {len(direct)}")
     print(f"    redirected (301 -> 200):      {len(redirected)}")
+    print(f"    slash-normalized (307 -> 200):{len(normalized)}")
     print(f"  fell through to the fallback:   {len(fallback)}")
     print(f"  FAILED:                         {len(failed)}")
 

@@ -25,6 +25,16 @@ jobs:
       - name: Structure and frontmatter follow STYLE.md
         run: node scripts/check-style.mjs
 
+      # Runs before the build because it reports EVERY bad id at once in under a
+      # second, where the build fails on the first one from inside a component.
+      - name: Personalization markers name things that exist
+        run: npm run markers:check
+
+      # A marker naming a renamed feature fails silently at runtime — the block
+      # never satisfies, so a customer who owns Awards is told they do not.
+      - name: Marker hydrator honours the spec
+        run: npm test
+
       - name: Breadcrumb data is fresh
         run: |
           node scripts/build-breadcrumbs.mjs
@@ -43,6 +53,13 @@ jobs:
             echo '::error::redirects-map.json is stale — run `node scripts/redirects-to-map.mjs` after building and commit the result.'
             exit 1
           }
+
+      # The index is what Team Lead retrieves over, so an article that stops
+      # producing chunks stops being answerable — silently, and only in the
+      # product. Checked here rather than at sync time, where the corpus has
+      # already shipped.
+      - name: Every article still produces retrievable chunks
+        run: npm run index:check
 
   prose:
     name: Vale prose lint
