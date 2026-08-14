@@ -1,0 +1,73 @@
+---
+title: "Brella"
+description: "Push speakers and content timeslots from Sessionboard to a Brella event, and unpublish them when they leave the accepted set."
+---
+
+import { Note, Steps, Step } from '@compat';
+
+<img src="/logo/apps/brella-integration.png" alt="Brella logo" width="52" height="52" style={{borderRadius:"12px"}} />
+
+Brella is an event networking and content platform. Connect a Sessionboard event to a Brella event and Sessionboard pushes speakers and content timeslots, then keeps them aligned on a 30-minute cadence.
+
+Each Brella event is its own connection. Sessionboard matches remote records by `external_id`, which is the Sessionboard contact or session id.
+
+## Connect Brella
+
+You can start from **Apps** on the organization or the event. The **Settings → Integrations** Brella tile opens the same page.
+
+<Steps>
+  <Step title="Open the Brella app">
+    Go to **Apps**, then click **Brella**. Click **Connect Brella**.
+  </Step>
+  <Step title="Name the connection">
+    Enter a **Name** — for example, the show year. A name is required because you can add more than one Brella connection.
+  </Step>
+  <Step title="Enter event credentials">
+    Fill in the values from your Brella organization:
+
+    - **Brella API Access Token**
+    - **Brella Organization ID**
+    - **Brella Event ID** — Brella's event id, not the Sessionboard event id.
+  </Step>
+  <Step title="Check timezones">
+    Confirm the Brella event timezone matches the Sessionboard event timezone on **Settings → Event Details**. Then click **Save connection**. Sessionboard verifies the token before it stores the connection.
+  </Step>
+</Steps>
+
+<Note>
+Credentials are encrypted at rest and are not shown again after you save. Leave a secret blank when you edit a connection to keep the current value.
+</Note>
+
+## What syncs
+
+Only **accepted** sessions and the people on those sessions sync.
+
+| Sessionboard | Brella |
+| --- | --- |
+| Speaker, moderator, or chairperson on an accepted session | Speaker (name, email, company, role, `external_id` = the contact id) |
+| Accepted session | Content timeslot (title, description, start, end, `external_id` = the session id) |
+| Person on a session | Speaker attached to that timeslot |
+
+When a session or participant leaves the accepted set, Sessionboard unpublishes the matching Brella record. Meetings and RSVPs on that record stay intact because the record is hidden, not removed.
+
+## Field mappings
+
+After the connection is saved, open **Field mappings** on the Brella app page to change which Sessionboard fields map to Brella for that connection. Defaults cover name, email, company, role, title, description, and times.
+
+## Run a sync
+
+Scheduled sync runs about every 30 minutes once the connection is saved.
+
+To push immediately, open the connection on the Brella app page and click **Sync**. **Check drift** compares Sessionboard to Brella without writing.
+
+Accept the sessions you want in Brella, and confirm timezones match, before the first sync.
+
+## Add or remove a connection
+
+Click **Add a connection** to point a second Brella event at the same Sessionboard event.
+
+To remove a connection, use the trash control on that row. Previously synced Brella records stay in Brella; Sessionboard stops updating them.
+
+## Still having issues?
+
+Email [support@sessionboard.com](mailto:support@sessionboard.com) and include the connection name, the Brella organization and event id, and the session or contact that did not sync.

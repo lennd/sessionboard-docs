@@ -1,0 +1,79 @@
+---
+title: "LiveBuzz"
+description: "Push accepted sessions, rooms, and speakers from Sessionboard to a LiveBuzz campaign, then keep them in sync."
+---
+
+import { Note, Steps, Step } from '@compat';
+
+<img src="/logo/apps/livebuzz-integration.png" alt="LiveBuzz logo" width="52" height="52" style={{borderRadius:"12px"}} />
+
+LiveBuzz (LiveControl) is the campaign and registration system behind many Clarion and other large-format events. Connect a Sessionboard event to a LiveBuzz campaign and Sessionboard pushes accepted sessions, rooms, and speakers on a 30-minute cadence.
+
+Each campaign is its own connection. Name them so two campaigns on the same event stay distinct.
+
+## Connect LiveBuzz
+
+You can start from **Apps** on the organization or the event. The **Settings → Integrations** LiveBuzz tile opens the same page.
+
+<Steps>
+  <Step title="Open the LiveBuzz app">
+    Go to **Apps**, then click **LiveBuzz**. Click **Connect LiveBuzz**.
+  </Step>
+  <Step title="Name the connection">
+    Enter a **Name** — for example, the campaign or show year. A name is required because you can add more than one LiveBuzz connection.
+  </Step>
+  <Step title="Enter campaign credentials">
+    Fill in the fields from your LiveBuzz account:
+
+    - **LiveBuzz API Key**
+    - **LiveBuzz Organization** — the subdomain, such as `clarion` for `clarion.control.buzz`
+    - **LiveBuzz Campaign ID**
+    - **LiveBuzz Domain** — leave blank to use `control.buzz`. UAT uses `control.dev.uat.buzz`.
+  </Step>
+  <Step title="Choose what to push">
+    Leave **Push sessions (seminars)** and **Push speakers (customers)** on unless you only want rooms. Click **Save connection**. Sessionboard verifies the key before it stores the connection.
+  </Step>
+</Steps>
+
+<Note>
+Credentials are encrypted at rest and are not shown again after you save. Leave a secret blank when you edit a connection to keep the current value.
+</Note>
+
+## What syncs
+
+Only **accepted** sessions and the people on those sessions sync. Rooms come from the event's session rooms.
+
+| Sessionboard | LiveBuzz |
+| --- | --- |
+| Session room | Theater (`source` = `sessionboard`, `source_id` = the room id) |
+| Accepted session | Seminar (title, description, start, end, theater) |
+| Speaker, moderator, or chairperson on an accepted session | Customer (name, email, company, biography) |
+| Person on a session | Customer–seminar registration, with their role |
+
+Sessionboard looks up existing LiveBuzz records by `source` + `source_id`, so a second sync updates the same theater, seminar, or customer instead of creating a duplicate.
+
+When a session leaves the accepted set, Sessionboard cancels that speaker's LiveBuzz registration. The customer record stays.
+
+The LiveBuzz registration id and badge id write back onto the Sessionboard contact when LiveBuzz returns them.
+
+## Field mappings
+
+After the connection is saved, open **Field mappings** on the LiveBuzz app page to change which Sessionboard fields map to LiveBuzz for that connection. Defaults cover the standard name, email, company, biography, title, description, and time fields.
+
+## Run a sync
+
+Scheduled sync runs about every 30 minutes once the connection is saved.
+
+To push immediately, open the connection on the LiveBuzz app page and click **Sync**. **Check drift** compares Sessionboard to LiveBuzz without writing.
+
+Accept the sessions you want in LiveBuzz, and assign rooms, before the first sync.
+
+## Add or remove a connection
+
+Click **Add a connection** to point a second campaign at the same event.
+
+To remove a connection, use the trash control on that row. Previously synced LiveBuzz records stay in LiveBuzz; Sessionboard stops updating them.
+
+## Still having issues?
+
+Email [support@sessionboard.com](mailto:support@sessionboard.com) and include the connection name, the LiveBuzz organization and campaign id, and the session or contact that did not sync.
