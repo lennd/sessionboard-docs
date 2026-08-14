@@ -1,0 +1,83 @@
+---
+title: "Visit"
+description: "Push accepted-session participants from Sessionboard to Visit as visitors, and optionally push sessions as activities."
+---
+
+import { Note, Steps, Step } from '@compat';
+
+<img src="/logo/apps/visit-integration.png" alt="Visit logo" width="52" height="52" style={{borderRadius:"12px"}} />
+
+Visit (Visit Cloud) is the registration and visitor-management system used on many Informa and partner expos. Connect a Sessionboard event to a Visit expo and Sessionboard creates visitors for people on accepted sessions. The Visit visitor id writes back onto the Sessionboard contact as the Visit registration ID.
+
+Each expo is its own connection. Visit does not treat email as unique — Sessionboard matches a visitor by the Visit contact reference, which is the Sessionboard contact id.
+
+## Connect Visit
+
+You can start from **Apps** on the organization or the event. The **Settings → Integrations** Visit tile opens the same page.
+
+<Steps>
+  <Step title="Open the Visit app">
+    Go to **Apps**, then click **Visit**. Click **Connect Visit**.
+  </Step>
+  <Step title="Name the connection">
+    Enter a **Name** — for example, the expo or show year. A name is required because you can add more than one Visit connection.
+  </Step>
+  <Step title="Enter expo credentials">
+    Fill in the values from your Visit expo:
+
+    - **Visit API Key** — the per-event token. Sessionboard sends it as the HTTP Basic username with an empty password.
+    - **Visit Expo ID**
+    - **Registration Form ID** — the Visit form these visitors should use.
+    - **Registration Type ID** — the Visit registration type these visitors should receive (for example Speaker or Panellist).
+  </Step>
+  <Step title="Optionally push sessions">
+    Turn on **Also push sessions as Visit activities** only if you also want accepted sessions created as Visit activities. If you do, paste the **Visit Location ID** and **Visit Track ID** from the same expo — Visit already has those records, and Sessionboard attaches them by id.
+  </Step>
+  <Step title="Save">
+    Click **Save connection**. Sessionboard verifies the key against that expo before it stores the connection.
+  </Step>
+</Steps>
+
+<Note>
+Credentials are encrypted at rest and are not shown again after you save. Leave a secret blank when you edit a connection to keep the current value.
+</Note>
+
+The Expo ID, form IDs, registration type IDs, location IDs, and track IDs all live on the Visit expo. Copy them from Visit rather than inventing values.
+
+## What syncs
+
+Participants on **accepted** sessions become Visit visitors. The default connection pushes visitors only.
+
+| Sessionboard | Visit |
+| --- | --- |
+| First name, last name, email, company | Visitor contact |
+| Contact id | Contact `reference` — this is how Sessionboard finds the same visitor on the next sync |
+| Form ID and registration type ID from the connection | Visitor form and registration type |
+| Visit visitor id | Writes back as the contact's Visit registration ID |
+| Accepted session (when activities are on) | Activity (name, start, end, `reference` = the session id) |
+
+A later sync updates the same visitor. If a participant leaves the accepted set, Sessionboard marks that Visit visitor deleted. Sessionboard does not hard-delete Visit records.
+
+Visit allows two API calls at a time, so large speaker lists sync in a steady stream rather than all at once.
+
+## Field mappings
+
+After the connection is saved, open **Field mappings** on the Visit app page to change which Sessionboard fields map to Visit for that connection.
+
+## Run a sync
+
+Scheduled sync runs about every 30 minutes once the connection is saved.
+
+To push immediately, open the connection on the Visit app page and click **Sync**. **Check drift** compares Sessionboard to Visit without writing.
+
+Accept the sessions you want represented in Visit before the first sync.
+
+## Add or remove a connection
+
+Click **Add a connection** to point a second expo at the same event.
+
+To remove a connection, use the trash control on that row. Previously synced Visit visitors stay in Visit; Sessionboard stops updating them.
+
+## Still having issues?
+
+Email [support@sessionboard.com](mailto:support@sessionboard.com) and include the connection name, the Visit expo id, and the contact or session that did not sync. Do not send the API key in email — rotate it in Visit and paste the new key into the connection instead.
