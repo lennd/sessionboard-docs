@@ -1,27 +1,103 @@
 ---
 title: "Single Sign-on (SSO)"
-description: "Authenticate users with SAML or OIDC across submission forms, portals, and admin login."
+description: "Let your team sign in to Sessionboard with your identity provider, using SAML, OIDC, or OAuth 2.0 Password."
 ---
 
-import { Note } from '@compat';
+import { AddOnNote, Note, Steps, Step } from '@compat';
 
-<Note>SSO is an add-on. Contact [support@sessionboard.com](mailto:support@sessionboard.com) for pricing.</Note>
+<AddOnNote feature="sso">
+{' '}Ask about pricing at the same time.
+</AddOnNote>
 
-Single Sign-On lets users access multiple applications with one set of credentials, authenticating once through a central identity provider (Okta, Auth0, Microsoft Entra/Azure AD, etc.).
+## What is SSO?
 
-- Sessionboard supports **SAML**, **OIDC**, and **OAuth 2.0 Password**.
-- Different SSO configurations can be set up for **Session Submission Forms**, **Portals**, and **Admin login**.
-- Authentication is handled by your identity provider, so enforce 2FA there rather than in Sessionboard.
+Single Sign-On (SSO) is an authentication process that lets people reach multiple applications with one set of login credentials. Instead of remembering a separate username and password for every system, users sign in once with your central identity provider and gain access to everything connected to it — including Sessionboard.
 
-Configurations live in **Org Settings → SSO**, with a tab per protocol.
+![One sign-in through SSO giving a user access to Sessionboard, Slack, and Gmail](/images/kb/01d93fa6-Integration-3.png)
+
+Common identity providers include Okta, Auth0, and Microsoft Entra ID (formerly Azure AD), among many others.
+
+## Benefits of SSO
+
+- **Unified access** — one sign-in reaches every connected application.
+- **Improved security** — fewer passwords to remember means fewer weak or reused ones, and central authentication makes strong policies easier to enforce.
+- **User convenience** — a shorter, more familiar login for your staff and reviewers.
+- **Centralized management** — IT grants and revokes access from one place, so someone who leaves your organization loses Sessionboard access with everything else.
+- **Consistent policy** — the rules you already enforce at your identity provider, including multi-factor authentication, apply to Sessionboard too.
+
+## What Sessionboard supports
+
+Sessionboard supports three configurations, each on its own tab:
+
+| Protocol | Use it when |
+| --- | --- |
+| **SAML 2.0** | Your identity provider publishes a SAML application. The most common choice. |
+| **OIDC** | Your identity provider supports OpenID Connect, which wraps OAuth 2.0 for authentication. |
+| **OAuth 2.0 Password** | A provider offers no SAML or OIDC option — only a password grant and a profile endpoint. Common with association management systems such as iMIS. |
+
+You can configure a **separate provider for Session Submission Forms, Portals, and Admin login**, and enable a given configuration on specific events. Multiple configurations can coexist, so a submission form can use one identity provider while your staff signs in through another.
+
+Configurations live in **Org Settings → SSO**.
+
+## How setup works
+
+Setting up SSO is a short exchange of values between your identity provider and Sessionboard, so expect to move between the two.
+
+<Steps>
+
+<Step title="Create an application in your identity provider">
+
+Create a new application using the protocol you plan to use (SAML or OIDC), and configure it to send at least these attributes: `id`, `email`, `firstName`, and `lastName`.
+
+</Step>
+
+<Step title="Add the configuration in Sessionboard">
+
+In **Org Settings → SSO**, pick the tab for your protocol and enter the values from your identity provider.
+
+</Step>
+
+<Step title="Copy Sessionboard's values back to your provider">
+
+Sessionboard generates the URLs your provider needs — the ACS (callback) URL and Issuer URL for SAML, or the Callback URL for OIDC. Copy buttons sit next to each one.
+
+</Step>
+
+<Step title="Map any attributes that do not match">
+
+If your provider names attributes differently, override the defaults under **User Mappings** rather than changing anything on your side.
+
+</Step>
+
+<Step title="Test with a real user">
+
+Use **Test Connection** from the menu on a saved configuration, then confirm an actual sign-in with a test user before rolling it out.
+
+</Step>
+
+</Steps>
 
 ## SAML setup
 
-**You provide:** Identity Provider name, x509 certificate, Issuer, Domain, SSO URL, and a test user.
+SAML (Security Assertion Markup Language) is an open standard for authentication. It lets one set of credentials work across multiple systems by exchanging assertions between an identity provider (IdP) and a service provider (SP) — Sessionboard being the service provider.
 
-**Sessionboard provides:** Assertion Consumer Service URL and Issuer URL.
+**You provide:**
 
-**Expected attributes:** `id`, `firstName`, `lastName`, `email`, `nameID` (email).
+- **Identity Provider Name** — the SAML application you created at your provider.
+- **x509 Certificate** — used to verify that assertions genuinely came from your provider.
+- **Issuer** — identifies your provider's application uniquely.
+- **SSO URL** — where Sessionboard sends the sign-in request.
+- **Domain** — optional, but required if this configuration is for admin login.
+- **A test user** — to confirm the login flow end to end.
+
+Optional settings cover the less common cases: **SLO URL** for single logout, **Audience**, **Identity Provider Issuer**, **Want Assertions Signed**, **Signed Assertion Enabled**, and **Propagate user updates to related contact records**, which keeps the matching contact record in step with profile changes coming from your provider.
+
+**Sessionboard provides:**
+
+- **ACS Endpoint URL** — receives the POST from your provider carrying the SAML assertion, and checks it against your certificate.
+- **Issuer URL** — identifies Sessionboard as the service provider.
+
+**Expected attributes:** `id` (the provider's user ID), `firstName`, `lastName`, `email` (used to sign in and for account email such as invitations and password resets), and `nameID` (also the email).
 
 ### AuthnRequest Binding
 
@@ -29,37 +105,54 @@ Choose how the sign-in request reaches your SSO URL:
 
 | Binding | Use when |
 | --- | --- |
-| **HTTP-Redirect** | The default. The request is sent as query parameters on a redirect. |
-| **HTTP-POST** | Your identity provider's endpoint expects a form POST instead. |
+| **HTTP-Redirect** | The default. The request travels as query parameters on a redirect. |
+| **HTTP-POST** | Your provider's endpoint expects a form POST instead. |
 
-Match this to the endpoint type your identity provider publishes. Picking the wrong one usually shows up as the provider rejecting the request rather than as a Sessionboard error.
+Match this to the endpoint type your identity provider publishes. Picking the wrong one usually shows up as your provider rejecting the request, rather than as a Sessionboard error.
 
 ## OIDC setup
 
-**You provide:** Identity Provider name, Domain (required for admin SSO), Authorization URL, Issuer, Token URL, User Info URL, Client ID, Client Secret, Scopes.
+OIDC (OpenID Connect) is a protocol from the OpenID Foundation that wraps OAuth 2.0. Where OAuth 2.0 handles authorization, OIDC's purpose is authentication, carried out through a series of HTTP requests between the OIDC provider and the relying party.
 
-**Sessionboard provides:** Callback URL.
+**You provide:** Identity Provider Name, Client ID, Client Secret, Authorization URL, Token URL, User Info URL, Issuer, and Scopes. **Domain** is optional unless this configuration is for admin login.
 
-**Expected attributes:** `sub`, `given_name`, `family_name`, `preferred_username` (email).
+**Sessionboard provides:** the Callback URL.
 
-### Use PKCE
+**Expected attributes:** `sub` (the provider's user ID), `given_name`, `family_name`, and `preferred_username` (the email).
 
-**Use PKCE (Optional)** adds Proof Key for Code Exchange to the authorization code flow. Enable it if your identity provider requires or supports it — some providers now reject authorization code flows without it.
+Two optional settings are worth knowing:
+
+- **Use PKCE** adds Proof Key for Code Exchange to the authorization code flow. Enable it if your provider requires or recommends it — some now reject authorization code flows without it.
+- **Enable Single Logout** signs users out of your identity provider when they log out of Sessionboard.
 
 ## OAuth 2.0 Password setup
 
-For identity providers that authenticate with the resource owner password credentials grant, where the user enters their credentials in Sessionboard rather than being redirected.
+For providers that authenticate with the resource owner password credentials grant. Users enter their credentials on Sessionboard's own sign-in form instead of being redirected, and Sessionboard exchanges them with your provider server-side, so provider tokens never reach the browser.
 
-**You provide:** Identity Provider name, Client ID, Client Secret, Token Endpoint, and User Info Endpoint. Domain is optional unless you are using this for admin login, and Issuer is optional.
+**You provide:** Identity Provider Name, Client ID, Client Secret, Token Endpoint, and User Info Endpoint. **Domain** is optional unless this is for admin login, and **Issuer** is optional and informational only.
 
-Both endpoints must be `https://`.
+Both endpoints must use `https://`, and the User Info Endpoint should have no query string — Sessionboard appends the username itself.
 
 <Note>
-This grant type sends the user's password through Sessionboard rather than keeping it with your identity provider. Prefer SAML or OIDC where your provider supports them, and use this when a legacy provider leaves no alternative.
+This grant type sends the user's password through Sessionboard rather than keeping it with your identity provider. Prefer SAML or OIDC wherever your provider supports them, and use this when a provider leaves no alternative.
 </Note>
+
+## User Mappings
+
+Sessionboard expects the default attribute names listed above, but you can override any of them per configuration under **User Mappings** — useful when your provider sends `mail` instead of `email`, for example. Mapping on our side is usually faster than changing the assertion at your provider.
 
 ## Enforced authentication
 
-Each configuration has an **Enforced Authentication** option. With it on, matching users must sign in through that provider rather than choosing another method.
+Each configuration has an **Enforce Login Via SSO** option. With it on, users whose email domain matches the configuration's **Domain** can no longer sign in with a Sessionboard password — they must go through your identity provider.
 
-Ready to set up SSO? Reach out to [support@sessionboard.com](mailto:support@sessionboard.com).
+The **Domain** field is about discovery and enforcement, not a restriction on who may sign in. Members and affiliates on other email domains can still authenticate through your provider, which matters for associations whose members use institutional addresses.
+
+## Two-factor authentication and SSO
+
+Sessionboard does support two-factor authentication — by email code, authenticator app, or passkey — and an organization can require it of every member. See [how to set up two-factor authentication](/get-started/how-to-set-up-two-factor-authentication-2fa-on-your-sessionboard-account).
+
+For people signing in through SSO, your identity provider performs the authentication, and Sessionboard treats a completed SSO sign-in as satisfying the second factor. Enforce MFA at your identity provider for those users, so one policy covers every application they reach rather than only this one.
+
+## Ready to set up SSO?
+
+Reach out to [support@sessionboard.com](mailto:support@sessionboard.com) and we will be happy to help.
