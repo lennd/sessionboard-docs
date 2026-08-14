@@ -309,6 +309,15 @@ HELP_INDEX_URL=https://learn.sessionboard.com/_internal/help-index.json
 HELP_INDEX_TOKEN=<the same value>
 ```
 
+**The web-api side belongs in the S3 tfvars, not in Terraform.** Every deployed
+environment reads its container environment from
+`s3://platform.sessionboard.com/ecs-env-variables/web-api/<env>.tfvars`, which the
+publish workflow downloads and applies. `infrastructure/<env>/main.tf` also lists
+env vars, but `local.web_api_environment_variables` only falls back to that list
+when the tfvars one is empty — and it never is. **A variable added to `main.tf`
+alone silently never reaches production.** Each region has its own database, so
+prod-us, prod-eu and prod-me each need the pair and each syncs its own corpus.
+
 Verify after a deploy — the first is the failure mode to recognize, because a
 missing secret looks exactly like a missing file:
 
@@ -318,9 +327,24 @@ curl -sI -H "Authorization: Bearer $HELP_INDEX_TOKEN" \
   https://learn.sessionboard.com/_internal/help-index.json                    # 200
 ```
 
+Then confirm the corpus actually landed, which is a separate question from whether
+the index is reachable. Any help search reports it:
+
+```jsonc
+// GET /help/events/:eventId/search?q=dashboard
+"corpus": { "age_hours": 3.2, "empty": false, "stale": false }
+```
+
+`"empty": true` means no sync has ever completed in that region, and the Learn tab
+says so in place of search results ("Our documentation isn't loaded here yet").
+
 Leaving `HELP_INDEX_URL`/`HELP_INDEX_TOKEN` unset in web-api is a supported state:
-the sync job logs and no-ops rather than failing, so a review app without a Help
-Center does not page anyone. A token that is set but *wrong* fails the job loudly,
+the sync job no-ops rather than failing, so a review app without a Help Center does
+not page anyone. It is no longer *silent* about it, though — that combination shipped
+to production once and nothing anywhere said the corpus was empty, so the job now
+warns on stdout and opens a Sentry message, escalated to error level if rows already
+exist (configuration that disappears from a populated environment freezes a corpus
+that keeps being cited). A token that is set but *wrong* fails the job outright,
 which is the intended asymmetry.
 
 ### Still to do (needs Cloudflare dashboard access)
