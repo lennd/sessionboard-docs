@@ -3,81 +3,124 @@ title: "Visit"
 description: "Push accepted-session participants from Sessionboard to Visit as visitors, and optionally push sessions as activities."
 ---
 
-import { Note, Steps, Step } from '@compat';
+import { Note, Tip, Warning, Steps, Step } from '@compat';
 
 <img src="/logo/apps/visit-integration.png" alt="Visit logo" width="52" height="52" style={{borderRadius:"12px"}} />
 
-Visit (Visit Cloud) is the registration and visitor-management system used on many Informa and partner expos. Connect a Sessionboard event to a Visit expo and Sessionboard creates visitors for people on accepted sessions. The Visit visitor id writes back onto the Sessionboard contact as the Visit registration ID.
+Visit (Visit Cloud) is the registration and visitor-management system used on many Informa and partner expos. Connect Sessionboard to Visit once, map each Sessionboard event to a Visit expo, and Sessionboard creates visitors for people on accepted sessions. The Visit visitor ID writes back onto the Sessionboard contact as the Visit registration ID.
 
-Each expo is its own connection. Visit does not treat email as unique — Sessionboard matches a visitor by the Visit contact reference, which is the Sessionboard contact id.
+The API key is a tenant token. Each Sessionboard event maps to one Visit expo. Visit does not treat email as unique — Sessionboard finds the same visitor again using the Sessionboard contact, not the email address. If you change a contact's email, the next sync updates that same visitor.
+
+<Tip>
+Before you start, have a Visit API key with **write** permission turned on (Visit Create → Organisation → API → the key). A read-only key can list expos and still fail every create. After you map an expo, Event Settings lists that expo's forms, registration types, locations, and tracks — you do not paste those IDs. Every person you want pushed needs a first name, last name, and email.
+</Tip>
 
 ## Connect Visit
 
-You can start from **Apps** on the organization or the event. The **Settings → Integrations** Visit tile opens the same page.
+Visit is set up at the **organization**. Open it from **Settings > Integrations** or from **Apps**. Event **Settings > Integrations** no longer lists Visit.
 
 <Steps>
-  <Step title="Open the Visit app">
-    Go to **Apps**, then click **Visit**. Click **Connect Visit**.
+  <Step title="Open Visit">
+    Go to organization **Settings > Integrations** and click **Connect** or **Settings** on Visit, or open **Apps** and click **Visit**.
   </Step>
-  <Step title="Name the connection">
-    Enter a **Name** — for example, the expo or show year. A name is required because you can add more than one Visit connection.
+  <Step title="Save the connection">
+    On the **Connections** tab, enter a **Name** and the **Visit API Key**. Click **Save connection**. Sessionboard checks the key against Visit before it stores it.
   </Step>
-  <Step title="Enter expo credentials">
-    Fill in the values from your Visit expo:
+  <Step title="Map a Sessionboard event">
+    Click **Map events** on the connection. Choose the Sessionboard event and the **Visit Expo ID** from the lists — already mapped events and expos are hidden. Click **Save mapping**.
+  </Step>
+  <Step title="Set form, type, consent, and roles">
+    Open **Event Settings** for that mapping. Choose the **Registration form** and **Registration type** from the lists Sessionboard loads from that expo. The type list is visitor types only — Visit rejects Speaker, Chair, and other leader types on visitor create. Those roles attach later if you push sessions as activities.
 
-    - **Visit API Key** — the per-event token. Sessionboard sends it as the HTTP Basic username with an empty password.
-    - **Visit Expo ID**
-    - **Registration Form ID** — the Visit form these visitors should use.
-    - **Registration Type ID** — the Visit registration type these visitors should receive (for example Speaker or Panellist).
+    **Consent field or task** is optional. If you pick one from a speaker portal on that event, a participant is not pushed until that field is filled or that task is complete. Clear the selection to turn the gate off and sync on acceptance only. Selecting the contact and clicking **Sync to Visit** still pushes them.
+
+    **Session roles to sync** defaults to every role on accepted sessions. Uncheck chairs, co-authors, or any custom role that should not become a Visit visitor. People in unchecked roles leave the accepted set — the next full or scheduled sync can remove their Visit visitor if **Remove from Visit when un-accepted** is on.
+
+    Turn on **Enable Continuous Sync** if you want Sessionboard to push this event to Visit about every 30 minutes. Leave it off to sync only when you click **Sync**. Continuous sync still requires at least one accepted session that has not ended.
+
+    Leave **Also push sessions as Visit activities** off unless you also want accepted sessions created as Visit activities. If you turn it on, you can pick a default Visit location and track. Session rooms and tracks match Visit by name — Visit cannot create them. Consent stays optional either way.
+
+    Leave **Remove from Visit when un-accepted** on unless you want un-accepted visitors to stay in Visit. Click **Save event settings**.
   </Step>
-  <Step title="Optionally push sessions">
-    Turn on **Also push sessions as Visit activities** only if you also want accepted sessions created as Visit activities. If you do, paste the **Visit Location ID** and **Visit Track ID** from the same expo — Visit already has those records, and Sessionboard attaches them by id.
-  </Step>
-  <Step title="Save">
-    Click **Save connection**. Sessionboard verifies the key against that expo before it stores the connection.
+  <Step title="Map fields">
+    Use **Map Speaker Fields** and **Map Session Fields** to choose which Sessionboard fields write to Visit for that mapping. First name, last name, and email are required for visitors. Title, start, and end are required for activities. You cannot save until those are mapped.
   </Step>
 </Steps>
 
 <Note>
-Credentials are encrypted at rest and are not shown again after you save. Leave a secret blank when you edit a connection to keep the current value.
+Credentials are encrypted and are not shown again after you save. Leave a secret blank when you edit a connection to keep the current value.
 </Note>
-
-The Expo ID, form IDs, registration type IDs, location IDs, and track IDs all live on the Visit expo. Copy them from Visit rather than inventing values.
 
 ## What syncs
 
-Participants on **accepted** sessions become Visit visitors. The default connection pushes visitors only.
+Participants on **accepted** sessions become Visit visitors. **Session roles to sync** controls which roles go — speaker, moderator, chairperson, and custom roles. Leave every role checked to match the old default. The default mapping pushes visitors only.
+
+If the event has **speaker acceptance** on, a speaker is not pushed until they have accepted. Other roles are not gated by acceptance.
+
+When the consent gate is on, a participant who has not completed the chosen field or task is skipped (`consent_gate` in the sync log) and is not removed from Visit if they already have a registration. Completing that task or submitting that portal form queues a sync for that person. Session activities are not gated by consent.
+
+A person needs a first name, last name, and email. Anyone missing those is skipped and is not removed from Visit.
+
+A contact who is deleted, or removed from the event, is not pushed — even if they are still listed on a session. They leave the accepted set, so a full sync can remove their Visit visitor when **Remove from Visit when un-accepted** is on.
 
 | Sessionboard | Visit |
 | --- | --- |
-| First name, last name, email, company | Visitor contact |
-| Contact id | Contact `reference` — this is how Sessionboard finds the same visitor on the next sync |
-| Form ID and registration type ID from the connection | Visitor form and registration type |
-| Visit visitor id | Writes back as the contact's Visit registration ID |
-| Accepted session (when activities are on) | Activity (name, start, end, `reference` = the session id) |
+| First name, last name, email, company | Visitor |
+| Form and registration type from Event Settings | Applied to each visitor |
+| Session track / room name (when activities are on) | Visit track / location, matched by name |
+| Visit visitor ID | Writes back as the contact's Visit Registration ID |
+| Accepted session (when activities are on) | Activity (name, start, end) |
 
-A later sync updates the same visitor. If a participant leaves the accepted set, Sessionboard marks that Visit visitor deleted. Sessionboard does not hard-delete Visit records.
+A later sync updates the same visitor. Changing the contact's email does not create a second visitor. If Visit already has that email on a different visitor, Sessionboard still writes to the visitor matched by the Sessionboard contact. Visit may accept the duplicate email.
+
+If a participant leaves the accepted set, Sessionboard asks Visit to remove that visitor unless you turned **Remove from Visit when un-accepted** off. Visit keeps the old registration as deleted (it is not a wipe). Putting that person back on an accepted session creates a **new** Visit visitor — Visit cannot undelete the old one. Session activities that were removed are created again.
+
+Saving a mapping creates two contact fields: **Visit Registration ID** and **Visit Registration URL**. If you do not see them on a contact, add the fields to your contact layout.
 
 Visit allows two API calls at a time, so large speaker lists sync in a steady stream rather than all at once.
 
 ## Field mappings
 
-After the connection is saved, open **Field mappings** on the Visit app page to change which Sessionboard fields map to Visit for that connection.
+**Map Speaker Fields** and **Map Session Fields** apply only to the event mapping you have selected. Reinstalling Visit from the catalog does not wipe them.
+
+Visit needs a first name, last name, and email to create a visitor, and a title, start, and end to create an activity. Those rows stay on the mapping and cannot be removed. Form, registration type, and register time come from **Event Settings**, not from these maps.
+
+After you pick an expo, **Map Speaker Fields** also lists Visit contact fields (job function, phone, address) and the questions on that expo — GDPR checkboxes, dropdowns, and any custom questions the organizer added. Map a Sessionboard contact field onto a question to send that answer with the visitor. Expo-level custom fields (Informa or Adobe configuration) are not visitor fields and do not appear here.
+
+**Registration type** on Event Settings must be a Visit visitor type. Speaker, Chair, and Exhibitor types belong to sessions or exhibiting companies and cannot create a visitor.
 
 ## Run a sync
 
-Scheduled sync runs about every 30 minutes once the connection is saved.
+If **Enable Continuous Sync** is on for that mapping, Sessionboard runs a full sync about every 30 minutes while the event has at least one accepted session that has not ended. When the checkbox is off, click **Sync** on the mapping when you need an update.
 
-To push immediately, open the connection on the Visit app page and click **Sync**. **Check drift** compares Sessionboard to Visit without writing.
+| Action | What it does |
+| --- | --- |
+| **Sync** on **Map Events** | Full sync for that event. Creates or updates everyone in the accepted set. Can soft-remove Visit visitors when they leave that set. |
+| **Sync to Visit** from Agenda Options | Same full sync as **Map Events** and as a scheduled run. Ignores which agenda rows are selected. |
+| **Sync to Visit** with rows selected | Updates only those contacts or sessions. Does not remove anyone else from Visit. Selected contacts also bypass the consent gate. |
+| **Sync to Visit** with nothing selected | Same as a full sync from the contacts list. |
+| **Check drift** | Compares Sessionboard to Visit and writes nothing. |
 
 Accept the sessions you want represented in Visit before the first sync.
 
-## Add or remove a connection
+## Review sync results
 
-Click **Add a connection** to point a second expo at the same event.
+Open the event and go to **History > Integrations**.
 
-To remove a connection, use the trash control on that row. Previously synced Visit visitors stay in Visit; Sessionboard stops updating them.
+**Sync History** lists every Visit run: the expo ID, when it ran, status, and an error count. Click **Click to view results** for counts of created, updated, skipped, deleted, and failed records. Skipped rows include the reason — for example that the consent field or task is not complete, or that nothing changed since the last sync.
+
+See [History](/communications/email-sms-history) for the rest of the History module.
+
+## Add or remove a mapping
+
+<Warning>
+Do not change the expo ID on a live mapping. Sessionboard will treat the visitors as new and can create duplicates.
+</Warning>
+
+Use **Add event mapping** to point another Sessionboard event at another expo on the same connection. You can also add a second connection if you have a different Visit API key.
+
+To remove a mapping, use the trash control on that row. Previously synced Visit visitors stay in Visit; Sessionboard stops updating them.
 
 ## Still having issues?
 
-Email [support@sessionboard.com](mailto:support@sessionboard.com) and include the connection name, the Visit expo id, and the contact or session that did not sync. Do not send the API key in email — rotate it in Visit and paste the new key into the connection instead.
+Email [support@sessionboard.com](mailto:support@sessionboard.com) and include the connection name, the Visit expo ID, and the contact or session that did not sync. Do not send the API key — rotate it in Visit and paste the new key into the connection instead.
