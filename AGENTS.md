@@ -71,6 +71,8 @@ those corrections and will silently undo them.
 
 The build fails on broken internal links (starlight-links-validator). Always run `npm run build` after content changes.
 
+**Always deploy after any docs change.** Do not leave Help Center edits local-only and do not wait to be asked. From this directory: `npm run check:style && npm run og && npm run build && npx wrangler deploy`, then purge the edge cache (below). Verify the live host in `site.json`.
+
 `npm run check:style` enforces the mechanical half of `STYLE.md` — title form and length, first heading level, stranded tables of contents, image alt text, truncated descriptions. It runs in CI beside Vale, which only sees prose. Everything it flags is a HubSpot migration artifact, so fix the page rather than loosening the rule.
 
 **Purge the cache after deploying content changes.** `wrangler deploy` updates the Worker, but Cloudflare keeps serving the previous HTML from its edge cache (`CF-Cache-Status: HIT`) — a renamed title can stay stale on a handful of pages while the rest update, which looks like a partial deploy and is not. The deploy token can purge:
