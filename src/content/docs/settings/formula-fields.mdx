@@ -1,0 +1,142 @@
+---
+title: "Create a formula field"
+description: "Build a number from other fields with the builder or by writing the expression, including parentheses."
+---
+
+import { Note, Tip, Steps, Step } from '@compat';
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+A **Formula** field always shows a calculated number. Nobody types into it on a contact, session, or group. Use it for a balance due, a fee plus tax, or any other number you can write with plus, minus, multiply, and divide.
+
+A **Calculation** rule uses the same expression language, but writes the result into a normal number or currency field. Admins can still edit that field; the next source-field save overwrites it.
+
+<Note>
+The result updates when someone saves a source field on a record, in an event that has Field Rules turned on. If a formula stays empty after you edit Fee or Paid, ask Sessionboard to turn on Field Rules for that event.
+</Note>
+
+## Create a formula field
+
+<Steps>
+
+<Step title="Open Fields">
+
+Go to **Library > Fields**, or open **Fields** inside an event. Choose the Contacts, Sessions, or Groups tab that should own the field.
+
+</Step>
+
+<Step title="Add or edit a field">
+
+Click **Add Field**, or open an existing field. Set **Field type** to **Formula**. You cannot change the type after the field is saved.
+
+</Step>
+
+<Step title="Build the expression">
+
+The **Builder** is the default: pick a field, an operator, and the next field. Switch to **Write** when you need parentheses or a different order of operations.
+
+You cannot save until the expression is valid and every field in it still exists.
+
+Click **Save**.
+
+</Step>
+
+</Steps>
+
+<Tip>
+The field stays read-only on records, directories, imports, and bulk edit. Put it on a view if you want people to see the result.
+</Tip>
+
+## Write a calculation rule instead
+
+Use a calculation when the result should live in an ordinary currency or number field that people can still override.
+
+<Steps>
+
+<Step title="Open Field Rules">
+
+On **Library > Fields**, open the **Contacts** tab and click **Field Rules**. In an event, **Fields** shows **Field Rules** when Field Rules is on for that event.
+
+</Step>
+
+<Step title="Add a Calculation">
+
+Name the rule and choose **Calculation**. Build the expression the same way as a formula field. You cannot save the rule until the expression is valid and every field in it still exists. Under **Write result to**, pick a number, currency, percent, or quantity field. A formula field cannot be the target.
+
+See [Create a field rule](/settings/field-rules) for Formatting and Assignment rules.
+
+</Step>
+
+</Steps>
+
+## Builder and Write
+
+| View | What it is for |
+| --- | --- |
+| **Builder** | A left-to-right list of fields and operators. Sessionboard evaluates it in that order, so `Fee + Paid × 2` means `(Fee + Paid) × 2`. |
+| **Write** | A formula bar. Multiplication and division run before addition and subtraction, and parentheses change the order. `Fee + Paid * 2` means `Fee + (Paid * 2)`. |
+
+Switching from **Builder** to **Write** shows the same math, with parentheses added when they matter. If you write grouping the builder cannot show, Sessionboard keeps you in **Write** so the parentheses are not flattened.
+
+In **Write**, wrap every field in braces and use **Insert field** if you do not want to type the name:
+
+```
+{Speaker Fee} - {Paid}
+({Speaker Fee} + {Paid}) * {Tax Rate}
+{Speaker Fee} * 1.1
+```
+
+Names match the field label, ignoring extra spaces and capitalization. Two fields can share a label; each has a unique **Internal Name** in the field metadata. If `{Fee}` is ambiguous, write that instead — `{speaker_fee}` or `{travel_fee}`. **Insert field** writes the right token for you, and the builder shows the Internal Name in parentheses when labels collide.
+
+## What an expression can use
+
+- Operators: `+` `-` `*` `/` (the builder shows − × ÷; both spellings work in **Write**)
+- Parentheses in **Write**
+- Whole numbers and decimals (`1000`, `12.5`). Do not use thousands separators.
+- Fields whose type is **Number**, **Currency**, **Percent**, or **Quantity**, from the **same module** as the formula (or, for a calculation rule, the same module as the target field)
+
+A formula cannot reference itself, another formula field, or a text, date, dropdown, or checkbox field.
+
+Sessionboard uses the stored number as-is. A percent stored as `12.5` times a currency of `1000` is `12500`, not `125`. If you want a percentage of a fee, divide by `100` in the expression: `{Speaker Fee} * {Tax Rate} / 100`.
+
+Currency, percent, and formula results store two decimal places.
+
+## Limits
+
+| Limit | Value |
+| --- | --- |
+| Distinct fields in one expression | 8 |
+| Terms (fields, numbers, and operators together) | 20 |
+| Parentheses nesting | 8 levels |
+| Builder rows | 8 |
+
+## When a result does not update
+
+Sessionboard leaves the previous value in place when:
+
+- A source field is blank (blank is not treated as zero)
+- A source field has been deleted
+- The expression divides by zero
+- The result is not a finite number
+
+The next time every source has a usable number, the result writes again.
+
+If you delete a source field, open the formula. The missing field shows as **Unknown field**, and you cannot save until you replace it.
+
+## See where a field is used
+
+Open an existing field. If other formulas or Field Rules use it, the sidebar shows:
+
+- **Used in formulas** — formula fields on the same module that read this field
+- **Field Rules** — Formatting, Calculation, or Assignment rules this field is part of
+
+These sections appear only when the field is involved. A formula field does not list itself here; its expression is already on the sidebar.
+
+On a view, a formula column filters and sorts like a number.
+
+## Related
+
+<CardGrid>
+  <LinkCard title="Create a field rule" href="/settings/field-rules" description="Format text, calculate into an editable field, or set fields when values match." />
+  <LinkCard title="Create and delete custom fields" href="/faq/how-to-create-and-delete-custom-fields" description="Add a Formula field, then check what uses a field before you delete it." />
+  <LinkCard title="Bulk edit fields" href="/settings/bulk-edit-fields" description="Change source fields in bulk. Formula fields stay read-only." />
+</CardGrid>

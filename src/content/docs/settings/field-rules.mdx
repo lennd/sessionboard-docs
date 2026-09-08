@@ -1,0 +1,173 @@
+---
+title: "Create a field rule"
+description: "Format text, calculate a number, or assign fixed values to other fields on the same record when a saved value matches."
+---
+
+import { Note, Tip, Steps, Step } from '@compat';
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+**Field Rules** run when someone saves a field value — on a record, a form, an import, bulk edit, or the public API. Use them to change case, write a calculated number into an ordinary field, or set other fields when conditions match. Every change is recorded in the rule log.
+
+A **Formula** field is different: the field itself is the math, and nobody can type into it. Use [Create a formula field](/settings/formula-fields) when the result should stay read-only.
+
+<Note>
+Rules apply in an event that has Field Rules turned on. If a rule does not change values after you save a source field, ask Sessionboard to turn on Field Rules for that event.
+</Note>
+
+## Open Field Rules
+
+On **Library > Fields**, open the **Contacts** tab and click **Field Rules**. You can still pick Session and Group fields inside a rule.
+
+Inside an event, **Fields** shows **Field Rules** when Field Rules is on for that event.
+
+Click **Add Rule**, enter a **Rule name**, and choose a **Rule type**.
+
+| Rule type | What it does |
+| --- | --- |
+| **Formatting** | Changes case when a text field is written. |
+| **Calculation** | Writes a number from other fields on the same record (for example Fee − Paid). |
+| **Assignment** | Sets other fields on the same record when every condition matches. |
+
+Turn a rule off with its switch if you want to keep it without applying it. Open the history icon for the **Rule Log**.
+
+## Create a Formatting rule
+
+<Steps>
+
+<Step title="Choose Formatting">
+
+Pick **UPPERCASE**, **lowercase**, **Title Case**, or **Sentence case**.
+
+</Step>
+
+<Step title="Apply to fields">
+
+Search and check the text, text area, or rich-text fields the rule should format. These can be Contact, Session, or Group fields.
+
+</Step>
+
+</Steps>
+
+The stored value is already transformed. Later edits go through the same rule.
+
+## Create a Calculation rule
+
+Use a calculation when the result should live in a normal number or currency field that people can still override.
+
+<Steps>
+
+<Step title="Build the expression">
+
+Use the same **Builder** and **Write** editors as a formula field. You cannot save the rule until the expression is valid and every field in it still exists.
+
+</Step>
+
+<Step title="Write result to">
+
+Pick a number, currency, percent, or quantity field on the same module. A formula field cannot be the target.
+
+</Step>
+
+</Steps>
+
+Admins can still edit the target. The next source-field save overwrites it.
+
+Sessionboard leaves the previous target value in place when a source is blank, a source field has been deleted, the expression divides by zero, or the result is not a finite number.
+
+If someone edits the calculation target in the same save as a source field, Sessionboard keeps the number they typed.
+
+## Create an Assignment rule
+
+Use an assignment when a saved value should write **fixed** values onto other fields on the **same record**. Typical uses:
+
+- A session **Room** (dropdown) sets **Capacity** (number)
+- A contact **Country** (Countries) sets **Point of Contact** (user or lookup)
+- A checked box sets several other checkboxes on that contact
+
+This is different from [question rules](/faq/does-sessionboard-offer-conditional-logic), which only hide or show questions on a form. An assignment writes stored values after the save.
+
+<Steps>
+
+<Step title="When all of these are true">
+
+Add at least one condition. Click **Add condition** for each extra row (up to 10).
+
+Every condition on the rule must match. Conditions and the fields you set must belong to the same module (Contact, Session, or Group). Changing the first condition to another module drops rows that belong to the previous module.
+
+Most fields compare with **equals**. A multi-select field compares with **includes**.
+
+Pick a value for each condition. For a checkbox or boolean, choose **Checked / true** or **Unchecked / false**.
+
+A field cannot appear twice on the same rule, and a field you set cannot also be a condition.
+
+</Step>
+
+<Step title="Set these fields">
+
+Under **Set these fields**, pick each field to write and the value to store. Click **Add field to set** for each extra row (up to 10).
+
+The values are written on the same record when the conditions match. Editing a target by itself is kept until a source field in the rule is saved again.
+
+For a **User** field, use **Search team members…**. For a **Lookup** field, use **Search contacts…**. For a multi-select field, pick one option; that option becomes the stored value.
+
+</Step>
+
+</Steps>
+
+### Condition and target field types
+
+| Role | Field types |
+| --- | --- |
+| Condition | Dropdown, Checkbox, Boolean, Text, Text Area, Countries, and multi-select |
+| Field to set | The same types, plus User, Lookup, Number, Currency, and Percent |
+
+A formula field cannot be a condition or a field to set.
+
+### When an assignment writes
+
+Sessionboard writes the assigned values when **all** of these are true:
+
+- Field Rules is on for the event
+- The rule is active
+- Someone saved at least one **condition** field on that record (record editor, form, import, bulk edit, or public API)
+- Every condition matches — using the value just saved, or the value already stored for conditions that were not in that save
+
+When the conditions no longer match, Sessionboard leaves the assigned fields as they are.
+
+Existing records keep their current values until someone saves a condition field on that record.
+
+A field that an assignment writes does not trigger other assignment rules in that same save. If you need a second field to update from the first, save the first field (or include it as a condition on the second rule).
+
+If someone saves a condition field and one of the fields to set in the same write, the assignment value is the one that stays.
+
+If two active Assignment rules write the same field, Sessionboard still saves the rule and shows a warning: **Another active assignment rule already writes… Last matching rule wins.** When both match, the newer rule is the one that stays.
+
+## How rules combine on one save
+
+| Situation | What stays |
+| --- | --- |
+| A calculation and an assignment write the same field | The assignment value |
+| Someone edits a calculation target in the same save as a source | The number they typed |
+| Someone edits an assignment target in the same save as a condition | The assignment value |
+| Two matching Assignment rules write the same field | The newer rule |
+
+## See which rules use a field
+
+Open an existing field. If it is part of a Field Rule, a **Field Rules** section appears on the sidebar with the rule name, type (Formatting, Calculation, or Assignment), and this field's role (source, target, attached, condition, or sets value). The section is hidden when the field is not involved.
+
+The same sidebar shows **Used in formulas** when a formula field on this module reads the field.
+
+<Tip>
+Open a field before you delete it. If **Used in formulas** or **Field Rules** is on the sidebar, replace that field in the formula or rule first. After you delete a source, the last stored result stays on the record and the math does not run again until you fix the expression.
+</Tip>
+
+## Related
+
+<CardGrid>
+  <LinkCard title="Create a formula field" href="/settings/formula-fields" description="Read-only calculated number with the builder or Write editor." />
+  <LinkCard title="Conditional logic (question rules)" href="/faq/does-sessionboard-offer-conditional-logic" description="Hide or show questions on a form. Use Assignment to set field values." />
+  <LinkCard title="Create and delete custom fields" href="/faq/how-to-create-and-delete-custom-fields" description="Add a field, then check what uses it before you delete." />
+  <LinkCard title="Bulk edit fields" href="/settings/bulk-edit-fields" description="Change a condition field on many records to run matching assignments." />
+  <LinkCard title="Importing data" href="/settings/importing-data" description="Imported source values run the same Field Rules as a record save." />
+  <LinkCard title="Automations" href="/automations/overview" description="Send email or assign reviewers after a field changes." />
+</CardGrid>
