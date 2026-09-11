@@ -1,0 +1,105 @@
+---
+title: "Custom field type reference"
+description: "Every custom field type in Sessionboard — what each one stores, where it works best, and how the new Tree field handles multi-level choices."
+---
+
+import { Note, Tip, FieldTypeIcon } from '@compat';
+
+When you create a custom field — in the Field Library, on a form, or from a table — you pick a field type. The type controls how the answer is collected, validated, stored, filtered, and exported. This page lists every type with the same icon you'll see in the app.
+
+Not sure whether a field belongs on the session, the person, or the group? That's a separate choice from the type — see [Field types: session, people & group](/concepts/field-types).
+
+## Text and long-form types
+
+| Type | What it stores | Good for |
+| --- | --- | --- |
+| <FieldTypeIcon type="text" /> | A single line, up to 255 characters | Short answers: a tagline, an ID, a job title |
+| <FieldTypeIcon type="textarea" /> | Plain text, up to 5,000 characters | Abstracts, descriptions, multi-sentence answers |
+| <FieldTypeIcon type="wysiwyg" /> | Formatted text (bold, lists, links) | Bios and descriptions that need formatting |
+
+## Contact and link types
+
+These validate their format automatically — a malformed email or URL is rejected at entry.
+
+| Type | What it stores |
+| --- | --- |
+| <FieldTypeIcon type="email" /> | A valid email address |
+| <FieldTypeIcon type="phone" /> | A phone number |
+| <FieldTypeIcon type="url" /> | A web address |
+| <FieldTypeIcon type="countries" /> | A country, picked from the standard country list |
+
+## Number types
+
+| Type | What it stores |
+| --- | --- |
+| <FieldTypeIcon type="number" /> | A plain number |
+| <FieldTypeIcon type="currency" /> | A money amount |
+| <FieldTypeIcon type="percent" /> | A percentage |
+
+## Date and time types
+
+| Type | What it stores |
+| --- | --- |
+| <FieldTypeIcon type="date" /> | A calendar date |
+| <FieldTypeIcon type="datetime" /> | A date with a time of day |
+| <FieldTypeIcon type="time" /> | A time of day on its own |
+
+## Choice types
+
+| Type | What it stores | Good for |
+| --- | --- | --- |
+| <FieldTypeIcon type="checkbox" /> | Yes or no | Consent boxes, opt-ins, simple flags |
+| <FieldTypeIcon type="dropdown" /> | One option from a list you define — or several, when you enable multiple select | Tracks, formats, levels, any flat option list |
+| <FieldTypeIcon type="tree" /> | One or more options from a **multi-level** list (for example Topic → Subtopic) | Taxonomies: topics with subtopics, industry classifications, product categories |
+
+## Other types
+
+| Type | What it stores |
+| --- | --- |
+| <FieldTypeIcon type="file" /> | An uploaded file (you can restrict file types and size) |
+| <FieldTypeIcon type="signature" /> | A typed signature, for agreements and consent |
+
+## The Tree field: multi-level choices
+
+<FieldTypeIcon type="tree" /> fields are for option lists that have a hierarchy. Instead of one flat list, you build a tree of values up to **seven levels deep** — for example:
+
+- Clinical Informatics
+  - AI & Machine Learning
+    - Predictive Analytics
+    - Clinical Decision Support
+  - Interoperability
+- Cybersecurity
+
+### Building the tree
+
+When you edit a Tree field, each value can have sub-values. Two things are worth knowing:
+
+- **Grouping-only values.** Any value can be marked *not selectable*. It still organizes the tree — submitters see it as a heading — but nobody can pick it as an answer. Use this for category headers like "Clinical Informatics" when only the specific subtopics should be chosen.
+- **Duplicate names are fine across branches.** "Other" can exist under several parents. Sessionboard always shows the full path (like *Clinical Informatics > AI & Machine Learning*), so answers stay unambiguous.
+
+### Answering and displaying
+
+Tree fields are always multi-select. On forms, submitters see the nested list with checkboxes and can expand or collapse branches; a search box appears for longer lists. Everywhere the answer is displayed — tables, exports, reports, printed summaries, emails using merge tags — it renders as the full path, for example `Clinical Informatics > AI & Machine Learning, Cybersecurity`.
+
+### Filtering rolls up
+
+When you filter by a tree value, selecting a **branch** matches everything tagged with that branch *or any value underneath it*. Filtering sessions by "Clinical Informatics" includes sessions tagged "Predictive Analytics" three levels down. The same roll-up applies to reviewer filters in evaluation rounds and to automation enrollment filters.
+
+<Tip>
+This makes branch values useful as filters even when they're marked not selectable — reviewers can narrow to a whole topic area with one checkbox.
+</Tip>
+
+### Where Tree fields work
+
+Tree fields are supported across the platform like any other custom field type:
+
+- Session submission forms, intake forms, and portal forms — including translated option labels on multi-language forms
+- Table views, inline editing, and bulk edit
+- Filters, dashboard views, and reports
+- Imports (map a column of values or full paths) and exports
+- Field rules (show or hide questions based on a tree answer) and automations (trigger when a tree value is set — triggering on a branch includes everything under it)
+- The Swapcard integration maps a Sessionboard Tree field to a Swapcard "Multi-Level Choices" field
+
+<Note>
+If you previously modeled a hierarchy with two dropdowns chained by conditional logic (a "Topic" dropdown revealing a "Subtopic" dropdown), a single Tree field replaces both and keeps the answer in one place.
+</Note>
