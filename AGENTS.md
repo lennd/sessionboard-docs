@@ -102,6 +102,15 @@ Docs are organized to mirror the **admin nav** (org/event level):
 
 When adding a page: put the MDX file in the matching folder under `src/content/docs/`, add its slug to the matching group in `src/sidebar.json`, and add a row to `redirects-301.csv` if it replaces a HubSpot article.
 
+## Release notes (mandatory with every product-docs round)
+
+`src/content/docs/help/release-notes.mdx` is the public changelog. **Any docs round that documents a shipped product change must also add an entry there, in the same commit.** Formatting rules:
+
+- One `## <Month D, YYYY>` heading per release date, newest first — add to the existing date section if one exists for that day.
+- One bullet per feature: `**Feature name** — one sentence of what the user can now do. [Article title](/path)`.
+- Entries describe **product changes users can see** (features, limits, integrations, settings). Docs-only work (rewrites, screenshots, style fixes) and internal tooling do **not** get entries.
+- Never invent a date — use the day the change actually shipped/was documented.
+
 ## Hard rules
 
 - URL paths are load-bearing: they back 301s, chat citations, and the Team Lead retrieval index. Never rename a slug without adding a redirect, and run `npm run audit:redirects` afterwards rather than checking a few URLs by hand.

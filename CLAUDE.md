@@ -26,6 +26,10 @@ Practicalities that cost time when rediscovered:
 - Deep links that skip fragile menu clicking: portal editor steps are routable (`/event/:eventId/portals/:portalId/configuration`, also `/criteria`, `/customize`, `/appearance`); Program Settings tabs too (`/event/:eventId/sessions/settings/agenda`). Portal ids = `Config_Sets.id`.
 - Grid columns hidden behind the Columns picker: scripted `element.click()` does not register on the Radix checkboxes — click by accessibility ref/uid, or in Playwright use `getByRole('checkbox', { name: … })`.
 
+## Release notes
+
+Documenting a shipped product change? Add a dated entry to `src/content/docs/help/release-notes.mdx` in the same commit — format and inclusion rules in `AGENTS.md` (Release notes section). Docs-only edits don't get entries.
+
 ## Before you stop (CI gate)
 
 After any page add/rename/move or `src/sidebar.json` change, run `npm run breadcrumbs` **after** pulling latest `main`, and commit the regenerated `src/breadcrumbs.json` with your change — Docs CI fails the push otherwise. Full loop and shared-checkout etiquette: `AGENTS.md`.
