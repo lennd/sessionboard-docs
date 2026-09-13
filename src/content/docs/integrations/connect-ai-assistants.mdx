@@ -39,11 +39,24 @@ No API token is required for this flow — the assistant walks you through OAuth
 
 ## Connect Claude
 
-**US-hosted organizations: use the directory.** Sessionboard is published in Claude's connector directory — in Claude, go to **Customize → Connectors → Discover**, search for "Sessionboard", and click **+** to connect. That skips the URL step entirely.
+There are two ways to connect Claude, depending on where your organization is hosted:
+
+| | Best for | How |
+|----|----|----|
+| **Option 1: Install from the directory** | US-hosted organizations | One click from Claude's connector directory — no URL needed |
+| **Option 2: Add a custom connector** | EU / Middle East organizations, or anyone who prefers manual setup | Paste your region's MCP server URL |
+
+### Option 1 — Install from the directory (US-hosted)
+
+Sessionboard is published in Claude's connector directory. In Claude, go to **Customize → Connectors → Discover**, search for "Sessionboard", and click **+** to connect. Claude walks you through the Sessionboard OAuth sign-in, and you're done — no URL required.
 
 ![The Sessionboard listing in Claude's connector directory](/images/kb/connect-ai-claude-directory-listing.png)
 
-**EU or Middle East organizations** (or if you prefer manual setup): add it as a custom connector with your region's URL —
+<Note>
+The directory listing points at the **US server**. If your organization is hosted in the EU or Middle East, the directory version won't see your data — use Option 2 instead.
+</Note>
+
+### Option 2 — Add a custom connector (EU / Middle East, or manual setup)
 
 <Steps>
   <Step title="Open Connectors">
@@ -52,9 +65,9 @@ No API token is required for this flow — the assistant walks you through OAuth
     ![The Connectors tab under Customize in Claude, with the Add button in the top right](/images/kb/connect-ai-claude-connectors.png)
   </Step>
   <Step title="Add a custom connector">
-    Click **Add** (top right), choose custom connector, give it a name like "Sessionboard", and paste the MCP server URL for your region — for example `https://mcp.sessionboard.com/mcp` — then click **Continue**.
+    Click **Add** (top right), choose custom connector, give it a name like "Sessionboard", and paste the MCP server URL for your region — for example `https://mcp-eu.sessionboard.com/mcp` — then click **Continue**.
 
-    ![Claude's Add custom connector dialog with the name Sessionboard and the US MCP server URL filled in](/images/kb/connect-ai-claude-add-custom-connector.png)
+    ![Claude's Add custom connector dialog with the name Sessionboard and an MCP server URL filled in](/images/kb/connect-ai-claude-add-custom-connector.png)
   </Step>
   <Step title="Sign in and authorize">
     Claude opens the Sessionboard OAuth flow. Sign in with your Sessionboard admin credentials, pick your organization on the consent screen, review the requested access, and click **Authorize**.
@@ -93,6 +106,14 @@ No API token is required for this flow — the assistant walks you through OAuth
   </Step>
 </Steps>
 
+## Other assistants: Copilot, Gemini, and more
+
+The MCP server works with any MCP-compatible client, not just Claude and ChatGPT:
+
+- [Connect Microsoft Copilot to Sessionboard](/integrations/connect-microsoft-copilot) — through a Copilot Studio agent, publishable to Microsoft 365 Copilot and Teams
+- [Connect Google Gemini to Sessionboard](/integrations/connect-google-gemini) — the Gemini app, Gemini Enterprise, and the Gemini CLI
+- **Cursor, Claude Code, and other developer tools** — point any MCP client that supports remote servers with OAuth at your region's URL; the sign-in flow is discovered automatically
+
 ## What you can ask
 
 The MCP server exposes 38 tools covering search, natural-language queries (via SbQL), reporting, and — if you authorize them — write operations. Some starting points:
@@ -110,9 +131,14 @@ The complete list of tools, their parameters, and worked example conversations l
 Write actions (creating or updating sessions, contacts, metadata, and so on) only work if you granted write scopes during authorization, and assistants ask for confirmation before destructive changes.
 </Tip>
 
-## Privacy: PII is masked by default
+## Privacy and PII
 
-Connections made through OAuth always run with **Hide PII** enabled: contact email addresses are returned as `j***@a***.com`, phone numbers as `***-***-4567`, and similar masking applies to other personal fields. This protects your speakers' and contacts' personal information from ending up in AI conversation histories. See [Generating API tokens](/integrations/api-tokens#5-enable-hide-pii-recommended) for details.
+Two different rules apply, depending on how the assistant reads your data:
+
+- **Natural-language and SbQL query results are always masked on OAuth connections.** When the assistant answers questions through Sessionboard's query engine (most reporting and "how many / show me" prompts), contact email addresses come back as `j***@a***.com`, phone numbers as `***-***-4567`, and similar masking applies to other personal fields. This is enforced server-side for every OAuth connection and can't be turned off.
+- **Direct record reads follow your granted scopes.** When the assistant opens a specific record (for example, pulling up one contact's profile), it receives the fields your authorization allows, unmasked. Only connect assistants you trust, and remember that anything the assistant reads can end up in its conversation history.
+
+If you connect with a manually generated API token instead of OAuth, PII masking on query results is controlled by that token's **Hide PII** setting — it's **off by default**, and we recommend enabling it for AI assistants and third-party integrations. See [Generating API tokens](/integrations/api-tokens#5-hide-pii-recommended-for-ai-and-third-party-integrations).
 
 ## Troubleshooting
 

@@ -63,16 +63,18 @@ API tokens use scopes to control what the token can read or write. Grant only th
 **📌 Note:** If you don't know which scopes you need, start with the default read access and add write scopes only when you have a clear use case for them.
 </Note>
 
-### 5. Enable Hide PII (recommended)
-Sessionboard includes a **Hide PII (Personally Identifiable Information)** setting that obfuscates personal contact data when the token is used.
+### 5. Hide PII (recommended for AI and third-party integrations)
+Sessionboard includes a **Hide PII (Personally Identifiable Information)** setting that obfuscates personal contact data in Insights and SbQL query results returned to the token.
 
-- **Enabled (default and recommended):** Email addresses are returned as `j***@a***.com`, phone numbers as `***-***-4567`, and similar masking applies to other personal fields.
-- **Disabled:** Full PII is returned in API responses.
+- **Enabled (recommended for AI assistants and third-party integrations):** Email addresses are returned as `j***@a***.com`, phone numbers as `***-***-4567`, and similar masking applies to other personal fields in query results.
+- **Disabled (default):** Full PII is returned.
+
+Note that connections made through the OAuth flow (Claude, ChatGPT, and other [AI assistant connections](/integrations/connect-ai-assistants)) always mask PII in query results regardless of any token setting.
 
 ![Disabled: Full PII is returned in API responses](/images/kb/211f0e53-image-png-May-05-2026-07-58-28-2747-PM.png)
 
 <Warning>
-We **strongly recommend leaving Hide PII enabled**, especially for tokens used by AI assistants or any third-party integration. It protects your speakers' and contacts' personal information from being exposed in logs, AI conversation histories, or downstream systems.
+We **strongly recommend turning Hide PII on** for tokens used by AI assistants or any third-party integration. It protects your speakers' and contacts' personal information from being exposed in logs, AI conversation histories, or downstream systems.
 
 You can toggle Hide PII per token, so different integrations can have different obfuscation rules depending on what they need to do.
 </Warning>
@@ -136,7 +138,7 @@ For full MCP details: available tools, prompt templates, security model, and exa
 </Note>
 
 ## Security and best practices
-- **Hide PII by default.** Leave the Hide PII toggle on unless you have a specific reason to expose full personal data.
+- **Turn on Hide PII.** Enable the Hide PII toggle unless your integration has a specific need for full personal data.
 - **Scope tokens narrowly.** Generate separate tokens for separate integrations and grant only the scopes each one actually needs. A read-only Tableau dashboard doesn't need write scopes; a sync job that only updates sessions doesn't need write access to contacts.
 - **Restrict to specific events when possible.** If a token only needs access to one event, scope it that way rather than giving it organization-wide access.
 - **Rotate tokens periodically** and revoke them as soon as an integration is decommissioned or a team member leaves.
