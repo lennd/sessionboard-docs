@@ -1,0 +1,124 @@
+---
+title: "Connect Claude and ChatGPT to Sessionboard"
+description: "Connect Claude, ChatGPT, or any MCP-compatible AI assistant to your Sessionboard organization — including the correct server URL for US, EU, and Middle East regions."
+---
+
+import { Note, Tip, Warning, Info, Steps, Step } from '@compat';
+
+Sessionboard ships a remote **MCP (Model Context Protocol) server** that lets AI assistants like Claude and ChatGPT securely query and act on your event data. Once connected, you can ask things like *"How many sessions are still pending review?"*, *"Search for keynote sessions,"* or *"Create a new session called 'AI in Events'"* — and the assistant works directly against your organization, scoped by OAuth sign-in.
+
+Sessionboard is published in Claude's connector directory as a community connector, and the ChatGPT app listing is in review. The manual setup below works today on both assistants — and it's the required path for organizations hosted in the **EU or Middle East** regions, because the directory listings point at the US server.
+
+<Note>
+This page covers connecting an assistant. For the technical reference — the full tool list, prompt templates, SbQL, the security model, and example conversations — see the [MCP Server documentation](https://apidocs.sessionboard.com/insights/mcp-server) in our public API docs.
+</Note>
+
+## Pick the server URL for your region
+
+Your organization's data lives in one region, and each region has its own MCP server. Use the server that matches where you sign in to Sessionboard:
+
+| Your admin login URL | Region | MCP server URL |
+|----|----|----|
+| `appv2.sessionboard.com` | United States | `https://mcp.sessionboard.com/mcp` |
+| `appv2-eu.sessionboard.com` | Europe | `https://mcp-eu.sessionboard.com/mcp` |
+| `appv2-me.sessionboard.com` | Middle East | `https://mcp-me.sessionboard.com/mcp` |
+
+<Warning>
+The regions are separate deployments — a connector pointed at the US server cannot see an EU or Middle East organization, and vice versa. If your assistant connects but shows no organizations on the consent screen, you're almost certainly on the wrong regional URL.
+</Warning>
+
+## Prerequisites
+
+Before connecting, three things must be true:
+
+1. **AI features are enabled for your organization.** Contact [support@sessionboard.com](mailto:support@sessionboard.com) or your account manager if you're not sure.
+2. **Your user has the AI Access permission.** Organization administrators have it by default; other roles need it granted under your org's role settings.
+3. **Your assistant supports remote MCP servers with OAuth.** Claude (Team/Enterprise and paid individual plans) and ChatGPT (Plus/Pro/Business with developer mode) both do.
+
+No API token is required for this flow — the assistant walks you through OAuth sign-in and you choose which organization to grant access to. If you'd rather use a manually generated token (for scripts or non-OAuth clients), see [Generating API tokens](/integrations/api-tokens).
+
+## Connect Claude
+
+If your organization is US-hosted, first check **Customize → Connectors → Discover** — Sessionboard is listed in the directory, and connecting from there skips the URL step. Otherwise (or for EU / Middle East), add it as a custom connector:
+
+<Steps>
+  <Step title="Open Connectors">
+    In Claude, go to **Customize → Connectors** (or **Settings → Connectors**, which links there). On Team or Enterprise plans, an Owner can also add the connector org-wide from **Admin settings → Connectors**.
+
+    ![The Connectors tab under Customize in Claude, with the Add button in the top right](/images/kb/connect-ai-claude-connectors.png)
+  </Step>
+  <Step title="Add a custom connector">
+    Click **Add** (top right), choose custom connector, give it a name like "Sessionboard", and paste the MCP server URL for your region — for example `https://mcp.sessionboard.com/mcp` — then click **Continue**.
+
+    ![Claude's Add custom connector dialog with the name Sessionboard and the US MCP server URL filled in](/images/kb/connect-ai-claude-add-custom-connector.png)
+  </Step>
+  <Step title="Sign in and authorize">
+    Claude opens the Sessionboard OAuth flow. Sign in with your Sessionboard admin credentials, pick your organization on the consent screen, review the requested access, and click **Authorize**.
+  </Step>
+  <Step title="Use it in a chat">
+    Start a new conversation and enable the Sessionboard connector from the tools menu. Ask something like *"What events do we have in Sessionboard?"* to confirm it's working.
+  </Step>
+</Steps>
+
+## Connect ChatGPT
+
+<Steps>
+  <Step title="Turn on developer mode">
+    In ChatGPT, go to **Settings → Security and login** and enable **Developer mode**. This requires a paid plan (Plus, Pro, Business, Enterprise, or Education) on the web. The "elevated risk" warning is ChatGPT's standard notice for any connector it hasn't reviewed yet.
+
+    ![The Developer mode toggle under Security and login in ChatGPT settings](/images/kb/connect-ai-chatgpt-developer-mode.png)
+  </Step>
+  <Step title="Create the connector">
+    Go to **Plugins** in the ChatGPT sidebar and click the **+** button next to the search box.
+
+    ![The Plugins page header in ChatGPT with the create button on the right](/images/kb/connect-ai-chatgpt-plugins-create.png)
+
+    In the **New Plugin** dialog, give it a name like "Sessionboard", paste the MCP server URL for your region, leave **Authentication** on **OAuth**, check **I understand and want to continue**, and click **Create**.
+
+    ![ChatGPT's New Plugin dialog filled in with the Sessionboard name and US MCP server URL, OAuth selected](/images/kb/connect-ai-chatgpt-new-connector.png)
+  </Step>
+  <Step title="Sign in and authorize">
+    ChatGPT starts the Sessionboard OAuth flow. Sign in, select your organization, and click **Authorize**. Back on the connector's page, click **Refresh** if the tool list looks empty.
+
+    ![The Sessionboard connector detail page in ChatGPT with the Try in chat button](/images/kb/connect-ai-chatgpt-connector-detail.png)
+  </Step>
+  <Step title="Use it in a chat">
+    Click **Try in chat** (or open a new chat, open the **+** menu, and select Sessionboard). Then prompt away — ChatGPT shows "Called tool" while it queries your data:
+
+    ![A ChatGPT conversation where the prompt "Search Sessionboard for keynote sessions" triggers a tool call and returns two keynote sessions](/images/kb/connect-ai-chatgpt-in-chat.png)
+  </Step>
+</Steps>
+
+## What you can ask
+
+The MCP server exposes 38 tools covering search, natural-language queries (via SbQL), reporting, and — if you authorize them — write operations. Some starting points:
+
+- *"What events do we have in Sessionboard?"*
+- *"How many sessions are still pending review for [event name]?"*
+- *"Search Sessionboard for keynote sessions"*
+- *"Show me the top 10 speakers by session count"*
+- *"Create a new session called 'AI in Events' in [event name]"*
+- *"Run our speaker-status report and summarize it"*
+
+The complete list of tools, their parameters, and worked example conversations live in the [MCP Server reference](https://apidocs.sessionboard.com/insights/mcp-server).
+
+<Tip>
+Write actions (creating or updating sessions, contacts, metadata, and so on) only work if you granted write scopes during authorization, and assistants ask for confirmation before destructive changes.
+</Tip>
+
+## Privacy: PII is masked by default
+
+Connections made through OAuth always run with **Hide PII** enabled: contact email addresses are returned as `j***@a***.com`, phone numbers as `***-***-4567`, and similar masking applies to other personal fields. This protects your speakers' and contacts' personal information from ending up in AI conversation histories. See [Generating API tokens](/integrations/api-tokens#5-enable-hide-pii-recommended) for details.
+
+## Troubleshooting
+
+| Symptom | Likely cause |
+|----|----|
+| Consent screen shows no organizations | Wrong regional URL, AI features not enabled for your org, or your user lacks the AI Access permission |
+| `403 Forbidden` on requests | AI features or MCP access not enabled — see [Prerequisites](#prerequisites) |
+| Connector added but no tools appear (ChatGPT) | Click **Refresh** on the connector's detail page after authorizing |
+| Assistant can read but not create/update | Write scopes weren't granted during authorization — remove and re-add the connector, approving write access |
+
+<Note>
+Need help? Contact us at [support@sessionboard.com](mailto:support@sessionboard.com). For the full technical reference, see the [MCP Server documentation](https://apidocs.sessionboard.com/insights/mcp-server).
+</Note>
