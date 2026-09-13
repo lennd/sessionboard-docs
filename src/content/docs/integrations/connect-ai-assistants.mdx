@@ -1,17 +1,34 @@
 ---
-title: "Connect Claude and ChatGPT to Sessionboard"
-description: "Connect Claude, ChatGPT, or any MCP-compatible AI assistant to your Sessionboard organization — including the correct server URL for US, EU, and Middle East regions."
+title: "Connect AI assistants to Sessionboard"
+description: "Connect Claude, ChatGPT, Microsoft Copilot, Google Gemini, or any MCP-compatible AI assistant to your Sessionboard organization — including the correct server URL for US, EU, and Middle East regions."
 ---
 
-import { Note, Tip, Warning, Info, Steps, Step } from '@compat';
+import { Note, Tip, Warning, Card, CardGroup } from '@compat';
 
-Sessionboard ships a remote **MCP (Model Context Protocol) server** that lets AI assistants like Claude and ChatGPT securely query and act on your event data. Once connected, you can ask things like *"How many sessions are still pending review?"*, *"Search for keynote sessions,"* or *"Create a new session called 'AI in Events'"* — and the assistant works directly against your organization, scoped by OAuth sign-in.
-
-Sessionboard is published in Claude's connector directory as a community connector, and the ChatGPT app listing is in review. The manual setup below works today on both assistants — and it's the required path for organizations hosted in the **EU or Middle East** regions, because the directory listings point at the US server.
+Sessionboard ships a remote **MCP (Model Context Protocol) server** that lets AI assistants securely query and act on your event data. Once connected, you can ask things like *"How many sessions are still pending review?"*, *"Search for keynote sessions,"* or *"Create a new session called 'AI in Events'"* — and the assistant works directly against your organization, scoped by OAuth sign-in.
 
 <Note>
-This page covers connecting an assistant. For the technical reference — the full tool list, prompt templates, SbQL, the security model, and example conversations — see the [MCP Server documentation](https://apidocs.sessionboard.com/insights/mcp-server) in our public API docs.
+This page covers what you need before connecting and what to expect afterwards. For the technical reference — the full tool list, prompt templates, SbQL, the security model, and example conversations — see the [MCP Server documentation](https://apidocs.sessionboard.com/insights/mcp-server) in our public API docs.
 </Note>
+
+## Setup guides by assistant
+
+<CardGroup cols={2}>
+  <Card title="Claude" href="/integrations/connect-claude">
+    One-click install from Claude's connector directory (US), or a custom connector for EU / Middle East.
+  </Card>
+  <Card title="ChatGPT" href="/integrations/connect-chatgpt">
+    Create a connector in developer mode on any paid plan.
+  </Card>
+  <Card title="Microsoft Copilot" href="/integrations/connect-microsoft-copilot">
+    Add the server to a Copilot Studio agent and publish it to Microsoft 365 Copilot or Teams.
+  </Card>
+  <Card title="Google Gemini" href="/integrations/connect-google-gemini">
+    The Gemini app, Gemini Enterprise, or the Gemini CLI.
+  </Card>
+</CardGroup>
+
+**Cursor, Claude Code, and other developer tools** work too — point any MCP client that supports remote servers with OAuth at your region's URL below; the sign-in flow is discovered automatically.
 
 ## Pick the server URL for your region
 
@@ -33,86 +50,9 @@ Before connecting, three things must be true:
 
 1. **AI features are enabled for your organization.** Contact [support@sessionboard.com](mailto:support@sessionboard.com) or your account manager if you're not sure.
 2. **Your user has the AI Access permission.** Organization administrators have it by default; other roles need it granted under your org's role settings.
-3. **Your assistant supports remote MCP servers with OAuth.** Claude (Team/Enterprise and paid individual plans) and ChatGPT (Plus/Pro/Business with developer mode) both do.
+3. **Your assistant supports remote MCP servers with OAuth.** All four assistants above do — plan requirements are noted in each guide.
 
 No API token is required for this flow — the assistant walks you through OAuth sign-in and you choose which organization to grant access to. If you'd rather use a manually generated token (for scripts or non-OAuth clients), see [Generating API tokens](/integrations/api-tokens).
-
-## Connect Claude
-
-There are two ways to connect Claude, depending on where your organization is hosted:
-
-| | Best for | How |
-|----|----|----|
-| **Option 1: Install from the directory** | US-hosted organizations | One click from Claude's connector directory — no URL needed |
-| **Option 2: Add a custom connector** | EU / Middle East organizations, or anyone who prefers manual setup | Paste your region's MCP server URL |
-
-### Option 1 — Install from the directory (US-hosted)
-
-Sessionboard is published in Claude's connector directory. In Claude, go to **Customize → Connectors → Discover**, search for "Sessionboard", and click **+** to connect. Claude walks you through the Sessionboard OAuth sign-in, and you're done — no URL required.
-
-![The Sessionboard listing in Claude's connector directory](/images/kb/connect-ai-claude-directory-listing.png)
-
-<Note>
-The directory listing points at the **US server**. If your organization is hosted in the EU or Middle East, the directory version won't see your data — use Option 2 instead.
-</Note>
-
-### Option 2 — Add a custom connector (EU / Middle East, or manual setup)
-
-<Steps>
-  <Step title="Open Connectors">
-    In Claude, go to **Customize → Connectors** (or **Settings → Connectors**, which links there). On Team or Enterprise plans, an Owner can also add the connector org-wide from **Admin settings → Connectors**.
-
-    ![The Connectors tab under Customize in Claude, with the Add button in the top right](/images/kb/connect-ai-claude-connectors.png)
-  </Step>
-  <Step title="Add a custom connector">
-    Click **Add** (top right), choose custom connector, give it a name like "Sessionboard", and paste the MCP server URL for your region — for example `https://mcp-eu.sessionboard.com/mcp` — then click **Continue**.
-
-    ![Claude's Add custom connector dialog with the name Sessionboard and an MCP server URL filled in](/images/kb/connect-ai-claude-add-custom-connector.png)
-  </Step>
-  <Step title="Sign in and authorize">
-    Claude opens the Sessionboard OAuth flow. Sign in with your Sessionboard admin credentials, pick your organization on the consent screen, review the requested access, and click **Authorize**.
-  </Step>
-  <Step title="Use it in a chat">
-    Start a new conversation and enable the Sessionboard connector from the tools menu. Ask something like *"What events do we have in Sessionboard?"* to confirm it's working.
-  </Step>
-</Steps>
-
-## Connect ChatGPT
-
-<Steps>
-  <Step title="Turn on developer mode">
-    In ChatGPT, go to **Settings → Security and login** and enable **Developer mode**. This requires a paid plan (Plus, Pro, Business, Enterprise, or Education) on the web. The "elevated risk" warning is ChatGPT's standard notice for any connector it hasn't reviewed yet.
-
-    ![The Developer mode toggle under Security and login in ChatGPT settings](/images/kb/connect-ai-chatgpt-developer-mode.png)
-  </Step>
-  <Step title="Create the connector">
-    Go to **Plugins** in the ChatGPT sidebar and click the **+** button next to the search box.
-
-    ![The Plugins page header in ChatGPT with the create button on the right](/images/kb/connect-ai-chatgpt-plugins-create.png)
-
-    In the **New Plugin** dialog, give it a name like "Sessionboard", paste the MCP server URL for your region, leave **Authentication** on **OAuth**, check **I understand and want to continue**, and click **Create**.
-
-    ![ChatGPT's New Plugin dialog filled in with the Sessionboard name and US MCP server URL, OAuth selected](/images/kb/connect-ai-chatgpt-new-connector.png)
-  </Step>
-  <Step title="Sign in and authorize">
-    ChatGPT starts the Sessionboard OAuth flow. Sign in, select your organization, and click **Authorize**. Back on the connector's page, click **Refresh** if the tool list looks empty.
-
-    ![The Sessionboard connector detail page in ChatGPT with the Try in chat button](/images/kb/connect-ai-chatgpt-connector-detail.png)
-  </Step>
-  <Step title="Use it in a chat">
-    Click **Try in chat** (or open a new chat, open the **+** menu, and select Sessionboard). Then prompt away — ChatGPT shows "Called tool" while it queries your data:
-
-    ![A ChatGPT conversation where the prompt "Search Sessionboard for keynote sessions" triggers a tool call and returns two keynote sessions](/images/kb/connect-ai-chatgpt-in-chat.png)
-  </Step>
-</Steps>
-
-## Other assistants: Copilot, Gemini, and more
-
-The MCP server works with any MCP-compatible client, not just Claude and ChatGPT:
-
-- [Connect Microsoft Copilot to Sessionboard](/integrations/connect-microsoft-copilot) — through a Copilot Studio agent, publishable to Microsoft 365 Copilot and Teams
-- [Connect Google Gemini to Sessionboard](/integrations/connect-google-gemini) — the Gemini app, Gemini Enterprise, and the Gemini CLI
-- **Cursor, Claude Code, and other developer tools** — point any MCP client that supports remote servers with OAuth at your region's URL; the sign-in flow is discovered automatically
 
 ## What you can ask
 
@@ -146,8 +86,9 @@ If you connect with a manually generated API token instead of OAuth, PII masking
 |----|----|
 | Consent screen shows no organizations | Wrong regional URL, AI features not enabled for your org, or your user lacks the AI Access permission |
 | `403 Forbidden` on requests | AI features or MCP access not enabled — see [Prerequisites](#prerequisites) |
-| Connector added but no tools appear (ChatGPT) | Click **Refresh** on the connector's detail page after authorizing |
 | Assistant can read but not create/update | Write scopes weren't granted during authorization — remove and re-add the connector, approving write access |
+
+Each assistant guide has its own troubleshooting table for client-specific issues.
 
 <Note>
 Need help? Contact us at [support@sessionboard.com](mailto:support@sessionboard.com). For the full technical reference, see the [MCP Server documentation](https://apidocs.sessionboard.com/insights/mcp-server).
