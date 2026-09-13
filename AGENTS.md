@@ -71,7 +71,9 @@ those corrections and will silently undo them.
 
 The build fails on broken internal links (starlight-links-validator). Always run `npm run build` after content changes.
 
-**Always deploy after any docs change.** Do not leave Help Center edits local-only and do not wait to be asked. From this directory: `npm run check:style && npm run og && npm run build && npx wrangler deploy`, then purge the edge cache (below). Verify the live host in `site.json`.
+**Always deploy after any docs change.** Do not leave Help Center edits local-only and do not wait to be asked. From this directory: `npm run check:style && npm run breadcrumbs && npm run og && npm run build && npx wrangler deploy`, then purge the edge cache (below). Verify the live host in `site.json`.
+
+**Commit and push before you stop — and regenerate breadcrumbs first.** Docs CI on `main` regenerates `src/breadcrumbs.json` and fails the push if the committed file is stale, so any page add/rename/move/sidebar change must ship with a freshly regenerated `src/breadcrumbs.json` (and its `public/og/` image) **in the same push**. This checkout is shared by concurrent agent sessions: `git pull --rebase` before committing (stash/pop around it if the tree is dirty), re-run `npm run breadcrumbs` *after* the pull so it reflects everyone's pages, and commit only your own files — described honestly if you must sweep a stray hunk. Four consecutive pushes failed CI on 2026-09-12 because none of them did this. Also remember `npx wrangler deploy` ships the **entire working tree**, including other sessions' uncommitted edits — that is accepted here (docs edits must always deploy anyway), but do not let it surprise you.
 
 `npm run check:style` enforces the mechanical half of `STYLE.md` — title form and length, first heading level, stranded tables of contents, image alt text, truncated descriptions. It runs in CI beside Vale, which only sees prose. Everything it flags is a HubSpot migration artifact, so fix the page rather than loosening the rule.
 
@@ -103,7 +105,7 @@ When adding a page: put the MDX file in the matching folder under `src/content/d
 ## Hard rules
 
 - URL paths are load-bearing: they back 301s, chat citations, and the Team Lead retrieval index. Never rename a slug without adding a redirect, and run `npm run audit:redirects` afterwards rather than checking a few URLs by hand.
-- Images live in `public/images/` — no external image hosts.
+- Images live in `public/images/` — no external image hosts. New UI screenshots: 2x PNG clipped to the control (`CLAUDE.md` Screenshots). Do not JPEG a tabpanel.
 - Component imports come from `@compat` or `@astrojs/starlight/components` (see `STYLE.md`).
 - Add-on features (Speaker CRM, Awards, SSO, Insights, Program Site) use `<AddOnNote>`.
 - Don't document internal-only admin/superuser tooling.
