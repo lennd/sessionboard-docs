@@ -1,0 +1,27 @@
+---
+title: "Contracts with Docusign"
+description: "Short video walkthrough: connect Docusign, send a pre-filled speaker agreement from a pipeline entry, sign it, and watch the status and signed PDF land on the record."
+---
+
+import { Walkthrough } from '@compat';
+
+<Walkthrough src="/media/walkthroughs/contracts-docusign-demo.mp4" title="Connect Docusign, send a pre-filled speaker agreement, sign it, and track the result" />
+
+Covered in this walkthrough: [connecting Docusign](/apps/docusign-integration), [sending and tracking a contract](/speaker-crm/contracts), and [template variables](/speaker-crm/docusign-template-variables).
+
+<details class="sb-accordion">
+<summary>Video transcript</summary>
+<div class="sb-accordion-body">
+
+This is Sessionboard Contracts, our Docusign integration. Sessionboard is a speaker and content platform for conferences. Event teams use it to run calls for papers, manage speakers and sessions, and now to send speaker, sponsor and exhibitor agreements through Docusign, pre-filled from the data Sessionboard already holds.
+
+Setup lives under Organization Settings, Integrations. Each administrator connects their own Docusign user, so envelopes are sent as them. The panel shows who has connected, the Docusign account, and a disconnect action that revokes our token. We use OAuth 2.0 Authorization Code Grant with a single integration key for all customers: Connect Docusign opens Docusign's authorization page, the user grants the signature and extended scopes, Docusign redirects to our API callback, and we exchange the code for tokens, call user info to learn the account and base URI, and store the tokens encrypted. Teams without a Docusign account can start a free trial right here: this link launches Docusign's Digital Referral sign-up in a pop-up, returns to a registered redirect URI on our domain, and completes the OAuth consent in the same flow.
+
+Envelopes are created API-direct from server templates that the customer designs in Docusign. There is no sender view and no free-form signing. Here, from the speaker's pipeline entry, we open the Contracts tab and add a contract. Sessionboard lists the templates from the connected Docusign account, and we pick the event the agreement belongs to. The template's text tabs carry data labels such as contact full name, contact email, event name, session title, and custom properties like hotel and travel. Sessionboard resolves each label from the speaker, session, event and organization records, marks what it could and could not resolve, and gives the administrator a review step to fill or edit any value before sending. Recipients come from the template's roles; reminders and expiration follow the account defaults. Send creates the envelope through the eSignature REST API on the account's own base URI, with an envelope-level event notification pointing at our webhook. The contract now appears on the record as Needs signature.
+
+Signers can use the Docusign email as usual, or sign inside the Sessionboard participant portal, where Sign Now requests a recipient view and opens an embedded signing session. Here we open the envelope in Docusign. Every text tab arrived pre-filled from Sessionboard: name, email, event, session title, session date, hotel and travel. The signer applies their signature and finishes.
+
+Status comes back through Docusign Connect envelope-level event notifications, verified with an HMAC signature. We do not poll. When the envelope completes, we fetch the envelope and the combined document, store the signed PDF on the contact record, and optionally advance the speaker's pipeline entry to the next stage. Both agreements now show as Signed with the PDF available for download, and Open in Docusign deep-links to the envelope on the correct Docusign host for that account. That is Sessionboard Contracts: connect once, send Docusign templates pre-filled from the event record, sign from Docusign or the portal, and file the result on the record. Thank you.
+
+</div>
+</details>
