@@ -159,6 +159,17 @@ for (const [slug, target] of Object.entries(redirects)) {
   if (id) byArticleId[id] = target;
 }
 
+// Modern-slug moves: pages that lived on the current site and were merged or
+// renamed after launch. These are canonical-host paths (not legacy KB slugs),
+// so they get their own map, checked before serving assets. Add a row here any
+// time an article is retired in favour of another.
+const INTERNAL_REDIRECTS = {
+  // Merged into the Report Builder guide, 2026-09-13 — the article described
+  // the retired three-tab builder; schedules/share-links/permissions content
+  // now lives on /reporting/report-builder.
+  '/reporting/insights-ai': '/reporting/report-builder',
+};
+
 // Release notes live at /help/release-notes (restored in-site 2026-09-12 after
 // a period on Canny; the page links Canny for older history). Everything that
 // used to be under /release-notes goes there instead of rotting or 404ing —
@@ -273,6 +284,12 @@ export default {
 
     if (RELEASE_NOTES_PREFIX.test(url.pathname)) {
       return Response.redirect(`${targetOrigin}${CHANGELOG_PATH}`, 301);
+    }
+
+    // Merged/renamed modern slugs — one hop to the page that replaced them.
+    const internalTarget = INTERNAL_REDIRECTS[url.pathname.replace(/\/$/, '')];
+    if (internalTarget) {
+      return Response.redirect(`${targetOrigin}${internalTarget}${url.search}`, 301);
     }
 
     if (isLegacyHost) {
