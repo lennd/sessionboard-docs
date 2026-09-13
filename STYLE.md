@@ -102,6 +102,8 @@ jobs, so they are different fields.
   never "<page title> in Sessionboard".
 - Filenames are not alt text. `Screenshot 2025-05-28 at 12.00.42 PM` tells a
   screen-reader user nothing.
+- New product UI shots are **2x PNG**, clipped to the control the sentence is
+  about — not a JPEG of the whole tabpanel. Capture steps: `CLAUDE.md`.
 
 `node scripts/check-style.mjs` enforces everything in these three sections and
 runs in CI. Vale covers voice and terminology. If a rule fires, fix the page —

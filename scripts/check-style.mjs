@@ -166,6 +166,34 @@ for (const file of files) {
     });
   }
 
+  // HubSpot pasted a jump-link TOC as prose. Starlight already renders one.
+  // Catch both the leftover heading ("In this article:") and the conversion
+  // wreckage that split a heading across lines (`## **` then the rest).
+  {
+    const lines = prose.split('\n');
+    lines.forEach((line, i) => {
+      const n = i + 1;
+      if (/in this article/i.test(line)) {
+        add(file, 'toc', `line ${n}: leftover HubSpot "In this article" TOC`);
+      }
+      if (/^>\s*$/.test(line)) {
+        add(file, 'hubspot-artifact', `line ${n}: stray empty blockquote`);
+      }
+      if (/^\\?\*\*\s*$/.test(line)) {
+        add(file, 'hubspot-artifact', `line ${n}: leftover bold closer`);
+      }
+      const heading = line.match(/^(#{2,6})\s+(.*)$/);
+      if (heading) {
+        const text = heading[2].trim();
+        if (text === '**' || text === '\\**' || text === '') {
+          add(file, 'hubspot-artifact', `line ${n}: heading is only leftover markdown: ${line.trim()}`);
+        } else if (/^\*\*/.test(text) && !/\*\*\s*$/.test(text)) {
+          add(file, 'hubspot-artifact', `line ${n}: heading opens bold but does not close on the same line: ${line.trim()}`);
+        }
+      }
+    });
+  }
+
   // Starlight renders its own table of contents, so a bullet list of the page's
   // own headings is duplication left over from HubSpot's jump links.
   const headings = [...prose.matchAll(/^(#{2,6})\s+(.+?)\s*$/gm)];
