@@ -1,0 +1,97 @@
+---
+title: "Maritz RTS"
+description: "Pull registrant profiles from Maritz Real-Time Services onto existing Sessionboard contacts — job title, company, bio, and registration state stay current automatically."
+---
+
+import { Note, Tip, Warning, Steps, Step } from '@compat';
+
+<img src="/logo/apps/maritz-rts-integration.png" alt="Maritz logo" width="52" height="52" style={{borderRadius:"12px"}} />
+
+Maritz Real-Time Services (RTS) is the registration data service behind shows serviced by Maritz. Connect Sessionboard to RTS once, map each Sessionboard event to its Maritz show code, and Sessionboard pulls registrant profile updates onto your existing contacts on a schedule — no spreadsheet round-trips.
+
+This connector is **inbound only**. It updates contacts that already exist in Sessionboard and never creates new ones, and it never writes anything back to Maritz.
+
+<Tip>
+Before you start, have your RTS username and password from Maritz and the show code for your event. Ask your Maritz project manager for both — the RTS account must be provisioned with explicit access to that specific show, or every pull fails.
+</Tip>
+
+## Connect Maritz RTS
+
+Maritz RTS is set up at the **organization**. Open it from **Settings > Integrations** or from **Apps**. One connection can serve several events — the show code is chosen per event mapping.
+
+<Steps>
+  <Step title="Open Maritz RTS">
+    Go to organization **Settings > Integrations** and click **Connect** or **Settings** on Maritz RTS, or open **Apps** and click **Maritz RTS**.
+  </Step>
+  <Step title="Save the connection">
+    On the **Connections** tab, enter a **Name**, the **RTS Username**, and the **RTS Password**. Leave **RTS Environment** on PROD unless Maritz has pointed you at their QA or DEV environment for testing. **Page Size** controls how many registrants come back per call — the default of 500 is right for almost everyone. Click **Save connection**.
+  </Step>
+  <Step title="Map a Sessionboard event">
+    Click **Map events** on the connection. Choose the Sessionboard event and enter the **Maritz Show Code** for it. Click **Save mapping**.
+  </Step>
+  <Step title="Map speaker fields">
+    Use **Map Speaker Fields** to choose which contact fields on that event receive each Maritz field. Pick an existing contact field for each one you want hydrated — anything you leave unmapped is simply not written.
+  </Step>
+</Steps>
+
+<Note>
+Credentials are encrypted and are not shown again after you save. Leave the password blank when you edit a connection to keep the current value.
+</Note>
+
+## What syncs
+
+Sessionboard pulls registrant profiles from RTS and writes them onto **existing** contacts on the mapped event:
+
+| Maritz RTS | Sessionboard |
+| --- | --- |
+| Job title | The contact field you map for job title |
+| Company | The contact field you map for company |
+| Speaker directory biography | The contact field you map for biography (long bios are truncated to 1,500 characters) |
+| Registration status | The contact field you map for registration state |
+| Registrant ID | The contact field you map for registrant ID |
+| Data Ops ID | The contact field you map for Data Ops ID |
+
+Only completed registrations are pulled — cancelled and in-progress registrations are filtered out before matching, so a withdrawn registrant never overwrites a contact.
+
+A registrant whose profile has not changed since the last sync is skipped — repeated syncs do not rewrite unchanged contacts, so your contact history stays clean.
+
+## How registrants match contacts
+
+Each registrant is matched to a Sessionboard contact in two passes:
+
+1. **Registrant ID** — once a registrant has synced, Sessionboard remembers the link and uses it first on every later sync, even if the email changes on either side.
+2. **Email** — a registrant syncing for the first time matches the event contact with the same email address.
+
+Anything that cannot be matched safely is **skipped and logged**, never guessed:
+
+- A registrant with no matching contact is skipped. Sessionboard does not create contacts from Maritz data — add the person to the event first, and the next sync picks them up.
+- A registrant whose email matches **more than one** contact on the event is skipped, so an ambiguous match never hydrates the wrong person.
+- A registrant with no email (for example, a privacy opt-out) is skipped unless a Registrant ID link already exists from an earlier sync.
+
+## Run a sync
+
+Once a mapping is saved, Sessionboard polls RTS about every **10 minutes**. The first run backfills every registrant on the show; after that, each run pulls only registrants whose Maritz profile changed since the last successful run. Click **Sync** on the connection any time you want an immediate pull.
+
+<Warning>
+RTS caps a single pull at 9,000 registrants. If a backfill on a very large show exceeds the cap, the run fails with an error rather than silently pulling a partial list — contact [support@sessionboard.com](mailto:support@sessionboard.com) and we'll run the backfill in narrower date windows.
+</Warning>
+
+## Review sync results
+
+Open the event and go to **History > Integrations**.
+
+**Sync History** lists every Maritz RTS run: when it ran, its status, and counts of updated and skipped registrants. Skipped rows include the reason — no matching contact, an ambiguous email, or no change since the last run.
+
+## Add or remove a mapping
+
+Use **Add event mapping** to point another Sessionboard event at another show on the same connection, or add a second connection if Maritz issued you separate credentials.
+
+<Warning>
+Do not change the show code on a live mapping. Registrant ID links belong to the original show, and pointing the mapping at a different show can hydrate contacts with the wrong show's data.
+</Warning>
+
+To remove a mapping, use the trash control on that row. Contacts keep the values already written; Sessionboard just stops updating them.
+
+## Still having issues?
+
+Email [support@sessionboard.com](mailto:support@sessionboard.com) and include the connection name, the show code, and the registrant or contact that did not sync. Do not send your RTS password — if it may have been exposed, ask Maritz to rotate it and update the connection with the new one.
