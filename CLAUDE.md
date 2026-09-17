@@ -4,6 +4,23 @@ Starlight Help Center. Canonical host is `site.json` — never hardcode `learn.`
 
 Read `STYLE.md` before editing a page.
 
+## Product facts come from web-api, not from the UI or an existing article
+
+Before writing or updating any article, read
+[`sessionboard-web-api/docs/support-docs-source-of-truth.md`](../sessionboard-web-api/docs/support-docs-source-of-truth.md).
+It lists which file owns each documented fact — feature names, event settings,
+permissions, sidebar structure, app deep links — and how to generate from it.
+Documenting from memory of the UI is how we shipped articles naming features that
+had been renamed and menu paths that had moved.
+
+Two generators keep this honest, and both are gated in CI:
+
+- `npm run nav:pull` → `src/data/nav-manifest.json`, then `npm run nav:check`
+  names every sidebar item `get-started/sidebar.mdx` fails to mention. Super-user
+  links are stripped by the exporter, so never document a staff-only surface.
+- `npm run contract:pull` → `src/data/product-contract.json`, which is what makes
+  `<IfFeature>` / `<IfSetting>` / `app:` markers valid. Then `npm run markers:check`.
+
 ## Screenshots (`public/images/kb/`)
 
 UI chrome is 1x JPEG-compressed in the article if you capture it wrong — text goes muddy and tabpanels look like a tall empty card. Do this every time:
