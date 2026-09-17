@@ -32,7 +32,7 @@ Visit is set up at the **organization**. Open it from **Settings > Integrations*
   <Step title="Set form, type, consent, and roles">
     Open **Event Settings** for that mapping. Choose the **Registration form** and **Registration type** from the lists Sessionboard loads from that expo. The type list is visitor types only — Visit rejects Speaker, Chair, and other leader types on visitor create. Those roles attach later if you push sessions as activities.
 
-    **Consent field or task** is optional. If you pick one from a speaker portal on that event, a participant is not pushed until that field is filled or that task is complete. Clear the selection to turn the gate off and sync on acceptance only. Selecting the contact and clicking **Sync to Visit** still pushes them.
+    **Consent field or task** is optional. The picker lists every updatable contact field on the event (portal-bound fields first), plus portal form submissions and Config Set tasks. A participant is not pushed until that field is filled, that form is submitted, or that task is complete. Clear the selection to turn the gate off and sync on acceptance only. Selecting the contact and clicking **Sync to Visit** still pushes them.
 
     **Session roles to sync** defaults to every role on accepted sessions. Uncheck chairs, co-authors, or any custom role that should not become a Visit visitor. People in unchecked roles leave the accepted set — the next full or scheduled sync can remove their Visit visitor if **Remove from Visit when un-accepted** is on.
 
@@ -45,7 +45,7 @@ Visit is set up at the **organization**. Open it from **Settings > Integrations*
   <Step title="Map fields">
     Use **Map Speaker Fields** and **Map Session Fields** to choose which Sessionboard fields write to Visit for that mapping. First name, last name, and email are required for visitors. Title, start, and end are required for activities. You cannot save until those are mapped.
 
-    On **Map Speaker Fields**, also pick where Visit writes back. For **Visit Registration ID** and **Visit Registration URL**, choose an event-only text or URL contact field, or click **Create** to add one. Organization fields are not listed, so two expos cannot overwrite the same contact. You cannot save until both are mapped.
+    On **Map Speaker Fields**, also pick where Visit writes back. For **Visit Registration ID** and **Visit Registration URL**, choose an event-only text or URL contact field, or click **Create** to add one. If those slots are still unset on an older connection, **Save field mappings** creates the fields for you. Organization fields are not listed, so two expos cannot overwrite the same contact. You cannot save until both are mapped.
   </Step>
 </Steps>
 
@@ -59,7 +59,7 @@ Participants on **accepted** sessions become Visit visitors. **Session roles to 
 
 If the event has **speaker acceptance** on, scheduled and full syncs do not push a speaker until they have accepted. Other roles are not gated by acceptance. Selecting people and clicking **Sync to Visit** is an admin override — it pushes the selected contacts even if they have not accepted yet.
 
-When the consent gate is on, a participant who has not completed the chosen field or task is skipped (`consent_gate` in the sync log) and is not removed from Visit if they already have a registration. Completing that task or submitting that portal form queues a sync for that person. Session activities are not gated by consent.
+When the consent gate is on, a participant who has not completed the chosen field, form, or task is skipped (`consent_gate` in the sync log) and is not removed from Visit if they already have a registration. Completing that task, filling that contact field, or submitting that portal form queues a sync for that person. Session activities are not gated by consent.
 
 A person needs a first name, last name, and email. Anyone missing those is skipped and is not removed from Visit.
 
@@ -72,6 +72,7 @@ A contact who is deleted, or removed from the event, is not pushed — even if t
 | Session track / room name (when activities are on) | Visit track / location, matched by name |
 | Visit visitor ID | Writes back to the contact field you mapped for Visit Registration ID |
 | Visit Discover URL | Writes back to the contact field you mapped for Visit Registration URL |
+| Visit activity ID (when activities are on) | Writes back to the read-only **Visit Session ID** session field |
 | Accepted session (when activities are on) | Activity (name, start, end) |
 
 A later sync updates the same visitor. Changing the contact's email does not create a second visitor. If Visit already has that email on a different visitor, Sessionboard still writes to the visitor matched by the Sessionboard contact. Visit may accept the duplicate email.
@@ -88,7 +89,9 @@ Visit needs a first name, last name, and email to create a visitor, and a title,
 
 After you pick an expo, **Map Speaker Fields** also lists Visit contact fields (job function, phone, address) and the questions on that expo — GDPR checkboxes, dropdowns, and any custom questions the organizer added. Map a Sessionboard contact field onto a question to send that answer with the visitor. Expo-level custom fields (Informa or Adobe configuration) are not visitor fields and do not appear here.
 
-**Write back to Sessionboard** is on the same screen. After Visit creates a visitor, Sessionboard stores the Visit registration ID and Discover URL on the event contact fields you pick. Use **Create Visit Registration ID** (or URL) if the event does not already have a field. Add that field to the contact layout if you want it visible on the record.
+**Write back to Sessionboard** is on the same screen. After Visit creates a visitor, Sessionboard stores the Visit registration ID and Discover URL on the event contact fields you pick. Use **Create Visit Registration ID** (or URL) if the event does not already have a field, or click **Save field mappings** — Save creates any unset write-back field for you and keeps fields you already chose. Add that field to the contact layout if you want it visible on the record.
+
+When **Also push sessions as Visit activities** is on, Sessionboard also creates a read-only **Visit Session ID** field on the session and fills it with the Visit activity id on each sync. The control reads **Set by Visit** — you cannot type into it. A later sync that finds the same activity id does not append a duplicate. **Check drift** does not create the field or write a value.
 
 **Registration type** on Event Settings must be a Visit visitor type. Speaker, Chair, and Exhibitor types belong to sessions or exhibiting companies and cannot create a visitor.
 
