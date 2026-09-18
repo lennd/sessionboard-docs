@@ -38,8 +38,7 @@ Click **Generate Token**. You'll be asked for:
 
 - **A descriptive name:** e.g."Tableau dashboard." This helps you identify the token later when reviewing or revoking it.
 - **Scopes:** see the next section.
-- **MCP Access:** toggle this on if the token will be used by an AI assistant (Claude, ChatGPT, etc.) via Sessionboard's MCP server.
-- **Hide PII (Personally Identifiable Information):** recommended. See the dedicated section below.
+- **PII Obfuscation:** recommended. See the dedicated section below.
 - **Event restrictions** *(optional)* : limit the token to specific events instead of your whole organization.
 
 ![Event restrictions (optional)](/images/kb/31d4c602-image-png-May-05-2026-07-53-04-0808-PM.png)
@@ -63,8 +62,8 @@ API tokens use scopes to control what the token can read or write. Grant only th
 **📌 Note:** If you don't know which scopes you need, start with the default read access and add write scopes only when you have a clear use case for them.
 </Note>
 
-### 5. Hide PII (recommended for AI and third-party integrations)
-Sessionboard includes a **Hide PII (Personally Identifiable Information)** setting that obfuscates personal contact data in Insights and SbQL query results returned to the token.
+### 5. PII Obfuscation (recommended for AI and third-party integrations)
+Sessionboard includes a **PII Obfuscation** switch that redacts personal contact data (emails, phone numbers, names) from AI and Insights/SbQL query results returned to the token.
 
 - **Enabled (recommended for AI assistants and third-party integrations):** Email addresses are returned as `j***@a***.com`, phone numbers as `***-***-4567`, and similar masking applies to other personal fields in query results.
 - **Disabled (default):** Full PII is returned.
@@ -74,9 +73,9 @@ Note that connections made through the OAuth flow (Claude, ChatGPT, and other [A
 ![Disabled: Full PII is returned in API responses](/images/kb/211f0e53-image-png-May-05-2026-07-58-28-2747-PM.png)
 
 <Warning>
-We **strongly recommend turning Hide PII on** for tokens used by AI assistants or any third-party integration. It protects your speakers' and contacts' personal information from being exposed in logs, AI conversation histories, or downstream systems.
+We **strongly recommend turning PII Obfuscation on** for tokens used by AI assistants or any third-party integration. It protects your speakers' and contacts' personal information from being exposed in logs, AI conversation histories, or downstream systems.
 
-You can toggle Hide PII per token, so different integrations can have different obfuscation rules depending on what they need to do.
+You can set PII Obfuscation per token, so different integrations can have different obfuscation rules depending on what they need to do.
 </Warning>
 
 ### 6. Copy the token immediately
@@ -111,7 +110,7 @@ For step-by-step setup guides — [Claude](/integrations/connect-claude), [ChatG
 You have two paths to connect:
 
 1. **OAuth (recommended for most clients)** : When you connect an MCP-compatible AI client to Sessionboard, the client walks you through an OAuth authorization flow automatically. You don't need to generate a token manually; the OAuth flow handles authentication for you. This is the easiest path for browser-based clients like Claude Desktop or ChatGPT.
-2. **Manual API token:** If your client doesn't support OAuth (or you prefer manual control), generate an API token following the steps above. Make sure to enable the **MCP Access** toggle and grant the **read:insights** scope. Add write scopes (e.g., `write:sessions`) only if you want the AI to make changes.
+2. **Manual API token:** If your client doesn't support OAuth (or you prefer manual control), generate an API token following the steps above. Make sure to grant the **read:insights** scope — MCP access follows from that scope, there is no separate toggle. Add write scopes (e.g., `write:sessions`) only if you want the AI to make changes.
 
 ## Configuring your AI client
 For AI clients that accept a remote MCP server URL, point them to:
@@ -138,7 +137,7 @@ For full MCP details: available tools, prompt templates, security model, and exa
 </Note>
 
 ## Security and best practices
-- **Turn on Hide PII.** Enable the Hide PII toggle unless your integration has a specific need for full personal data.
+- **Turn on PII Obfuscation.** Enable the PII Obfuscation switch unless your integration has a specific need for full personal data.
 - **Scope tokens narrowly.** Generate separate tokens for separate integrations and grant only the scopes each one actually needs. A read-only Tableau dashboard doesn't need write scopes; a sync job that only updates sessions doesn't need write access to contacts.
 - **Restrict to specific events when possible.** If a token only needs access to one event, scope it that way rather than giving it organization-wide access.
 - **Rotate tokens periodically** and revoke them as soon as an integration is decommissioned or a team member leaves.
@@ -149,7 +148,7 @@ For full MCP details: available tools, prompt templates, security model, and exa
 From the **Organization Settings → API Tokens** page you can:
 
 - Rename a token
-- Edit its scopes, MCP access, event restrictions, and Hide PII setting
+- Edit its scopes, event restrictions, and PII Obfuscation setting
 - Revoke a token immediately (any integration using it will stop working)
 
 Revoking a token cannot be undone. If you need to give the same integration access again, generate a new token and update the integration's configuration with the new value.
