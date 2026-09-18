@@ -73,6 +73,7 @@ A contact who is deleted, or removed from the event, is not pushed — even if t
 | --- | --- |
 | First name, last name, email, company | Visitor |
 | Form and registration type from Event Settings | Applied to each visitor |
+| Visit translation ID, from the contact field you map to Language | Visitor language, which decides the language of Visit's registration email |
 | Session track / room name (when activities are on) | Visit track / location, matched by name |
 | Visit visitor ID | Writes back to the contact field you mapped for Visit Registration ID |
 | Visit Discover URL | Writes back to the contact field you mapped for Visit Registration URL |
@@ -97,6 +98,18 @@ After you pick an expo, **Map Speaker Fields** also lists Visit contact fields (
 
 When **Also push sessions as Visit activities** is on, Sessionboard also creates a read-only **Visit Session ID** field on the session and fills it with the Visit activity id on each sync. The control reads **Set by Visit** — you cannot type into it. A later sync that finds the same activity id does not append a duplicate. **Check drift** does not create the field or write a value.
 
+### Send registration emails in the visitor's language
+
+Visit chooses the language of its registration confirmation email from the visitor's language. A registrant whose language is never set can end up with no confirmation email at all.
+
+**Map Speaker Fields** offers **Language (Visit translation ID)** as a Visit field you can map a Sessionboard contact field onto. Put the Visit translation ID for the language you want in that Sessionboard field, and Sessionboard sends it with the visitor.
+
+<Note>
+Visit issues translation IDs per expo, and its API does not publish a list of them, so Sessionboard cannot offer a language picker or match on a language name. Ask your Visit contact for the translation IDs for your expo and store the ID itself — not `en`, `de`, or a language name — in the mapped Sessionboard field.
+</Note>
+
+Leaving the mapped field empty on a contact is safe: Sessionboard sends no language for that person rather than an empty one, and Visit falls back to the expo's default language.
+
 **Registration type** on Event Settings must be a Visit visitor type. Speaker, Chair, and Exhibitor types belong to sessions or exhibiting companies and cannot create a visitor.
 
 ## Run a sync
@@ -119,7 +132,11 @@ Accept the sessions you want represented in Visit before the first sync.
 
 Open the event and go to **History > Integrations**.
 
-**Sync History** lists every Visit run: the expo ID, when it ran, status, and an error count. Click **Click to view results** for counts of created, updated, skipped, deleted, and failed records. Skipped rows include the reason — for example that the consent field or task is not complete, or that nothing changed since the last sync.
+**Sync History** lists every Visit run: the expo ID, when it ran, status, and an error count. Click **Click to view results** to open the Sync Results modal.
+
+The modal opens with the run's outcome — **✅ Completed**, **⚠️ Completed with errors**, **❌ Failed**, or **🕚 Running** — which is the same status the Sync History grid shows for that row. When a run failed before it reached any records, the reason for the failure is the first line of the Errors Summary, so you no longer have to open the Logs tab to find out why a run marked Error reported no errors.
+
+Below the status are the counts of created, updated, skipped, deleted, and failed records. Skipped rows include the reason — for example that the consent field or task is not complete, or that nothing changed since the last sync.
 
 See [History](/communications/email-sms-history) for the rest of the History module.
 

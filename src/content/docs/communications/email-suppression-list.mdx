@@ -5,7 +5,7 @@ description: "See which addresses your event can no longer email, why each one w
 
 import { Note, Tip, Warning } from '@compat';
 
-When a message to someone fails, Sessionboard blocks that address so later campaigns skip it. The suppression list shows every blocked address for your event, why each one was blocked, and lets you clear a block once the underlying problem is fixed.
+When a message to someone fails, Sessionboard blocks that address so later campaigns skip it. The suppression list shows every blocked address your event is responsible for, why each one was blocked, and lets you clear a block once the underlying problem is fixed.
 
 This is the first place to look when one person says they stopped receiving your emails while everyone else on the same send got them.
 
@@ -23,6 +23,10 @@ Every address on the list was blocked for one of two reasons, and the difference
 | **Send failure** | The whole message was rejected before sending, usually an unverified sending domain or sender identity. Nobody on that send received anything, and nothing bounced. | Fix the sending problem, then clear the block. |
 
 A send failure is not the recipient's fault, so those blocks are safe to clear once sending works again. When the list contains any, a banner at the top calls out how many, so you don't mistake a sending-domain problem for a list of bad addresses.
+
+## Which addresses appear
+
+The list covers everyone your event is responsible for: its own contacts, plus every address it has ever sent to. An address qualifies whether the block came from one of your sends, from a different event, or from a system email that belongs to no event at all — if it is blocked and it is one of yours, you can see it here and clear it.
 
 ## Read the list
 
@@ -42,15 +46,27 @@ Each row shows:
 3. Optionally type a reason. It's saved with your name so support can see why the block was cleared.
 4. Click **Clear block** to confirm.
 
-The address disappears from the list and future campaigns from this event can reach it again.
+The address disappears from the list and future campaigns can reach it again.
 
 <Warning>
 Clearing a **Bounced** address means emailing a mailbox that already rejected you. Repeatedly sending to addresses that bounce hurts your sending reputation and makes legitimate mail more likely to land in spam. Only clear a bounce when you know the mailbox works now — for example the person confirmed a typo or their mailbox is no longer full.
 </Warning>
 
 <Note>
-Clearing a block is scoped to the event you're working in, and every clear is recorded with your name, the address, and your reason.
+Clearing a block lifts it everywhere, not just for the event you're working in. A person blocked under two different events used to need clearing in both, and the surviving block kept excluding them from every campaign — so one clear now releases every block held against that address and contact. Every clear is recorded with your name, the address, and your reason.
 </Note>
+
+## When clearing isn't the whole story
+
+Sessionboard is not the only thing that can be holding an address. Our email provider keeps its own bounce, block, and invalid-address lists, and clearing a block here asks it to release the address from all three.
+
+That request can come back only partly successful, and when it does the confirmation says so rather than reporting a clean clear. You may see that the address is unblocked in Sessionboard **but**:
+
+- **the provider refused to remove it** from bounces, blocks, or invalid addresses. Each list is reported separately — one refusal no longer hides the state of the others. Try again, and contact support if it keeps failing.
+- **the recipient reported the address as spam, or globally unsubscribed.** These are the recipient's own choice, not a delivery fault, and no one at your organization can clear them. The person has to opt back in.
+- **the provider could not be reached**, so the upstream state is unknown. The block is gone on our side; campaigns may still not be delivered.
+
+If the confirmation reports any of these, the address is not yet reachable even though it has left the suppression list.
 
 ## Who can clear a block
 
