@@ -66,9 +66,13 @@ A person needs a first name, last name, and email. Anyone missing those is skipp
 | Person on an accepted session | Customer (name, email, company, job title, biography, headshot) |
 | Person assigned to a session | Registration on that seminar, with their role |
 
-When a session is no longer accepted, Sessionboard cancels that speaker's LiveBuzz registration unless you turned **Remove from LiveBuzz when un-accepted** off. The customer record stays.
+When a session is no longer accepted, Sessionboard cancels that speaker's LiveBuzz registration unless you turned **Remove from LiveBuzz when un-accepted** off. The seminar is cancelled rather than deleted, so LiveBuzz keeps its history.
 
-On **Map Speaker Fields**, pick where LiveBuzz writes back. For **LiveBuzz Registration ID** and **LiveBuzz Badge ID**, choose an event-only text contact field, or click **Create** to add one. Organization fields are not listed. Those fill in when LiveBuzz returns them. Add the fields to the contact layout if you want them visible on the record.
+<Note>
+The **customer record always stays** in LiveBuzz, even when the person has no registrations left. LiveBuzz has no way for Sessionboard to remove a customer, so someone removed from every session remains on the campaign. Delete them in LiveBuzz if you need them gone.
+</Note>
+
+On **Map Speaker Fields**, pick where LiveBuzz writes back. For **LiveBuzz Registration ID** and **LiveBuzz Badge ID**, choose an event-only text contact field, or click **Create** to add one. Organization fields are not listed. Those fill in when LiveBuzz returns them — a field stays empty if the campaign does not return that value. Add the fields to the contact layout if you want them visible on the record.
 
 ## Field mappings
 
@@ -84,10 +88,26 @@ To push immediately, click **Sync** on **Map Events**, or use **Sync to LiveBuzz
 
 **Sync** on **Map Events**, or **Sync to LiveBuzz** from Agenda Options with nothing selected, is a full sync — the same accepted set as a scheduled run, including removals when **Remove from LiveBuzz when un-accepted** is on. If you select rows and click **Sync to LiveBuzz**, only those records update. Sessionboard will not cancel the rest of the campaign.
 
+## Stop a sync that is taking too long
+
+A full sync of a large event can run for a while, because LiveBuzz limits how fast Sessionboard may send records.
+
+To stop one, open the event and go to **History > Integrations > Sync History**, then click **Cancel** on the row that is still **In Progress**. Confirm, and the sync stops after the record it is currently sending — usually within a few seconds.
+
+Cancelling does not undo anything:
+
+- Everything already sent stays in LiveBuzz.
+- The records it had not reached yet are listed in that sync's results as skipped.
+- Running the sync again continues from where it stopped instead of creating the same records twice.
+
+The row shows **Warning** once it stops, with the reason in the results.
+
 ## Add or remove a mapping
 
 <Warning>
-Do not change the campaign ID on a live mapping. Sessionboard will treat the records as new and can create duplicates.
+Once a mapping has synced, you cannot change its **campaign ID**, and you cannot change the connection's **organization** or **domain**. Sessionboard blocks the save, because the records it already created in LiveBuzz are only reachable under those values — changing them would leave every one of them behind and start creating duplicates.
+
+To move an event to a different campaign, delete the mapping and add a new one. To move to a different LiveBuzz organization or domain, add a new connection. Fix a typo before the first sync, when there is nothing to leave behind.
 </Warning>
 
 Use **Add event mapping** to point another Sessionboard event at another campaign on the same connection. You can also add a second connection if you have a different LiveBuzz organization or key.
