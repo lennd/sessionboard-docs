@@ -21,7 +21,21 @@ The feature is off by default. Enable it once per event:
 
 ![The Participant Inventory panel in Program Settings with the Enable participant inventory toggle on](/images/kb/participant-inventory-toggle.png)
 
-Turning it on adds **Min Participants** and **Max Participants** to every session profile and makes two columns — **Assigned Participants** and **Assignment Status** — available on the Sessions grid. Turning it off hides all of it again; saved values are kept.
+Turning it on adds **Min Participants** and **Max Participants** to every session profile and makes four columns — **Min Participants**, **Max Participants**, **Assigned Participants** and **Assignment Status** — available on the Sessions grid. Turning it off hides all of it again; saved values are kept.
+
+## Set default limits for the whole event
+
+Most programs want the same limits on most sessions. Rather than setting them one at a time, set a default once and let every session inherit it.
+
+In the same **Participant Inventory** panel, once the feature is on, fill in **Default limits**:
+
+- Leave a box blank for no default on that bound. You can set a default minimum without a default maximum, or the other way round.
+- Every session that has not set its own limit uses the default.
+- A session that sets its own limit overrides the default — **for that bound only**. A session that sets its own maximum still inherits the default minimum.
+
+<Note>
+If you already have sessions with their own limits, a default that would contradict one of them is rejected. For example, a default minimum of 10 cannot be saved while a session sets its own maximum of 4, because that session would end up needing more participants than it is allowed. Adjust those sessions first, or pick a default that fits them.
+</Note>
 
 ## Set a minimum and maximum on a session
 
@@ -30,13 +44,27 @@ Open a session and find **Min Participants** and **Max Participants** in the det
 ![The Min Participants and Max Participants fields below Capacity in the session details sidebar](/images/kb/session-min-max-participants.png)
 
 - Both fields are optional. Set only a minimum, only a maximum, or both.
-- The minimum cannot exceed the maximum — the save is rejected with an error if it does.
-- Clearing a field (or entering 0) removes that bound.
-- Duplicating a session copies its minimum and maximum.
+- The minimum cannot exceed the maximum — the save is rejected with an error if it does. This includes an inherited bound: a maximum of 3 is rejected on a session inheriting a default minimum of 5.
+- Clearing a field (or entering 0) removes that bound, and the session falls back to the event default if one is set.
+- Duplicating a session copies only the limits that session set itself. Inherited values stay inherited on the copy, so changing the event default still moves both.
+
+## Edit limits from the Sessions grid
+
+**Min Participants** and **Max Participants** are ordinary session fields, so anywhere you work with session fields you can work with these:
+
+- **Edit in place** on the Sessions grid, like Capacity.
+- **Bulk edit** a whole selection at once from the **Edit** action.
+- **Filter** on either one. Filters match the limit the grid is showing you, so a session inheriting a minimum of 2 is found by "Min Participants is 2".
+- **Import** them from CSV as `min_participants` and `max_participants`.
+- Use them in **merge tags** and **Insights** reports.
+
+<Note>
+When you bulk edit, some sessions can be skipped while the rest save — for example setting **Max Participants** to 4 across a selection that includes a session with a minimum of 6. Sessionboard tells you how many were updated and how many were skipped; the skipped sessions keep their previous values.
+</Note>
 
 ## Read assignment status on the Sessions grid
 
-Add the **Assigned Participants** and **Assignment Status** columns from the grid's **Columns** picker. New grid views include them automatically once the feature is on; existing saved views need them added once.
+Add the participant inventory columns from the grid's **Columns** picker. New grid views include them automatically once the feature is on; existing saved views need them added once.
 
 ![A session row showing 3 of 2–4 assigned participants and a Meets Minimum status](/images/kb/sessions-grid-assignment-status.png)
 
@@ -50,7 +78,7 @@ Add the **Assigned Participants** and **Assignment Status** columns from the gri
 | **Meets Minimum** | The count is at or above the minimum and below the maximum. |
 | **Full** | The count has reached the maximum. |
 
-A session with no minimum or maximum shows a neutral dash — it is never flagged as needing participants.
+A session with no minimum or maximum — its own or inherited — shows a neutral dash. It is never flagged as needing participants.
 
 <Tip>
 Filter the grid by **Assignment Status** to isolate every session that still needs speakers, then work the list.
