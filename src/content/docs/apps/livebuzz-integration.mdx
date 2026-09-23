@@ -43,7 +43,7 @@ LiveBuzz is set up at the **organization**. Open it from **Settings > Integratio
     Optional: paste a **LiveBuzz Badge Type ID** if the campaign should stamp that badge on customers Sessionboard creates. Click **Save event settings**.
   </Step>
   <Step title="Map fields">
-    Use **Map Speaker Fields**, **Map Session Fields**, and **Map Room Fields** to choose which Sessionboard fields write to LiveBuzz for that mapping. First name, last name, and email are required for speakers. Title, start, and end are required for sessions. Room name is required for rooms. You cannot save until those are mapped.
+    Use **Map Speaker Fields**, **Map Session Fields**, and **Map Room Fields** to choose which Sessionboard fields write to LiveBuzz for that mapping. First name, last name, and email are required for speakers. Title, start, end, and room are required for sessions. Room name is required for rooms. You cannot save until those are mapped.
   </Step>
 </Steps>
 
@@ -59,26 +59,38 @@ If the event has **speaker acceptance** on, a speaker is not pushed until they h
 
 A person needs a first name, last name, and email. Anyone missing those is skipped and is not removed from LiveBuzz.
 
+A session needs a room. LiveBuzz will not create a seminar without a theater, so an accepted session with no room is skipped, and the sync results say so. Assign the room and sync again.
+
 | Sessionboard | LiveBuzz |
 | --- | --- |
-| Session room | Theater |
-| Accepted session | Seminar (title, description, start, end, room) |
-| Person on an accepted session | Customer (name, email, company, job title, biography, headshot) |
-| Person assigned to a session | Registration on that seminar, with their role |
+| Session room | Theater, matched by name |
+| Accepted session | Seminar (title, description, start, end, room, capacity), published and bookable |
+| Person on an accepted session | Active customer (name, email, company, job title, biography) |
+| Person assigned to a session | One speaker registration on that seminar |
 
-When a session is no longer accepted, Sessionboard cancels that speaker's LiveBuzz registration unless you turned **Remove from LiveBuzz when un-accepted** off. The seminar is cancelled rather than deleted, so LiveBuzz keeps its history.
+Headshots do not sync. LiveBuzz does not accept a photo from Sessionboard, so add headshots in LiveBuzz if the campaign needs them.
+
+A person who holds more than one role on the same session, such as speaker and moderator, gets one registration on that seminar, not one per role.
+
+Two Sessionboard rooms with the same name share one LiveBuzz theater.
+
+When a session is no longer accepted, Sessionboard unpublishes its seminar and cancels the speakers' registrations on it, unless you turned **Remove from LiveBuzz when un-accepted** off. The seminar is hidden and no longer bookable, not deleted, so LiveBuzz keeps its history. If the session is accepted again, Sessionboard publishes it again and adds a new registration.
 
 <Note>
-The **customer record always stays** in LiveBuzz, even when the person has no registrations left. LiveBuzz has no way for Sessionboard to remove a customer, so someone removed from every session remains on the campaign. Delete them in LiveBuzz if you need them gone.
+The **customer record always stays** in LiveBuzz, even when the person has no registrations left. Sessionboard never deletes a LiveBuzz customer, because LiveBuzz may hold badge or registration details for them that Sessionboard did not send. Someone removed from every session remains on the campaign. Delete them in LiveBuzz if you need them gone.
 </Note>
 
-On **Map Speaker Fields**, pick where LiveBuzz writes back. For **LiveBuzz Registration ID** and **LiveBuzz Badge ID**, choose an event-only text contact field, or click **Create** to add one. Organization fields are not listed. Those fill in when LiveBuzz returns them — a field stays empty if the campaign does not return that value. Add the fields to the contact layout if you want them visible on the record.
+<Warning>
+Sessionboard only updates customers it created. If someone is already registered on the campaign with the same email, LiveBuzz refuses a second customer with that email, and that person shows as an error in the sync results. Their sessions still sync.
+</Warning>
+
+On **Map Speaker Fields**, pick where LiveBuzz writes back. For **LiveBuzz Registration ID** and **LiveBuzz Badge Barcode**, choose an event-only text contact field, or click **Create** to add one. Organization fields are not listed. Those fill in when LiveBuzz returns them — a field stays empty if the campaign does not return that value. Add the fields to the contact layout if you want them visible on the record.
 
 ## Field mappings
 
-**Map Speaker Fields**, **Map Session Fields**, and **Map Room Fields** apply only to the event mapping you have selected. Defaults cover name, email, company, biography, headshot, title, description, times, and room.
+**Map Speaker Fields**, **Map Session Fields**, and **Map Room Fields** apply only to the event mapping you have selected. Defaults cover name, email, company, job title, biography, title, description, times, capacity, and room.
 
-LiveBuzz needs a first name, last name, and email to create a customer, a title, start, and end to create a seminar, and a room name to create a theater. Those rows stay on the mapping and cannot be removed. Badge type and the LiveBuzz `source` stamp come from **Event Settings**, not from these maps.
+LiveBuzz needs a first name, last name, and email to create a customer, a title, start, end, and room to create a seminar, and a room name to create a theater. Those rows stay on the mapping and cannot be removed. Badge type and the LiveBuzz `source` stamp come from **Event Settings**, not from these maps.
 
 ## Run a sync
 
