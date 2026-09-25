@@ -310,7 +310,10 @@ export default {
     // signal on to the page that replaced it — so redirect permanently here.
     if (url.pathname.endsWith('.html')) {
       const clean = url.pathname.replace(/\/?index\.html$/, '/').replace(/\.html$/, '');
-      return Response.redirect(`${targetOrigin}${clean || '/'}${url.search}`, 301);
+      // If the clean path was itself retired, go straight to its replacement
+      // rather than chaining two 301s.
+      const moved = INTERNAL_REDIRECTS[clean.replace(/\/$/, '')];
+      return Response.redirect(`${targetOrigin}${moved || clean || '/'}${url.search}`, 301);
     }
 
     // HubSpot KB sitemap path → Starlight sitemap
