@@ -28,10 +28,10 @@ LiveBuzz is set up at the **organization**. Open it from **Settings > Integratio
     Go to organization **Settings > Integrations** and click **Settings** on LiveBuzz, or open **Apps** and click **LiveBuzz**.
   </Step>
   <Step title="Save the connection">
-    On the **Connections** tab, enter a **Name**, the **LiveBuzz API Key**, the **LiveBuzz Organization** (the subdomain, such as `clarion` for `clarion.control.buzz`), and the **LiveBuzz Domain** (`control.buzz` unless you are on UAT). Click **Save connection**.
+    On the **Connections** tab, enter a **Name**, the **LiveBuzz API Key**, the **LiveBuzz Organization** (the subdomain, such as `clarion` for `clarion.control.buzz`), and the **LiveBuzz Domain** (`control.buzz` unless you are on UAT). If you paste the whole LiveControl address into **Organization**, Sessionboard keeps just the subdomain — `livebuzz.control.buzz/` is saved as `livebuzz`. A value that cannot be a subdomain, such as one with spaces, is rejected when you save. Click **Save connection**.
   </Step>
   <Step title="Map a Sessionboard event">
-    Click **Map events** on the connection. Choose the Sessionboard event and enter the **LiveBuzz Campaign ID** — the slug in the LiveControl URL, such as `api-sandbox-2026` from `livebuzz.control.buzz/campaign/api-sandbox-2026`. Already mapped events are hidden. Click **Save mapping**.
+    Click **Map events** on the connection. Choose the Sessionboard event and enter the **LiveBuzz Campaign ID** — the slug in the LiveControl URL, such as `api-sandbox-2026` from `livebuzz.control.buzz/campaign/api-sandbox-2026`. Pasting that whole URL works too; Sessionboard keeps the slug. Already mapped events are hidden. Click **Save mapping**.
   </Step>
   <Step title="Choose what to push">
     Open **Event Settings** for that mapping. Turn on **Enable Continuous Sync** if you want Sessionboard to push this event to LiveBuzz about every 30 minutes. Leave it off to sync only when you click **Sync**. Continuous sync still requires at least one accepted session that has not ended.
@@ -120,6 +120,15 @@ Cancelling does not undo anything:
 
 The row shows **Warning** once it stops, with the reason in the results.
 
+### A sync that stopped on its own
+
+Sometimes Sessionboard's own servers restart while a sync is running — during a release, for example. You do not need to do anything:
+
+- If the results say the sync was **asked to shut down mid-run**, Sessionboard stopped it after the record it was sending and started it again on another server about 20 seconds later. Look for the newer row in **Sync History**; it picks up where the first one left off without creating duplicates.
+- If the results say the sync **stopped mid-run without finishing**, the server was lost before it could hand off. Everything already sent stays in LiveBuzz. Click **Sync** again and it continues from there.
+
+A row does not stay **In Progress** indefinitely. If the server behind it stops responding, Sessionboard closes that row within a few minutes so the next sync can start.
+
 ## Add or remove a mapping
 
 <Warning>
@@ -138,6 +147,7 @@ Saving the event mapping is the first time Sessionboard calls LiveBuzz. Saving t
 
 LiveBuzz answers several different problems the same way, so read the rest of the message. It quotes what LiveBuzz said and the address Sessionboard called.
 
+- **LiveBuzz redirected Sessionboard to its login page.** The message names the page it was sent to, such as `https://www.control.buzz/auth/login`. The key is not the problem — the **Organization** or **Domain** on the connection builds an address LiveBuzz does not recognize as its API. Organization is only the subdomain (`livebuzz`, `clarion`), never the full host.
 - **The address is wrong.** Compare the host in the message against your LiveControl URL. `clarion.control.buzz` and `livebuzz.control.buzz` are different organizations, and `control.dev.uat.buzz` is UAT — a UAT key does not work against production.
 - **The campaign is wrong.** The campaign ID is the slug after `/campaign/` in the LiveControl URL, such as `api-sandbox-2026`. A campaign the API key's user cannot open is rejected the same way a bad key is.
 - **LiveBuzz does not recognize the address Sessionboard calls from.** If the message mentions an IP address that is not permitted, LiveBuzz restricts that API user to a list of addresses. Email [support@sessionboard.com](mailto:support@sessionboard.com) — this one is between Sessionboard and LiveBuzz, and you cannot fix it from Sessionboard.
