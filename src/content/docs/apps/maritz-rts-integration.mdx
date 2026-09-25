@@ -47,7 +47,7 @@ Sessionboard pulls registrant profiles from RTS and writes them onto **existing*
 | Job title | The contact field you map for job title |
 | Company | The contact field you map for company |
 | Speaker directory biography | The contact field you map for biography (long bios are truncated to 1,500 characters) |
-| Registration status | The contact field you map for registration state |
+| Registration status | The contact field you map for registration state — Sessionboard stores Maritz's raw qualification status code (`QUALSTATUS`), such as `APP` or `MAPP`, not a translated label, so you can see exactly where a registrant sits in Maritz's pipeline |
 | Registrant ID | The contact field you map for registrant ID |
 | Data Ops ID | The contact field you map for Data Ops ID |
 
@@ -72,9 +72,9 @@ Anything that cannot be matched safely is **skipped and logged**, never guessed:
 
 Once a mapping is saved, Sessionboard polls RTS about every **10 minutes**. The first run backfills every registrant on the show; after that, each run pulls only registrants whose Maritz profile changed since the last successful run. Click **Sync** on the connection any time you want an immediate pull.
 
-<Warning>
-RTS caps a single pull at 9,000 registrants. If a backfill on a very large show exceeds the cap, the run fails with an error rather than silently pulling a partial list — contact [support@sessionboard.com](mailto:support@sessionboard.com) and we'll run the backfill in narrower date windows.
-</Warning>
+<Note>
+RTS caps a single pull at 9,000 registrants. When a window is larger than that — a first backfill of a big show, or a long gap between runs — Sessionboard pulls it automatically in chunks of at most 9,000, moving the date range forward until the whole window is covered. Nothing is dropped at the chunk boundaries. It shows up as a single row in **Sync History**, and a first backfill of a show with tens of thousands of registrants takes several minutes, because Maritz also limits how quickly Sessionboard may call RTS.
+</Note>
 
 ## Review sync results
 
