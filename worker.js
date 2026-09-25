@@ -168,6 +168,15 @@ const INTERNAL_REDIRECTS = {
   // the retired three-tab builder; schedules/share-links/permissions content
   // now lives on /reporting/report-builder.
   '/reporting/insights-ai': '/reporting/report-builder',
+  // Studio retired at the Agents GA, 2026-09-26. The old Remix UI, persona
+  // AI Evaluators, and the paged AI Agenda Builder wizard were replaced by
+  // the Agents tab (Editor, Reviewer, and Scheduler agents respectively).
+  '/studio/ai-agenda-builder': '/agents/overview',
+  '/studio/remix-session-speaker-content': '/agents/overview',
+  '/evaluations/ai-evaluations': '/agents/overview',
+  '/videos/video-ai-agenda-builder': '/agents/overview',
+  '/videos/video-ai-content-remix': '/agents/overview',
+  '/videos/video-ai-evaluations': '/agents/overview',
 };
 
 // Release notes live at /help/release-notes (restored in-site 2026-09-12 after
