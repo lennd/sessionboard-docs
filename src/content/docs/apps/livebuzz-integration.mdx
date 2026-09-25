@@ -1,18 +1,18 @@
 ---
 title: "LiveBuzz"
-description: "Push accepted sessions, rooms, and speakers from Sessionboard to a LiveBuzz campaign, then keep them in sync."
+description: "Push accepted sessions, theaters, and speakers from Sessionboard to a LiveBuzz campaign, choose which ones go, then keep them in sync."
 ---
 
 import { Note, Tip, Warning, Steps, Step } from '@compat';
 
 <img src="/logo/apps/livebuzz-integration.png" alt="LiveBuzz logo" width="52" height="52" style={{borderRadius:"12px"}} />
 
-LiveBuzz (LiveControl) is the campaign and registration system behind many Clarion and other large-format events. Connect Sessionboard to LiveBuzz once, map each Sessionboard event to a LiveBuzz campaign, and Sessionboard pushes accepted sessions, rooms, and speakers. Turn on **Enable Continuous Sync** if you want Sessionboard to keep them updated about every 30 minutes.
+LiveBuzz (LiveControl) is the campaign and registration system behind many Clarion and other large-format events. Connect Sessionboard to LiveBuzz once, map each Sessionboard event to a LiveBuzz campaign, and Sessionboard pushes accepted sessions, their theaters (rooms by default, or any dropdown session field you choose), and speakers. Turn on **Enable Continuous Sync** if you want Sessionboard to keep them updated about every 30 minutes.
 
 The API key and organization are saved on the connection. Each Sessionboard event maps to one LiveBuzz campaign.
 
 <Tip>
-Before you start, have your LiveBuzz API key, organization (the subdomain in the LiveControl address, such as `livebuzz` or `clarion`), and campaign ID (the slug after `/campaign/` in that address, such as `api-sandbox-2026`). Accept the sessions you want in LiveBuzz and assign rooms first. Every person you want pushed needs a first name, last name, and email.
+Before you start, have your LiveBuzz API key, organization (the subdomain in the LiveControl address, such as `livebuzz` or `clarion`), and campaign ID (the slug after `/campaign/` in that address, such as `api-sandbox-2026`). Accept the sessions you want in LiveBuzz and assign rooms first — or, if theaters should come from another field such as Format or Track, fill that field in on every session. Every person you want pushed needs a first name, last name, and email.
 </Tip>
 
 ## Connect LiveBuzz
@@ -40,7 +40,11 @@ LiveBuzz is set up at the **organization**. Open it from **Settings > Integratio
 
     Uncheck session roles that should not sync — for example chairs or co-authors. Leave every role checked to push everyone on accepted sessions.
 
-    **LiveBuzz topics come from** decides what becomes a LiveBuzz topic: the session's **track** (default), its **format**, Sessionboard **topics**, or **Off**. Each distinct value becomes a topic on the campaign and is attached to the seminar.
+    **LiveBuzz theaters come from** decides what becomes a LiveBuzz theater. **Room / Location (default)** uses the session's room. Or pick any dropdown session field — Format, Track, Tags, Level, Language, Status, or a custom single- or multi-select field, listed as **Field: &lt;name&gt;** — and each distinct value of that field becomes a theater, matched by name and created when missing, with the seminar placed in it. For a multi-select field the first selected value is used. A session with nothing in the chosen field is skipped, because LiveBuzz requires a theater.
+
+    **LiveBuzz topics come from** decides what becomes a LiveBuzz topic: the session's **track** (default), its **format**, Sessionboard **topics**, any other dropdown session field, or **Off**. Each distinct value becomes a topic on the campaign and is attached to the seminar. Unlike theaters, a multi-select field used for topics attaches every selected value.
+
+    **Only sync sessions where** and **Only sync speakers where** are optional rules that narrow what goes to LiveBuzz. Click **Add rule**, choose a dropdown field (standard or custom — session fields for the first, people fields for the second), an operator (**is**, **is any of**, **is none of**, or **contains**), and one or more values. Add more rules if you need them; all rules must match (AND). With no rules, every accepted session and participant syncs. A rule missing a field or a value cannot be saved.
 
     Optional: paste a **LiveBuzz Badge Type ID** if the campaign should stamp that badge on customers Sessionboard creates. Click **Save event settings**.
   </Step>
@@ -55,19 +59,21 @@ Credentials are encrypted and are not shown again after you save. Leave a secret
 
 ## What syncs
 
-Only **accepted** sessions and the people on those sessions sync. Which session roles sync is an event-mapping setting — by default every role on the event (speaker, moderator, chairperson, and custom roles). Uncheck a role on **Event Settings** if those people should stay out of LiveBuzz. Rooms come from the event's session rooms.
+Only **accepted** sessions and the people on those sessions sync. Which session roles sync is an event-mapping setting — by default every role on the event (speaker, moderator, chairperson, and custom roles). Uncheck a role on **Event Settings** if those people should stay out of LiveBuzz. Theaters come from the event's session rooms unless **LiveBuzz theaters come from** points at another session field.
+
+If you added rules under **Only sync sessions where** or **Only sync speakers where**, only accepted sessions and participants that match every rule are pushed. The rest appear in the sync results as skipped, with the rule as the reason — for example *Not synced — did not match the session rule "Track is any of Main Stage"*. A person on a session the rules keep out still syncs when they are also on a session that passes. A seminar already in LiveBuzz whose session stops matching is unpublished on the next sync, the same way as an un-accepted session, when **Remove from LiveBuzz when un-accepted** is on.
 
 If the event has **speaker acceptance** on, a speaker is not pushed until they have accepted. Other roles are not gated by acceptance.
 
 A person needs a first name, last name, and email. Anyone missing those is skipped and is not removed from LiveBuzz.
 
-A session needs a room. LiveBuzz will not create a seminar without a theater, so an accepted session with no room is skipped, and the sync results say so. Assign the room and sync again.
+A session needs a theater. LiveBuzz will not create a seminar without one, so an accepted session with no room — or, when **LiveBuzz theaters come from** is set to another field, no value in that field — is skipped, and the sync results say so. Fill it in and sync again.
 
 A session also needs an end time later than its start time. LiveBuzz rejects a seminar that ends when it starts, so Sessionboard skips it and says so in the sync results. Fix the times and sync again.
 
 | Sessionboard | LiveBuzz |
 | --- | --- |
-| Session room | Theater, matched by name |
+| Session room, or the session field chosen under **LiveBuzz theaters come from** | Theater, matched by name |
 | Session track, format, or topic | Topic, matched by name and attached to the seminar |
 | Accepted session | Seminar (title, description, start, end, room, capacity), published and bookable |
 | Person on an accepted session | Active customer (name, email, company, job title, biography) |
@@ -79,7 +85,7 @@ Headshots do not sync. LiveBuzz has no way to receive a photo from Sessionboard,
 
 A person who holds more than one role on the same session, such as speaker and moderator, gets one registration on that seminar, not one per role.
 
-Two Sessionboard rooms with the same name share one LiveBuzz theater.
+Two Sessionboard rooms with the same name share one LiveBuzz theater, and so do two values of the chosen theater field that read the same. Switching **LiveBuzz theaters come from** to a different field moves the seminars into the new theaters on the next sync; the old theaters stay in LiveBuzz, since LiveBuzz does not let Sessionboard delete a theater.
 
 When a session is no longer accepted, Sessionboard unpublishes its seminar and cancels the speakers' registrations on it, unless you turned **Remove from LiveBuzz when un-accepted** off. The seminar is hidden and no longer bookable, not deleted, so LiveBuzz keeps its history. If the session is accepted again, Sessionboard publishes it again and adds a new registration.
 
@@ -111,7 +117,9 @@ If **Enable Continuous Sync** is on for that mapping, Sessionboard runs a full s
 
 To push immediately, click **Sync** on **Map Events**, or use **Sync to LiveBuzz** from Agenda, Sessions, All Contacts, Speakers, Chairpersons, or Moderators. **Check drift** on the connection compares Sessionboard to LiveBuzz without writing.
 
-**Sync** on **Map Events**, or **Sync to LiveBuzz** from Agenda Options with nothing selected, is a full sync — the same accepted set as a scheduled run, including removals when **Remove from LiveBuzz when un-accepted** is on. If you select rows and click **Sync to LiveBuzz**, only those records update. Sessionboard will not cancel the rest of the campaign. If you select someone who is not on an accepted session, or whose role is unchecked on **Event Settings**, the sync results list them as skipped and say why.
+**Sync** on **Map Events**, or **Sync to LiveBuzz** from Agenda Options with nothing selected, is a full sync — the same accepted set as a scheduled run, including removals when **Remove from LiveBuzz when un-accepted** is on. If you select rows and click **Sync to LiveBuzz**, only those records update. Sessionboard will not cancel the rest of the campaign.
+
+Selecting people is an admin override. A selected person is pushed as a customer even when their only sessions are still pending, or kept out by your **Only sync speakers where** rules; their seminar registration follows once the session is accepted and synced. Someone you select who is not on any session in the event, or whose role is unchecked on **Event Settings**, is listed as skipped in the results, with a reminder that a full sync is what applies the accepted-sessions rule.
 
 ## Stop a sync that is taking too long
 
@@ -125,7 +133,7 @@ Cancelling does not undo anything:
 - The records it had not reached yet are listed in that sync's results as skipped.
 - Running the sync again continues from where it stopped instead of creating the same records twice.
 
-The row shows **Warning** once it stops, with the reason in the results.
+The row shows **Cancelled** once it stops, and the results open with **Sync cancelled** and the reason. A cancelled sync is not counted as a failure.
 
 ### A sync that stopped on its own
 
