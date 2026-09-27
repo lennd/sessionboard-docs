@@ -40,12 +40,19 @@
  * The fixture corpus records the version it was written for; a vendored copy
  * claiming a different version fails its parity test rather than silently
  * rendering the old semantics.
+ *
+ * Each version only ADDS vocabulary, so a consumer at version N evaluates an
+ * article authored at any version <= N with exactly that article's semantics.
+ *
+ *   1 — feature / setting / route / addon
+ *   2 — + permission (what the READER may do, not what the event has)
  */
-export const MARKER_SPEC_VERSION = 1;
+export const MARKER_SPEC_VERSION = 2;
 
 const ATTR = {
   feature: 'data-sb-feature',
   setting: 'data-sb-setting',
+  permission: 'data-sb-permission',
   route: 'data-sb-route',
   addon: 'data-sb-addon',
   state: 'data-sb-state',
@@ -55,7 +62,9 @@ const ATTR = {
 /** Marks a wrapper this module created, so re-runs reuse it. */
 const COLLAPSE_ATTR = 'data-sb-collapse';
 
-const SELECTOR = `[${ATTR.feature}],[${ATTR.setting}],[${ATTR.route}],[${ATTR.addon}]`;
+const SELECTOR = [ATTR.feature, ATTR.setting, ATTR.permission, ATTR.route, ATTR.addon]
+  .map((a) => `[${a}]`)
+  .join(',');
 
 const tokens = (value) =>
   String(value || '')
@@ -76,6 +85,16 @@ export function settingLabel(id) {
 
 export function featureLabel(slug, contract) {
   return contract?.featureNames?.[slug] || settingLabel(slug);
+}
+
+/** "event.sessions.update" → "Sessions · Update" (from the contract), else a tidy fallback. */
+export function permissionLabel(slug, contract) {
+  const named = contract?.permissionNames?.[slug];
+  if (named) return named;
+  const parts = String(slug || '').split('.');
+  // Drop the scope prefix; an author-facing label never says "event".
+  const rest = parts.length > 1 ? parts.slice(1) : parts;
+  return rest.map((p) => settingLabel(p)).join(' · ');
 }
 
 /**
@@ -103,6 +122,31 @@ function evaluateFeature(slug, context) {
   return sawData ? 'unmet' : 'unknown';
 }
 
+/**
+ * Evaluate one permission slug against what the READER holds.
+ *
+ * Same per-scope resolution as features, over `context.permissions`. A scope
+ * the surface did not supply (signed-out Help Center, an agent building the
+ * context without a user) is unknown, so the block stays visible; an EMPTY
+ * list is a resolved "holds nothing" and collapses. Returns 'met' | 'unmet' |
+ * 'unknown'.
+ */
+function evaluatePermission(slug, context) {
+  const contract = context.contract || {};
+  const scopes = contract.permissionScopes?.[slug];
+  if (!scopes || scopes.length === 0) return 'unknown';
+
+  let sawData = false;
+  for (const scope of scopes) {
+    const held = context.permissions?.[scope];
+    if (!Array.isArray(held)) continue;
+    sawData = true;
+    const resolvedId = contract.permissionIdBySlug?.[scope]?.[slug] ?? slug;
+    if (held.includes(resolvedId)) return 'met';
+  }
+  return sawData ? 'unmet' : 'unknown';
+}
+
 /** Returns 'met' | 'unmet' | 'unknown' for one setting id. */
 function evaluateSetting(id, context) {
   const settings = context.settings;
@@ -122,15 +166,20 @@ function combine(results) {
   return 'unknown';
 }
 
-function unmetLabels(results, context) {
-  return results
-    .filter((r) => r.state === 'unmet')
-    .map((r) =>
-      r.kind === 'feature'
-        ? featureLabel(r.token, context.contract)
-        : settingLabel(r.token),
-    );
+function labelFor(r, context) {
+  if (r.kind === 'feature') return featureLabel(r.token, context.contract);
+  if (r.kind === 'permission') return permissionLabel(r.token, context.contract);
+  return settingLabel(r.token);
 }
+
+function unmetLabels(results, context) {
+  return results.filter((r) => r.state === 'unmet').map((r) => labelFor(r, context));
+}
+
+const joinLabels = (labels) =>
+  labels.length === 1
+    ? labels[0]
+    : `${labels.slice(0, -1).join(', ')} and ${labels[labels.length - 1]}`;
 
 /**
  * Human summary for something the reader is not entitled to, named after the
@@ -143,13 +192,45 @@ function unmetLabels(results, context) {
  */
 export function unmetSummary(labels, context = {}) {
   if (!labels || labels.length === 0) return '';
-  const subject =
-    labels.length === 1
-      ? labels[0]
-      : `${labels.slice(0, -1).join(', ')} and ${labels[labels.length - 1]}`;
+  const subject = joinLabels(labels);
   const verb = labels.length === 1 ? "isn't" : "aren't";
   const scope = context.eventName ? ` for ${context.eventName}` : '';
   return `${subject} ${verb} enabled${scope}`;
+}
+
+/**
+ * The permission counterpart. Deliberately a different sentence: an unmet
+ * feature is about the EVENT ("isn't enabled"), an unmet permission is about
+ * the READER — the feature may well be on, they just cannot use this part of
+ * it, and the fix is a person, not a toggle.
+ */
+export function unmetPermissionSummary(labels, context = {}) {
+  if (!labels || labels.length === 0) return '';
+  const scope = context.eventName ? ` on ${context.eventName}` : '';
+  return `Needs ${joinLabels(labels)} access${scope} — ask an admin`;
+}
+
+/**
+ * One summary line for a block, whatever mix of conditions failed. Exported
+ * so a surface's article-level banner reads in the same voice as the blocks
+ * beneath it.
+ */
+export function blockSummary(results, context = {}) {
+  const unmet = results.filter((r) => r.state === 'unmet');
+  const entitlement = unmet.filter((r) => r.kind !== 'permission');
+  const permission = unmet.filter((r) => r.kind === 'permission');
+  return [
+    unmetSummary(
+      entitlement.map((r) => labelFor(r, context)),
+      context,
+    ),
+    unmetPermissionSummary(
+      permission.map((r) => labelFor(r, context)),
+      context,
+    ),
+  ]
+    .filter(Boolean)
+    .join('. ');
 }
 
 /**
@@ -158,8 +239,7 @@ export function unmetSummary(labels, context = {}) {
  */
 function collapse(el, results, context) {
   const doc = el.ownerDocument;
-  const labels = unmetLabels(results, context);
-  const summaryText = unmetSummary(labels, context);
+  const summaryText = blockSummary(results, context);
 
   const existing = el.parentElement;
   const reuse =
@@ -182,13 +262,24 @@ function collapse(el, results, context) {
   }
   summary.textContent = summaryText;
 
-  // A deep link to the thing that turns it on, when the surface can build one.
-  const first = results.find((r) => r.state === 'unmet');
-  const href =
-    first &&
-    (first.kind === 'feature'
-      ? context.featureHref?.(first.token)
-      : context.settingHref?.(first.token));
+  // A deep link to the thing that fixes it, when the surface can build one:
+  // the feature request, the setting, or (for a permission) the admin who can
+  // grant it. Entitlement gaps come first — no point asking for access to a
+  // module the event does not have.
+  const HREF_BY_KIND = {
+    feature: context.featureHref,
+    setting: context.settingHref,
+    permission: context.permissionHref,
+  };
+  const ACTION_BY_KIND = {
+    feature: 'Ask about enabling this',
+    setting: 'Open this setting',
+    permission: 'Ask an admin for access',
+  };
+  const unmet = results.filter((r) => r.state === 'unmet');
+  const first =
+    unmet.find((r) => r.kind !== 'permission') || unmet.find((r) => r.kind === 'permission');
+  const href = first && HREF_BY_KIND[first.kind]?.(first.token);
   let action = details.querySelector(':scope > [data-sb-enable]');
   if (href) {
     if (!action) {
@@ -198,8 +289,7 @@ function collapse(el, results, context) {
       details.appendChild(action);
     }
     action.setAttribute('href', href);
-    action.textContent =
-      first.kind === 'feature' ? 'Ask about enabling this' : 'Open this setting';
+    action.textContent = ACTION_BY_KIND[first.kind];
   } else if (action) {
     // Context changed to one that cannot resolve a link — drop the link but
     // keep the node, so we never leave a dead href behind.
@@ -230,6 +320,11 @@ function hydrateConditional(el, context) {
       kind: 'setting',
       token,
       state: evaluateSetting(token, context),
+    })),
+    ...tokens(el.getAttribute(ATTR.permission)).map((token) => ({
+      kind: 'permission',
+      token,
+      state: evaluatePermission(token, context),
     })),
   ];
   if (results.length === 0) return;

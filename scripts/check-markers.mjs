@@ -35,6 +35,7 @@ const AUDIENCES = new Set(['organizer', 'reviewer', 'speaker', 'participant']);
 
 const features = new Set(CONTRACT.features);
 const settings = new Set(CONTRACT.eventSettings);
+const permissions = new Set(CONTRACT.permissions ?? []);
 const routes = new Set(Object.keys(CONTRACT.appRoutes));
 
 const problems = [];
@@ -88,6 +89,22 @@ for (const file of walk(DOCS).sort()) {
     }
   }
 
+  for (const { value, index } of attrValues(source, 'IfPermission', 'id')) {
+    if (tokens(value).length === 0) {
+      report(file, source, index, '<IfPermission> has an empty id');
+    }
+    for (const slug of tokens(value)) {
+      if (!permissions.has(slug)) {
+        report(
+          file,
+          source,
+          index,
+          `<IfPermission id="${slug}"> is not a known permission (expected event.<module>.<action> or org.<module>.<action>)`,
+        );
+      }
+    }
+  }
+
   for (const { value, index } of attrValues(source, 'AddOnNote', 'feature')) {
     if (!features.has(value)) {
       report(file, source, index, `<AddOnNote feature="${value}"> is not a known feature`);
@@ -111,7 +128,7 @@ for (const file of walk(DOCS).sort()) {
       file,
       source,
       raw.index,
-      `writes ${raw[0]} by hand — use <IfFeature>, <IfSetting>, <AddOnNote> or an app: link instead`,
+      `writes ${raw[0]} by hand — use <IfFeature>, <IfSetting>, <IfPermission>, <AddOnNote> or an app: link instead`,
     );
   }
 
@@ -153,5 +170,5 @@ if (problems.length > 0) {
 
 console.log(
   `✓ Markers valid against contract v${CONTRACT.contractVersion} ` +
-    `(${features.size} features, ${settings.size} settings, ${routes.size} routes).`,
+    `(${features.size} features, ${settings.size} settings, ${permissions.size} permissions, ${routes.size} routes).`,
 );

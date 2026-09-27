@@ -44,11 +44,13 @@ const toContext = (raw = {}) => ({
   eventName: raw.eventName ?? null,
   features: raw.features ?? {},
   settings: raw.settings ?? null,
+  permissions: raw.permissions ?? {},
   contract: fixtures.contract,
   resolveRoute: (id) => raw.routes?.[id] ?? null,
   routeLabel: (id) => raw.routeLabels?.[id] ?? null,
   settingHref: () => raw.settingHref ?? null,
   featureHref: () => null,
+  permissionHref: () => raw.permissionHref ?? null,
 });
 
 const render = (html) => {

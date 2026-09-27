@@ -36,7 +36,7 @@ const WEB_UI_DIR = process.env.SB_WEB_UI_V2_DIR ?? join(WORKSPACE, 'sessionboard
 const OUT = join(DOCS_ROOT, 'src', 'data', 'product-contract.json');
 
 /** The contract shape this repo's validator understands. */
-const SUPPORTED_CONTRACT_VERSION = 2;
+const SUPPORTED_CONTRACT_VERSION = 3;
 
 function fail(message) {
   console.error(`\n✖ ${message}\n`);
@@ -110,6 +110,13 @@ const contract = {
   featureNames: api.featureNames,
   // Valid <IfSetting id> values: boolean columns on the Event model.
   eventSettings: api.eventSettings,
+  // Valid <IfPermission id> values: lower-cased constant paths such as
+  // `event.sessions.update`, resolved per scope like features are.
+  permissions: api.permissions,
+  permissionScopes: api.permissionScopes,
+  permissionIdBySlug: api.permissionIdBySlug,
+  // "Sessions · Update" — so a collapsed block names the access, not a slug.
+  permissionNames: api.permissionNames,
   // Valid app: link targets.
   appRoutes,
 };
@@ -121,5 +128,6 @@ console.log(
   `Wrote ${OUT}\n` +
     `  ${contract.features.length} features\n` +
     `  ${contract.eventSettings.length} event settings\n` +
+    `  ${contract.permissions.length} permissions\n` +
     `  ${Object.keys(appRoutes).length} app route targets`,
 );

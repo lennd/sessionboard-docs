@@ -9,7 +9,7 @@ The split that makes this work:
 
 Authors never write the behaviour. There is exactly one implementation of it — [`src/lib/marker-hydration.mjs`](src/lib/marker-hydration.mjs) — vendored into `sessionboard-web-ui-v2` so both surfaces render identically.
 
-**Current spec version: 1.** Recorded in `tests/fixtures/marker-hydration.json` and asserted by both repos' test suites — the corpus runs here against the source and there against the vendored copy.
+**Current spec version: 2.** Recorded in `tests/fixtures/marker-hydration.json` and asserted by both repos' test suites — the corpus runs here against the source and there against the vendored copy. Each version only adds vocabulary, so a consumer at version _N_ evaluates an article authored at any version ≤ _N_ with exactly that article's semantics; a newer article than the consumer understands is left fully visible (v1: feature / setting / route / addon; v2: + permission).
 
 ## The four invariants
 
@@ -51,6 +51,20 @@ Each speaker still has to confirm from their portal before the session is settle
 
 `id` is a boolean column on the Event model — the things an admin toggles in settings.
 
+### Conditional on what the reader may do
+
+```mdx
+<IfPermission id="event.session_forms.create">
+Click **New form** in the top right and pick a starting template.
+</IfPermission>
+```
+
+A feature is about the **event** ("they have Sessions"); a permission is about the **person reading** ("their role may create session forms"). The module can be switched on while this reader's role cannot touch it, and the fix is a person, not a toggle — so the collapsed summary is written in the reader's voice, _"Needs Session Forms · Create access on Acme Summit — ask an admin"_, and the action link points at whoever can grant it rather than at a setting.
+
+`id` is the API's permission constant as a lower-cased dotted path — `event.<module>.<action>` or `org.<module>.<action>`, from `permissions` in the product contract. The scope prefix is part of the id, because the same module exists at both levels with different ids. Space-separate to require several. Combine freely with the other markers: `<IfFeature id="sessions"><IfPermission id="event.sessions.update">…` collapses on whichever fails, entitlement gap named first.
+
+Where the reader is not known — the public site signed out, or Team Lead building an answer with no user attached — the block is **unknown** and stays visible. Only a resolved, empty permission list collapses it. Use this for the steps that are literally unavailable to a role (a button that is not rendered), not for "you probably won't need this": over-gating hides a paragraph from a reader who would have asked an admin anyway.
+
 ### Add-on callout
 
 ```mdx
@@ -91,7 +105,7 @@ A marker naming something that no longer exists fails **silently** at runtime: t
 
 | Command | Catches |
 | --- | --- |
-| `npm run markers:check` | Every bad id in the corpus at once, in under a second. Also rejects hand-written `data-sb-*` attributes, which bypass the components and so are never validated. |
+| `npm run markers:check` | Every bad id in the corpus at once, in under a second — feature slugs, setting columns and permission paths. Also rejects hand-written `data-sb-*` attributes, which bypass the components and so are never validated. |
 | `npm run build` | The same ids, from inside the components, plus unknown `app:` targets. |
 | `npm run index:check` | Every article still produces indexable chunks. |
 | `npm test` | The hydrator itself, against the shared fixture corpus — including the never-remove-content and idempotence invariants. |
@@ -105,6 +119,8 @@ npm run markers:sync       # re-vendor the hydrator + fixtures into web-ui-v2
 ```
 
 Run `contract:pull` when a marker you know is correct is rejected — a feature renamed in `sessionboard-web-api` shows up here as an unknown slug. Commit the result; the contract is checked in so the build needs no network and no sibling checkout.
+
+The same contract (`lib/help-docs/hydration-context.js` in web-api) ships to the in-product reader with every article, alongside the reader's own event features, settings and — when the request carries a signed-in user — the permission ids they hold on the event and on the org. Team Lead's agent-side projection (`lib/help-docs/to-markdown.js`) evaluates the same three vocabularies before an article reaches the model, so an agent never walks a customer through a step their role cannot perform.
 
 ## Adding to the spec
 

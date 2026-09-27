@@ -1,6 +1,6 @@
 {
   "//": "Shared corpus for the marker hydration spec. Vendored into sessionboard-web-ui-v2 by scripts/sync-marker-hydration.mjs and executed there (it has a DOM test runner). Cases carry their own miniature contract so that adding a real product feature can never break a fixture.",
-  "specVersion": 1,
+  "specVersion": 2,
   "contract": {
     "features": ["awards", "sessions", "coordinators", "marketing"],
     "featureScopes": {
@@ -22,6 +22,23 @@
       "sessions": "Sessions",
       "coordinators": "AI Event Agents",
       "marketing": "Marketing"
+    },
+    "permissions": ["event.sessions.update", "event.session_forms.create", "org.contacts.read"],
+    "permissionScopes": {
+      "event.sessions.update": ["event"],
+      "event.session_forms.create": ["event"],
+      "org.contacts.read": ["org"]
+    },
+    "permissionIdBySlug": {
+      "event": {
+        "event.sessions.update": "e0c0a1a0-sessions_update",
+        "event.session_forms.create": "e0c0a1a0-session_forms_create"
+      },
+      "org": { "org.contacts.read": "0a0a0a0a-contacts_read" }
+    },
+    "permissionNames": {
+      "event.sessions.update": "Sessions · Update",
+      "event.session_forms.create": "Session Forms · Create"
     }
   },
   "cases": [
@@ -129,6 +146,63 @@
       "context": { "features": { "event": [] } },
       "input": "<div data-sb-feature=\"coordinators\"><p>Run the agent.</p></div>",
       "expected": "<details data-sb-collapse=\"\" class=\"sb-marker-collapsed\"><summary>AI Event Agents isn't enabled</summary><div data-sb-feature=\"coordinators\" data-sb-state=\"unmet\" data-sb-reason=\"AI Event Agents\"><p>Run the agent.</p></div></details>"
+    },
+    {
+      "name": "permission the reader holds renders normally",
+      "context": {
+        "eventName": "Acme Summit",
+        "permissions": { "event": ["e0c0a1a0-sessions_update"] }
+      },
+      "input": "<div data-sb-permission=\"event.sessions.update\"><p>Edit the title.</p></div>",
+      "expected": "<div data-sb-permission=\"event.sessions.update\" data-sb-state=\"met\"><p>Edit the title.</p></div>"
+    },
+    {
+      "name": "permission the reader lacks collapses in the reader's voice, with a link to an admin",
+      "context": {
+        "eventName": "Acme Summit",
+        "permissions": { "event": [] },
+        "permissionHref": "/event/42/settings/team"
+      },
+      "input": "<div data-sb-permission=\"event.session_forms.create\"><p>Click New form.</p></div>",
+      "expected": "<details data-sb-collapse=\"\" class=\"sb-marker-collapsed\"><summary>Needs Session Forms · Create access on Acme Summit — ask an admin</summary><div data-sb-permission=\"event.session_forms.create\" data-sb-state=\"unmet\" data-sb-reason=\"Session Forms · Create\"><p>Click New form.</p></div><a data-sb-enable=\"\" class=\"sb-marker-enable\" href=\"/event/42/settings/team\">Ask an admin for access</a></details>"
+    },
+    {
+      "name": "permission stays visible when the reader is unknown (signed out, or an agent)",
+      "context": { "eventName": "Acme Summit", "features": { "event": ["coordinators"] } },
+      "input": "<div data-sb-permission=\"event.sessions.update\"><p>Edit the title.</p></div>",
+      "expected": "<div data-sb-permission=\"event.sessions.update\" data-sb-state=\"unknown\"><p>Edit the title.</p></div>"
+    },
+    {
+      "name": "org permission stays visible when only event permissions are loaded",
+      "context": { "permissions": { "event": [] } },
+      "input": "<div data-sb-permission=\"org.contacts.read\"><p>Open the CRM.</p></div>",
+      "expected": "<div data-sb-permission=\"org.contacts.read\" data-sb-state=\"unknown\"><p>Open the CRM.</p></div>"
+    },
+    {
+      "name": "unnamed permission slug falls back to a tidy label without its scope prefix",
+      "context": { "permissions": { "org": [] } },
+      "input": "<div data-sb-permission=\"org.contacts.read\"><p>Open the CRM.</p></div>",
+      "expected": "<details data-sb-collapse=\"\" class=\"sb-marker-collapsed\"><summary>Needs Contacts · Read access — ask an admin</summary><div data-sb-permission=\"org.contacts.read\" data-sb-state=\"unmet\" data-sb-reason=\"Contacts · Read\"><p>Open the CRM.</p></div></details>"
+    },
+    {
+      "name": "feature gap and permission gap read as two sentences, entitlement first",
+      "context": {
+        "eventName": "Acme Summit",
+        "features": { "event": [] },
+        "permissions": { "event": [] }
+      },
+      "input": "<div data-sb-feature=\"coordinators\" data-sb-permission=\"event.sessions.update\"><p>Both needed.</p></div>",
+      "expected": "<details data-sb-collapse=\"\" class=\"sb-marker-collapsed\"><summary>AI Event Agents isn't enabled for Acme Summit. Needs Sessions · Update access on Acme Summit — ask an admin</summary><div data-sb-feature=\"coordinators\" data-sb-permission=\"event.sessions.update\" data-sb-state=\"unmet\" data-sb-reason=\"AI Event Agents, Sessions · Update\"><p>Both needed.</p></div></details>"
+    },
+    {
+      "name": "a held permission does not rescue a missing feature",
+      "context": {
+        "eventName": "Acme Summit",
+        "features": { "event": [] },
+        "permissions": { "event": ["e0c0a1a0-sessions_update"] }
+      },
+      "input": "<div data-sb-feature=\"coordinators\" data-sb-permission=\"event.sessions.update\"><p>Both needed.</p></div>",
+      "expected": "<details data-sb-collapse=\"\" class=\"sb-marker-collapsed\"><summary>AI Event Agents isn't enabled for Acme Summit</summary><div data-sb-feature=\"coordinators\" data-sb-permission=\"event.sessions.update\" data-sb-state=\"unmet\" data-sb-reason=\"AI Event Agents\"><p>Both needed.</p></div></details>"
     },
     {
       "name": "app link resolves to this event",

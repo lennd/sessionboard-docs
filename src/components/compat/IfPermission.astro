@@ -1,0 +1,59 @@
+---
+/**
+ * Marks a block as depending on what the READER is allowed to do.
+ *
+ * Distinct from IfFeature on purpose. A feature is about the event ("they have
+ * Awards"); a permission is about the person reading ("they may create session
+ * forms"). The event can have the module switched on while this reader's role
+ * cannot touch it — and the fix is an admin granting access, not a toggle.
+ *
+ * Same contract as the other markers: semantics here, behaviour in the reader.
+ * Fully visible on the public site (a signed-out reader has no role), and in
+ * the product collapsed behind a summary in the reader's own voice — "Needs
+ * Session Forms · Create access on Acme Summit — ask an admin" — with a link to
+ * whoever can grant it.
+ *
+ * Usage:
+ *   <IfPermission id="event.session_forms.create">
+ *   Click **New form** in the top right.
+ *   </IfPermission>
+ *
+ *   <IfPermission id="event.sessions.update event.sessions.delete">…</IfPermission>   // needs both
+ *
+ * Ids are the API's permission constants written as lower-cased dotted paths
+ * (`event.<module>.<action>` / `org.<module>.<action>`), validated against
+ * src/data/product-contract.json at build time. The scope prefix is part of
+ * the id: the same module exists at both levels with different ids.
+ */
+import contract from '../../data/product-contract.json';
+
+interface Props {
+  /** One or more permission slugs, space separated. All must be held. */
+  id: string;
+  /** Render as this element instead of a div (use "span" mid-sentence). */
+  as?: string;
+}
+
+const { id, as = 'div' } = Astro.props;
+
+const ids = String(id ?? '')
+  .split(/\s+/)
+  .filter(Boolean);
+
+if (ids.length === 0) {
+  throw new Error('<IfPermission> needs at least one permission id in `id`.');
+}
+
+const unknown = ids.filter((slug) => !contract.permissions.includes(slug));
+if (unknown.length > 0) {
+  throw new Error(
+    `<IfPermission id="${id}"> names unknown permission(s): ${unknown.join(', ')}.\n` +
+      '  Valid ids live in src/data/product-contract.json (`permissions`), e.g. event.sessions.update.\n' +
+      '  If the permission is new, run `npm run contract:pull` and commit the result.',
+  );
+}
+
+const Tag = as;
+---
+
+<Tag data-sb-permission={ids.join(' ')}><slot /></Tag>

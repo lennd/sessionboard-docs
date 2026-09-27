@@ -15,3 +15,4 @@ export { default as FieldTypeIcon } from './FieldTypeIcon.astro';
 // hydrated against the reader's real event in the product. See MARKER_SPEC.md.
 export { default as IfFeature } from './IfFeature.astro';
 export { default as IfSetting } from './IfSetting.astro';
+export { default as IfPermission } from './IfPermission.astro';
