@@ -19,7 +19,7 @@ Two generators keep this honest, and both are gated in CI:
   names every sidebar item `get-started/sidebar.mdx` fails to mention. Super-user
   links are stripped by the exporter, so never document a staff-only surface.
 - `npm run contract:pull` → `src/data/product-contract.json`, which is what makes
-  `<IfFeature>` / `<IfSetting>` / `app:` markers valid. Then `npm run markers:check`.
+  `<IfFeature>` / `<IfSetting>` / `<IfPermission>` / `app:` markers valid. Then `npm run markers:check`.
 
 ## Screenshots (`public/images/kb/`)
 
