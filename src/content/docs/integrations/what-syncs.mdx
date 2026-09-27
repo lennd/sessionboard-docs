@@ -1,0 +1,132 @@
+---
+title: "What each integration syncs"
+description: "One table for every connector: which way data flows, what records move, how often, where it is connected, and who sets it up — plus the questions teams ask when planning their stack."
+sidebar:
+  label: "What syncs, and which way"
+---
+
+import { Note, Tip, Accordion, AccordionGroup, IfFeature } from '@compat';
+
+Most connectors push **accepted sessions and the people on them** out of Sessionboard into a registration platform, event app, or website, on a schedule you control. A few pull data in. Use this page to decide which system owns which data before you connect anything; the per-app articles carry the click-by-click setup.
+
+## The matrix
+
+| Integration | Direction | What moves | Trigger | Connected at | Who sets it up |
+| --- | --- | --- | --- | --- | --- |
+| [Cvent](/integrations/cvent) | Sessionboard → Cvent | Accepted sessions and their speakers; optionally subsessions (as Programs), moderators, chairpersons, and session content | Manual **Sync**, or continuous (about every 30 minutes) | Organization | Your admin, with the Cvent API credentials |
+| [Swapcard](/apps/swapcard-integration) | Sessionboard → Swapcard | Accepted sessions, content, and speakers; optionally moderators and chairpersons; speakers can be created as Swapcard users | Manual or continuous (about 30 minutes) | Organization | Your admin, with a Swapcard API key |
+| [Grip](/apps/grip-integration) | Sessionboard → Grip | Accepted sessions and speakers; moderators and chairpersons with a Speaker Role ID; deleted sessions and un-accepted speakers can be removed on the next sync | Manual or continuous (about 30 minutes) | Organization | Your admin, with a Grip API token |
+| [Swoogo](/apps/swoogo-integration) | Sessionboard → Swoogo | Accepted sessions and speakers; optionally chairpersons, moderators, and sponsors; optional removal of deleted or un-accepted records | Manual or continuous (about 30 minutes) | Organization | Your admin, with the Swoogo consumer key and secret |
+| [Bizzabo](/apps/bizzabo-integration) | Sessionboard → Bizzabo | Accepted sessions (with rooms) and speakers, with mapped session fields | Manual or continuous (about 30 minutes) | Organization | Your admin, with the Bizzabo client credentials |
+| [ExpoPlatform](/apps/expoplatform-integration) | Sessionboard → ExpoPlatform | Accepted sessions and confirmed speakers, with mapped session and speaker fields | Manual or continuous (about 30 minutes) | Organization | Your admin, with the ExpoPlatform access token and URL |
+| [Stova](/apps/stova-integration) | Sessionboard → Stova | Accepted sessions and their speakers, with mapped session fields. Records are not removed from Stova when a status changes in Sessionboard | Manual or continuous (about 30 minutes) | Organization | Your admin, with the Stova credentials |
+| [ASP Events](/apps/asp-integration) | Sessionboard → ASP | Accepted sessions and speakers to a Seminar; previously synced records are marked inactive when they leave the accepted set | Manual or continuous (about 30 minutes) | Organization | Your admin, with the ASP API key and secret |
+| [LiveBuzz](/apps/livebuzz-integration) | Sessionboard → LiveBuzz | Accepted sessions (seminars), theaters, and speakers (customers) to a campaign; choose which session roles go; optional removal when un-accepted | Manual or continuous (about 30 minutes) | Organization | Sessionboard adds the app for you; your admin saves the connection and mapping |
+| [Visit](/apps/visit-integration) | Sessionboard → Visit | People on accepted sessions as visitors on a registration form; optionally sessions as activities | Manual or continuous (about 30 minutes) | Organization | Sessionboard adds the app for you; your admin saves the connection and mapping |
+| [Brella](/apps/brella-integration) | Sessionboard → Brella | Speakers and content timeslots from accepted sessions; unpublished when they leave the accepted set | Manual or continuous (about 30 minutes) | Organization | Sessionboard adds the app for you; your admin saves the connection and mapping |
+| [Maritz RTS](/apps/maritz-rts-integration) | Maritz → Sessionboard | Registrant profile fields (job title, company, bio, registration state) onto contacts that already exist. Never creates contacts, never writes back | Scheduled pull | Organization | Your admin, with RTS credentials from your Maritz project manager |
+| [ON24](/apps/on24-integration) | ON24 → Sessionboard | Past webinars and their speakers into the Speaker CRM | Manual import | Organization | Your admin, with the ON24 access token key, secret, and client ID |
+| [Gleanin](/apps/gleanin-integration) | Sessionboard → Gleanin | Accepted sessions and speakers; optionally chairpersons and moderators; tracks or tags as Gleanin tracks. Share links come back to the speaker portal | Manual or continuous (about 30 minutes) | Organization | Your admin, with a Gleanin API token |
+| [Snöball](/apps/snoball-integration) | Sessionboard → Snöball | Sessions and speakers, so Snöball can generate share links you surface as a portal task | Snöball connects using an API token you create | Organization | You create the token; Snöball completes the connection |
+| [InGo](/apps/ingo-integration) | Widget embed | An InGo social-share widget inside the portal | — | Portal | Your admin, with the widget code from InGo |
+| [Docusign](/apps/docusign-integration) | Sessionboard → Docusign → Sessionboard | Agreements sent from contact, account, group, and pipeline records; signature status returns to the record | Per send | Each teammate connects their own Docusign login | Each sender |
+| [Single Sign-On](/integrations/sso) | Identity provider → Sessionboard | Authentication for admins, portal users, and submitters (SAML, OIDC, or OAuth 2.0 Password) | At sign-in | Organization, enabled per event | Your IT team with your admin |
+| [Zapier](/integrations/zapier) | Either direction, per Zap | Triggers and actions on Sessionboard records to 6,000+ apps | Per Zap | Event, with an organization API token | Your admin |
+| [Webhooks](/integrations/webhooks) | Sessionboard → your endpoint | Real-time notifications when data changes | Real time | Organization | Your developer |
+| [Public API](/integrations/api-tokens) | Either direction | Anything the API exposes, including SbQL and MCP for AI assistants | On request | Organization | Your developer |
+
+<Note>
+"Accepted" means the session's status category is **Accepted** in Sessionboard. Pending, declined, and custom statuses in other categories do not sync out. See [accept or decline submissions](/sessions/accept-decline).
+</Note>
+
+## Which way does it flow?
+
+Sessionboard is the system of record for **who is speaking and what they are presenting**. Every outbound connector keeps the destination in step with the accepted program. Registration systems own **who is attending**, so speaker registration status comes back only where a connector pulls it (Maritz RTS) or where you build it with Zapier, webhooks, or the API.
+
+Plan the boundary before setup:
+
+1. Decide where speakers are created first. If speakers apply through your [submission form](/sessions/submission-forms), Sessionboard creates the contact and the outbound sync creates them downstream.
+2. Decide what "removed" should mean in each destination. Grip, Swoogo, LiveBuzz, Brella, and ASP can remove or unpublish records that leave the accepted set; Stova keeps them until you delete them there.
+3. Use standard fields wherever a connector maps fields. Custom fields sync only where the app article lists a mapping step.
+
+## Common questions
+
+<AccordionGroup>
+
+<Accordion title="Can we control which sessions and speakers sync, or send only accepted ones?">
+
+Every outbound connector sends only accepted sessions and the people on them, so the accept/decline decision is the sync control. Most connectors let you also choose roles: turn moderators, chairpersons, sponsors, or custom roles on or off in the event settings of the mapping. On Grip, Swoogo, LiveBuzz, Brella, and ASP you can also decide what happens when a record leaves the accepted set. Speakers you do not want in the destination should stay out of the accepted set or in an unchecked role.
+
+</Accordion>
+
+<Accordion title="How often does it sync, and can we force an update?">
+
+Outbound connectors run when you click **Sync** on the mapping. Turn on **Enable Continuous Sync** and Sessionboard also pushes changes about every 30 minutes; a manual sync between intervals is still allowed. Continuous sync on LiveBuzz, Visit, and Brella requires at least one accepted session that has not ended.
+
+</Accordion>
+
+<Accordion title="What happens to duplicates, deletions, and edits across systems?">
+
+A mapped connector updates the records it created on the next sync instead of creating a second copy, so renaming a session or correcting a speaker's details is reflected downstream rather than duplicated. Each app article states how it matches records; Brella and Visit, for example, match on the Sessionboard contact rather than the email address. Deletions and un-acceptances are handled per app: see the **Remove Deleted Sessions** and **Remove Deleted Speakers** settings on Grip and Swoogo, **Remove from LiveBuzz when un-accepted**, and the "marked inactive" behaviour on ASP. Stova keeps records until you delete them in Stova. One Sessionboard event maps to one destination event or campaign on each connector.
+
+</Accordion>
+
+<Accordion title="Can Sessionboard integrate with our registration platform?">
+
+Yes, for Cvent, Swoogo, Bizzabo, ExpoPlatform, Stova, Visit, LiveBuzz, and Maritz RTS, each covered in the table above. For registration systems without a connector, use [Zapier](/integrations/zapier) to create registrations when a session is accepted, or have your developer use the [public API](/integrations/api-tokens) and [webhooks](/integrations/webhooks). Weigh platforms side by side in the [event platform comparison](/apps/event-platform-comparison).
+
+</Accordion>
+
+<Accordion title="Can we sync the agenda and speakers to our website (WordPress, Webflow, or a CMS)?">
+
+For most websites you do not need a connector. [Agenda and speaker embeds](/sessions/embeds) drop a live agenda or speaker list into any page that accepts an embed, and a [Program Site or content gallery](/site/publishing-surfaces) publishes the program from Sessionboard directly. ASP Events and Stova have native website connectors. Anything else can read the [public API](/integrations/api-tokens).
+
+</Accordion>
+
+<Accordion title="Which mobile and networking apps are supported?">
+
+Swapcard, Grip, Brella, Bizzabo, ExpoPlatform, Stova, and Cvent. All are one-way from Sessionboard: accept and schedule sessions in Sessionboard and the app follows. Speaker registration or login in those apps is a setting on the connector, for example **Sync Speakers as Users** on Swapcard.
+
+</Accordion>
+
+<Accordion title="Can we connect our CRM, marketing platform, or AMS?">
+
+<IfFeature id="crm" as="span">The [Speaker CRM](/speaker-crm/overview) is the org-level contact database in Sessionboard; ON24 imports webinar history into it and [Docusign](/apps/docusign-integration) sends agreements from its records. </IfFeature>Salesforce, HubSpot, Marketo, and association management systems connect through [Zapier](/integrations/zapier), [webhooks](/integrations/webhooks), or the [public API](/integrations/api-tokens). Member directories can also sign speakers in through [Single Sign-On](/integrations/sso).
+
+</Accordion>
+
+<Accordion title="Can speakers sign in with our SSO, and can their profile be pre-filled?">
+
+<IfFeature id="sso" as="span">Yes. SSO supports SAML, OIDC, and OAuth 2.0 Password, with separate configurations for submission forms, portals, and admin login, enabled per event. See [Single Sign-On](/integrations/sso) for what your identity provider needs to send. </IfFeature>Without SSO, portal users sign in with a username and password or a magic link sent by email; see [choose how portal users sign in](/settings/portal-login-methods).
+
+</Accordion>
+
+<Accordion title="What API access do we get, and is there a test environment?">
+
+Organization admins create tokens under **Settings > API Tokens**. The token covers the public API, SbQL, and the MCP endpoint for AI assistants; API reads are cached for 3 minutes, while [webhooks](/integrations/webhooks) are real time. Create a separate token per integration so one can be revoked without affecting the others. See [generating API tokens](/integrations/api-tokens).
+
+</Accordion>
+
+<Accordion title="Who owns setup — us or Sessionboard?">
+
+Your admin connects most apps from **Apps** or organization **Settings > Integrations** with credentials from the other vendor. LiveBuzz, Visit, and Brella are added to your organization by Sessionboard on request to [support@sessionboard.com](mailto:support@sessionboard.com); after that, the connection and event mapping are yours. Snöball completes its own connection using an API token you create. Docusign is connected per teammate.
+
+</Accordion>
+
+<Accordion title="We use a tool that is not listed (MapYourShow, SurveyMonkey, Dropbox, PandaDoc, Webex)">
+
+Check the [App marketplace](/integrations/overview) first, since it grows with customer demand. Otherwise: survey and evaluation links can be shared as a portal [wiki page](/portals/assign-pages) or task; documents to sign are covered by [Docusign contracts](/apps/docusign-integration) or a [file request](/portals/collect-documents); and anything with a Zapier app can be automated with [Zapier](/integrations/zapier). Email [support@sessionboard.com](mailto:support@sessionboard.com) with the tool and the data you need to move.
+
+</Accordion>
+
+</AccordionGroup>
+
+<Tip>
+Put your integration owner, the destination event ID, and the sync mode (manual or continuous) in the event's notes when you go live. Most "the app is out of date" tickets are a mapping that was never switched to continuous sync.
+</Tip>
+
+## Related
+
+- [App marketplace](/integrations/overview) — every connector, grouped by what it does
+- [Event platform comparison](/apps/event-platform-comparison) — website, app, badge, and registration capabilities side by side
+- [Accept or decline submissions](/sessions/accept-decline) — the status that drives every outbound sync
