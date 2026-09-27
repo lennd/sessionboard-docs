@@ -1,0 +1,85 @@
+---
+title: "Slides"
+description: "Fill your own branded PowerPoint template with session and speaker data, generate holding slides for every room, and attach them to sessions."
+sidebar:
+  label: "Slides"
+features: ["marketing"]
+---
+
+import { Note, Tip, Warning, Steps, Step, Accordion, AccordionGroup } from '@compat';
+
+Holding slides are the title slides shown on stage before and between sessions. Instead of building one per session by hand, upload your production team's PowerPoint template once and Sessionboard fills a slide for every session (or every presenter) from the data you already have. The output is a normal .pptx, so text stays editable on site.
+
+<Note>
+Slides is on for every event. Find it under **Marketing → Source & produce → Slides**, or start from the sessions list with **Create → Slides**.
+</Note>
+
+## Before you start
+
+- A **.pptx template** with placeholder tokens (below). Keep one slide per speaker count you need: a slide with one name box and headshot, one with two, and so on. Sessionboard picks the smallest slide that fits each session's speaker count.
+- Sessions with participants, headshots and times filled in. Empty fields are removed from the slide rather than left as blank labels.
+
+## Template tokens
+
+Type tokens straight into your slide's text boxes, keeping your fonts and colors.
+
+| Token | Fills with |
+|---|---|
+| `{{session.title}}` | Session title |
+| `{{session.date}}`, `{{session.time_range}}` | Date and start–end time in the event's timezone, e.g. *Wednesday, October 21* and *4 – 6:45 p.m.* |
+| `{{session.start_time}}`, `{{session.end_time}}` | Start or end time on its own |
+| `{{session.room}}`, `{{session.track}}`, `{{session.type}}` | Location, track, session type |
+| `{{session.field.<name>}}` | Any custom session field |
+| `{{speaker.1.name}}`, `{{speaker.1.first_name}}`, `{{speaker.1.last_name}}`, `{{speaker.1.title}}`, `{{speaker.1.company}}`, `{{speaker.1.role}}` | The first participant (use `.2`, `.3`… for the next, up to 10) |
+| `{{speaker.1.headshot}}` | Put this in a picture's alt text (or its name) to swap the picture for the headshot, cropped to fit |
+| `{{speakers.names}}` | All participant names, comma-separated |
+| `{{event.name}}` | Event name |
+
+The **Token reference** panel on the Templates tab lists everything available for your event, including your custom fields, with copy buttons. Token names are not case-sensitive.
+
+## Create a template
+
+<Steps>
+  <Step title="Upload">On the **Templates** tab, click **Upload template**. Name it, choose date and time formats, decide whether it is **Visible to speakers**, and drop in your .pptx (up to 50 MB).</Step>
+  <Step title="Check the manifest">Sessionboard lists every slide with the tokens it found and how many speakers it fits. Tokens it doesn't recognize are flagged so you can fix a typo before generating.</Step>
+  <Step title="Preview">Pick any session and the preview shows the template filled with that session, exactly as a generated slide will look. Download it to check it in PowerPoint.</Step>
+</Steps>
+
+No template yet? **Start from Brand kit** builds a simple 16:9 starter deck from your brand colors and logo. Download it from Preview, edit the layout in PowerPoint, then upload your version.
+
+Editing a template changes its name, formats and speaker visibility only. To change the slides themselves, upload a new .pptx as a new template. Deleting a template keeps any slides already generated and attached to sessions.
+
+## Generate slides
+
+From the **Generate** tab, or from the sessions list (select sessions → **Create → Slides**):
+
+1. Choose the template.
+2. Choose the sessions: **All sessions**, **Selected sessions**, or the **Current sessions filter** you had applied on the sessions list (up to 2,000 sessions per run).
+3. Choose **One slide per session** or **One slide per presenter**.
+4. Choose **One combined deck** (a single .pptx in agenda order, handy for the AV team) or **One file per session** (separate files, zipped).
+5. Turn on **Attach to each session** to save each session's slide as a session file.
+
+Large runs finish in the background. You get an in-app notification and an email with the download link, and the **Jobs** tab shows progress, per-session results and a **Regenerate** action that re-runs a job with the same settings.
+
+## Attached slides
+
+Attached slides appear on each session's **Files** tab labelled **Holding Slide**, in the Ready Room, and in the public API (`GET /v1/sessions/:id/files?type=holding_slide`). Speakers see them in the portal only when the template's **Visible to speakers** switch is on.
+
+Regenerating replaces the previous holding slide for that session instead of adding a duplicate. The file keeps the same id, so integrations reading session files keep working.
+
+## FAQ
+
+<AccordionGroup>
+  <Accordion title="Why did a long title shrink?">
+    Sessionboard sets an explicit font size when a title would overflow its box, because PowerPoint's auto-fit does not carry over to Keynote or Google Slides.
+  </Accordion>
+  <Accordion title="A session has more speakers than any slide in my template">
+    The largest slide is used and the extra speakers are left off. Add a slide with more speaker boxes to the template.
+  </Accordion>
+  <Accordion title="Can I use a 4:3 or ultra-wide template?">
+    Yes. Sessionboard keeps whatever slide size your template uses. The Brand kit starter is 16:9 only.
+  </Accordion>
+  <Accordion title="Who can use Slides?">
+    Anyone with access to the event's session files. Uploading templates and generating slides use the same permissions as adding session files.
+  </Accordion>
+</AccordionGroup>
