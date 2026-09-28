@@ -1,0 +1,256 @@
+---
+/**
+ * A training chapter embedded in the article it was scripted from: the video
+ * on the left, a scrollable chapter rail on the right that seeks the player and
+ * highlights as playback passes each marker — the same layout as the Training
+ * hub's player in the product (web-ui-v2 `NativeChapterPlayer`).
+ *
+ * Generated into articles by sessionboard-tam/training-videos/scripts/docs-articles.mjs
+ * between `training-video:start <id>` / `training-video:end` markers. Do not
+ * hand-place: re-publish the chapter and re-run the generator.
+ *
+ * A cross-origin <track> only loads with the media element in CORS mode, so
+ * `crossorigin` is set whenever captions are present; the CDN
+ * (static.sessionboard.com) answers with Access-Control-Allow-Origin.
+ */
+interface Chapter {
+  start_s: number;
+  title: string;
+}
+interface Props {
+  /** Element id used by deep links and redirects, e.g. `training-18-interest-forms`. */
+  id: string;
+  /** Chapter number in the series. */
+  number: number;
+  /** Chapter title. */
+  title: string;
+  /** One-paragraph summary (shown under the title). */
+  summary?: string;
+  src: string;
+  poster?: string;
+  captions?: string;
+  /** In-video markers. */
+  chapters?: Chapter[];
+  /** Total length in seconds. */
+  duration?: number;
+  /** Seek here on first play (the marker scripted from this article). */
+  start?: number;
+}
+const { id, number, title, summary, src, poster, captions, chapters = [], duration, start = 0 } = Astro.props;
+const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+const num = String(number).padStart(2, '0');
+const markers = chapters.filter((c) => c.start_s > 0.5);
+---
+
+<figure class="sb-training" id={id} data-start={start > 0 ? String(start) : undefined}>
+  <figcaption class="sb-training__head">
+    <span class="sb-training__eyebrow">
+      Training video · {num}{duration ? ` · ${clock(duration)}` : ''}
+    </span>
+    <strong class="sb-training__title">{title}</strong>
+    {summary && <span class="sb-training__summary">{summary}</span>}
+  </figcaption>
+  <div class:list={['sb-training__body', markers.length > 0 && 'sb-training__body--rail']}>
+    <div class="sb-training__stage">
+      <video
+        src={src}
+        poster={poster}
+        title={title}
+        controls
+        playsinline
+        preload="metadata"
+        crossorigin={captions ? 'anonymous' : undefined}
+      >
+        {captions && <track kind="captions" src={captions} srclang="en" label="English" default />}
+      </video>
+    </div>
+    {
+      markers.length > 0 && (
+        <ol class="sb-training__rail" aria-label="In this video">
+          {markers.map((m) => (
+            <li>
+              <button type="button" data-seek={m.start_s}>
+                <span class="sb-training__time">{clock(m.start_s)}</span>
+                <span class="sb-training__label">{m.title}</span>
+              </button>
+            </li>
+          ))}
+        </ol>
+      )
+    }
+  </div>
+  <slot />
+</figure>
+
+<script>
+  // One handler for every player on the page. Clicking a marker seeks and
+  // plays; timeupdate moves the highlight and keeps it scrolled into view.
+  for (const fig of document.querySelectorAll<HTMLElement>('.sb-training')) {
+    const video = fig.querySelector<HTMLVideoElement>('video');
+    const buttons = Array.from(fig.querySelectorAll<HTMLButtonElement>('button[data-seek]'));
+    if (!video) continue;
+    const starts = buttons.map((b) => Number(b.dataset.seek));
+    let current = -1;
+    const highlight = (t: number) => {
+      let i = -1;
+      for (let k = 0; k < starts.length; k++) if (t >= starts[k]) i = k;
+      if (i === current) return;
+      current = i;
+      buttons.forEach((b, k) => {
+        if (k === i) {
+          b.setAttribute('aria-current', 'true');
+          b.scrollIntoView({ block: 'nearest' });
+        } else b.removeAttribute('aria-current');
+      });
+    };
+    buttons.forEach((b, k) => {
+      b.addEventListener('click', () => {
+        video.currentTime = starts[k];
+        void video.play().catch(() => undefined);
+      });
+    });
+    // An article that is one section of the chapter opens the player at its
+    // marker; the poster still shows until the reader presses play.
+    const start = Number(fig.dataset.start || 0);
+    if (start > 0) {
+      video.addEventListener(
+        'loadedmetadata',
+        () => {
+          if (Number.isFinite(video.duration) && start < video.duration - 10) video.currentTime = start;
+        },
+        { once: true },
+      );
+    }
+    video.addEventListener('timeupdate', () => highlight(video.currentTime));
+    video.addEventListener('seeked', () => highlight(video.currentTime));
+  }
+</script>
+
+<style>
+  .sb-training {
+    margin: 1.5rem 0 2rem;
+    border: 1px solid var(--sl-color-hairline);
+    border-radius: 0.75rem;
+    background: var(--sl-color-bg-nav);
+    overflow: hidden;
+  }
+  .sb-training__head {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    padding: 0.875rem 1rem 0.75rem;
+    border-bottom: 1px solid var(--sl-color-hairline);
+  }
+  .sb-training__eyebrow {
+    font-size: var(--sl-text-xs);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--sl-color-accent);
+  }
+  .sb-training__title {
+    font-size: var(--sl-text-lg);
+    line-height: 1.3;
+    color: var(--sl-color-white);
+  }
+  .sb-training__summary {
+    font-size: var(--sl-text-sm);
+    line-height: 1.5;
+    color: var(--sl-color-gray-3);
+  }
+  .sb-training__body {
+    display: grid;
+    gap: 0;
+  }
+  .sb-training__body--rail {
+    grid-template-columns: minmax(0, 1fr) 15rem;
+  }
+  .sb-training__stage {
+    background: #000;
+    aspect-ratio: 16 / 9;
+    min-width: 0;
+  }
+  .sb-training__stage video {
+    display: block;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+  }
+  .sb-training__rail {
+    list-style: none;
+    margin: 0;
+    padding: 0.25rem 0;
+    border-left: 1px solid var(--sl-color-hairline);
+    overflow-y: auto;
+    max-height: 100%;
+    min-height: 0;
+    font-size: var(--sl-text-sm);
+    /* Match the stage height instead of growing the row. */
+    height: 0;
+    min-height: 100%;
+  }
+  .sb-training__rail li {
+    margin: 0;
+  }
+  .sb-training__rail button {
+    display: flex;
+    gap: 0.625rem;
+    align-items: baseline;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 0;
+    background: none;
+    color: var(--sl-color-gray-2);
+    text-align: left;
+    font: inherit;
+    line-height: 1.35;
+    cursor: pointer;
+  }
+  .sb-training__rail button:hover {
+    background: var(--sl-color-gray-6);
+    color: var(--sl-color-white);
+  }
+  .sb-training__rail button:focus-visible {
+    outline: 2px solid var(--sl-color-accent);
+    outline-offset: -2px;
+  }
+  .sb-training__rail button[aria-current='true'] {
+    background: var(--sl-color-accent-low);
+    color: var(--sl-color-white);
+    font-weight: 600;
+    box-shadow: inset 3px 0 0 var(--sl-color-accent);
+  }
+  .sb-training__time {
+    flex: none;
+    width: 2.25rem;
+    font-family: var(--__sl-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+    font-size: 0.6875rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--sl-color-gray-3);
+  }
+  .sb-training__rail button[aria-current='true'] .sb-training__time {
+    color: var(--sl-color-accent-high);
+  }
+  .sb-training__label {
+    min-width: 0;
+    flex: 1;
+  }
+  .sb-training :global(details.sb-accordion) {
+    margin: 0;
+    border: 0;
+    border-top: 1px solid var(--sl-color-hairline);
+    border-radius: 0;
+  }
+  @media (max-width: 50rem) {
+    .sb-training__body--rail {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .sb-training__rail {
+      height: auto;
+      min-height: 0;
+      max-height: 14rem;
+      border-left: 0;
+      border-top: 1px solid var(--sl-color-hairline);
+    }
+  }
+</style>
