@@ -22,6 +22,9 @@ const FALLBACK = '/faq/who-can-i-contact-for-additional-assistance';
 // host in a single hop — so the cutover needs DNS only, no code change.
 const PROD_HOST = site.canonicalHost;
 const LEGACY_HOSTS = new Set(site.legacyHosts);
+// The retired Canny portal. Its ideas, roadmap and changelog have no page-level
+// equivalent here, so every path lands on the release notes.
+const RETIRED_FEEDBACK_HOSTS = new Set(site.retiredFeedbackHosts);
 
 // ── Crawler policy ──────────────────────────────────────────────────────
 // The Help Center is a growth surface: we want to rank in search and be cited
@@ -253,6 +256,9 @@ function textResponse(body) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    if (RETIRED_FEEDBACK_HOSTS.has(url.hostname)) {
+      return Response.redirect(`https://${PROD_HOST}${CHANGELOG_PATH}`, 301);
+    }
     const isLegacyHost = LEGACY_HOSTS.has(url.hostname);
     const isProd = url.hostname === PROD_HOST || isLegacyHost;
 
