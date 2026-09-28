@@ -183,6 +183,9 @@ const INTERNAL_REDIRECTS = {
   // Search Console shows this truncated slug getting clicks (2026-09-28); the
   // article has always been the long form.
   '/sessions/converting-a-subsession': '/sessions/converting-a-session-to-a-subsession',
+  // Training chapter 12 split on 2026-09-28: Advocacy (on every event) got its
+  // own deep dive and Dispatch (Early Access) moved to chapter 17.
+  '/videos/training-12-marketing-advocacy-dispatch': '/videos/training-12-advocacy',
 };
 
 // Marketing blog posts occasionally get indexed on the Help Center host (the
