@@ -9,6 +9,11 @@ import { join, relative } from 'node:path';
 const DOCS = new URL('../src/content/docs', import.meta.url).pathname;
 const OG = new URL('../public/og', import.meta.url).pathname;
 const IMG = /https?:\/\/[^\s"')]+?\.(?:png|jpe?g|gif|webp|svg)(?:\?[^\s"')]*)?/gi;
+// Our own CDN. Training-chapter posters live next to their .mp4 under a versioned
+// prefix (sessionboard-tam/training-videos PROTOCOL §10) and are written into the
+// videos/ articles by `npm run docs` from published.json, so they are first-party,
+// immutable, and not something to copy into public/images/.
+const FIRST_PARTY = /^https:\/\/static\.sessionboard\.com\/training\/videos\//;
 
 const failures = [];
 function ogKey(slug) {
@@ -21,7 +26,7 @@ function walk(dir) {
     else if (name.endsWith('.mdx') || name.endsWith('.md')) {
       const rel = relative(DOCS, p);
       const matches = readFileSync(p, 'utf8').match(IMG) ?? [];
-      for (const url of matches) failures.push(`${rel}: ${url}`);
+      for (const url of matches) if (!FIRST_PARTY.test(url)) failures.push(`${rel}: ${url}`);
       const slug = rel.replace(/\.mdx?$/, '');
       if (!existsSync(join(OG, `${ogKey(slug)}.png`))) {
         failures.push(`${rel}: missing share image public/og/${ogKey(slug)}.png — run scripts/generate-og.py`);

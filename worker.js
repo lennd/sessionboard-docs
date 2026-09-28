@@ -177,7 +177,16 @@ const INTERNAL_REDIRECTS = {
   '/videos/video-ai-agenda-builder': '/agents/overview',
   '/videos/video-ai-content-remix': '/agents/overview',
   '/videos/video-ai-evaluations': '/agents/overview',
+  // Search Console shows this truncated slug getting clicks (2026-09-28); the
+  // article has always been the long form.
+  '/sessions/converting-a-subsession': '/sessions/converting-a-session-to-a-subsession',
 };
+
+// Marketing blog posts occasionally get indexed on the Help Center host (the
+// two sites shared a HubSpot account). They live on the marketing site; send
+// them there in one hop instead of 404ing.
+const MARKETING_HOST = 'www.sessionboard.com';
+const BLOG_PREFIX = /^\/blog(?:\/|$)/;
 
 // Release notes live at /help/release-notes (restored in-site 2026-09-12 after
 // a period on Canny; the page links Canny for older history). Everything that
@@ -293,6 +302,10 @@ export default {
 
     if (RELEASE_NOTES_PREFIX.test(url.pathname)) {
       return Response.redirect(`${targetOrigin}${CHANGELOG_PATH}`, 301);
+    }
+
+    if (BLOG_PREFIX.test(url.pathname)) {
+      return Response.redirect(`https://${MARKETING_HOST}${url.pathname}${url.search}`, 301);
     }
 
     // Merged/renamed modern slugs — one hop to the page that replaced them.
