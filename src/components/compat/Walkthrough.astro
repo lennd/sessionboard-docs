@@ -4,7 +4,10 @@
  *
  * - Micro loops (silent, looping) autoplay muted.
  * - Narrated walkthroughs show controls and captions when a `captions`
- *   WebVTT track is provided.
+ *   WebVTT track is provided. A cross-origin track (the training chapters on
+ *   static.sessionboard.com) only loads with the media element in CORS mode,
+ *   so `crossorigin` is set whenever captions are present; the CDN answers
+ *   with Access-Control-Allow-Origin.
  */
 interface Props {
   /** Video source: local (/media/walkthroughs/...) or CDN URL. */
@@ -32,6 +35,7 @@ const { src, title, poster, captions, loop = false } = Astro.props;
     muted={loop}
     playsinline
     preload="metadata"
+    crossorigin={captions ? 'anonymous' : undefined}
   >
     {captions && <track kind="captions" src={captions} label="English" default />}
   </video>
