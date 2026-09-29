@@ -74,7 +74,6 @@ const FEATURES_BY_FILE = {
   'sponsors-exhibitors/sponsor-intake-form.mdx': ['sponsors'],
   'sponsors-exhibitors/exhibitor-intake-form.mdx': ['exhibitors'],
   'sponsors-exhibitors/adding-exhibitor-groups-contacts.mdx': ['exhibitors'],
-  'reporting/report-builder.mdx': ['ai_reports'],
 };
 
 /**
