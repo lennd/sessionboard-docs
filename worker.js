@@ -189,6 +189,9 @@ const INTERNAL_REDIRECTS = {
   // Training chapter 12 split on 2026-09-28: Advocacy (on every event) got its
   // own deep dive and Dispatch (Early Access) moved to chapter 17.
   '/videos/training-12-marketing-advocacy-dispatch': '/marketing/advocacy#training-12-advocacy',
+  // Program settings had two copies (2026-09-29); the older one is folded into
+  // the article the sidebar and training chapters already point at.
+  '/sessions/session-settings': '/sessions/program-settings',
 };
 
 /** Replacement path for a retired canonical-host slug, or undefined. */
