@@ -20,8 +20,6 @@ interface Chapter {
 interface Props {
   /** Element id used by deep links and redirects, e.g. `training-18-interest-forms`. */
   id: string;
-  /** Chapter number in the series. */
-  number: number;
   /** Chapter title. */
   title: string;
   /** One-paragraph summary (shown under the title). */
@@ -36,16 +34,15 @@ interface Props {
   /** Seek here on first play (the marker scripted from this article). */
   start?: number;
 }
-const { id, number, title, summary, src, poster, captions, chapters = [], duration, start = 0 } = Astro.props;
+const { id, title, summary, src, poster, captions, chapters = [], duration, start = 0 } = Astro.props;
 const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
-const num = String(number).padStart(2, '0');
 const markers = chapters.filter((c) => c.start_s > 0.5);
 ---
 
 <figure class="sb-training" id={id} data-start={start > 0 ? String(start) : undefined}>
   <figcaption class="sb-training__head">
     <span class="sb-training__eyebrow">
-      Training video · {num}{duration ? ` · ${clock(duration)}` : ''}
+      Training video{duration ? ` · ${clock(duration)}` : ''}
     </span>
     <strong class="sb-training__title">{title}</strong>
     {summary && <span class="sb-training__summary">{summary}</span>}
