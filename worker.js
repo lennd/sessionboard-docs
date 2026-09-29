@@ -192,6 +192,18 @@ const INTERNAL_REDIRECTS = {
   // Program settings had two copies (2026-09-29); the older one is folded into
   // the article the sidebar and training chapters already point at.
   '/sessions/session-settings': '/sessions/program-settings',
+  // FAQ consolidation, 2026-09-29: near-duplicate FAQs folded into the article
+  // that already covered the topic. Headshot compression/resizing joined the
+  // headshot-size FAQ; the short "contacts not receiving emails" note joined
+  // the deliverability guide; the moderators/chairpersons filter joined the
+  // session-status filter; the support checklist joined "Contact support";
+  // "email your evaluators" joined the evaluator-access FAQ.
+  '/faq/how-to-compress-headshots': '/faq/what-is-the-recommended-size-for-contact-headshots',
+  '/faq/bulk-resize-compress-headshot-photos': '/faq/what-is-the-recommended-size-for-contact-headshots',
+  '/faq/why-are-my-speakers-sponsors-exhibitors-not-receiving-emails': '/faq/why-am-i-not-receiving-emails',
+  '/faq/filtering-contacts-to-view-moderators-and-chairpersons': '/faq/how-to-filter-contacts-by-session-status',
+  '/faq/help-us-help-you-the-sessionboard-support-checklist': '/faq/who-can-i-contact-for-additional-assistance',
+  '/faq/evaluators': '/faq/will-evaluators-have-the-same-access-to-my-event-that-i-do-as-an-admin',
 };
 
 /** Replacement path for a retired canonical-host slug, or undefined. */
@@ -313,7 +325,10 @@ export default {
       const slug = decodeURIComponent(match[1] ?? '').replace(/\/$/, '');
       if (!slug) return Response.redirect(`${targetOrigin}/`, 301);
       // Unknown KB slugs (drafts, typos) land on the FAQ hub rather than a 404.
-      const resolved = resolveKbSlug(slug) ?? FALLBACK;
+      const mapped = resolveKbSlug(slug) ?? FALLBACK;
+      // If the mapped page was itself retired later, go straight to its
+      // replacement rather than chaining two 301s.
+      const resolved = movedTo(mapped) ?? mapped;
       // Resolved here rather than after the redirect, so a legacy release-notes
       // URL reaches the changelog in one hop instead of bouncing through a path
       // that no longer exists.
