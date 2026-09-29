@@ -2,141 +2,110 @@
 title: "6 common CSV & XLSX import issues (and how to fix them)"
 sidebar:
   label: "Common CSV/XLSX import issues"
-description: "Validation shows 0 invalid records and green checkmark → click Continue → 'File upload was unable to be processed."
+description: "Validation passes but the import fails, dates rejected after a trip through Google Sheets, existing data wiped by an update, the Session Friendly ID column, and custom fields missing from mapping — the cause and the fix for each."
+reviewed: "2026-09-29"
 ---
 
 import { Note } from '@compat';
 
-## "All records valid" but the import still fails
+These are the import problems support sees most often. Each one has a specific cause, and the fix is usually in the file rather than in Sessionboard. The full procedure is in [Importing data](/settings/importing-data).
 
-### Symptoms
+## 1. "All records valid" but the import still fails
 
-Validation shows 0 invalid records and green checkmark → click Continue → "File upload was unable to be processed. Please check your records and try again." → no records imported
+**Symptoms.** Validation shows 0 invalid records and a green check → you click **Continue** → *File upload was unable to be processed. Please check your records and try again.* → nothing is imported.
 
-![Symptoms](/images/kb/55005eef-bdf82fc3-0cca-4eeb-aeb9-43d3d2d65752.png)
+**Why.** Validation checks each cell's format. Some checks only run when the rows are written — duplicate detection, file size, a temporary service problem — so a clean validation does not guarantee a clean import.
 
-### Why it happens
+**Fix.**
 
-Validation checks field formatting, but not all backend constraints (duplicate detection, file size, temp system issues). Clean validation ≠ successful write.
+1. Keep the file at or under **1,000 rows**. Split larger files and import them in parts.
+2. Check for special characters. Open the CSV in a text editor and look for `"`, `&`, `<`, and `>` inside values. They are allowed, but a stray unclosed quote breaks the row that follows it.
+3. Start from a fresh template — **Options → Import → Generate Template** — and paste your data into it.
+4. Try another browser or an incognito window.
+5. If it still fails, send the CSV, the event name, and the page URL to support (see below).
 
-### Fix
-1. Reduce file size — Sessionboard supports max 1,000 records per import. Split into smaller files
-2. Check for special characters — open CSV in a text editor, look for ", &, &lt;, > in field values
-   1. While these were recently allowed, some of these might still cause issues when reading the file.
-3. Re-export the template — download a fresh template from the import screen, copy data into it
-4. Try a different browser — Chrome incognito or another browser
-5. If it persists, contact support with CSV attached + URL where you're importing + event name
+## 2. Date and time fields fail after editing in Google Sheets
 
----
+**Symptoms.** You export a CSV, open it in Google Sheets, edit, and re-import. Every **Starts At** and **Ends At** cell is rejected even though the dates look right.
 
-## Date/time fields fail after editing in Google Sheets
+**Why.** Google Sheets reformats date and time values on the way in and writes them back as, for example, `3/25/2026 9:00 AM`. Sessionboard needs `YYYY-MM-DD HH:mm` (`2026-03-25 09:00`).
 
-### Symptoms
+**Fix — Option A, fix the format in Sheets.** Select the date columns → **Format → Number → Custom date and time** → clear the existing pattern and rebuild it as `YYYY-MM-DD HH:mm`, choosing the zero-padded day, month, hour, and minute elements:
 
-Export CSV → open in Google Sheets → edit → re-import → errors on all "Starts at" and "Ends at" fields. Dates look correct, but SB rejects them.
+![The Google Sheets custom date and time format dialog](/images/kb/ac361e12-image-png-Mar-10-2026-07-44-05-4207-PM.png)
 
-![Symptoms](/images/kb/a560b3c5-image-png-Mar-10-2026-09-05-08-8156-PM.png)
+The pattern should read year, hyphen, month, hyphen, day, space, hour, colon, minute before you apply it:
 
-### Why it happens
+![The Google Sheets custom format dialog with the finished year-month-day hour-minute pattern](/images/kb/060585d6-image-png-Mar-25-2026-07-52-42-5116-PM.png)
 
-Google Sheets auto-converts date/time values. When re-exported, dates come out as e.g. 3/25/2026 9:00 AM instead of the required YYYY-MM-DD HH:mm format.
+Then **File → Download → Comma-separated values (.csv)**.
 
-### Fix
-- ``Option A: In Google Sheets, select date columns → Format > Number > Custom date and time → delete current logic using the backspace key → use the UI to match the needed format: YYYY-MM-DD HH:mm
+**Option B.** Edit in Excel, which leaves text-formatted date columns alone.
 
-  ![Fix](/images/kb/ac361e12-image-png-Mar-10-2026-07-44-05-4207-PM.png)
+**Option C.** Skip the re-import: in **Program → Sessions**, select the sessions and use **Edit** in the bar above the table to bulk-set start and end times.
 
-- Add Day > Click on Day > Day with leading zero, add a slash: '/', add Month, etc.
-  - This is how it needs to look before applying:
+## 3. Existing data is overwritten or wiped by an update
 
-  ![Is how it needs to look before applying](/images/kb/060585d6-image-png-Mar-25-2026-07-52-42-5116-PM.png)
+**Symptoms.** After an import meant to change only the dates, descriptions and custom fields on those sessions are blank.
 
-- Once done: File > Download as CSV
-- **Option B:** Use Excel instead of Google Sheets — handles date formatting more predictably
-- **Option C:** Skip re-import, use Bulk Edit directly (Sessions > select > Bulk Edit > Start/End Time)
+**Why.** Every mapped column writes its value. A column that is present but empty means "set this field to empty", not "leave it alone".
 
----
+**Fix.**
 
-## Existing field data is getting overwritten or wiped
+1. Export first — **Options → Export .CSV** — so you have a backup and a file that already contains **Session Friendly ID** (or, for contacts, **Email**).
+2. Add a column **Update record if already exists** (sessions: **Update session if already exists**) and set it to `TRUE` on every row you are updating. Without it, rows create new records.
+3. Make your changes.
+4. On the mapping step choose **Ignore this column** for every column you are not intentionally changing.
+5. Continue with the import.
 
-### Symptoms
+## 4. What is the Session Friendly ID column?
 
-After import, fields not in your spreadsheet are blanked out. Descriptions and custom fields are now empty. Only meant to update dates.
+**Session Friendly ID** is the identifier Sessionboard assigns when a session is created (it appears in the sessions table and every export). The importer uses it to match a row to an existing session.
 
-### Why it happens
+- Creating new sessions: leave it blank; IDs are assigned on import.
+- Updating sessions: keep the value from your Sessionboard export so the right session is updated.
+- Never type your own values into it. If your source system has its own IDs, put them in **Client Session ID** instead — see [matching sessions on import](/settings/importing-data#import-to-update-existing-records).
 
-SB maps every column to a field. If a field like Description is present but empty, it overwrites existing data. An empty column means "set this field to empty," it doesn't mean "do not update."
+## 5. Importing session times and rooms from Excel
 
-### Fix
-1. Export existing data first — Sessions > Export. The file includes the Session Friendly ID column.
-2. ``Add column "Update record if already exists" set to TRUE for every row you want to update. Without this, SB may create duplicates.
-3. Make your changes in the relevant columns.
-4. At the mapping screen, set "Ignore this column" for any column you're NOT intentionally changing.
-5. Proceed with import.
+1. Download the template: **Program → Sessions → Options → Import → Generate Template**.
+2. Paste your data under the template's headers. Headers must match exactly, in English.
+3. Dates: `YYYY-MM-DD HH:mm`, for example `2026-03-25 18:00`.
+4. Rooms: use the room name exactly as it appears under [Program settings → Rooms](/sessions/program-settings#rooms).
+5. Phone numbers: include the country code, for example `+1 (123) 456-7891`.
+6. Save as **CSV UTF-8** rather than `.xlsx` where you can.
+7. On the mapping step, **Ignore this column** for anything you are not setting.
 
-Always export a backup before importing updates: go to Sessions > Options > Export to download a full copy first.
+## 6. Custom fields missing from the mapping step
 
----
+**Symptoms.** You created custom fields, but they are not offered as mapping targets when you import.
 
-## "Session Friendly ID" field — what is it and where does it come from?
+**Why.** The import template and the mapping list are built from the fields in your current table view. A custom field that is not a visible column is not offered.
 
-Session Friendly ID is an internal identifier SB uses to match CSV rows to existing session records.
-- Importing new records? Leave Session ID blank — SB generates IDs automatically.
-- Updating existing records? Use the Session ID from a previous SB export so the system matches the right record.
-- Do NOT invent your own Session ID values — only use values from a Sessionboard export.
+**Fix.**
 
-!['Session Friendly ID' field — what is it and where does it come from?](/images/kb/2252ec46-image-png-Mar-10-2026-09-09-10-0478-PM.png)
+1. Open the module (Contacts, Sessions, Sponsors…) and click **Columns**.
+2. Turn on the custom fields you want to import into.
+3. Download the template again — **Options → Import → Generate Template** — and the fields are now columns.
+4. Re-run the import.
 
----
+## Before you import — checklist
 
-## Importing session times and rooms from Excel
-1. Download the Sessions import template: Sessions > Import > Download Template
-2. Copy session data into template, matching column headers exactly
-3. Date format: YYYY-MM-DD HH:mm (e.g. 2026-03-25 18:00)
-4. For Room/Location, use exact room name as it appears in event settings
-5. Phone numbers must include country + area code in the following format:
-   1. ``+1 (123)456-7891
-6. Save as .csv (UTF-8 encoding) as preferred instead of .xlsx
-7. At mapping step, use "Ignore this column" for any fields you're not setting
+- Export a backup of the existing data.
+- Start from the template Sessionboard generates, not your own spreadsheet.
+- Session dates and times: `YYYY-MM-DD HH:mm`. Date fields on awards and interest form imports take the date only: `YYYY-MM-DD`.
+- **Ignore this column** for every field you are not intentionally updating.
+- Stay under 1,000 rows per file.
+- Watch for stray `"`, `&`, `<`, `>` in values.
+- Save as CSV (UTF-8) rather than `.xlsx` where you can.
 
----
-
-## Custom fields not appearing during import mapping
-
-Symptoms: You created custom fields in Sessionboard, but they don't appear as mapping options when importing a CSV.
-
-Why: Custom fields must be added to your module's table view before they appear as import mapping options. If they're not visible in your Sessions, Contacts, or Speakers table, they won't show up during import.
-
-Fix:
-1. Go to the relevant module (e.g. Contacts)
-2. Click the Columns button to manage visible fields
-
-   ![Custom fields not appearing during import mapping](/images/kb/cc4767a5-image-png-Mar-10-2026-09-13-01-3267-PM.png)
-
-3. Add your custom fields to the table view
-4. Re-download the import template via Import > Template — your custom fields will now be included as column headers
-5. Re-attempt the import
-
-**Before you import — checklist**
-
-- Export a backup of existing data first
-- Use the Sessionboard-provided template on Options > Import > Template (not a custom spreadsheet)
-- Date/time format for session imports: YYYY-MM-DD HH:mm (e.g. 2026-03-25 18:00). Date fields on Award and Interest form imports take the date only: YYYY-MM-DD (e.g. 2026-03-25)
-- Set "Ignore this column" for every field you're not intentionally updating
-- Keep files under the 1,000 record limit per import
-- Try to avoid special characters (", &, &lt;, >)
-  - While these were recently allowed, some of these might still cause issues when reading the file.
-- We suggest saving/exporting as .csv (UTF-8 encoding), instead of .xlsx
-
----
-
-## Still having issues?
+## Still stuck?
 
 <Note>
-Contact support@sessionboard.com with:
-- Your CSV/XLSX file attached
-- The name of the event you're importing into
-- A screenshot of the error message
-- Which columns were you trying to update
-- The direct URL where you're importing
+Email support@sessionboard.com with:
+- the CSV or XLSX file
+- the name of the event you are importing into
+- a screenshot of the error
+- which columns you were trying to update
+- the URL of the page you were importing from
 </Note>

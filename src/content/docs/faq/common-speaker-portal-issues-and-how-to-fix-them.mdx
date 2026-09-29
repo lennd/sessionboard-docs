@@ -2,152 +2,113 @@
 title: "6 common speaker portal issues (and how to fix them)"
 sidebar:
   label: "Common speaker portal issues"
-description: "Speaker or participant clicks portal link → gets 'You do not have access to the portal for this event' when logging in → other speakers accessing the same portal fine It almost always means the email."
+description: "Access denied at login, tasks that do not show, forms that will not submit, View portal as errors, a portal with 0 participants, and invitations that never arrive — the cause and the fix for each."
+reviewed: "2026-09-29"
 ---
 
 import { Note } from '@compat';
 
-## "You do not have access to this portal" error
+Most portal problems come down to one of three things: the address the person signs in with, which portal they are assigned to, or the role they hold. Work through the matching section below; the checks are in the order that finds the cause fastest.
 
-### Symptoms
+## 1. "You do not have access to the portal for this event"
 
-Speaker or participant clicks portal link → gets "You do not have access to the portal for this event" when logging in → other speakers accessing the same portal fine
+**Symptoms.** A speaker follows the portal link, enters their email, and sees *You do not have access to the portal for this event. If you believe this is an error, please contact the event organizer.* Other speakers on the same portal get in fine.
 
-### Why it happens
+**Why.** Portal login is checked against the contact's **Portal Username**, not the **Email** field on their profile. They are separate: Email is where you write to them; Portal Username is the login. If the person types an address that is not their Portal Username — or they were never given portal access, so the username is blank — they are turned away. The message also appears when the contact exists in your CRM but has not been added to this event.
 
-It almost always means the email used to log in does not match the Portal Username on the contact's record. In Sessionboard, the Email field and the Portal Username are separate fields. The portal checks the Portal Username, not the Email field. If someone is trying to log in with their email address but their Portal Username is a different email (or blank), they'll be blocked.
+**Fix.**
 
-### Fix (Admin Side)
-1. Go to the contact's record in Sessionboard
-2. Check if the Email field is correct:
+1. Open the contact's profile (**Edit** at the left of their row in **CRM → Contacts**) and scroll to the **Details** card at the bottom of the **Profile** tab. **Portal Username** is the address they must sign in with; a dash means they have no portal access yet.
 
-   ![Fix](/images/kb/3aa9e143-image-png-Mar-11-2026-06-38-29-4517-PM.png)
+   ![The Details card with Portal options open — Manage Portal Access, Change Portal Username, Reset Password](/images/kb/contact-portal-options.png)
 
-3. Double-check their Portal Username field at the bottom of the contact record:
+2. No username? Click **Portal options → Manage Portal Access** and give access. Wrong username? **Portal options → Change Portal Username**. See [Change a contact's email address](/contacts/changing-a-contact-s-email-address).
+3. Confirm the contact is on this event: they appear in the event's **Contacts** table, not only in the organization CRM.
+4. Send them the login link again — **Copy Portal Link** from the profile's **Actions** menu, or the **Portal Login Link** merge tag in an email — and ask them to sign in with the Portal Username.
 
-   ![Double-check their Portal Username field at the bottom of the contact record](/images/kb/ff0796c4-image-png-Mar-11-2026-06-39-58-4300-PM.png)
+## 2. A task is assigned but the person cannot see it
 
-4. Make sure the Portal Username matches the email the person is using to log in
-5. If the Portal Username is blank or different, update it to match
-6. Confirm the contact is assigned to the correct portal (Portals > Edit Criteria) and is in the participant list there.
-7. Ask the speaker to try logging in again using the correct URL
-   1. You can get the portal URL from Portals > Copy Link.
+**Symptoms.** You assigned a task; it shows under **Portal Tasks** on their profile; they sign in and the tasks panel says *No tasks found.*
 
-See the KB article Updating a Contact's Email Address vs. Portal Username for more details on how these two fields work.
+**Why.** Tasks belong to a portal, and a person only sees the tasks of the portal they are assigned to. Portal assignment is decided by each portal's **Portal Filters**, and the first portal in the list whose filters match wins. If the task lives on a different portal, or the person's role has **Portal Access** switched off, nothing shows.
 
----
+**Fix.**
 
-## Portal tasks assigned but not visible to the user
+1. Check which portal they are on: in **Contacts**, click **Columns** and turn on **Assigned Portal**.
+2. Open that portal's card menu → **Edit Tasks** and confirm the task is assigned there. If the task is on a different portal, assign it on this one too.
 
-### Symptoms
+   ![A portal card's menu with Edit Criteria, Edit Tasks, Edit Settings, Edit Appearance, Manage Fields, Duplicate and Delete](/images/kb/portals-card-menu.png)
 
-Admin assigns a task to a contact through the contacts module → task appears correctly on the admin side under their profile → but it doesn't show up on the user-facing portal when the user logs in
+3. If they are on the wrong portal, open the intended portal's **Edit Criteria** and check the filters against the contact's values — role, session status, group, custom fields. The table under the filters previews who matches.
+4. Check the role: **Program settings → Roles** has a **Portal Access** switch per role. Off, and people in that role sign in to *The portal is not enabled for your role*.
+5. Look at it as they do: **View Portal → View portal as…** and pick the contact.
 
-### Why it happens
+The full checklist is in [Why can't a portal user see any tasks assigned to them?](/faq/why-can-t-a-portal-user-see-any-tasks-assigned-to-them)
 
-Tasks must be assigned through a portal that the user is actually a participant of. If the task was assigned to the contact record but the contact isn't in the portal's participant list (or is in a different portal), the task won't appear for them. Additionally, if the portal filters don't include the contact, the task won't surface.
+## 3. A form task will not submit
 
-### Fix
-1. Confirm the contact is in the correct portal:
-   1. Method 1: Contacts > Columns > Assigned Portal > Apply Changes. Double-check your contact assigned portal.
-   2. Method 2: Check the portal filters (Portals > Edit Criteria), make sure the contact matches the filter criteria and is listed (e.g. role, group)
-2. Verify the task is assigned to the correct portal (Portals > Edit Tasks)
-3. Try "View Portal As" from the contact's profile to see what they see
-4. In rare situations where everything looks correct and changes aren't updated, you can try:
-   1. Remove, save, and re-add the portal filters
-   2. Remove, save, and re-assign the task
+**Symptoms.** The speaker opens a form task and gets an error, or the submit button does nothing — even after you extended the due date.
 
----
+**Why.** Due dates and task assignment are set per portal, so extending a date on one portal leaves the same task overdue on another. Required questions the person has not answered also block the submit, and a form left open in a browser tab does not pick up a new due date until it is reloaded.
 
-## Cannot submit forms through the portal
+**Fix.**
 
-### Symptoms
+1. Open the portal's **Edit Tasks** and confirm the due date saved — on every portal that carries the task, not just one.
+2. Ask the person to reload the page (or sign out and back in) so the new due date applies.
+3. Check for required questions they have not filled in; the form highlights them.
+4. Reproduce with **View portal as…** the affected person.
+5. Still stuck? Contact support with the event name, portal name, and the person's email.
 
-Portal user tries to submit a form task → gets an error or the submit button doesn't work → admin has already extended the due date but the issue persists
+## 4. "View portal as" shows an error or a blank portal
 
-### Why it happens
+**Symptoms.** You choose **View portal as…** for a contact and get *error retrieving portal data*, or the portal loads empty.
 
-Extending a due date on an existing form doesn't always refresh the submission window for users who already have the form open. The form may also have validation errors the user can't see, or the portal task status may be stuck.
+**Why.** The contact has no portal login yet (blank Portal Username), or a browser extension is interfering with the page.
 
-### Fix
-1. Confirm the form's due date has been properly saved (re-open tasks for that specific portal via Portals > Edit Tasks, and verify the date)
-2. Make sure the task is assigned for all needed portals inside your Portals module.
-   1. Common case: You assign the task only in 1 portal; other portals are missing it.
-3. Make sure the due date has been updated for all needed portals inside your Portals module.
-   1. Common case: You update the task due date only in 1 portal; other portals are still past due date.
-4. Ask the user to log out, clear their browser cache, and log back in
-5. Check if the form has required fields that the user hasn't filled in
-6. Try "View Portal As" the affected user to reproduce the issue
-7. If the issue persists, contact support@sessionboard.com with the event name, portal name, and the affected user's email
+**Fix.**
 
----
+1. Check the contact's **Portal Username** in the **Details** card. If it is a dash, give access with **Portal options → Manage Portal Access**, then try again.
+2. Try another browser, or an incognito window without extensions.
+3. If the error mentions portal tasks or portal data and the username is set, contact support — it is usually a display issue on the admin side, and the speaker's own portal still loads.
 
-## "View portal as" not working or redirecting incorrectly
-### Symptoms
+## 5. The portal shows 0 participants
 
-Admin clicks "View Portal As" on a contact → gets an error retrieving portal data, or the portal loads blank
+**Symptoms.** Speakers are on sessions, but the portal card shows no participants.
 
-### Why it happens
+**Why.** Portal participants come from the portal's **Portal Filters**, not from session assignments directly. If the filters do not match your contacts — or the contacts are in the CRM but not on this event — nobody is assigned.
 
-This typically happens with newly added contacts whose portal record hasn't fully propagated, or when the contact's portal configuration has an error.
+![The Select Participants step with the portal filters and the matching records](/images/kb/portal-editor-criteria.png)
 
-### Fix
-1. Access their contact record, scroll down & check that the contact's Portal Username field is populated:
+**Fix.**
 
-   ![Access their contact record, scroll down & check that the contact's Portal Username field is populated](/images/kb/ff0796c4-image-png-Mar-11-2026-06-39-58-4300-PM.png)
+1. Open the portal → **Edit Criteria** and read the filters. Several filters must **all** match.
+2. Compare with the **Contacts** table: filter it the same way and see who comes back.
+3. Confirm the contacts are on this event — **Contacts → Add Contact**, search, and **Add to Event** brings an organization contact into the event ([adding existing contacts](/contacts/adding-existing-contacts-to-a-new-event)).
+4. For role filters (Speaker, Moderator, Chairperson), confirm the role is set on their session record, not just implied.
+5. If the portal is below another whose filters also match those people, the higher portal takes them — reorder on the Portals page ([order portals by priority](/portals/creating-custom-portals#order-portals-by-priority)).
 
-2. Try accessing from another browser, such as Google Chrome; many times, browser extensions or a different configuration might be breaking a Sessionboard element.
-3. If the error says "error getting portal tasks" or "error retrieving portal data," contact support@sessionboard.com — most of the time, this is a visual bug only, and speakers are still able to access their tasks, and the portal loads correctly from their end.
+## 6. Portal invitations never arrive
 
----
+**Symptoms.** You send the portal login email; some people say they never got it.
 
-## Portal filters aren't picking up speakers or participant count shows 0
+**Fix.**
 
-![Portal filters aren't picking up speakers or participant count shows 0](/images/kb/ed954288-image-png-Mar-11-2026-07-38-33-6719-PM.png)
-### Symptoms
+1. Check the **Email** field on the contact for typos, and that it is the address they expect mail at. If they also cannot sign in, check **Portal Username** too (section 1).
+2. Confirm it was sent: **History → Emails → Sent Emails**, search by name or address, and read the **Status**. Bounced or blocked rows also appear under **Errors**.
 
-Portal shows 0 participants even though speakers are assigned to sessions
+   ![The History page on the Emails tab, with Email Campaigns, Sent Emails and Errors sub-tabs](/images/kb/history-emails.png)
 
-### Why it happens
+3. Ask them to check spam and quarantine for mail from `no-reply@notify.sessionboard.com` (or your [custom email domain](/communications/add-on-custom-email-domain) if you use one).
+4. Corporate mail filters (Outlook protection, Cisco IronPort, Mimecast and the like) are the usual culprit; their IT team can allowlist `sessionboard.com`.
+5. Resend, or send a **Reset Password** from **Portal options** if they have a login but no working email from us.
 
-Portal participants are populated by portal filters, not session assignments. If your portal filters (e.g. "Role = Speaker") don't match the contacts, or if contacts haven't been added to the event yet, the count will be 0.
-
-### Fix
-1. Remove, save & re-add the portal filters to force an update on the list
-2. Review the portal filter logic — if using multiple conditions, keep in mind they'll need to match all conditions in order to be selected
-3. Go to the portal configuration and review the filter criteria (Portals > Edit Criteria)
-4. Confirm that the contacts you expect match those filters from the Contacts module
-5. Check that the contacts have been added to the event (not just the CRM) by adding them via Contacts > Add Contact button
-6. If using role-based filters such as Speaker, Moderator, or Chairperson, verify that the role is assigned to their session record
-
----
-
-## Portal invitations aren't being received
-
-### Symptoms
-
-Admin sends portal invitations → users report never receiving them
-
-### Fix
-1. Check the email address on the contact's record — typos are the most common cause
-2. Verify the contact's Portal Username and communication email are both correct and up to date — go to the contact record and confirm both fields reflect the address the user expects to receive email at
-   1. See the KB article Updating a Contact's Email Address vs. Portal Username for more details on how these two fields work.
-3. ``Ask the user to check spam/junk folders, especially for no-reply@sessionboard.com
-4. Verify the invitation was actually sent: go to History > Emails and search for the contact
-5. If using a corporate email, the user's IT team may need to allowlist sessionboard.com
-   1. Common cause: corporate/work email has a strong firewall and isn't delivering email properly; custom email protection, such as Outlook Protection, Cisco IronPort, etc.
-6. Re-send the invitation once again
-7. Contact support@sessionboard.com with the email address having issues if you're unable to fix it after these steps.
-
----
-
-### Still having issues?
+## Still stuck?
 
 <Note>
-Contact support@sessionboard.com with:
-- Event name
-- Portal name
-- The affected user's email
-- A screenshot of the error
-- What steps you've already tried
+Email support@sessionboard.com with:
+- the event name
+- the portal name
+- the affected person's email address
+- a screenshot of the error
+- what you have already tried
 </Note>
