@@ -48,6 +48,13 @@ export const collections = {
           .describe(
             'The job the reader is trying to get done, in their words — e.g. "get speakers to confirm before the deadline".',
           ),
+        reviewed: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/, 'reviewed must be YYYY-MM-DD')
+          .optional()
+          .describe(
+            'Date a person last confirmed the article against the product. Set it when you finish a refresh; the content-refresh queue (sessionboard-tam/training-videos/refresh) scores never-reviewed and >180-day articles higher.',
+          ),
       }),
     }),
   }),
