@@ -44,6 +44,8 @@ Visit is set up at the **organization**. Open it from **Settings > Integrations*
 
     Leave **Also push sessions as Visit activities** off unless you also want accepted sessions created as Visit activities. If you turn it on, you can pick a default Visit location and track. Session rooms and tracks match Visit by name — Visit cannot create them. Consent stays optional either way.
 
+    Turn on **Send Visit confirmation email on registration create** if you want Visit to email each new visitor its registration confirmation as soon as Sessionboard creates them. It is off by default. The email is sent once, right after the visitor is created — never on a later update, never for a visitor Sessionboard found already registered, and never during **Check drift**. The email's language and content come from Visit and the visitor's language. If Visit cannot send it, the visitor is still created and the sync results for that person show the send failed; Sessionboard does not retry, so use Visit to resend. Each expo mapping has its own switch.
+
     Leave **Remove from Visit when un-accepted** on unless you want un-accepted visitors to stay in Visit. Click **Save event settings**.
   </Step>
   <Step title="Map fields">
@@ -92,7 +94,37 @@ Visit allows two API calls at a time, so large speaker lists sync in a steady st
 
 Visit needs a first name, last name, and email to create a visitor, and a title, start, and end to create an activity. Those rows stay on the mapping and cannot be removed. Form, registration type, and register time come from **Event Settings**, not from these maps.
 
-After you pick an expo, **Map Speaker Fields** also lists Visit contact fields (job function, phone, address) and the questions on that expo — GDPR checkboxes, dropdowns, and any custom questions the organizer added. Map a Sessionboard contact field onto a question to send that answer with the visitor. Which Sessionboard field a Visit checkbox question accepts depends on how many answers the question offers. A checkbox question with **several answers** maps to a Sessionboard **multi-select dropdown** (a dropdown with multiple selection allowed), and the selected values sync in both directions. A checkbox question with a **single answer** — the "I agree" shape — is a Yes/No value and maps to a Sessionboard **checkbox**. A single-select dropdown cannot take either kind, a Sessionboard checkbox cannot take a multi-answer question, and a checkbox question cannot map to a plain text field. If a multi-select dropdown is missing from the picker for a multi-answer question, check that multiple selection is turned on for that Sessionboard field. Expo-level custom fields (Informa or Adobe configuration) are not visitor fields and do not appear here.
+After you pick an expo, **Map Speaker Fields** also lists Visit contact fields (job function, phone, address) and the questions on that expo — GDPR checkboxes, dropdowns, radio questions, free-text questions, and any custom questions the organizer added. Map a Sessionboard contact field onto a question to send that answer with the visitor. Expo-level custom fields (Informa or Adobe configuration) are not visitor fields and do not appear here.
+
+### Which Sessionboard field can map to which Visit question
+
+The pairing rule reads **from the Sessionboard field to the Visit question**, and it is not symmetrical: a question that accepts one Sessionboard field type does not mean that field type accepts the question. The picker only offers pairs that sync.
+
+| Sessionboard field | Visit question it can map to |
+| --- | --- |
+| Text, text area, email, phone | A free-text (open) question, or a radio / dropdown question whose answer name matches the text |
+| Checkbox (Yes / No) | A checkbox question with a **single answer** — the "I agree" shape |
+| Single-select dropdown | A radio / dropdown question, **or** a checkbox question with several answers (the one picked option becomes one answer) |
+| Multi-select dropdown (multiple selection allowed) | A checkbox question with **several answers** — every picked option becomes an answer — or a radio / dropdown question, which keeps one answer |
+
+So a multi-answer checkbox question takes a single-select or multi-select dropdown, but never a plain text field or a Yes/No checkbox: free text is not a set of answers, and one Yes/No cannot tick one of several options. If a multi-select dropdown is missing from the picker for a multi-answer question, check that multiple selection is turned on for that Sessionboard field.
+
+A free-text question in Visit stores the text on the question's own answer slot. Sessionboard writes it there, so mapping a text field to an open question just works — there is nothing to pick on the Visit side.
+
+### Map values: send the Visit answer, not the option text
+
+Visit stores an answer by its **answer code**, and the answer's display name often carries a prefix — `[INT_THF-05004] Startup or Scaleup` — that your Sessionboard option (`Startup or Scaleup`) does not. Without a value mapping, a picked option only syncs when the option label matches the Visit answer name exactly.
+
+When you map a Sessionboard **dropdown** or **multi-select dropdown** onto a Visit question that has answers, the mapping row shows a **Map values** button and a count such as **3 of 10 values unmapped**. Click **Map values**:
+
+1. Every Sessionboard option is listed on the left. On the right, pick the Visit answer it registers as — the list shows the answer names as Visit displays them, in Visit's order, and Sessionboard stores the answer code behind the scenes.
+2. Options whose label equals a Visit answer name — with or without the bracketed prefix, ignoring case and spacing — are filled in for you. Change any suggestion.
+3. Leave an option empty to skip it. Several Sessionboard options may point at the same Visit answer.
+4. Click **Apply**, then **Save field mappings**.
+
+On the next sync, each picked option is sent as its mapped answer code. A checkbox question receives every mapped answer; a radio or dropdown question takes one answer, so if a multi-select contact has more than one mapped option picked, the answer that comes first in Visit's order is sent and the rest are listed in that person's sync result. A picked option you left unmapped is skipped — the rest of the visitor still syncs, and the sync results for that person name the skipped value so you can map it. Rows with no value mapping keep matching by answer name.
+
+Click **Refresh answers** in the dialog to re-pull the question's answers after they change in Visit. A saved pick that points at an answer Visit no longer has is flagged on its row — choose a current answer and apply. Renaming a Sessionboard option keeps its mapping; deleting the option removes its row the next time you apply.
 
 **Write back to Sessionboard** is on the same screen. After Visit creates a visitor, Sessionboard stores the Visit registration ID and Discover URL on the event contact fields you pick. Use **Create Visit Registration ID** (or URL) if the event does not already have a field, or click **Save field mappings** — Save creates any unset write-back field for you and keeps fields you already chose. Add that field to the contact layout if you want it visible on the record.
 
@@ -149,6 +181,8 @@ Open the event and go to **History > Integrations**.
 The modal opens with the run's outcome — **✅ Completed**, **⚠️ Completed with errors**, **❌ Failed**, or **🕚 Running** — which is the same status the Sync History grid shows for that row. When a run failed before it reached any records, the reason for the failure is the first line of the Errors Summary, so you no longer have to open the Logs tab to find out why a run marked Error reported no errors.
 
 Below the status are the counts of created, updated, skipped, deleted, and failed records. Skipped rows include the reason — for example that the consent field or task is not complete, or that nothing changed since the last sync.
+
+A created or updated row can also carry notes about that one person: a picked dropdown value that had no Visit answer mapped (**Skipped 1 unmapped value on … — map them under Map values**), a radio question that received only the first of several picked values, or a confirmation email Visit could not send. None of these fail the record — the visitor was written — but they are the place to look when an answer or an email did not arrive.
 
 See [History](/communications/email-sms-history) for the rest of the History module.
 
