@@ -1,7 +1,7 @@
 ---
 title: "Language variants"
 description: "Language variants let an event store translated field labels and values — for sessions, contacts and groups — alongside the default-language version, and surface them in forms, portals, embeds and the API."
-reviewed: "2026-09-29"
+reviewed: "2026-09-30"
 ---
 
 import { Note, Tip } from '@compat';
@@ -73,6 +73,17 @@ Once a field has an active variant, every record of that type shows a small glob
    ![The Edit Language Variants panel — the default AV Notes value locked, a German (de) box with a translation typed in, Done and Cancel](/images/kb/session-translation-sidebar.png)
 
 4. **Done** queues the change — the globe shows *Changes pending* — and it is written when you save the record.
+
+To fill one language from another without editing each record, add the **Update language value** action to an [automation](/automations/overview#update-language-value). It translates or copies a field into an enabled language whenever the record changes.
+
+## Which language a submission came in
+
+Every session submitted through a form records the language the submitter used. With [multi-language submissions](/sessions/submission-forms#multi-language-submissions) on, that is the language they picked on the form; otherwise it is the event's default language. Sessions submitted before September 2026 have it filled in where Sessionboard can tell from the saved translations, and left blank where it can't.
+
+- **On the session.** The session sidebar shows **Submitted via &lt;form> · &lt;language>** under the session title.
+- **In the Public API.** Add `submission_source` to `expand` on the session search or get endpoint (`?expand=submission_source`, or `"expand": ["submission_source"]` in a search body). Each session then carries `submission_source: { form_id, form_name, language }`. `language` is a locale code such as `de-DE`, or `null` when it is unknown. `submission_source` is `null` for sessions that were not submitted through a form.
+
+This matters when the only text a submitter entered was in a translated field. Sessionboard copies it into the default-language Title and Description so the session is never untitled, and `submission_source.language` tells an integration that the text is really German, say.
 
 ## Multi-language portals
 
