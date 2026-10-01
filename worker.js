@@ -170,6 +170,8 @@ for (const [slug, target] of Object.entries(redirects)) {
 // so they get their own map, checked before serving assets. Add a row here any
 // time an article is retired in favour of another.
 const INTERNAL_REDIRECTS = {
+  // The AV crew surface is named Live Transcribe Console, 2026-09-30.
+  '/marketing/ready-room': '/marketing/live-transcribe-console',
   // Merged into the Report Builder guide, 2026-09-13 — the article described
   // the retired three-tab builder; schedules/share-links/permissions content
   // now lives on /reporting/report-builder.
