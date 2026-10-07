@@ -22,6 +22,9 @@ export function statusOf(entry) {
     return { state: 'partial', label: `Live in ${where} only`, since: null, detail: `${missing} not deployed yet — do not announce` };
   }
   if (entry.shipped?.docs_only) return { state: 'live', label: 'Live', since: entry.date, detail: 'Docs-only change' };
+  if (!entry.shipped?.prs?.length && entry.shipped?.pending) {
+    return { state: 'staged', label: 'Not in production yet', since: null, detail: `No pull request yet (${entry.shipped.pending})` };
+  }
   return { state: 'staged', label: 'Not in production yet', since: null, detail: 'Merged to main, waiting for the next production deploy' };
 }
 

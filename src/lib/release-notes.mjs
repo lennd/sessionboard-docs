@@ -270,6 +270,7 @@ export function validateEntry(entry, date, contract, { file = '' } = {}) {
   entry.shipped = {
     prs: [],
     docs_only: false,
+    pending: null,
     live: { us: null, eu: null, me: null },
     announced_at: null,
     ...(entry.shipped || {}),
@@ -284,7 +285,10 @@ export function validateEntry(entry, date, contract, { file = '' } = {}) {
     if (!entry.enable.path && entry.enable.how !== 'default_on') at('enable.path is required when the feature is not on by default');
     if (!entry.where.path) at('where.path is required — the menu path where the change shows up');
     if (!entry.internal.when_to_bring_up) at('internal.when_to_bring_up is required for CS');
-    if (!entry.shipped.docs_only && entry.shipped.prs.length === 0) at('shipped.prs is required (or shipped.docs_only: true)');
+    if (!entry.shipped.docs_only && entry.shipped.prs.length === 0 && !entry.shipped.pending) {
+      at('shipped.prs is required (or shipped.docs_only: true, or shipped.pending: "<branch or ticket>" while the PR does not exist yet)');
+    }
+    if (entry.shipped.pending && typeof entry.shipped.pending !== 'string') at('shipped.pending must be a short string naming the branch or ticket');
   }
 
   return problems;

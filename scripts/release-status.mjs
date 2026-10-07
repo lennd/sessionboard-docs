@@ -127,6 +127,9 @@ for (const entry of allEntries(releases)) {
     if (entry.shipped.docs_only) {
       for (const r of pending) live[r] = today;
       changes.push({ entry, regions: pending, reason: 'docs only' });
+    } else if (entry.shipped.pending) {
+      // Documented before the PR existed. Loud, because it stays staged until someone adds the PR numbers.
+      console.log(`  ⏳ ${entry.id}: no PR yet (${entry.shipped.pending}) — add shipped.prs once it is open`);
     }
     continue;
   }

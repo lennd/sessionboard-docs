@@ -42,6 +42,443 @@
         },
         "announced_at": null
       }
+    },
+    {
+      "id": "evaluation-plans-replace-cleans-up-the-whole-round",
+      "title": "Evaluation plans: Replace cleans up the whole round",
+      "summary": "The **Replace not-yet-reviewed** and **Replace all** options now remove assignments on submissions that no longer match the rule and take those submissions out of the round, so the round count matches the filter; the preview and confirmation show how many submissions leave. Reviewed assignments are still kept with Replace not-yet-reviewed, and entered scores are never deleted.",
+      "article": "/evaluations/setting-up-round-based-evaluations#stage-3-review-and-apply",
+      "kind": "improved",
+      "module": "Program",
+      "features": [
+        "sessions"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event → Evaluations → plan → Assignments → Assign reviewers → Replace not-yet-reviewed / Replace all"
+      },
+      "use_case": "Program chairs who re-track or re-categorise submissions after a round was assigned no longer end up with a round whose count disagrees with its filter, or with reviewers holding abstracts that moved out of their track.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Replace all now removes assignments on submissions that fell out of the filter, including reviewed ones. Customers who use Replace all mid-round should read the confirmation counts; walk any medical/scientific customer through it before their next assignment pass."
+        },
+        "when_to_bring_up": "A customer says the round count does not match the filter, or reviewers still see submissions that were moved to another track.",
+        "who_should_get_it": "Everyone running round-based evaluations; especially multi-track scientific programs that correct categories after assignment.",
+        "gotchas": "Scores are never deleted even when an assignment is removed. Replace not-yet-reviewed keeps any assignment with review activity."
+      },
+      "shipped": {
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "docs_only": false,
+        "prs": [],
+        "pending": "branch fix/sb-9563-sb-9546-eval-plan-replace-status-filter (SB-9563) — PR not opened yet"
+      }
+    },
+    {
+      "id": "status-filters-include-custom-statuses",
+      "title": "Status filters include custom statuses",
+      "summary": "In evaluation plan filters and Automations, **Status is Pending** now also matches submissions in a custom status under Pending such as **In Review**, so an Assign reviewers automation no longer skips them with a filter mismatch.",
+      "article": "/automations/overview#when",
+      "related": [
+        "/evaluations/setting-up-round-based-evaluations"
+      ],
+      "kind": "fixed",
+      "module": "Automations",
+      "features": [
+        "automations"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event → Automations → When card → Status filter; Evaluations → plan → submission filters"
+      },
+      "use_case": "Customers with custom statuses (In Review, Shortlisted…) under a standard one no longer need a filter per custom status, and automations stop silently skipping submissions that sit in one.",
+      "internal": {
+        "cs_action": {
+          "kind": "reach_out",
+          "note": "Any customer whose Assign reviewers automation showed \"filter mismatch\" in Delivery history for sessions in a custom status: this is the fix. Tell them."
+        },
+        "when_to_bring_up": "Delivery history shows skipped runs with \"filter mismatch\"; a customer asks why In Review sessions were not assigned.",
+        "who_should_get_it": "Customers using custom statuses together with Automations or evaluation plan filters.",
+        "gotchas": "To match a single custom status, pick that status in the filter instead of its parent."
+      },
+      "shipped": {
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "docs_only": false,
+        "prs": [],
+        "pending": "branch fix/sb-9563-sb-9546-eval-plan-replace-status-filter (SB-9546) — PR not opened yet"
+      }
+    },
+    {
+      "id": "automations-contact-created-trigger",
+      "title": "Automations: Contact created trigger",
+      "summary": "People automations can fire once for each new contact, narrowed by where they came from: added by your team, imported, from an integration, or from a form or portal.",
+      "article": "/automations/overview#when",
+      "kind": "new",
+      "module": "Automations",
+      "features": [
+        "automations"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "setting",
+        "path": "Event → Automations → New automation → People → When: Contact created → Created through"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event → Automations → When card"
+      },
+      "use_case": "Welcome emails and task creation the moment a speaker or contact lands on the event — and only for the sources you choose, so people who filled in their own details are not emailed twice.",
+      "internal": {
+        "cs_action": {
+          "kind": "reach_out",
+          "note": "A good demo moment for any customer importing speaker lists or syncing from a registration platform."
+        },
+        "when_to_bring_up": "Onboarding, \"how do I welcome new speakers automatically\", any customer doing imports or integrations into an event.",
+        "who_should_get_it": "Every customer using Automations; especially those importing or syncing contacts.",
+        "gotchas": "Contacts created through the Public API, and contacts created at the organization level without an event, do not fire this trigger."
+      },
+      "shipped": {
+        "live": {
+          "us": "2026-10-07",
+          "eu": "2026-10-07",
+          "me": "2026-10-07"
+        },
+        "announced_at": null,
+        "docs_only": false,
+        "prs": [
+          "lennd/sessionboard-web-api#4297",
+          "lennd/sessionboard-web-ui-v2#824"
+        ]
+      }
+    },
+    {
+      "id": "automations-email-your-team-and-react-only-to-the-persons-own-changes",
+      "title": "Automations: email your team, and react only to the person's own changes",
+      "summary": "A Send email step can also email event team members and team tags, or only them. Field-change triggers gain **Only when the submitter makes the change** (sessions) and **Only when the contact makes the change** (people), so edits by your team, imports and integrations don't fire them.",
+      "article": "/automations/overview#send-email",
+      "kind": "new",
+      "module": "Automations",
+      "features": [
+        "automations"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "setting",
+        "path": "Event → Automations → Send email step → Team members; When card → Only when the submitter / contact makes the change"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event → Automations → Send email step and When card"
+      },
+      "use_case": "\"Tell me when a speaker updates their own bio\" is now one automation: it emails the team, and it ignores the team's own edits and imports so it does not fire on every bulk update.",
+      "internal": {
+        "cs_action": {
+          "kind": "reach_out",
+          "note": "Customers who turned off a field-change automation because it fired on imports can turn it back on with the new checkbox."
+        },
+        "when_to_bring_up": "A customer asks to be notified of speaker self-service edits, or complains an automation fires during imports.",
+        "who_should_get_it": "Every customer using Automations.",
+        "gotchas": "Each email needs at least one recipient. A team tag resolves when the email sends, so it reaches whoever holds the tag at that moment."
+      },
+      "shipped": {
+        "live": {
+          "us": "2026-10-07",
+          "eu": "2026-10-07",
+          "me": "2026-10-07"
+        },
+        "announced_at": null,
+        "docs_only": false,
+        "prs": [
+          "lennd/sessionboard-web-api#4297",
+          "lennd/sessionboard-web-ui-v2#824"
+        ]
+      }
+    },
+    {
+      "id": "custom-success-page-on-awards-and-interest-forms",
+      "title": "Custom success page on Awards and Interest Forms",
+      "summary": "Write the message applicants and speakers read after they submit, in place of the default \"What's next?\" list.",
+      "article": "/awards/awards-submission-form#success-page",
+      "related": [
+        "/speaker-crm/speaker-crm-interest-forms"
+      ],
+      "kind": "new",
+      "module": "Awards",
+      "features": [
+        "awards",
+        "crm"
+      ],
+      "availability": "add_on",
+      "enable": {
+        "how": "setting",
+        "path": "Awards → form builder → Success page tab; CRM → Interest Forms → form → Success page message"
+      },
+      "where": {
+        "scope": "org",
+        "path": "Awards form builder → Success page; Interest Form wizard → Details"
+      },
+      "use_case": "Awards and CRM customers can tell applicants exactly what happens next — when finalists are announced, what to prepare — instead of a generic list, which cuts the \"what now?\" emails after a submission.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Available to anyone with Awards or Speaker CRM; nothing to enable beyond the add-on itself."
+        },
+        "when_to_bring_up": "Awards program setup, Interest Form setup, any customer asking to change the confirmation text.",
+        "who_should_get_it": "Awards and Speaker CRM customers.",
+        "gotchas": "Leave the editor empty to keep the default list. Confirmation number, PDF download and Return to Portal still appear."
+      },
+      "shipped": {
+        "live": {
+          "us": "2026-10-07",
+          "eu": "2026-10-07",
+          "me": "2026-10-07"
+        },
+        "announced_at": null,
+        "docs_only": false,
+        "prs": [
+          "lennd/sessionboard-web-api#4290",
+          "lennd/sessionboard-web-ui-v2#818",
+          "lennd/sessionboard-web-ui-v2#824"
+        ]
+      }
+    },
+    {
+      "id": "require-secure-links-on-url-fields",
+      "title": "Require secure links on URL fields",
+      "summary": "A URL field can save every `http://` link as `https://`, in the admin, submission forms and Awards applications.",
+      "article": "/faq/how-to-create-and-delete-custom-fields",
+      "kind": "new",
+      "module": "Settings",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "setting",
+        "path": "Settings → Fields → URL field → Require secure links (https://)"
+      },
+      "where": {
+        "scope": "both",
+        "path": "Org or Event Settings → Fields → a URL field"
+      },
+      "use_case": "Speaker websites and LinkedIn links pasted as http:// break on HTTPS-only program sites and embeds; this normalises them at save time with no cleanup pass.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "Mixed-content warnings on a program site or embed; a customer cleaning up speaker URLs.",
+        "who_should_get_it": "Everyone publishing speaker or session links.",
+        "gotchas": "Off for new fields by default. Links already saved keep their address until someone edits them."
+      },
+      "shipped": {
+        "live": {
+          "us": "2026-10-07",
+          "eu": "2026-10-07",
+          "me": "2026-10-07"
+        },
+        "announced_at": null,
+        "docs_only": false,
+        "prs": [
+          "lennd/sessionboard-web-api#4297",
+          "lennd/sessionboard-web-ui-v2#824"
+        ]
+      }
+    },
+    {
+      "id": "content-galleries-my-list-goes-home-with-the-visitor",
+      "title": "Content galleries: My list goes home with the visitor",
+      "summary": "**Add to calendar** downloads saved sessions as a calendar file and **Email me my list** sends every saved item with its link. Recordings can be added to a gallery straight from the Media Hub with **Add to gallery**.",
+      "article": "/site/content-galleries",
+      "related": [
+        "/marketing/media-library"
+      ],
+      "kind": "improved",
+      "module": "CMS",
+      "features": [
+        "content_galleries"
+      ],
+      "availability": "preview",
+      "enable": {
+        "how": "self_serve",
+        "path": "Early Access → Preview → Content Galleries"
+      },
+      "where": {
+        "scope": "both",
+        "path": "Published gallery → My list; Marketing → Media library → recording → Add to gallery"
+      },
+      "use_case": "A visitor who saved sessions in a gallery can take the list to their calendar or inbox, which is the moment a content library turns into attendance and a captured email.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "Content Galleries pilots; customers asking how a gallery drives registrations or captures leads.",
+        "who_should_get_it": "Customers in the Content Galleries preview.",
+        "gotchas": "Add to calendar appears only once a saved item has a start time. Embargoed details stay hidden in the email; sending is rate-limited."
+      },
+      "shipped": {
+        "live": {
+          "us": "2026-10-07",
+          "eu": "2026-10-07",
+          "me": "2026-10-07"
+        },
+        "announced_at": null,
+        "docs_only": false,
+        "prs": [
+          "lennd/sessionboard-web-api#4297",
+          "lennd/sessionboard-web-ui-v2#824"
+        ]
+      }
+    },
+    {
+      "id": "agenda-embeds-show-any-session-field",
+      "title": "Agenda embeds show any session field",
+      "summary": "The **Agenda** field tab lists every standard and custom session field, up to nine in the session pop-up.",
+      "article": "/sessions/embeds",
+      "kind": "improved",
+      "module": "Program",
+      "features": [
+        "embeds_v2"
+      ],
+      "availability": "on_request",
+      "enable": {
+        "how": "support",
+        "path": "Embeds are enabled per event by support; then Event → Embeds → embed → Fields → Agenda tab"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event → Embeds → an agenda embed → Fields → Agenda"
+      },
+      "use_case": "Customers embedding the agenda on their own site can show CE credits, room, level or any custom field in the session pop-up without a feed and custom code.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer asks to show a custom field (credits, level, track colour) on their embedded agenda.",
+        "who_should_get_it": "Customers with Embeds enabled on an event.",
+        "gotchas": "Nine fields maximum in the pop-up; JSON and XML feeds are not limited. Ticking Starts At or Ends At also prints the time on the grid card."
+      },
+      "shipped": {
+        "live": {
+          "us": "2026-10-07",
+          "eu": "2026-10-07",
+          "me": "2026-10-07"
+        },
+        "announced_at": null,
+        "docs_only": false,
+        "prs": [
+          "lennd/sessionboard-web-api#4297",
+          "lennd/sessionboard-web-ui-v2#824"
+        ]
+      }
+    },
+    {
+      "id": "evaluation-plans-clearer-assigning",
+      "title": "Evaluation plans: clearer assigning",
+      "summary": "The Assign button counts the evaluations it will create, **Done** on the Assignments step is now **Close without assigning**, and leaving with an unassigned change asks first. The same applies to Awards rounds.",
+      "article": "/evaluations/setting-up-round-based-evaluations",
+      "related": [
+        "/awards/managing-submissions-reviewers-rounds#assigning-reviewers"
+      ],
+      "kind": "improved",
+      "module": "Program",
+      "features": [
+        "sessions"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event → Evaluations → plan → Assignments step; Awards → round → Assign reviewers"
+      },
+      "use_case": "Chairs stopped losing assignment rules by clicking Done thinking it saved; the button now says what it does and the count makes the blast radius obvious before it is committed.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer reports \"my assignments disappeared\" after configuring a rule.",
+        "who_should_get_it": "Everyone running evaluations or Awards rounds.",
+        "gotchas": null
+      },
+      "shipped": {
+        "live": {
+          "us": "2026-10-07",
+          "eu": "2026-10-07",
+          "me": "2026-10-07"
+        },
+        "announced_at": null,
+        "docs_only": false,
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#822"
+        ]
+      }
+    },
+    {
+      "id": "interest-forms-speakers-only-forms-assign-without-a-session",
+      "title": "Interest Forms: Speakers Only forms assign without a session",
+      "summary": "Assigning a Speakers Only submission adds its speakers to the event's contacts without creating a session.",
+      "article": "/speaker-crm/speaker-crm-interest-forms#moving-data-to-events",
+      "kind": "fixed",
+      "module": "CRM",
+      "features": [
+        "crm"
+      ],
+      "availability": "add_on",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "CRM → Pipeline → submission → Assign to event"
+      },
+      "use_case": "Speakers Only forms are the CRM's general intake; assigning one to an event used to create an empty session the team then had to delete.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A CRM customer complains about empty sessions appearing after assigning interest-form submissions.",
+        "who_should_get_it": "Speaker CRM customers using Speakers Only forms.",
+        "gotchas": null
+      },
+      "shipped": {
+        "live": {
+          "us": "2026-10-07",
+          "eu": "2026-10-07",
+          "me": "2026-10-07"
+        },
+        "announced_at": null,
+        "docs_only": false,
+        "prs": [
+          "lennd/sessionboard-web-api#4290",
+          "lennd/sessionboard-web-ui-v2#818"
+        ]
+      }
     }
   ]
 }
