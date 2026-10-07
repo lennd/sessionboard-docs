@@ -1,0 +1,76 @@
+---
+title: "Export audit logs to a SIEM"
+description: "Send your organization's API request, security and audit logs to Splunk, Microsoft Sentinel, Elastic or another SIEM with a dedicated log export token."
+sidebar:
+  label: "Audit log export"
+---
+
+import { Note, Tip, Warning, Steps, Step } from '@compat';
+
+Your security team can pull Sessionboard's logs into its SIEM — Splunk, Microsoft Sentinel, Elastic or any tool that can call a REST API on a schedule. The SIEM uses a dedicated **log export token** that reads logs and nothing else.
+
+## What you can export
+
+| Log | What it holds | Kept for |
+| --- | --- | --- |
+| **API requests** | Every request made with your organization's API tokens to the Public API, the MCP server and Insights, with the caller, IP address, result and response time. Requests refused at sign-in — a missing, wrong, revoked or expired key — are included with the reason. | 365 days |
+| **Security events** | Sign-ins, failed sign-ins, two-factor and passkey events, password resets and sign-outs by the people in your organization. | No limit |
+| **Audit trail** | Every recorded change to your data: who changed which record, which field, and the new value. | No limit |
+
+Every log arrives in the same event format, so your SIEM needs one field mapping for all three.
+
+<Note>
+Security events cover your organization's current members. Activity by Sessionboard staff — for example a support engineer signing in to help you — is not part of this export.
+</Note>
+
+## Create a log export token
+
+You need permission to manage users in your organization to create or change a log export token.
+
+<Steps>
+<Step title="Open API Tokens">
+Go to **Organization Settings > API Tokens** and click **Create Token**.
+</Step>
+<Step title="Name the token">
+Give it a name your security team will recognize, for example `Splunk log export`.
+</Step>
+<Step title="Check Audit log export">
+Under **Permissions**, check **Audit log export** (`read:audit_logs`). The other permissions, the event restriction and **PII Obfuscation** disappear: a log export token holds only this permission and always covers your whole organization.
+</Step>
+<Step title="Copy the token">
+Click **Create Token** and copy the token straight away — it is shown only once. Hand it to your security team through your password manager or secrets vault.
+</Step>
+</Steps>
+
+In the token list, the token shows an **Audit log export** badge.
+
+<Warning>
+A log export token can read every log in your organization, including who signed in from where and what changed. Store it like a password, and delete it from **API Tokens** if it may have been exposed — its requests stop working at once.
+</Warning>
+
+## What a log export token can't do
+
+- It can't read or change events, sessions, contacts or any other data. Every other endpoint refuses it.
+- It can't be limited to particular events.
+- It can't be combined with other permissions. Create a separate token for any other integration.
+- It can't be used through an AI assistant connection.
+
+## Connect your SIEM
+
+Your SIEM calls one address per log and keeps a bookmark, so each pull picks up exactly where the last one ended — nothing is missed and nothing is sent twice. New events show up about a minute after they happen.
+
+Use the host for your region:
+
+- **US:** `https://public-api.sessionboard.com`
+- **EU:** `https://public-api-eu.sessionboard.com`
+
+Setup steps for Splunk, Sentinel and Elastic, with a ready-to-use Splunk script, are in [Exporting logs to a SIEM](https://apidocs.sessionboard.com/guides/exporting-logs-to-a-siem) in the API documentation.
+
+<Tip>
+If your SIEM must not store personal data, have it request the audit trail with `include_values=false`. Events still say who changed which field, without the new value.
+</Tip>
+
+## Related
+
+- [Generating API tokens](/integrations/api-tokens)
+- [Single sign-on](/integrations/sso)
