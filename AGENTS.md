@@ -77,7 +77,7 @@ The build fails on broken internal links (starlight-links-validator). Always run
 
 `npm run check:style` enforces the mechanical half of `STYLE.md` — title form and length, first heading level, stranded tables of contents, image alt text, truncated descriptions. It runs in CI beside Vale, which only sees prose. Everything it flags is a HubSpot migration artifact, so fix the page rather than loosening the rule.
 
-**Purge the cache after deploying content changes.** `wrangler deploy` updates the Worker, but Cloudflare keeps serving the previous HTML from its edge cache (`CF-Cache-Status: HIT`) — a renamed title can stay stale on a handful of pages while the rest update, which looks like a partial deploy and is not. The deploy token can purge:
+**Purge the cache after deploying content changes.** `wrangler deploy` updates the Worker, but Cloudflare keeps serving the previous HTML from its edge cache (`CF-Cache-Status: HIT`) — a renamed title can stay stale on a handful of pages while the rest update, which looks like a partial deploy and is not. Docs CI purges automatically after its deploy on `main` (before the smoke test); after a hand deploy, the deploy token can purge:
 
 ```bash
 ZONE=$(curl -s "https://api.cloudflare.com/client/v4/zones?name=sessionboard.com" \
