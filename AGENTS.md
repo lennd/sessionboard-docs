@@ -125,6 +125,10 @@ Copy the newest file as a template; `src/data/release-notes/_config.json` lists 
 
 `.github/workflows/release-daily.yml` runs every weekday morning: it refreshes `shipped.live` from the production deploy workflows, posts the Slack digest for entries that became live, writes `shipped.announced_at`, and commits the data files back to `main` as `github-actions[bot]`. That is the single exception to "every change lands through a PR" in this repo, and it touches only `src/data/release-notes/`. If it fails, fix the data; do not post to Slack by hand.
 
+### Community "What's new" drafts
+
+`npm run release:community` prints a customer-facing Community draft for every live entry (summary, why you'd use it, who gets it, how to turn it on, guide link — never `internal.*`). `--push` with `SB_API_BASE` and `SB_API_TOKEN` (a super-user session token) creates them as **drafts** through `POST /community/admin/changelog`, labelled `release:<id>` so re-runs never duplicate; a human publishes from the Community console. It is not in the daily workflow on purpose: the admin router is super-user-only and session tokens last a day, and the only other credential it takes is the cross-region community service key, which does not belong in this repo. Making it unattended is a web-api change (an internal API-key path on that router), not a secret to add here.
+
 ### Enablement section (`/enablement`) — staff only, unlisted
 
 `src/pages/enablement/` is the CS view of every release: status per region, why it matters, when to bring it up, who should get it, staff enable path, videos, gotchas. It is **open but unlisted**: not in the sidebar, search, sitemap, llms.txt, help-index or robots.txt; `noindex` meta + `X-Robots-Tag` + `no-store` from `worker.js`. `npm run internal:check` (CI) fails on any public link to it and on anything secret-looking (webhook URLs, tokens, emails) in the release data or the section's source. Do not link to it from any article, and do not put customer names, emails or credentials in `internal.*`.
