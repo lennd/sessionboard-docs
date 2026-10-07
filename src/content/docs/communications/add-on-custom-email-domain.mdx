@@ -1,7 +1,7 @@
 ---
 title: "Add-on: custom email domain"
-description: "Send every Sessionboard email — your sends, campaigns and the automated notifications — from an address on your own domain instead of no-reply@notify.sessionboard.com. What it takes to set up, and how to check it is still working."
-reviewed: "2026-09-29"
+description: "Send every Sessionboard email — your sends, campaigns and the automated notifications — from an address on your own domain instead of no-reply@notify.sessionboard.com. What changes, how to set it up yourself, and deliverability."
+reviewed: "2026-10-07"
 ---
 
 import { Note, TrainingVideo } from '@compat';
@@ -27,43 +27,17 @@ Once it is set up:
 
 Recipients see mail from a domain they recognize, which reads as legitimate and is less likely to be filtered. Authentication proves to receiving servers that Sessionboard is allowed to send as you; it does not change the sending infrastructure — see [Deliverability & allowlisting](#deliverability--allowlisting) below.
 
-## Email Domain Requirements
+## Set it up
 
-Below, are the requirements for an email domain before it can be utilized within Sessionboard:
-- No typos
-- The domain must be corporate and not Outlook, Yahoo, or Gmail.
-- Once a domain has been set up within Sessionboard, the email utilized can not be changed.
+You set the address up yourself in **Settings > Domains**, for the organization or for one event: enter the address, add the DNS records Sessionboard gives you (or send them to your IT contact from the same page), and the address goes live as soon as the records verify. Step by step: [Send email from your own domain](/settings/domains).
 
-<Note>
-The process to set up your domain with your event can take about a week.
-</Note>
-
-## Set-Up/Authentication Process
-1. Event Admin sends an email to support@sessionboard.com with the email address they are requesting to use.
-2. Sessionboard provides the event admin with DNS (Domain Name Resolution) records to configure.
-3. From your domain provider's website, find the page or area that has your domain or domain records (below are some instructions for the most common domain providers).
-   1. [Google Domains](https://support.google.com/domains/answer/3290350#zippy=%2Cadd-a-resource-record)
-   2. [AWS](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resource-record-sets-creating.html)
-   3. [Azure](https://azure.microsoft.com/en-us/blog/a-records-cname-and-using-dns-with-windows-azure-web-sites-waws/)
-   4. [Cloudflare](https://developers.cloudflare.com/dns/manage-dns-records/how-to/create-dns-records)
-   5. [GoDaddy](https://ie.godaddy.com/help/add-a-cname-record-19236)
-4. Once you’ve found this area you are ready for the next step, adding the DNS records to your domain.
-   1. [Troubleshooting Sender Authentication](https://docs.sendgrid.com/ui/account-and-settings/troubleshooting-sender-authentication)
-5. Sessionboard verifies that the DNS records were set up correctly and adds the preferred event email to the event.
+The address must be on a domain your organization owns. Free email providers such as Gmail, Outlook.com or Yahoo cannot be authenticated.
 
 ## Check your domain's authentication status
 
-DNS records can be edited, expire, or be replaced long after your domain was first authenticated, and when that happens every send from your address starts being rejected. Sessionboard rechecks each custom sending domain on a schedule rather than trusting the answer it was given at setup.
+The status badge on **Settings > Domains** shows whether your domain is verified, still waiting on DNS, or has records that are not resolving, with each record marked **Found** or **Not found**. On the organization's page, **Event email addresses** shows the same for every event with its own address.
 
-The status view sits on the organization's **Settings → Admin** page, which only Sessionboard staff can open — ask your Customer Success Manager or support@sessionboard.com to check it for you. What they see under the system organization email address:
-
-- **&lt;your domain> is authenticated. Checked &lt;when>.** — everything is in order. The timestamp matters as much as the result: a pass from months ago is not evidence that the domain works today.
-- **&lt;your domain> is not authenticated with SendGrid** — mail from this domain is being rejected right now. The failing DNS records are listed underneath, each with the host and the value it should have, so you can hand them straight to whoever manages your DNS.
-- **Last checked &lt;when> — that is too long ago to rely on**, or **has not been checked yet** — the status is unknown rather than good. Treat it as unverified.
-
-Sessionboard also alerts us when a working domain stops validating, once per breakage, so a domain that fails overnight is noticed rather than discovered by a customer mid-campaign.
-
-Organizations sending from the default `notify.sessionboard.com` address have no domain of their own to break and see nothing here.
+DNS records can be edited, expire, or be replaced long after your domain was first authenticated, and when that happens every send from your address starts being rejected. Sessionboard rechecks each custom sending domain on a schedule rather than trusting the answer it was given at setup, and alerts us when a working domain stops validating, once per breakage, so a domain that fails overnight is noticed rather than discovered by a customer mid-campaign.
 
 ## Deliverability & Allowlisting
 
@@ -85,7 +59,7 @@ For recipient-side troubleshooting, see: [Why am I not receiving emails?](/faq/w
 
 ## Frequently Asked Questions
 1. **Why do I need to configure the DNS records?**
-   1. The DNS records are used to map the alias (custom email domain) to the Sessionboard domain. Once this is completed on your end, we then ensure the alias is authenticated with our email provider to ensure deliverability. If the DNS records are not added to your domain and we try to send emails from your domain, the email will be flagged as spam and affect both of our deliverability scores. Verifying the domain creates a connection that indicates trust between both parties that we will not try to impersonate you or send unauthorized communications. Because we don't have access to your domain we ask you to add the records we provide to your domain to show that we are authenticated. Once that is done we have to verify it on our end. Here is a reference link that explains the process: https://docs.sendgrid.com/ui/account-and-settings/how-to-set-up-domain-authentication#key-terminology. ​
+   1. The records prove to receiving mail servers that you authorized Sessionboard to send as your domain. Without them, mail from your address is flagged as spam or rejected. Only someone with access to your domain can add them, which is what makes the proof meaningful. Sessionboard checks for them automatically once they are added. Background: [SendGrid domain authentication](https://docs.sendgrid.com/ui/account-and-settings/how-to-set-up-domain-authentication#key-terminology).
 2. **How can I retrieve the SPF record entries?**
    1. Sessionboard uses automated security which handles the SPF/DKIM so they stay automatically updated: https://docs.sendgrid.com/ui/account-and-settings/spf-records#spf-and-sender-authentication
 3. **We set up our custom domain but some recipients still are not receiving emails. Why?**
