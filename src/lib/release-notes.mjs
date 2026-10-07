@@ -163,14 +163,40 @@ export function deriveAvailability(slug, contract) {
   const fa = contract.featureAvailability?.[slug];
   if (!fa) return null;
   if (CORE_FEATURES.has(slug)) return 'everyone';
+  // Lifecycle is the registry's own word for a feature with no admin toggle.
+  // `adminHidden` alone is not "on for everyone": Studio and AI Evaluators
+  // are hidden because they were retired (contract v4, web-api #4344).
+  const lifecycle = featureLifecycle(slug, contract);
+  if (lifecycle === 'retired') return null;
+  if (lifecycle === 'merged') {
+    const into = Object.values(fa.scopes || {}).map((s) => s.mergedInto).find(Boolean);
+    return into && into !== slug ? deriveAvailability(into, contract) : 'everyone';
+  }
+  if (lifecycle === 'ga') return 'everyone';
   if (fa.earlyAccess?.stage === 'preview') return 'preview';
   if (fa.earlyAccess?.stage === 'beta') return 'beta';
   const scopes = Object.values(fa.scopes || {});
-  if (scopes.some((s) => s.adminHidden)) return 'everyone';
   if (scopes.some((s) => s.adminCategory === 'products')) return 'add_on';
   if (scopes.some((s) => s.adminCategory === 'features_enhancements')) return 'on_request';
   if (scopes.some((s) => s.adminCategory === 'early_access' || s.adminCategory === 'alpha')) return 'limited_release';
   return 'everyone';
+}
+
+/** `active` | `ga` | `merged` | `retired` — or `active` for contracts older than v4. */
+export function featureLifecycle(slug, contract) {
+  const fa = contract.featureAvailability?.[slug];
+  if (!fa) return 'active';
+  if (fa.lifecycle) return fa.lifecycle;
+  const scopes = Object.values(fa.scopes || {}).map((s) => s.lifecycle).filter(Boolean);
+  if (scopes.includes('retired')) return 'retired';
+  if (scopes.includes('merged')) return 'merged';
+  return scopes.length > 0 && scopes.every((l) => l === 'ga') ? 'ga' : 'active';
+}
+
+/** The feature whose toggle now covers a merged one, or null. */
+export function mergedInto(slug, contract) {
+  const fa = contract.featureAvailability?.[slug];
+  return Object.values(fa?.scopes || {}).map((s) => s.mergedInto).find(Boolean) || null;
 }
 
 export function deriveEnableHow(availability) {
@@ -208,7 +234,9 @@ export function featureFacts(slug, contract) {
     enable_how: deriveEnableHow(availability),
     early_access: fa?.earlyAccess || null,
     admin_category: fa ? Object.values(fa.scopes || {}).map((s) => s.adminCategory).filter(Boolean)[0] || null : null,
-    graduated: fa ? Object.values(fa.scopes || {}).some((s) => s.adminHidden) : false,
+    lifecycle: featureLifecycle(slug, contract),
+    merged_into: mergedInto(slug, contract),
+    graduated: featureLifecycle(slug, contract) === 'ga',
     involves_ai: !!fa?.involvesAi,
     description: fa ? Object.values(fa.scopes || {}).map((s) => s.description).filter(Boolean)[0] || null : null,
   };
@@ -242,7 +270,15 @@ export function validateEntry(entry, date, contract, { file = '' } = {}) {
   for (const r of entry.related || []) if (!articleExists(r)) at(`related ${r} does not resolve to an MDX page`);
   if (entry.kind && !KINDS.includes(entry.kind)) at(`kind must be one of ${KINDS.join(', ')}`);
   if (entry.module && !MODULES.includes(entry.module)) at(`module "${entry.module}" is not one of ${MODULES.join(', ')}`);
-  for (const f of entry.features || []) if (!contract.features.includes(f)) at(`feature "${f}" is not in the product contract`);
+  for (const f of entry.features || []) {
+    if (!contract.features.includes(f)) {
+      at(`feature "${f}" is not in the product contract`);
+      continue;
+    }
+    const lifecycle = featureLifecycle(f, contract);
+    if (lifecycle === 'retired') at(`feature "${f}" is retired — nothing ships under it; drop the tag`);
+    if (lifecycle === 'merged') at(`feature "${f}" was folded into "${mergedInto(f, contract)}" — tag that instead`);
+  }
   for (const p of entry.permissions || []) if (!(contract.permissions || []).includes(p)) at(`permission "${p}" is not in the product contract`);
   for (const a of entry.audience || []) if (!AUDIENCES.includes(a)) at(`audience "${a}" unknown`);
   if (entry.availability && !AVAILABILITY[entry.availability]) at(`availability "${entry.availability}" unknown`);

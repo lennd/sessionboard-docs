@@ -134,7 +134,13 @@ const byAvailability = Object.keys(AVAILABILITY).map((k) => ({ key: k, count: ro
             <td>{ENABLE_HOW[r.enable_how]}</td>
             <td>{r.scopes.map((s) => (s === 'org' ? 'Organization' : 'Event')).join(', ') || '—'}</td>
             <td>
-              {r.graduated ? 'Hidden (graduated — on for everyone)' : ADMIN_LABEL[r.admin_category] || r.admin_category || '—'}
+              {r.lifecycle === 'ga'
+                ? 'Hidden (graduated — on for everyone)'
+                : r.lifecycle === 'retired'
+                  ? 'Retired — superseded; do not offer it'
+                  : r.lifecycle === 'merged'
+                    ? `Folded into ${contract.featureNames?.[r.merged_into] || r.merged_into} — use that toggle`
+                    : ADMIN_LABEL[r.admin_category] || r.admin_category || '—'}
             </td>
             <td>
               {r.articles.length === 0 && r.releases.length === 0 && <span class="sb-muted">—</span>}
