@@ -367,8 +367,11 @@ for (const file of walk(DOCS).sort()) {
   const rel = relative(DOCS, file).replace(/\.mdx$/, '');
   if (EXCLUDE.has(rel)) continue;
 
-  const slug = rel === 'index' ? '/' : `/${rel}`;
-  const htmlPath = join(DIST, rel === 'index' ? 'index.html' : `${rel}.html`);
+  // Starlight routes `<dir>/index.mdx` at `/<dir>` and, with build.format
+  // 'file', writes it to dist/<dir>.html — only the site root stays index.html.
+  const routeRel = rel === 'index' ? '' : rel.replace(/\/index$/, '');
+  const slug = routeRel ? `/${routeRel}` : '/';
+  const htmlPath = join(DIST, routeRel ? `${routeRel}.html` : 'index.html');
   if (!existsSync(htmlPath)) {
     problems.push(`${rel}: no built page at ${relative(ROOT, htmlPath)}`);
     continue;
