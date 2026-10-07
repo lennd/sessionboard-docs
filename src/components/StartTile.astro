@@ -1,0 +1,38 @@
+---
+/**
+ * One tile in a Get started grid: an icon, a title, one line, and either a
+ * single destination (the whole tile is the link) or a short list of links.
+ * `step` prints a numbered badge for the "first week" path.
+ *
+ * Styles live in src/styles/custom.css (.sb-start-*), next to the card grid.
+ */
+import { Icon } from '@astrojs/starlight/components';
+
+interface Props {
+  title: string;
+  icon?: string;
+  href?: string;
+  step?: number | string;
+  links?: { label: string; href: string }[];
+}
+
+const { title, icon = 'open-book', href, step, links = [] } = Astro.props;
+const Tag = href ? 'a' : 'div';
+---
+
+<Tag class="sb-start-tile" href={href}>
+  <div class="sb-start-tile-head">
+    <span class="sb-start-icon" aria-hidden="true"><Icon name={icon as any} /></span>
+    {step !== undefined && <span class="sb-start-step">{step}</span>}
+  </div>
+  <p class="sb-start-title">{title}</p>
+  <div class="sb-start-body"><slot /></div>
+  {links.length > 0 && (
+    <ul class="sb-start-links">
+      {links.map((l) => (
+        <li><a href={l.href}>{l.label}</a></li>
+      ))}
+    </ul>
+  )}
+  {href && <span class="sb-start-cta" aria-hidden="true">→</span>}
+</Tag>
