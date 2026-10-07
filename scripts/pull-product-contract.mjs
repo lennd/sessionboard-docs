@@ -118,9 +118,10 @@ const contract = {
   // "Sessions · Update" — so a collapsed block names the access, not a slug.
   permissionNames: api.permissionNames,
   // How each feature is sold and switched on (v4): admin category per scope
-  // (`products` = sold add-on, `early_access`, …), `adminHidden` (graduated —
-  // on for everyone), the Early Access card (preview = self-serve, beta =
-  // request) and AI flags. Renders the <Availability> box and the internal
+  // (`products` = sold add-on, `early_access`, …), `lifecycle` (`active` |
+  // `ga` = on for everyone | `merged` → `mergedInto` | `retired` — never read
+  // `adminHidden` as GA), the Early Access card a customer can actually see
+  // (preview = self-serve, beta = request) and AI flags. Renders the <Availability> box and the internal
   // enablement matrix.
   featureAvailability: api.featureAvailability,
   // Valid app: link targets.
