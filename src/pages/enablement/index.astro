@@ -1,0 +1,67 @@
+---
+/**
+ * Enablement home: every release, newest first, from the CS point of view.
+ * Staged entries (merged but not in production) sit at the top, clearly
+ * marked, so nobody goes looking in the product for them.
+ */
+import site from '../../../site.json';
+import EnablementLayout from '../../components/enablement/EnablementLayout.astro';
+import EntryCard from '../../components/enablement/EntryCard.astro';
+import EntryFilters from '../../components/enablement/EntryFilters.astro';
+import { MODULES, allEntries, formatDate, internalPrefix, isLive, loadReleaseNotes } from '../../lib/release-notes.mjs';
+
+const prefix = internalPrefix(site);
+const { releases, problems } = loadReleaseNotes();
+if (problems.length) throw new Error(`release notes are invalid:\n${problems.join('\n')}`);
+
+const entries = allEntries(releases);
+const staged = entries.filter((e) => !isLive(e) && !e.shipped?.docs_only);
+const liveByDate = releases
+  .map((r) => ({ date: r.date, entries: r.entries.filter((e) => isLive(e) || e.shipped?.docs_only) }))
+  .filter((r) => r.entries.length > 0);
+const modulesPresent = MODULES.filter((m) => entries.some((e) => e.module === m));
+const needsAction = entries.filter((e) => isLive(e) && ['must_enable', 'can_disable', 'review_before_customers_see'].includes(e.internal?.cs_action?.kind));
+---
+
+<EnablementLayout
+  title="What shipped"
+  description="Every product change from the CS point of view: status, who gets it, how to turn it on, why it matters."
+  current={prefix}
+>
+  <p>
+    Everything that has merged, newest first, with the answers CS gets asked. The daily Slack digest in
+    <strong>#product-development</strong> posts only the entries marked <span class="sb-status sb-status-live">Live</span>
+    — in production for both US and EU. Anything marked <span class="sb-status sb-status-staged">Not in production yet</span>
+    is on <code>main</code> and will appear in the next deploy; do not mention it to customers.
+  </p>
+  <p>
+    <a href={`${prefix}/cs-action`}>{needsAction.length} live {needsAction.length === 1 ? 'change needs' : 'changes need'} something from CS</a> ·
+    <a href={`${prefix}/features`}>Feature availability matrix</a> ·
+    <a href={`${prefix}/how-to-use`}>How to use this section</a>
+  </p>
+
+  {staged.length > 0 && (
+    <section data-sb-en-section>
+      <h2 id="staged">Merged, not in production yet</h2>
+      <p class="sb-muted">
+        {staged.length} {staged.length === 1 ? 'change is' : 'changes are'} documented and on <code>main</code>. The
+        guide is already published; the feature is not. Each card says which region is missing.
+      </p>
+      <ul class="sb-en-list">
+        {staged.map((e) => <EntryCard entry={e} showDate />)}
+      </ul>
+    </section>
+  )}
+
+  <h2 id="live">In production</h2>
+  <EntryFilters modules={modulesPresent} />
+
+  {liveByDate.map((r) => (
+    <section data-sb-en-section>
+      <h3 id={r.date}>{formatDate(r.date)}</h3>
+      <ul class="sb-en-list">
+        {r.entries.map((e) => <EntryCard entry={e} />)}
+      </ul>
+    </section>
+  ))}
+</EnablementLayout>

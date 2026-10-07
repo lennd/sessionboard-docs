@@ -34,6 +34,12 @@ const patchedHead = head.map((tag) => {
 
 const slug = id === 'index' ? '' : id;
 const canonical = slug ? `${SITE}/${slug}` : `${SITE}/`;
+
+// The staff-only enablement section (src/pages/<internalPrefix>/) is unlisted:
+// noindex/nofollow, no share card, no structured data, no analytics. The
+// Worker adds the matching X-Robots-Tag header; this is the in-document half.
+const INTERNAL_PREFIX = String((site as { internalPrefix?: string }).internalPrefix || 'enablement').replace(/^\/|\/$/g, '');
+const isInternal = slug === INTERNAL_PREFIX || slug.startsWith(`${INTERNAL_PREFIX}/`);
 const title = entry.data.title;
 const description = entry.data.description ?? '';
 const ogKey = slug === '' ? 'home' : slug.replace(/\//g, '--');
@@ -124,22 +130,33 @@ const marketingJs = `
 })();`;
 ---
 
-{patchedHead.map(({ tag: Tag, attrs, content }) => <Tag {...attrs} set:html={content} />)}
-
-<meta name="robots" content="index, follow" />
-<meta name="theme-color" content="#1e62d8" />
-<meta property="og:image" content={ogImage} />
-<meta property="og:image:width" content="1200" />
-<meta property="og:image:height" content="630" />
-<meta property="og:image:alt" content={ogAlt} />
-<meta property="og:image:type" content="image/png" />
-<meta name="twitter:site" content="@sessionboard" />
-<meta name="twitter:title" content={title} />
-<meta name="twitter:description" content={description} />
-<meta name="twitter:image" content={ogImage} />
-<meta name="twitter:image:alt" content={ogAlt} />
-<script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
-<script set:html={marketingJs} />
+{isInternal ? (
+  <>
+    {patchedHead
+      .filter((t) => !(t.tag === 'meta' && typeof t.attrs?.property === 'string' && t.attrs.property.startsWith('og:')))
+      .map(({ tag: Tag, attrs, content }) => <Tag {...attrs} set:html={content} />)}
+    <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
+    <meta name="theme-color" content="#1e62d8" />
+  </>
+) : (
+  <>
+    {patchedHead.map(({ tag: Tag, attrs, content }) => <Tag {...attrs} set:html={content} />)}
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#1e62d8" />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={ogAlt} />
+    <meta property="og:image:type" content="image/png" />
+    <meta name="twitter:site" content="@sessionboard" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+    <meta name="twitter:image:alt" content={ogAlt} />
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+    <script set:html={marketingJs} />
+  </>
+)}
 <script>
   // Heading anchor icons (Starlight's a.sl-anchor-link) copy the section
   // hotlink to the clipboard on click (Josh, 2026-09-24). Default hash

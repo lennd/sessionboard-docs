@@ -5,9 +5,13 @@
  * reports docs-driven demos alongside growth-page demos.
  */
 import Default from '@astrojs/starlight/components/Footer.astro';
+import site from '../../site.json';
 
 const { id } = Astro.locals.starlightRoute;
 const slug = id === 'index' ? 'home' : id.replace(/\//g, '-');
+// No demo CTA on the staff-only enablement section — its readers are us.
+const INTERNAL_PREFIX = String((site as { internalPrefix?: string }).internalPrefix || 'enablement').replace(/^\/|\/$/g, '');
+const isInternal = id === INTERNAL_PREFIX || id.startsWith(`${INTERNAL_PREFIX}/`);
 const demoHref =
   'https://www.sessionboard.com/contact' +
   `?utm_source=help-center&utm_medium=docs&utm_campaign=${encodeURIComponent(slug)}` +
@@ -16,13 +20,15 @@ const demoHref =
 
 <Default><slot /></Default>
 
-<aside class="sb-footer-cta" aria-label="Get started with Sessionboard" data-pagefind-ignore>
-  <div>
-    <p class="sb-footer-cta-title">New to Sessionboard?</p>
-    <p class="sb-footer-cta-sub">See how teams run speakers, sessions, and content in one place.</p>
-  </div>
-  <a class="sb-footer-cta-btn" href={demoHref}>Request a demo</a>
-</aside>
+{!isInternal && (
+  <aside class="sb-footer-cta" aria-label="Get started with Sessionboard" data-pagefind-ignore>
+    <div>
+      <p class="sb-footer-cta-title">New to Sessionboard?</p>
+      <p class="sb-footer-cta-sub">See how teams run speakers, sessions, and content in one place.</p>
+    </div>
+    <a class="sb-footer-cta-btn" href={demoHref}>Request a demo</a>
+  </aside>
+)}
 
 <style>
   .sb-footer-cta {

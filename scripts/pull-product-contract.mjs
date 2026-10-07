@@ -36,7 +36,7 @@ const WEB_UI_DIR = process.env.SB_WEB_UI_V2_DIR ?? join(WORKSPACE, 'sessionboard
 const OUT = join(DOCS_ROOT, 'src', 'data', 'product-contract.json');
 
 /** The contract shape this repo's validator understands. */
-const SUPPORTED_CONTRACT_VERSION = 3;
+const SUPPORTED_CONTRACT_VERSION = 4;
 
 function fail(message) {
   console.error(`\n✖ ${message}\n`);
@@ -117,6 +117,12 @@ const contract = {
   permissionIdBySlug: api.permissionIdBySlug,
   // "Sessions · Update" — so a collapsed block names the access, not a slug.
   permissionNames: api.permissionNames,
+  // How each feature is sold and switched on (v4): admin category per scope
+  // (`products` = sold add-on, `early_access`, …), `adminHidden` (graduated —
+  // on for everyone), the Early Access card (preview = self-serve, beta =
+  // request) and AI flags. Renders the <Availability> box and the internal
+  // enablement matrix.
+  featureAvailability: api.featureAvailability,
   // Valid app: link targets.
   appRoutes,
 };

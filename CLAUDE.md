@@ -45,7 +45,7 @@ Practicalities that cost time when rediscovered:
 
 ## Release notes
 
-Documenting a shipped product change? Add a dated entry to `src/content/docs/help/release-notes.mdx` in the same commit — format and inclusion rules in `AGENTS.md` (Release notes section). Docs-only edits don't get entries.
+Documenting a shipped product change? Add an entry to `src/data/release-notes/YYYY-MM-DD.json` in the same commit (copy the newest file as a template; never edit `help/release-notes.mdx`, it only renders the data). Every entry answers who gets it, where it lives, how to turn it on, why a customer wants it, and what CS has to do, and lists the PRs in `shipped.prs` so the daily job can tell when it is actually in production — `npm run release:check` enforces all of it. Field-by-field rules in `AGENTS.md` (Release notes section). Docs-only edits don't get entries. Never link to `/enablement` from an article.
 
 ## Before you stop (CI gate)
 

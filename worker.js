@@ -105,6 +105,17 @@ const BULK_EXPORTS = new Set(['/llms.txt', '/llms-full.txt', '/llms-small.txt'])
 // the site — so every /_internal/ request needs a bearer token.
 const INTERNAL_PREFIX = '/_internal/';
 
+// ── Staff-only enablement section ───────────────────────────────────────
+// src/pages/<internalPrefix>/ is the CS view of every release (why, who,
+// how to turn it on, staged vs. live). It is unlisted rather than gated:
+// Josh's call (2026-10-07) was "leave it open, just make sure it is not
+// linked, not indexable, and shares no secrets". So: noindex header on top of
+// the noindex meta Head.astro emits, no edge or browser caching (so a removed
+// page disappears at once), excluded from the sitemap in astro.config.mjs,
+// and deliberately NOT in robots.txt — a Disallow line would advertise it.
+const ENABLEMENT_PREFIX = `/${String(site.internalPrefix || 'enablement').replace(/^\/|\/$/g, '')}`;
+const isEnablementPath = (pathname) => pathname === ENABLEMENT_PREFIX || pathname.startsWith(`${ENABLEMENT_PREFIX}/`);
+
 /**
  * Compare a presented token against the configured one without leaking its
  * length or matching prefix through response timing. Workers has no
@@ -374,6 +385,14 @@ export default {
     }
 
     const response = await env.ASSETS.fetch(request);
+
+    if (isEnablementPath(url.pathname)) {
+      const headers = new Headers(response.headers);
+      headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive, nosnippet');
+      headers.set('Cache-Control', 'private, no-store');
+      headers.set('Referrer-Policy', 'no-referrer');
+      return new Response(response.body, { status: response.status, headers });
+    }
 
     // Preview hosts (workers.dev) must never be indexed — canonical is help.
     if (!isProd) {

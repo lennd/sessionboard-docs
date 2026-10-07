@@ -3,9 +3,15 @@ import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import starlightLlmsTxt from 'starlight-llms-txt';
 import starlightLinksValidator from 'starlight-links-validator';
+import sitemap from '@astrojs/sitemap';
 import sidebar from './src/sidebar.json' with { type: 'json' };
 import site from './site.json' with { type: 'json' };
 import rehypeAppLinks from './plugins/rehype-app-links.mjs';
+
+// The staff-only enablement section (src/pages/<internalPrefix>/) is unlisted.
+// Starlight adds @astrojs/sitemap itself unless one is configured here, so
+// this is the only way to keep those URLs out of sitemap.xml.
+const INTERNAL = `https://${site.canonicalHost}/${site.internalPrefix}`;
 
 export default defineConfig({
   site: `https://${site.canonicalHost}`,
@@ -19,6 +25,7 @@ export default defineConfig({
     rehypePlugins: [rehypeAppLinks],
   },
   integrations: [
+    sitemap({ filter: (page) => page !== INTERNAL && !page.startsWith(`${INTERNAL}/`) }),
     starlight({
       title: 'Sessionboard Help Center',
       logo: {

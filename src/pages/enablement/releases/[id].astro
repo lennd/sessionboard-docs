@@ -1,0 +1,192 @@
+---
+/**
+ * One release, the long form: production status per region, why it matters,
+ * when to bring it up, who should get it, how to turn it on (customer path and
+ * staff path), where it lives, the guide and any video that shows it, gotchas
+ * and a talk track. This is the page the Slack digest links to.
+ */
+import site from '../../../../site.json';
+import EnablementLayout from '../../../components/enablement/EnablementLayout.astro';
+import {
+  AVAILABILITY,
+  ENABLE_HOW,
+  allEntries,
+  articleTitle,
+  formatDate,
+  internalPrefix,
+  loadReleaseNotes,
+  readContract,
+  renderInline,
+  videosForArticle,
+} from '../../../lib/release-notes.mjs';
+import { csDescription, csLabel, csTone, moduleSlug, prUrl, statusOf } from '../../../lib/enablement.mjs';
+
+export async function getStaticPaths() {
+  const { releases, problems } = loadReleaseNotes();
+  if (problems.length) throw new Error(`release notes are invalid:\n${problems.join('\n')}`);
+  return allEntries(releases).map((entry) => ({ params: { id: entry.id }, props: { entry } }));
+}
+
+const { entry } = Astro.props;
+const prefix = internalPrefix(site);
+const contract = readContract();
+const status = statusOf(entry);
+const cs = entry.internal?.cs_action?.kind || 'none';
+const videos = entry.article ? videosForArticle(entry.article) : [];
+const live = entry.shipped?.live || {};
+const featureNames = (entry.features || []).map((f) => contract.featureNames?.[f] || f);
+const scopeLabel = { org: 'Organization', event: 'Event', both: 'Organization and event' }[entry.where?.scope] || 'Not specified';
+const regionCell = (r) => (live[r] ? `Live since ${live[r]}` : r === 'me' ? 'Pending (ME lags; informational)' : 'Not deployed');
+---
+
+<EnablementLayout title={entry.title} description={entry.use_case || ''} current={`${prefix}/releases/${entry.id}`}>
+  <div class="sb-en-hero">
+    <span class={`sb-status sb-status-${status.state}`}>{status.label}</span>
+    {entry.module && <a class="sb-badge sb-badge-module" href={`${prefix}/modules/${moduleSlug(entry.module)}`}>{entry.module}</a>}
+    {entry.kind && <span class={`sb-badge sb-badge-${entry.kind}`}>{entry.kind}</span>}
+    {entry.availability !== 'everyone' && <span class="sb-badge">{AVAILABILITY[entry.availability]?.label}</span>}
+    <span class={`sb-badge sb-badge-cs-${csTone(cs)}`}>{csLabel(cs)}</span>
+    <span class="sb-muted" style="font-size: var(--sl-text-sm)">Documented {formatDate(entry.date)}</span>
+  </div>
+
+  <p set:html={renderInline(entry.summary)} />
+
+  {status.state !== 'live' && (
+    <div class="sb-en-panel sb-en-panel-staged">
+      <h2>Not in production yet</h2>
+      <p>
+        The guide is published; the feature is not live for every customer. {status.detail}. It will be posted to Slack
+        automatically once both US and EU are deployed — until then, do not point customers at it.
+      </p>
+    </div>
+  )}
+
+  <div class="sb-en-grid">
+    <div class="sb-en-panel sb-en-panel-wide">
+      <h2>Why it matters</h2>
+      <p>{entry.use_case || <span class="sb-muted">Not written yet — entries before {formatDate('2026-10-07')} were migrated from prose.</span>}</p>
+    </div>
+
+    <div class="sb-en-panel">
+      <h2>When to bring it up</h2>
+      <p>{entry.internal?.when_to_bring_up || <span class="sb-muted">Not written yet.</span>}</p>
+    </div>
+
+    <div class="sb-en-panel">
+      <h2>Who should get it</h2>
+      <p><strong>{AVAILABILITY[entry.availability]?.label}</strong> — {AVAILABILITY[entry.availability]?.short}.</p>
+      {entry.internal?.who_should_get_it && <p>{entry.internal.who_should_get_it}</p>}
+      {entry.audience?.length > 0 && <p class="sb-muted">Seen by: {entry.audience.join(', ')}</p>}
+    </div>
+
+    <div class={`sb-en-panel ${cs !== 'none' ? 'sb-en-panel-cs' : ''}`}>
+      <h2>What CS has to do</h2>
+      <p><strong>{csLabel(cs)}.</strong> {csDescription(cs)}.</p>
+      {entry.internal?.cs_action?.note && <p>{entry.internal.cs_action.note}</p>}
+    </div>
+
+    <div class="sb-en-panel">
+      <h2>Turn it on</h2>
+      <p><strong>Customer:</strong> {ENABLE_HOW[entry.enable?.how]}{entry.enable?.path ? ` — ${entry.enable.path}` : ''}</p>
+      {entry.internal?.staff_path && <p><strong>Staff:</strong> {entry.internal.staff_path}</p>}
+      {featureNames.length > 0 && <p class="sb-muted">Feature flag{featureNames.length > 1 ? 's' : ''}: {featureNames.join(', ')}</p>}
+    </div>
+
+    <div class="sb-en-panel">
+      <h2>Where to find it</h2>
+      <p><strong>{scopeLabel}</strong>{entry.where?.path ? ` — ${entry.where.path}` : ''}</p>
+      {entry.permissions?.length > 0 && <p class="sb-muted">Permissions: {entry.permissions.join(', ')}</p>}
+    </div>
+
+    <div class="sb-en-panel">
+      <h2>Show the customer</h2>
+      {entry.article ? (
+        <p>
+          <a href={entry.article}>{articleTitle(entry.article)}</a>
+          <span class="sb-muted"> — the customer-facing guide</span>
+        </p>
+      ) : (
+        <p class="sb-muted">No guide linked.</p>
+      )}
+      {entry.related?.length > 0 && (
+        <ul>
+          {entry.related.map((r) => (
+            <li><a href={r}>{articleTitle(r)}</a></li>
+          ))}
+        </ul>
+      )}
+      {videos.length > 0 ? (
+        videos.map((v) => (
+          <div class="sb-en-video">
+            {v.poster && <img src={v.poster} alt="" loading="lazy" />}
+            <span>
+              <a href={v.anchor}>{v.title || 'Watch the walkthrough'}</a>
+              <br />
+              <span class="sb-muted">{v.kind === 'training' ? 'Training chapter' : 'Walkthrough clip'}{v.duration ? ` · ${Math.round(v.duration)}s` : ''}</span>
+            </span>
+          </div>
+        ))
+      ) : (
+        <p class="sb-muted">No video on the guide yet.</p>
+      )}
+      {entry.internal?.videos?.length > 0 && (
+        <ul>
+          {entry.internal.videos.map((v) => (
+            <li><a href={v.url || v}>{v.title || v.url || v}</a></li>
+          ))}
+        </ul>
+      )}
+    </div>
+
+    <div class="sb-en-panel">
+      <h2>Production status</h2>
+      <ul>
+        <li>US — {regionCell('us')}</li>
+        <li>EU — {regionCell('eu')}</li>
+        <li>ME — {regionCell('me')}</li>
+      </ul>
+      {entry.shipped?.prs?.length > 0 && (
+        <p>
+          {entry.shipped.prs.map((pr, i) => (
+            <>
+              {i > 0 && ' · '}
+              <a href={prUrl(pr)} rel="noopener">{pr}</a>
+            </>
+          ))}
+        </p>
+      )}
+      {entry.shipped?.docs_only && <p class="sb-muted">Documentation-only change; nothing to deploy.</p>}
+      {entry.shipped?.announced_at && <p class="sb-muted">Posted to Slack {entry.shipped.announced_at}.</p>}
+    </div>
+
+    {entry.internal?.gotchas && (
+      <div class="sb-en-panel sb-en-panel-wide">
+        <h2>Gotchas</h2>
+        <p>{entry.internal.gotchas}</p>
+      </div>
+    )}
+
+    {entry.internal?.talk_track && (
+      <div class="sb-en-panel sb-en-panel-wide">
+        <h2>Talk track</h2>
+        <p>{entry.internal.talk_track}</p>
+      </div>
+    )}
+
+    {entry.internal?.links?.length > 0 && (
+      <div class="sb-en-panel sb-en-panel-wide">
+        <h2>More</h2>
+        <ul>
+          {entry.internal.links.map((l) => (
+            <li><a href={l.url || l} rel="noopener">{l.title || l.url || l}</a></li>
+          ))}
+        </ul>
+      </div>
+    )}
+  </div>
+
+  <p class="sb-muted" style="font-size: var(--sl-text-sm)">
+    Source: <code>src/data/release-notes/{entry.date}.json</code> → <code>{entry.id}</code>. To correct anything here, edit that
+    entry in <code>sessionboard-docs</code>; the public release notes, this page and the Slack digest all read from it.
+  </p>
+</EnablementLayout>
