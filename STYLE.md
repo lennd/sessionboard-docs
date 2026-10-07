@@ -115,9 +115,18 @@ these are all migration artifacts, not judgement calls.
 ---
 title: "Short imperative title"
 description: "One-sentence summary used for SEO and search results."
+features: ["awards"]          # what the article assumes — renders the Availability box
+enable_path: "Event Settings → Features → Awards"   # optional; the contract supplies the rest
+permissions: ["org.settings.update"]                # optional
 ---
 
 One-paragraph answer to "what is this and when do I need it".
+
+## Why use it
+
+Two to four sentences a Customer Success Manager could say to a customer:
+the problem this removes, the moment they will reach for it, what it saves.
+Not a feature list — the value.
 
 ## First task-oriented section
 ...
@@ -125,6 +134,18 @@ One-paragraph answer to "what is this and when do I need it".
 
 - `title` and `description` frontmatter are required.
 - The H1 comes from `title` — never write an `# H1` in the body.
+- **Availability box.** Every article that declares `features` gets a box under
+  the title — *Available with · Where · Turn it on · Requires* — generated from
+  the product contract (Early Access stage, admin category, scope). Articles in
+  gated folders (`awards/`, `speaker-crm/`, `marketing/`, `evaluations/`, …)
+  must declare `features`; `check-style.mjs` fails them otherwise. Override only
+  what the contract cannot know: `enable_path` (menu path), `permissions`,
+  `where`, and — rarely — `availability` / `cs_enabled`. When a feature
+  graduates, re-run `npm run contract:pull`; do not edit the articles.
+- **Why use it.** Any article a release entry links to (`src/data/release-notes`,
+  from 2026-10-07) must carry a `## Why use it` section before the first how-to
+  heading — the long form of the entry's `use_case`. New articles should have
+  one regardless.
 - End troubleshooting pages with a "Still having issues?" section pointing to
   [support@sessionboard.com](mailto:support@sessionboard.com) and what to include.
 

@@ -1,0 +1,139 @@
+---
+/**
+ * The "Available with / Where / Turn it on / Requires" box under an article's
+ * title — the Help Center's equivalent of the requirements block on every
+ * HubSpot Knowledge Base article.
+ *
+ * Rendered by PageTitle.astro for every article that declares `features` in
+ * frontmatter (or any of `where`, `availability`, `enable_path`,
+ * `permissions`). The facts come from the product contract that web-api
+ * exports — Early Access stage, admin category, scope — so when a feature
+ * graduates or moves from beta to preview, every article updates on the next
+ * `npm run contract:pull`, and nobody edits 70 pages. Frontmatter overrides
+ * exist for the cases the contract cannot know (a menu path, a permission).
+ *
+ * The box is plain HTML with data attributes so the in-app reader can later
+ * personalise it ("On for this event") the way IfFeature is personalised.
+ */
+import contract from '../data/product-contract.json';
+import { AVAILABILITY, ENABLE_HOW, featureFacts } from '../lib/release-notes.mjs';
+
+interface Props {
+  features: string[];
+  where?: 'org' | 'event' | 'both';
+  availability?: keyof typeof AVAILABILITY;
+  cs_enabled?: boolean;
+  enable_path?: string;
+  permissions?: string[];
+}
+
+const { features = [], where, availability, cs_enabled, enable_path, permissions = [] } = Astro.props;
+
+const RANK: Record<string, number> = { everyone: 0, preview: 1, on_request: 2, beta: 3, limited_release: 4, add_on: 5, enterprise: 6 };
+const facts = features.map((f) => featureFacts(f, contract));
+
+// Most restrictive wins when an article spans several features.
+const derivedAvailability = facts.reduce<string>((acc, f) => (RANK[f.availability] > RANK[acc] ? f.availability : acc), 'everyone');
+const avail = availability || derivedAvailability;
+
+const scopes = new Set<string>();
+for (const f of facts) for (const s of f.scopes) scopes.add(s);
+const derivedWhere = scopes.size === 2 ? 'both' : scopes.size === 1 ? [...scopes][0] : null;
+const scope = where || derivedWhere;
+const scopeLabel = { org: 'Organization', event: 'Event', both: 'Organization and event' }[scope as string] || null;
+
+const enableHow = facts.find((f) => f.availability === avail)?.enable_how || (avail === 'everyone' ? 'default_on' : 'csm');
+const sessionboardEnables = cs_enabled ?? ['beta', 'on_request', 'add_on', 'limited_release', 'enterprise'].includes(avail);
+
+const names = facts.map((f) => f.name);
+// "Settings · Update" exists at both scopes; qualify so the two read differently.
+const SCOPE_WORD: Record<string, string> = { org: 'Organization', event: 'Event' };
+const permissionNames = [
+  ...new Set(
+    permissions.map((p) => {
+      const name = (contract.permissionNames as Record<string, string>)[p] || p;
+      const sc = ((contract.permissionScopes as Record<string, string[]>)[p] || [])[0];
+      return sc && SCOPE_WORD[sc] ? `${SCOPE_WORD[sc]} ${name}` : name;
+    }),
+  ),
+];
+const show = features.length > 0 || where || availability || enable_path || permissions.length > 0;
+---
+
+{show && (
+  <aside class="sb-availability" aria-label="Availability" data-sb-availability={features.join(' ') || undefined} data-availability={avail} data-pagefind-ignore>
+    <dl>
+      <div>
+        <dt>Available with</dt>
+        <dd>
+          <strong>{AVAILABILITY[avail]?.label}</strong>
+          {names.length > 0 && <span class="sb-availability-names"> · {names.join(', ')}</span>}
+          <span class="sb-availability-sub">{AVAILABILITY[avail]?.short}</span>
+        </dd>
+      </div>
+      {scopeLabel && (
+        <div>
+          <dt>Where</dt>
+          <dd>{scopeLabel}</dd>
+        </div>
+      )}
+      <div>
+        <dt>Turn it on</dt>
+        <dd>
+          {enable_path ? enable_path : ENABLE_HOW[enableHow]}
+          {sessionboardEnables && (
+            <span class="sb-availability-sub">
+              Sessionboard turns this on for you — {avail === 'add_on' || avail === 'limited_release' || avail === 'enterprise' ? 'ask your Customer Success Manager' : 'ask support'}.
+            </span>
+          )}
+        </dd>
+      </div>
+      {permissionNames.length > 0 && (
+        <div>
+          <dt>Requires</dt>
+          <dd>{permissionNames.join(', ')} permission{permissionNames.length > 1 ? 's' : ''}</dd>
+        </div>
+      )}
+    </dl>
+  </aside>
+)}
+
+<style>
+  .sb-availability {
+    margin: 0.75rem 0 1.25rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--sl-color-hairline);
+    border-left: 4px solid var(--sl-color-accent);
+    border-radius: 0.6rem;
+    background: var(--sl-color-gray-7, var(--sl-color-bg));
+    font-size: var(--sl-text-sm);
+  }
+  .sb-availability dl {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+    gap: 0.5rem 1.25rem;
+    margin: 0;
+  }
+  .sb-availability div {
+    min-width: 0;
+  }
+  .sb-availability dt {
+    font-weight: 600;
+    color: var(--sl-color-gray-3);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-size: 0.7rem;
+    margin-bottom: 0.15rem;
+  }
+  .sb-availability dd {
+    margin: 0;
+    color: var(--sl-color-white);
+  }
+  .sb-availability-names {
+    color: var(--sl-color-gray-2);
+  }
+  .sb-availability-sub {
+    display: block;
+    color: var(--sl-color-gray-3);
+  }
+</style>
