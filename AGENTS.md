@@ -104,12 +104,34 @@ When adding a page: put the MDX file in the matching folder under `src/content/d
 
 ## Release notes (mandatory with every product-docs round)
 
-`src/content/docs/help/release-notes.mdx` is the public changelog. **Any docs round that documents a shipped product change must also add an entry there, in the same commit.** Formatting rules:
+Release notes are **data, not prose**: one file per date in `src/data/release-notes/YYYY-MM-DD.json`. **Any docs round that documents a shipped product change must also add an entry there, in the same commit.** `src/content/docs/help/release-notes.mdx` only renders the data — never add bullets to it. The same entry feeds the public page, the staff-only enablement section (`/enablement`, see below), the daily Slack digest to #product-development, `dist/_internal/release-notes.json` (TAM Hub, Community drafts) and CI. There is no second list to keep in sync.
 
-- One `## <Month D, YYYY>` heading per release date, newest first — add to the existing date section if one exists for that day.
-- One bullet per feature: `**Feature name** — one sentence of what the user can now do. [Article title](/path)`.
-- Entries describe **product changes users can see** (features, limits, integrations, settings). Docs-only work (rewrites, screenshots, style fixes) and internal tooling do **not** get entries.
-- Never invent a date — use the day the change actually shipped/was documented.
+Why: CS kept finding features in the release notes that were not in production yet, and could not tell from a bullet who a change was for or how to turn it on. Every entry now answers those questions, and nothing is announced until it is live.
+
+Rules (`npm run release:check` enforces them; `scripts/check-release-notes.mjs`):
+
+- `id` is a kebab-case slug, unique across all dates — it is the URL of the enablement page.
+- `title`, `summary` (one or two sentences of what the user can now do; bold/code/links only), `article` (the guide; must exist), `kind` (`new` | `improved` | `fixed`), `module` (one of the Help Center groups; derived from the article folder when omitted).
+- **Who / where / how to turn it on:** `features` (contract slugs — `availability`, `enable.how` and `where.scope` are derived from the product contract when set), `enable.path` (the menu path the customer follows; required unless on by default), `where.path` (where the change shows up), `permissions`, `audience`.
+- **Why:** `use_case` — one or two sentences a CSM could say to a customer about why they would want this.
+- **For CS (never public):** `internal.cs_action` (`none` | `must_enable` | `can_disable` | `review_before_customers_see` | `reach_out`, with a `note`), `internal.when_to_bring_up`, `internal.who_should_get_it`, `internal.staff_path`, `internal.gotchas`, `internal.talk_track`.
+- **Production status:** `shipped.prs` — every PR in `lennd/<repo>#<n>` form, or `shipped.docs_only: true`. If you are documenting from a branch whose PR does not exist yet, set `shipped.pending: "<branch or ticket>"` and come back to fill in `prs` — the entry stays "Not in production yet" until you do, and the daily job nags about it. Leave `shipped.live` as nulls: `scripts/release-status.mjs` (the daily workflow) flips each region when the PR is in the last successful production deploy, and only then does the entry appear publicly or in Slack. **Never hand-write a live date.**
+- Entries describe **product changes users can see**. Docs-only work (rewrites, screenshots, style fixes) and internal tooling do **not** get entries.
+- Never invent a date — the file name is the day the change was documented, not a guess at when it will deploy.
+
+Copy the newest file as a template; `src/data/release-notes/_config.json` lists the repos and their production workflows.
+
+### The one automated commit on main
+
+`.github/workflows/release-daily.yml` runs every weekday morning: it refreshes `shipped.live` from the production deploy workflows, posts the Slack digest for entries that became live, writes `shipped.announced_at`, and commits the data files back to `main` as `github-actions[bot]`. That is the single exception to "every change lands through a PR" in this repo, and it touches only `src/data/release-notes/`. If it fails, fix the data; do not post to Slack by hand.
+
+### Community "What's new" drafts
+
+`npm run release:community` prints a customer-facing Community draft for every live entry (summary, why you'd use it, who gets it, how to turn it on, guide link — never `internal.*`). `--push` with `SB_API_BASE` and `SB_API_TOKEN` (a super-user session token) creates them as **drafts** through `POST /community/admin/changelog`, labelled `release:<id>` so re-runs never duplicate; a human publishes from the Community console. It is not in the daily workflow on purpose: the admin router is super-user-only and session tokens last a day, and the only other credential it takes is the cross-region community service key, which does not belong in this repo. Making it unattended is a web-api change (an internal API-key path on that router), not a secret to add here.
+
+### Enablement section (`/enablement`) — staff only, unlisted
+
+`src/pages/enablement/` is the CS view of every release: status per region, why it matters, when to bring it up, who should get it, staff enable path, videos, gotchas. It is **open but unlisted**: not in the sidebar, search, sitemap, llms.txt, help-index or robots.txt; `noindex` meta + `X-Robots-Tag` + `no-store` from `worker.js`. `npm run internal:check` (CI) fails on any public link to it and on anything secret-looking (webhook URLs, tokens, emails) in the release data or the section's source. Do not link to it from any article, and do not put customer names, emails or credentials in `internal.*`.
 
 ## Hard rules
 

@@ -5,10 +5,19 @@
  * matching BreadcrumbList JSON-LD is emitted by Head.astro.
  */
 import breadcrumbs from '../breadcrumbs.json';
+import Availability from './Availability.astro';
 
 const { entry, id } = Astro.locals.starlightRoute;
 const slug = id === 'index' ? '' : id;
 const trail = (breadcrumbs as Record<string, { trail: { label: string; href: string | null }[] }>)[slug]?.trail ?? [];
+
+// The Availability box answers who / where / how to turn it on for every
+// article that declares `features` (see Availability.astro). Content-collection
+// pages only: custom pages (the enablement section) have no such frontmatter.
+const data = entry.data as Record<string, unknown>;
+const features = Array.isArray(data.features) ? (data.features as string[]) : [];
+const permissions = Array.isArray(data.permissions) ? (data.permissions as string[]) : [];
+const showAvailability = !slug.startsWith('enablement') && (features.length > 0 || data.where || data.availability || data.enable_path || permissions.length > 0);
 ---
 
 {
@@ -24,6 +33,16 @@ const trail = (breadcrumbs as Record<string, { trail: { label: string; href: str
   )
 }
 <h1 id="_top">{entry.data.title}</h1>
+{showAvailability && (
+  <Availability
+    features={features}
+    where={data.where as 'org' | 'event' | 'both' | undefined}
+    availability={data.availability as any}
+    cs_enabled={data.cs_enabled as boolean | undefined}
+    enable_path={data.enable_path as string | undefined}
+    permissions={permissions}
+  />
+)}
 
 <style>
   .sb-breadcrumbs {

@@ -1,0 +1,85 @@
+---
+/**
+ * The CS playbook for this section: what the statuses and flags mean, what
+ * the daily Slack digest is, and how a change gets corrected.
+ */
+import site from '../../../site.json';
+import EnablementLayout from '../../components/enablement/EnablementLayout.astro';
+import { AVAILABILITY, CS_ACTION, ENABLE_HOW, internalPrefix } from '../../lib/release-notes.mjs';
+import { csLabel, csTone } from '../../lib/enablement.mjs';
+
+const prefix = internalPrefix(site);
+---
+
+<EnablementLayout title="How to use this section" description="What the statuses, flags and the daily digest mean." current={`${prefix}/how-to-use`}>
+  <h2 id="daily">The daily rhythm</h2>
+  <ol>
+    <li>
+      <strong>Every weekday morning</strong> a digest posts to <strong>#product-development</strong> listing what went
+      live in production <em>that day</em> — US and EU both deployed. Nothing is posted before that, so if it is in the
+      channel, it is in the product.
+    </li>
+    <li>
+      Each item links here (<em>Enablement notes</em>) and to the customer-facing guide. The enablement page has the
+      why, when to bring it up, who should get it, how to turn it on, and any video.
+    </li>
+    <li>
+      Start with <a href={`${prefix}/cs-action`}>Needs CS action</a>: anything there needs you to enable it, review it with
+      a customer, or be ready to turn it off.
+    </li>
+    <li>
+      <a href={`${prefix}/`}>What shipped</a> also shows changes that have merged but are <em>not in production yet</em>
+      (the guide is published early so Team Lead and search are ready). Do not point customers at those.
+    </li>
+  </ol>
+
+  <h2 id="status">Production status</h2>
+  <ul>
+    <li><span class="sb-status sb-status-live">Live</span> — deployed to US and EU. Safe to mention and demo. ME lags and is informational.</li>
+    <li><span class="sb-status sb-status-partial">Live in US only</span> / <span class="sb-status sb-status-partial">EU only</span> — one region deployed. Not announced; wait.</li>
+    <li><span class="sb-status sb-status-staged">Not in production yet</span> — merged to <code>main</code>, waiting for the next deploy.</li>
+  </ul>
+  <p>
+    Status is checked automatically against the production deploy workflows of each repo; it is not hand-maintained.
+  </p>
+
+  <h2 id="who">Who gets it</h2>
+  <table class="sb-en-table">
+    <tbody>
+      {Object.entries(AVAILABILITY).map(([k, v]) => (
+        <tr>
+          <td><strong>{v.label}</strong></td>
+          <td>{v.short}</td>
+          <td class="sb-muted">Customer turns it on: {ENABLE_HOW[k === 'preview' ? 'self_serve' : k === 'beta' || k === 'on_request' ? 'support' : k === 'everyone' ? 'default_on' : 'csm']}</td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+
+  <h2 id="cs">CS action flags</h2>
+  <table class="sb-en-table">
+    <tbody>
+      {Object.entries(CS_ACTION).map(([k, v]) => (
+        <tr>
+          <td><span class={`sb-badge sb-badge-cs-${csTone(k)}`}>{csLabel(k)}</span></td>
+          <td>{v}</td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+
+  <h2 id="fix">Something is wrong or missing</h2>
+  <p>
+    Every page in this section, the public <a href="/help/release-notes">Release notes</a>, the Slack digest and the
+    TAM Hub feed read from one file per release date in <code>sessionboard-docs/src/data/release-notes/</code>. To fix a
+    fact, ask the engineer who shipped the change (or an agent) to edit that entry; CI refuses an entry that does not
+    answer who / where / how to turn it on / why. There is no second list to keep in sync.
+  </p>
+
+  <h2 id="sharing">Sharing</h2>
+  <p>
+    This section is unlisted — not in the sidebar, search, sitemap or robots policy — but it is not behind a login.
+    Do not paste these URLs into customer-facing channels, Community posts or HubSpot. Customers get the guide and the
+    release notes.
+  </p>
+</EnablementLayout>

@@ -1,0 +1,40 @@
+---
+/**
+ * The short list: live changes where CS has to do something — enable it,
+ * be ready to disable it, or walk the customer through it before they find it.
+ */
+import site from '../../../site.json';
+import EnablementLayout from '../../components/enablement/EnablementLayout.astro';
+import EntryCard from '../../components/enablement/EntryCard.astro';
+import { CS_ACTION, allEntries, internalPrefix, isLive, loadReleaseNotes } from '../../lib/release-notes.mjs';
+import { csLabel } from '../../lib/enablement.mjs';
+
+const prefix = internalPrefix(site);
+const { releases, problems } = loadReleaseNotes();
+if (problems.length) throw new Error(`release notes are invalid:\n${problems.join('\n')}`);
+
+const live = allEntries(releases).filter(isLive);
+const groups = ['must_enable', 'review_before_customers_see', 'can_disable', 'reach_out'].map((kind) => ({
+  kind,
+  entries: live.filter((e) => e.internal?.cs_action?.kind === kind),
+}));
+---
+
+<EnablementLayout title="Needs CS action" description="Live changes where Customer Success has to enable, review or reach out." current={`${prefix}/cs-action`}>
+  <p>
+    Live changes that are not simply "on for everyone, nothing to do". Entries before 2026-10-07 were migrated from
+    prose and default to <em>no action</em>; they appear here only if someone has since reviewed them.
+  </p>
+  {groups.map((g) => (
+    <section>
+      <h2 id={g.kind}>{csLabel(g.kind)} <span class="sb-muted" style="font-weight: 400; font-size: var(--sl-text-base)">— {CS_ACTION[g.kind]}</span></h2>
+      {g.entries.length === 0 ? (
+        <p class="sb-muted">Nothing live in this group.</p>
+      ) : (
+        <ul class="sb-en-list">
+          {g.entries.map((e) => <EntryCard entry={e} showDate />)}
+        </ul>
+      )}
+    </section>
+  ))}
+</EnablementLayout>

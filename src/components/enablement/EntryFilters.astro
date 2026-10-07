@@ -1,0 +1,91 @@
+---
+/**
+ * Module / CS action / status filters for any list of EntryCards. Hides cards
+ * and empty release sections client-side; persists the selection in the URL.
+ */
+import { MODULES } from '../../lib/release-notes.mjs';
+
+interface Props {
+  modules?: string[];
+  showModule?: boolean;
+}
+
+const { modules = MODULES, showModule = true } = Astro.props;
+---
+
+<div class="sb-en-toolbar" data-sb-en-filters>
+  {showModule && (
+    <label>
+      Module
+      <select data-filter="module" aria-label="Filter by module">
+        <option value="">All</option>
+        {modules.map((m) => <option value={m}>{m}</option>)}
+      </select>
+    </label>
+  )}
+  <label>
+    CS action
+    <select data-filter="cs" aria-label="Filter by CS action">
+      <option value="">Any</option>
+      <option value="must_enable">CS must enable</option>
+      <option value="can_disable">CS can disable</option>
+      <option value="review_before_customers_see">Review with customer</option>
+      <option value="reach_out">Reach out</option>
+      <option value="none">No action</option>
+    </select>
+  </label>
+  <label>
+    Status
+    <select data-filter="state" aria-label="Filter by production status">
+      <option value="">Any</option>
+      <option value="live">Live</option>
+      <option value="staged">Not in production</option>
+      <option value="partial">One region only</option>
+    </select>
+  </label>
+  <label>
+    Type
+    <select data-filter="kind" aria-label="Filter by type of change">
+      <option value="">Any</option>
+      <option value="new">New</option>
+      <option value="improved">Improved</option>
+      <option value="fixed">Fixed</option>
+    </select>
+  </label>
+  <span class="sb-en-count" data-sb-en-count></span>
+</div>
+
+<script>
+  const bar = document.querySelector<HTMLElement>('[data-sb-en-filters]');
+  if (bar) {
+    const selects = [...bar.querySelectorAll<HTMLSelectElement>('select[data-filter]')];
+    const count = bar.querySelector('[data-sb-en-count]');
+    const cards = [...document.querySelectorAll<HTMLElement>('[data-sb-en-entry]')];
+    const sections = [...document.querySelectorAll<HTMLElement>('[data-sb-en-section]')];
+    const apply = () => {
+      const want: Record<string, string> = {};
+      for (const s of selects) want[s.dataset.filter!] = s.value;
+      let shown = 0;
+      for (const c of cards) {
+        const on = Object.entries(want).every(([k, v]) => !v || c.dataset[k] === v);
+        c.hidden = !on;
+        if (on) shown += 1;
+      }
+      for (const sec of sections) sec.hidden = ![...sec.querySelectorAll<HTMLElement>('[data-sb-en-entry]')].some((c) => !c.hidden);
+      if (count) count.textContent = `${shown} ${shown === 1 ? 'update' : 'updates'}`;
+      const url = new URL(location.href);
+      for (const [k, v] of Object.entries(want)) {
+        if (v) url.searchParams.set(k, v);
+        else url.searchParams.delete(k);
+      }
+      history.replaceState(null, '', url);
+    };
+    const params = new URL(location.href).searchParams;
+    for (const s of selects) {
+      const v = params.get(s.dataset.filter!);
+      if (v && [...s.options].some((o) => o.value === v)) s.value = v;
+      s.addEventListener('change', apply);
+    }
+    apply();
+  }
+</script>

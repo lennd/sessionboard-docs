@@ -21,6 +21,25 @@ import { join } from 'node:path';
 const DOCS = 'src/content/docs';
 const files = globSync(`${DOCS}/**/*.mdx`);
 
+// An article a release entry points to is the page CS sends a customer to
+// when they ask "why would I want this?". Post-cutover entries carry a
+// use_case; the article has to carry the long form as a "## Why use it"
+// section, so the answer lives where the customer reads, not only in Slack.
+const RELEASE_CUTOVER = '2026-10-07';
+const releaseLinked = new Set();
+for (const f of globSync('src/data/release-notes/*.json')) {
+  const date = f.match(/(\d{4}-\d{2}-\d{2})\.json$/)?.[1];
+  if (!date || date < RELEASE_CUTOVER) continue;
+  for (const e of JSON.parse(readFileSync(f, 'utf8')).entries || []) {
+    if (e.article) releaseLinked.add(String(e.article).replace(/#.*$/, '').replace(/^\//, ''));
+  }
+}
+
+// Folders whose every article is about a feature that is gated, sold or in
+// Early Access. These must declare `features` so the Availability box under
+// the title answers "who gets this / how do I turn it on" from the contract.
+const GATED_FOLDERS = ['awards', 'speaker-crm', 'sponsors-exhibitors', 'marketing', 'applications', 'documents', 'automations', 'evaluations'];
+
 /** Titles may exceed this only if a short sidebar label is supplied. */
 const TITLE_SOFT_MAX = 48;
 
@@ -94,6 +113,16 @@ for (const file of files) {
 
   if (!title) add(file, 'title', 'missing title');
   if (!description) add(file, 'description', 'missing description');
+
+  const slug = file.replace(`${DOCS}/`, '').replace(/\.mdx$/, '').replace(/\/index$/, '');
+  const folder = slug.split('/')[0];
+  const hasFeatures = /^features:\s*\[\s*"[^"]+"/m.test(fm);
+  if (GATED_FOLDERS.includes(folder) && !hasFeatures) {
+    add(file, 'availability', `articles under ${folder}/ must declare \`features:\` so the Availability box can say who gets this and how to turn it on`);
+  }
+  if (releaseLinked.has(slug) && !/^## Why use it\s*$/m.test(body)) {
+    add(file, 'why-use-it', 'a release entry links here — add a "## Why use it" section (the long form of the entry\'s use_case) before the first how-to heading');
+  }
 
   for (const [label, sentence] of unshippedClaims(`${description}\n${body}`)) {
     add(file, 'unshipped', `${label} — describe what works instead: ${sentence.slice(0, 120)}`);

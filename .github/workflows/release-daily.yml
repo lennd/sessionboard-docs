@@ -1,0 +1,79 @@
+name: Release status and product-updates digest
+
+# Every weekday morning: ask production which release entries are actually
+# deployed (scripts/release-status.mjs), commit the flipped dates, then post
+# the digest of what went live since the last one (scripts/release-slack.mjs).
+#
+# The commit is pushed with GH_RELEASE_STATUS_TOKEN rather than GITHUB_TOKEN on
+# purpose: pushes made with GITHUB_TOKEN do not trigger other workflows, and
+# this push has to trigger Docs CI so the public release-notes page and the
+# _internal feed rebuild with the new live dates the same morning.
+#
+# GH_RELEASE_STATUS_TOKEN: fine-grained PAT with Actions: read and
+# Pull requests: read on lennd/sessionboard-web-api, sessionboard-web-ui-v2,
+# sessionboard-embeds, sessionboard-public-api, and Contents: write on this repo.
+
+on:
+  schedule:
+    - cron: '0 14 * * 1-5' # 09:00 America/Chicago (CDT); 08:00 in CST
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Report and print the digest without committing or posting'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-daily
+  cancel-in-progress: false
+
+jobs:
+  digest:
+    name: Check production, post digest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_RELEASE_STATUS_TOKEN || github.token }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Release data is valid
+        run: node scripts/check-release-notes.mjs
+
+      - name: Which entries are in production?
+        env:
+          GH_RELEASE_STATUS_TOKEN: ${{ secrets.GH_RELEASE_STATUS_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/release-status.mjs ${{ inputs.dry_run && '--dry-run' || '' }}
+
+      - name: Post the digest
+        if: ${{ !inputs.dry_run }}
+        env:
+          SLACK_PRODUCT_UPDATES_WEBHOOK_URL: ${{ secrets.SLACK_PRODUCT_UPDATES_WEBHOOK_URL }}
+        run: node scripts/release-slack.mjs
+
+      - name: Preview the digest
+        if: ${{ inputs.dry_run }}
+        run: node scripts/release-slack.mjs --dry-run
+
+      - name: Commit live dates and announced_at
+        if: ${{ !inputs.dry_run }}
+        run: |
+          if git diff --quiet -- src/data/release-notes; then
+            echo "No data changes."
+            exit 0
+          fi
+          git config user.name 'sessionboard-docs bot'
+          git config user.email 'docs-bot@sessionboard.com'
+          git add src/data/release-notes
+          git commit -m "chore(release-notes): production status $(date -u +%Y-%m-%d)"
+          git push origin HEAD:refs/heads/main

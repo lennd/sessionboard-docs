@@ -25,6 +25,13 @@ jobs:
       - name: Structure and frontmatter follow STYLE.md
         run: node scripts/check-style.mjs
 
+      # Release entries are data (src/data/release-notes). An entry that names a
+      # module, feature or article that does not exist, or a post-cutover entry
+      # missing the answers CS needs, fails here rather than rendering a half
+      # card on the public page and the enablement section.
+      - name: Release notes answer who / where / how to turn it on
+        run: node scripts/check-release-notes.mjs
+
       # Runs before the build because it reports EVERY bad id at once in under a
       # second, where the build fails on the first one from inside a component.
       - name: Personalization markers name things that exist
@@ -74,6 +81,11 @@ jobs:
       # already shipped.
       - name: Every article still produces retrievable chunks
         run: npm run index:check
+
+      # The enablement section (/enablement) is open but unlisted. A sidebar
+      # link, a sitemap entry or a pasted webhook URL would undo that quietly.
+      - name: Enablement section is unlisted and secret-free
+        run: npm run internal:check
 
   # Merging used to publish nothing: the site went live only when someone
   # remembered to run `wrangler deploy` by hand, so main could sit ahead of
@@ -147,6 +159,12 @@ jobs:
           # an unknown path gets, so a regression here is a data leak, not a 500.
           code=$(curl -s -o /dev/null -w '%{http_code}' "$base/_internal/help-index.json")
           [ "$code" = 404 ] || { echo "::error::/_internal/ answered $code unauthenticated, expected 404"; exit 1; }
+
+          # The enablement section is open but must never be indexed or cached.
+          prefix=$(node -p "require('./site.json').internalPrefix")
+          headers=$(curl -sI --retry 3 --retry-delay 3 "$base/$prefix")
+          grep -qi '^x-robots-tag: noindex' <<<"$headers" || { echo "::error::/$prefix/ is missing X-Robots-Tag: noindex"; exit 1; }
+          grep -qi '^cache-control: private, no-store' <<<"$headers" || { echo "::error::/$prefix/ is cacheable"; exit 1; }
 
           echo "Published and smoke-tested $base"
 

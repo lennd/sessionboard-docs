@@ -1,0 +1,248 @@
+---
+/**
+ * The public release notes, rendered from src/data/release-notes/*.json.
+ *
+ * Shows LIVE entries only — a change is listed once it is in production for
+ * every customer, not when its article merged. Each entry carries the three
+ * answers readers ask for: which module, who it is available for, and how to
+ * turn it on. Internal fields never reach this component: it is handed
+ * `publicEntry()` shapes.
+ */
+import {
+  AVAILABILITY,
+  ENABLE_HOW,
+  MODULES,
+  articleTitle,
+  formatDate,
+  liveReleases,
+  loadReleaseNotes,
+  publicEntry,
+  renderInline,
+} from '../lib/release-notes.mjs';
+
+const { releases, problems } = loadReleaseNotes();
+if (problems.length) {
+  throw new Error(`release notes are invalid:\n${problems.join('\n')}\nRun node scripts/check-release-notes.mjs`);
+}
+const live = liveReleases(releases).map((r) => ({ date: r.date, entries: r.entries.map(publicEntry) }));
+const modulesPresent = MODULES.filter((m) => live.some((r) => r.entries.some((e) => e.module === m)));
+
+const enableLine = (entry) => {
+  if (entry.enable?.how === 'default_on' && !entry.enable?.path) return null;
+  const how = ENABLE_HOW[entry.enable?.how] || null;
+  return entry.enable?.path ? `${how ? `${how}: ` : ''}${entry.enable.path}` : how;
+};
+---
+
+<div class="sb-rn" data-sb-release-notes>
+  <div class="sb-rn-toolbar">
+    <label>
+      <span>Show</span>
+      <select data-sb-rn-filter aria-label="Filter release notes by module">
+        <option value="">All modules</option>
+        {modulesPresent.map((m) => <option value={m}>{m}</option>)}
+      </select>
+    </label>
+    <span class="sb-rn-count" data-sb-rn-count></span>
+  </div>
+
+  {live.map((release) => (
+    <section class="sb-rn-release" data-sb-rn-release>
+      <h2 id={release.date}>{formatDate(release.date)}</h2>
+      <ul class="sb-rn-list">
+        {release.entries.map((entry) => (
+          <li class="sb-rn-entry" data-sb-rn-entry data-module={entry.module || ''} id={entry.id}>
+            <div class="sb-rn-head">
+              <h3 class="sb-rn-title">{entry.title}</h3>
+              <span class="sb-rn-badges">
+                {entry.module && <span class="sb-badge sb-badge-module">{entry.module}</span>}
+                {entry.kind && <span class={`sb-badge sb-badge-kind sb-badge-${entry.kind}`}>{entry.kind}</span>}
+                {entry.availability && entry.availability !== 'everyone' && (
+                  <span class="sb-badge sb-badge-availability">{AVAILABILITY[entry.availability]?.label}</span>
+                )}
+              </span>
+            </div>
+            <p class="sb-rn-summary" set:html={renderInline(entry.summary)} />
+            {(entry.availability !== 'everyone' || enableLine(entry) || entry.article) && (
+              <dl class="sb-rn-facts">
+                {entry.availability && entry.availability !== 'everyone' && (
+                  <>
+                    <dt>Available for</dt>
+                    <dd>{AVAILABILITY[entry.availability]?.short}</dd>
+                  </>
+                )}
+                {enableLine(entry) && (
+                  <>
+                    <dt>Turn it on</dt>
+                    <dd>{enableLine(entry)}</dd>
+                  </>
+                )}
+                {entry.article && (
+                  <>
+                    <dt>Guide</dt>
+                    <dd>
+                      <a href={entry.article}>{articleTitle(entry.article)}</a>
+                      {entry.related.map((r) => (
+                        <>
+                          {' · '}
+                          <a href={r}>{articleTitle(r)}</a>
+                        </>
+                      ))}
+                    </dd>
+                  </>
+                )}
+              </dl>
+            )}
+          </li>
+        ))}
+      </ul>
+    </section>
+  ))}
+</div>
+
+<script>
+  const root = document.querySelector('[data-sb-release-notes]');
+  const select = root?.querySelector('[data-sb-rn-filter]') as HTMLSelectElement | null;
+  const count = root?.querySelector('[data-sb-rn-count]');
+  if (root && select && count) {
+    const entries = [...root.querySelectorAll<HTMLElement>('[data-sb-rn-entry]')];
+    const releases = [...root.querySelectorAll<HTMLElement>('[data-sb-rn-release]')];
+    const apply = () => {
+      const module = select.value;
+      let shown = 0;
+      for (const el of entries) {
+        const on = !module || el.dataset.module === module;
+        el.hidden = !on;
+        if (on) shown += 1;
+      }
+      for (const r of releases) r.hidden = ![...r.querySelectorAll<HTMLElement>('[data-sb-rn-entry]')].some((e) => !e.hidden);
+      count.textContent = `${shown} ${shown === 1 ? 'update' : 'updates'}`;
+      const url = new URL(location.href);
+      if (module) url.searchParams.set('module', module);
+      else url.searchParams.delete('module');
+      history.replaceState(null, '', url);
+    };
+    const initial = new URL(location.href).searchParams.get('module');
+    if (initial && [...select.options].some((o) => o.value === initial)) select.value = initial;
+    select.addEventListener('change', apply);
+    apply();
+  }
+</script>
+
+<style>
+  .sb-rn-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin: 1.5rem 0 0.5rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--sl-color-hairline);
+    border-radius: 0.75rem;
+    background: var(--sl-color-gray-7, var(--sl-color-bg));
+  }
+  .sb-rn-toolbar label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: var(--sl-text-sm);
+    color: var(--sl-color-gray-3);
+  }
+  .sb-rn-toolbar select {
+    font: inherit;
+    padding: 0.35rem 0.6rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--sl-color-gray-5);
+    background: var(--sl-color-bg);
+    color: var(--sl-color-white);
+  }
+  .sb-rn-count {
+    font-size: var(--sl-text-sm);
+    color: var(--sl-color-gray-3);
+  }
+  .sb-rn-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .sb-rn-entry {
+    margin: 0 0 1.25rem;
+    padding: 1rem 1.15rem;
+    border: 1px solid var(--sl-color-hairline);
+    border-radius: 0.75rem;
+    background: var(--sl-color-bg);
+  }
+  .sb-rn-entry + .sb-rn-entry {
+    margin-top: 0.75rem;
+  }
+  .sb-rn-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem 1rem;
+  }
+  .sb-rn-title {
+    font-size: var(--sl-text-lg);
+    margin: 0 !important;
+  }
+  .sb-rn-badges {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+  .sb-badge {
+    display: inline-block;
+    padding: 0.1rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
+    border: 1px solid var(--sl-color-gray-5);
+    color: var(--sl-color-gray-2);
+    background: var(--sl-color-gray-7, transparent);
+  }
+  .sb-badge-module {
+    background: var(--sb-pill-bg, var(--sl-color-accent-low));
+    border-color: transparent;
+    color: var(--sl-color-accent-high);
+  }
+  .sb-badge-new {
+    border-color: transparent;
+    background: #e7f6ec;
+    color: #176b3a;
+  }
+  .sb-badge-improved {
+    border-color: transparent;
+    background: #eef1ff;
+    color: #3b45a8;
+  }
+  .sb-badge-fixed {
+    border-color: transparent;
+    background: #fff4e5;
+    color: #8a5300;
+  }
+  :root[data-theme='dark'] .sb-badge-new { background: #15351f; color: #8ad8a6; }
+  :root[data-theme='dark'] .sb-badge-improved { background: #1e2448; color: #aeb6ff; }
+  :root[data-theme='dark'] .sb-badge-fixed { background: #3a2a0e; color: #ffcf8a; }
+  .sb-rn-summary {
+    margin: 0.5rem 0 0 !important;
+  }
+  .sb-rn-facts {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 0.25rem 1rem;
+    margin: 0.75rem 0 0 !important;
+    padding-top: 0.6rem;
+    border-top: 1px dashed var(--sl-color-hairline);
+    font-size: var(--sl-text-sm);
+  }
+  .sb-rn-facts dt {
+    font-weight: 600;
+    color: var(--sl-color-gray-3);
+  }
+  .sb-rn-facts dd {
+    margin: 0;
+  }
+</style>

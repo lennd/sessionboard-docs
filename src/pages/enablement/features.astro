@@ -1,0 +1,180 @@
+---
+/**
+ * Feature availability matrix, generated from the product contract that
+ * sessionboard-web-api exports (`npm run contract:pull`). For every feature
+ * flag: who gets it, how it is turned on, which scope it lives at, the Early
+ * Access stage, how admin files it, and whether it involves AI. Articles that
+ * tag a feature in frontmatter are listed too, so CS can go from "is this on
+ * for them?" to the guide in one hop.
+ */
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { join } from 'node:path';
+import site from '../../../site.json';
+import EnablementLayout from '../../components/enablement/EnablementLayout.astro';
+import { AVAILABILITY, ENABLE_HOW, ROOT, allEntries, featureFacts, internalPrefix, loadReleaseNotes, readContract } from '../../lib/release-notes.mjs';
+
+const prefix = internalPrefix(site);
+const contract = readContract();
+const { releases } = loadReleaseNotes();
+const entries = allEntries(releases);
+
+// Articles that tag a feature in frontmatter (`features: [slug]`).
+const DOCS = join(ROOT, 'src', 'content', 'docs');
+const articlesByFeature = new Map();
+const walk = (dir) => {
+  for (const name of readdirSync(dir)) {
+    const p = join(dir, name);
+    if (statSync(p).isDirectory()) walk(p);
+    else if (name.endsWith('.mdx')) {
+      const src = readFileSync(p, 'utf8');
+      const fm = /^---\n([\s\S]*?)\n---/.exec(src)?.[1] || '';
+      const m = /^features:\s*\[([^\]]*)\]/m.exec(fm);
+      if (!m) continue;
+      const title = /^title:\s*["']?(.*?)["']?\s*$/m.exec(fm)?.[1] || name;
+      const path = `/${p.slice(DOCS.length + 1).replace(/\.mdx$/, '').replace(/\/index$/, '')}`;
+      for (const slug of m[1].split(',').map((s) => s.trim().replace(/^["']|["']$/g, '')).filter(Boolean)) {
+        if (!articlesByFeature.has(slug)) articlesByFeature.set(slug, []);
+        articlesByFeature.get(slug).push({ title, path });
+      }
+    }
+  }
+};
+walk(DOCS);
+
+const ADMIN_LABEL = {
+  products: 'Products (sold add-on)',
+  features_enhancements: 'Features & enhancements (on request)',
+  early_access: 'Early Access',
+  alpha: 'Alpha',
+};
+
+const rows = contract.features
+  .map((slug) => {
+    const f = featureFacts(slug, contract);
+    const releasesFor = entries.filter((e) => (e.features || []).includes(slug));
+    return { ...f, articles: articlesByFeature.get(slug) || [], releases: releasesFor };
+  })
+  .sort((a, b) => a.name.localeCompare(b.name));
+
+const byAvailability = Object.keys(AVAILABILITY).map((k) => ({ key: k, count: rows.filter((r) => r.availability === k).length }));
+---
+
+<EnablementLayout title="Feature availability" description="Every feature flag: who gets it, how it is turned on, where it lives." current={`${prefix}/features`}>
+  <p>
+    Generated from the product contract (<code>contractVersion {contract.contractVersion}</code>) that
+    <code>sessionboard-web-api</code> exports. "Who gets it" comes from the Early Access stage and the admin
+    category each scope files the feature under; "Turn it on" follows from that. If a row is wrong, the fix is in
+    web-api's feature constants or the Early Access catalog, not here.
+  </p>
+  <p class="sb-muted" style="font-size: var(--sl-text-sm)">
+    {byAvailability.filter((b) => b.count).map((b, i) => (
+      <>
+        {i > 0 && ' · '}
+        {AVAILABILITY[b.key].label}: {b.count}
+      </>
+    ))}
+  </p>
+
+  <div class="sb-en-toolbar">
+    <label>
+      Who gets it
+      <select data-fa-filter="availability">
+        <option value="">Any</option>
+        {Object.entries(AVAILABILITY).map(([k, v]) => <option value={k}>{v.label}</option>)}
+      </select>
+    </label>
+    <label>
+      Scope
+      <select data-fa-filter="scope">
+        <option value="">Any</option>
+        <option value="org">Organization</option>
+        <option value="event">Event</option>
+      </select>
+    </label>
+    <label>
+      <input type="checkbox" data-fa-filter="ai" /> AI only
+    </label>
+    <span class="sb-en-count" data-fa-count></span>
+  </div>
+
+  <div class="sb-en-table-wrap">
+    <table class="sb-en-table" data-fa-table>
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th>Who gets it</th>
+          <th>Turn it on</th>
+          <th>Scope</th>
+          <th>Admin files it under</th>
+          <th>Guides</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((r) => (
+          <tr
+            data-availability={r.availability}
+            data-scopes={r.scopes.join(' ')}
+            data-ai={r.involves_ai ? '1' : ''}
+          >
+            <td>
+              <strong>{r.name}</strong>
+              <br />
+              <code style="font-size: 0.75em">{r.slug}</code>
+              {r.involves_ai && <span class="sb-badge" style="margin-left: 0.4rem">AI</span>}
+              {r.description && <div class="sb-muted" style="margin-top: 0.25rem">{r.description}</div>}
+            </td>
+            <td>
+              <strong>{AVAILABILITY[r.availability]?.label}</strong>
+              <br />
+              <span class="sb-muted">{AVAILABILITY[r.availability]?.short}</span>
+              {r.early_access && (
+                <div class="sb-muted">Early Access {r.early_access.stage} · "{r.early_access.name}"{r.early_access.requiresOrgAi ? ' · needs org AI' : ''}</div>
+              )}
+            </td>
+            <td>{ENABLE_HOW[r.enable_how]}</td>
+            <td>{r.scopes.map((s) => (s === 'org' ? 'Organization' : 'Event')).join(', ') || '—'}</td>
+            <td>
+              {r.graduated ? 'Hidden (graduated — on for everyone)' : ADMIN_LABEL[r.admin_category] || r.admin_category || '—'}
+            </td>
+            <td>
+              {r.articles.length === 0 && r.releases.length === 0 && <span class="sb-muted">—</span>}
+              {r.articles.map((a) => (
+                <div><a href={a.path}>{a.title}</a></div>
+              ))}
+              {r.releases.map((e) => (
+                <div class="sb-muted"><a href={`${prefix}/releases/${e.id}`}>{e.title}</a> ({e.date})</div>
+              ))}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</EnablementLayout>
+
+<script>
+  const table = document.querySelector<HTMLElement>('[data-fa-table]');
+  const selects = [...document.querySelectorAll<HTMLSelectElement>('select[data-fa-filter]')];
+  const ai = document.querySelector<HTMLInputElement>('input[data-fa-filter="ai"]');
+  const count = document.querySelector('[data-fa-count]');
+  if (table) {
+    const rows = [...table.querySelectorAll<HTMLElement>('tbody tr')];
+    const apply = () => {
+      const want: Record<string, string> = {};
+      for (const s of selects) want[s.dataset.faFilter!] = s.value;
+      let shown = 0;
+      for (const r of rows) {
+        let on = true;
+        if (want.availability && r.dataset.availability !== want.availability) on = false;
+        if (want.scope && !(r.dataset.scopes || '').split(' ').includes(want.scope)) on = false;
+        if (ai?.checked && !r.dataset.ai) on = false;
+        r.hidden = !on;
+        if (on) shown += 1;
+      }
+      if (count) count.textContent = `${shown} ${shown === 1 ? 'feature' : 'features'}`;
+    };
+    for (const s of selects) s.addEventListener('change', apply);
+    ai?.addEventListener('change', apply);
+    apply();
+  }
+</script>

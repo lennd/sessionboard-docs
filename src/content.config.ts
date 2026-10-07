@@ -24,8 +24,19 @@ import contract from './data/product-contract.json';
  * article that claims a paying customer lacks something.
  */
 const FEATURE_IDS = contract.features as [string, ...string[]];
+const PERMISSION_IDS = contract.permissions as [string, ...string[]];
 
 const AUDIENCES = ['organizer', 'reviewer', 'speaker', 'participant'] as const;
+
+/**
+ * The Availability box (src/components/Availability.astro) renders under the
+ * title of every article that declares `features`, answering the three
+ * questions CS gets asked — who gets it, where it lives, how to turn it on —
+ * from the product contract. These fields refine or override what the contract
+ * says; most articles need none of them.
+ */
+const WHERE = ['org', 'event', 'both'] as const;
+const AVAILABILITY = ['everyone', 'preview', 'beta', 'add_on', 'on_request', 'limited_release', 'enterprise'] as const;
 
 export const collections = {
   docs: defineCollection({
@@ -48,6 +59,26 @@ export const collections = {
           .describe(
             'The job the reader is trying to get done, in their words — e.g. "get speakers to confirm before the deadline".',
           ),
+        where: z
+          .enum(WHERE)
+          .optional()
+          .describe('Where the feature lives: org, event or both. Derived from the features\u2019 contract scopes when omitted.'),
+        permissions: z
+          .array(z.enum(PERMISSION_IDS))
+          .default([])
+          .describe('Permissions a team member needs for what the article describes. Slugs from the product contract.'),
+        availability: z
+          .enum(AVAILABILITY)
+          .optional()
+          .describe('Who gets it. Derived from the features\u2019 Early Access stage and admin category when omitted; set it only to override.'),
+        cs_enabled: z
+          .boolean()
+          .optional()
+          .describe('True when Sessionboard (support or the CSM) has to turn this on for the customer. Derived from availability when omitted.'),
+        enable_path: z
+          .string()
+          .optional()
+          .describe('The menu path the customer follows to turn it on, e.g. "Event Settings \u2192 Features \u2192 Awards".'),
         reviewed: z
           .string()
           .regex(/^\d{4}-\d{2}-\d{2}$/, 'reviewed must be YYYY-MM-DD')

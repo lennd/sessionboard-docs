@@ -1,0 +1,42 @@
+---
+/**
+ * Everything that shipped in one module, newest first, plus the feature flags
+ * the product contract files under that module's articles.
+ */
+import site from '../../../../site.json';
+import EnablementLayout from '../../../components/enablement/EnablementLayout.astro';
+import EntryCard from '../../../components/enablement/EntryCard.astro';
+import EntryFilters from '../../../components/enablement/EntryFilters.astro';
+import { MODULES, allEntries, formatDate, internalPrefix, loadReleaseNotes } from '../../../lib/release-notes.mjs';
+import { moduleSlug } from '../../../lib/enablement.mjs';
+
+export async function getStaticPaths() {
+  const { releases, problems } = loadReleaseNotes();
+  if (problems.length) throw new Error(`release notes are invalid:\n${problems.join('\n')}`);
+  const entries = allEntries(releases);
+  return MODULES.filter((m) => entries.some((e) => e.module === m)).map((module) => ({
+    params: { module: moduleSlug(module) },
+    props: { module, releases },
+  }));
+}
+
+const { module, releases } = Astro.props;
+const prefix = internalPrefix(site);
+const byDate = releases
+  .map((r) => ({ date: r.date, entries: r.entries.filter((e) => e.module === module) }))
+  .filter((r) => r.entries.length > 0);
+const total = byDate.reduce((n, r) => n + r.entries.length, 0);
+---
+
+<EnablementLayout title={module} description={`Every ${module} change, from the CS point of view.`} current={`${prefix}/modules/${moduleSlug(module)}`}>
+  <p>{total} {total === 1 ? 'change' : 'changes'} filed under <strong>{module}</strong>, newest first.</p>
+  <EntryFilters showModule={false} />
+  {byDate.map((r) => (
+    <section data-sb-en-section>
+      <h2 id={r.date}>{formatDate(r.date)}</h2>
+      <ul class="sb-en-list">
+        {r.entries.map((e) => <EntryCard entry={e} />)}
+      </ul>
+    </section>
+  ))}
+</EnablementLayout>

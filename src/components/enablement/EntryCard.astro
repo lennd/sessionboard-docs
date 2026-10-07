@@ -1,0 +1,86 @@
+---
+/**
+ * One release entry as CS sees it: status, module, kind, availability, the CS
+ * action flag, the why, and the three answers (who / where / turn it on).
+ * Links to the detail page, the customer guide and any training video.
+ */
+import site from '../../../site.json';
+import { AVAILABILITY, ENABLE_HOW, articleTitle, formatDate, internalPrefix, renderInline, videosForArticle } from '../../lib/release-notes.mjs';
+import { csLabel, csTone, statusOf } from '../../lib/enablement.mjs';
+
+interface Props {
+  entry: any;
+  showDate?: boolean;
+}
+
+const { entry, showDate = false } = Astro.props;
+const prefix = internalPrefix(site);
+const status = statusOf(entry);
+const cs = entry.internal?.cs_action?.kind || 'none';
+const videos = entry.article ? videosForArticle(entry.article) : [];
+const enableText = (() => {
+  const how = ENABLE_HOW[entry.enable?.how];
+  if (entry.enable?.how === 'default_on' && !entry.enable?.path) return how;
+  return entry.enable?.path ? `${how}: ${entry.enable.path}` : how;
+})();
+---
+
+<li
+  class="sb-en-card"
+  data-sb-en-entry
+  data-state={status.state}
+  data-module={entry.module || ''}
+  data-cs={cs}
+  data-availability={entry.availability}
+  data-kind={entry.kind || ''}
+  id={entry.id}
+>
+  <div class="sb-en-card-head">
+    <h3 class="sb-en-card-title">
+      <a href={`${prefix}/releases/${entry.id}`}>{entry.title}</a>
+    </h3>
+    <span class="sb-en-badges">
+      <span class={`sb-status sb-status-${status.state}`} title={status.detail}>{status.label}</span>
+      {entry.module && <span class="sb-badge sb-badge-module">{entry.module}</span>}
+      {entry.kind && <span class={`sb-badge sb-badge-${entry.kind}`}>{entry.kind}</span>}
+      {entry.availability !== 'everyone' && <span class="sb-badge">{AVAILABILITY[entry.availability]?.label}</span>}
+      <span class={`sb-badge sb-badge-cs-${csTone(cs)}`}>{csLabel(cs)}</span>
+    </span>
+  </div>
+  {showDate && <p class="sb-muted" style="font-size: var(--sl-text-sm)">{formatDate(entry.date)}</p>}
+  <p set:html={renderInline(entry.summary)} />
+  {entry.use_case && <p class="sb-en-why"><strong>Why it matters:</strong> {entry.use_case}</p>}
+  <dl class="sb-en-facts">
+    <dt>Who gets it</dt>
+    <dd>
+      {AVAILABILITY[entry.availability]?.short}
+      {entry.internal?.who_should_get_it && <span class="sb-muted"> — {entry.internal.who_should_get_it}</span>}
+    </dd>
+    <dt>Turn it on</dt>
+    <dd>
+      {enableText}
+      {entry.internal?.staff_path && <span class="sb-muted"> · Staff: {entry.internal.staff_path}</span>}
+    </dd>
+    {entry.where?.path && (
+      <>
+        <dt>Where</dt>
+        <dd>{entry.where.path}</dd>
+      </>
+    )}
+    {entry.internal?.cs_action?.note && (
+      <>
+        <dt>CS</dt>
+        <dd>{entry.internal.cs_action.note}</dd>
+      </>
+    )}
+  </dl>
+  <p class="sb-en-links">
+    <a href={`${prefix}/releases/${entry.id}`}>Full notes →</a>
+    {entry.article && <a href={entry.article}>Guide: {articleTitle(entry.article)}</a>}
+    {videos.length > 0 && (
+      <a href={videos[0].anchor}>
+        {videos.length === 1 ? 'Video' : `${videos.length} videos`}
+      </a>
+    )}
+  </p>
+</li>
