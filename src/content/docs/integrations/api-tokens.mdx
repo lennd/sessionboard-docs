@@ -1,12 +1,12 @@
 ---
 title: "Generating API tokens"
-description: "Create and manage API tokens to connect external systems and AI assistants to your event data."
+description: "Create and manage API tokens for scripts and integrations. AI assistants such as Claude and ChatGPT sign in with OAuth instead."
 ---
 
 import { Note, Tip, Warning, TrainingVideo } from '@compat';
 
 <Warning>
-⚠️ **For advanced and expert users.** API tokens give programmatic access to your organization's event data. They're meant for technical users building integrations, connecting AI assistants, or syncing Sessionboard data with external systems. Before generating a token, we recommend reviewing our full API documentation: [apidocs.sessionboard.com/introduction](https://apidocs.sessionboard.com/introduction). It covers authentication, rate limiting, MCP, webhooks, and the SbQL query language in depth.
+⚠️ **For advanced and expert users.** API tokens give programmatic access to your organization's event data. They're meant for technical users building integrations or syncing Sessionboard data with external systems. Claude, ChatGPT, Copilot, and Gemini do not use a token — they sign you in with OAuth. Start at [Connect AI assistants](/integrations/connect-ai-assistants). Before generating a token, we recommend reviewing our full API documentation: [apidocs.sessionboard.com/introduction](https://apidocs.sessionboard.com/introduction). It covers authentication, rate limiting, webhooks, and the SbQL query language in depth.
 </Warning>
 
 {/* training-video:start 05-integrations */}
@@ -29,8 +29,7 @@ API tokens let you:
 
 - Sync your event data with external systems (CRMs, BI tools, custom dashboards)
 - Build custom integrations using the [Sessionboard Public API](https://apidocs.sessionboard.com/introduction)
-- Connect AI assistants (Claude, ChatGPT, and other Model Context Protocol–compatible clients) to your Sessionboard organization so they can query and act on your event data in natural language
-- Run scheduled or programmatic reports through SbQL
+- Run scheduled or programmatic reports through SbQL, including the `read:insights` scope
 
 <Tip>
 **💡TIP- Before you start**
@@ -77,7 +76,7 @@ API tokens use scopes to control what the token can read or write. Every scope i
 | **read:contacts** | Speaker and contact data. |
 | **read:reports** | Saved reports. |
 | **read:dashboards** | Dashboards. |
-| **read:insights** | AI-powered insights and SbQL queries. Required for any MCP / AI assistant connection. |
+| **read:insights** | SbQL and the query APIs (`/v1/insights/...`). A token needs this scope to call them. Claude, ChatGPT, and the other assistants do not use a token. |
 | **read:transcriptions** | Session transcriptions and recordings — the `/transcriptions`, `/content` and `/content/documents` routes that expose live transcripts, recaps and event reports. |
 | **read:media** | Uploaded media items and their transcription status. |
 
@@ -147,41 +146,15 @@ Integration partners and your own developers often ask for two numbers alongside
 The token itself is already tied to your organization, so most partners need only the Event ID. Credentials a partner issues — a client ID, secret, or their own event key — come from that partner's admin console, not from Sessionboard; the connector pages under [Apps](/apps/event-platform-comparison) say which ones each integration asks for.
 
 ### Connecting AI assistants (Claude, ChatGPT, and other MCP clients)
-Sessionboard supports the **Model Context Protocol (MCP)**, an open standard developed by Anthropic that lets AI assistants securely query and act on external data. You can connect Claude Desktop, Claude Code, ChatGPT, or any MCP-compatible client to your Sessionboard organization so the AI can answer questions about your data, build reports, and (with write scopes) make changes on your behalf.
+Claude, ChatGPT, Microsoft Copilot, and Google Gemini connect by signing you in. That is OAuth. You do not generate a token for them, and Sessionboard does not show an MCP switch on the token or the organization.
 
 <Tip>
-For step-by-step setup guides — [Claude](/integrations/connect-claude), [ChatGPT](/integrations/connect-chatgpt), [Microsoft Copilot](/integrations/connect-microsoft-copilot), and [Google Gemini](/integrations/connect-google-gemini) — including the correct server URL for US, EU, and Middle East regions, start at [Connect AI assistants to Sessionboard](/integrations/connect-ai-assistants).
+Step-by-step setup, including the server URL for US, EU, and Middle East, starts at [Connect AI assistants to Sessionboard](/integrations/connect-ai-assistants): [Claude](/integrations/connect-claude), [ChatGPT](/integrations/connect-chatgpt), [Microsoft Copilot](/integrations/connect-microsoft-copilot), and [Google Gemini](/integrations/connect-google-gemini).
 </Tip>
 
-## How it works
-You have two paths to connect:
+A token is for a script or integration that calls the public API directly, with the `x-access-token` header. To query reports and SbQL that way, include **read:insights**. A token created with no scopes is the older full-access form and can call those routes too. A token that lists scopes and leaves **read:insights** off cannot. Write scopes such as `write:sessions` are separate, and only matter when the caller should change data.
 
-1. **OAuth (recommended for most clients)** : When you connect an MCP-compatible AI client to Sessionboard, the client walks you through an OAuth authorization flow automatically. You don't need to generate a token manually; the OAuth flow handles authentication for you. This is the easiest path for browser-based clients like Claude Desktop or ChatGPT.
-2. **Manual API token:** If your client doesn't support OAuth (or you prefer manual control), generate an API token following the steps above. Make sure to grant the **read:insights** scope — MCP access follows from that scope, there is no separate toggle. Add write scopes (e.g., `write:sessions`) only if you want the AI to make changes.
-
-## Configuring your AI client
-For AI clients that accept a remote MCP server URL, point them to:
-
-- **US region:** `https://mcp.sessionboard.com/mcp`
-- **EU region:** `https://mcp-eu.sessionboard.com/mcp`
-- **Middle East region:** `https://mcp-me.sessionboard.com/mcp`
-
-<Tip>
-The MCP server exposes 38 tools covering search, read, and write operations. You can ask the AI things like *"How many sessions are accepted for our 2026 conference?"*, *"Show me the top 10 speakers by session count,"* or *"Create a new track called 'AI & Machine Learning.'"*
-</Tip>
-
-## Prerequisites for MCP access
-Before MCP requests will succeed, three things must be true on your account:
-
-1. AI features must be enabled for your organization. Contact Sessionboard support or your account manager if you're not sure.
-2. MCP access must be enabled on your organization (a separate feature flag).
-3. MCP must be enabled on the API token, with the **read:insights** scope (and any write scopes you need).
-
-If any of these are missing, MCP requests will return a `403 Forbidden` error.
-
-<Note>
-For full MCP details: available tools, prompt templates, security model, and example conversations ,see the [MCP Server documentation](https://apidocs.sessionboard.com/insights/mcp-server).
-</Note>
+The hosted assistant URLs (`https://mcp.sessionboard.com/mcp` and the EU and Middle East hosts) accept the OAuth sign-in only. Pasting an API token into Claude or ChatGPT will not connect.
 
 ## Security and best practices
 - **Turn on PII Obfuscation.** Enable the PII Obfuscation switch unless your integration has a specific need for full personal data.

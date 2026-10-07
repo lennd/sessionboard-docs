@@ -3,9 +3,30 @@ title: "Connect AI assistants to Sessionboard"
 description: "Connect Claude, ChatGPT, Microsoft Copilot, Google Gemini, or any MCP-compatible AI assistant to your Sessionboard organization — including the correct server URL for US, EU, and Middle East regions."
 ---
 
-import { Note, Tip, Warning, Card, CardGroup } from '@compat';
+import { Note, Tip, Warning, Card, CardGroup, Walkthrough } from '@compat';
 
-Sessionboard ships a remote **MCP (Model Context Protocol) server** that lets AI assistants securely query and act on your event data. Once connected, you can ask things like *"How many sessions are still pending review?"*, *"Search for keynote sessions,"* or *"Create a new session called 'AI in Events'"* — and the assistant works directly against your organization, scoped by OAuth sign-in.
+Sessionboard ships a remote **MCP (Model Context Protocol) server** that lets AI assistants securely query and act on your event data. Claude, ChatGPT, Microsoft Copilot, and Google Gemini all connect the same way: you paste your region's server URL (or install the directory listing), and the assistant opens a Sessionboard sign-in. You pick the organization and choose **Authorize**. That sign-in is OAuth. You do not create an API token, and there is no MCP switch to turn on in Sessionboard.
+
+{/* label-ok: Connect AI assistants */}
+
+<Walkthrough src="/media/walkthroughs/connect-ai-assistants.mp4" title="Connect Claude or ChatGPT to Sessionboard with OAuth" captions="/media/walkthroughs/connect-ai-assistants.vtt" poster="/media/walkthroughs/connect-ai-assistants.jpg" />
+
+<details class="sb-accordion">
+<summary>Video transcript</summary>
+<div class="sb-accordion-body">
+
+Claude, ChatGPT, Copilot, and Gemini connect to Sessionboard by signing you in. That sign-in is OAuth. You don't paste an API token, and there's nothing to switch on inside Sessionboard first.
+
+In Claude, open Customize, then Connectors, then Discover, and add Sessionboard. That directory listing uses the United States server. If your organization is in Europe or the Middle East, add a custom connector instead and paste the server URL for that region. Claude opens Sessionboard. Sign in, pick the organization, and choose Authorize.
+
+ChatGPT works the same way. On a paid plan, turn on developer mode under Settings, Security and login. Create a plugin, paste your region's server URL, and leave Authentication on OAuth. After you authorize, ask what events you have in Sessionboard. ChatGPT calls Sessionboard and answers from your data.
+
+Two things have to already be true. AI features are on for the organization, and your role includes Connect AI assistants. Organization administrators already have that permission.
+
+</div>
+</details>
+
+Once connected, you can ask things like *"How many sessions are still pending review?"*, *"Search for keynote sessions,"* or *"Create a new session called 'AI in Events'"*. The assistant works against the organization you authorized.
 
 <Note>
 This page covers what you need before connecting and what to expect afterwards. For the technical reference — the full tool list, prompt templates, SbQL, the security model, and example conversations — see the [MCP Server documentation](https://apidocs.sessionboard.com/insights/mcp-server) in our public API docs.
@@ -46,13 +67,14 @@ The regions are separate deployments — a connector pointed at the US server ca
 
 ## Prerequisites
 
-Before connecting, three things must be true:
+Before the consent screen will list your organization, two things must be true:
 
 1. **AI features are enabled for your organization.** Contact [support@sessionboard.com](mailto:support@sessionboard.com) or your account manager if you're not sure.
-2. **Your user has the AI Access permission.** Organization administrators have it by default; other roles need it granted under your org's role settings.
-3. **Your assistant supports remote MCP servers with OAuth.** All four assistants above do — plan requirements are noted in each guide.
+2. **Your role includes Connect AI assistants.** Organization administrators have it. Other roles need it granted under your organization's role settings.
 
-No API token is required for this flow — the assistant walks you through OAuth sign-in and you choose which organization to grant access to. If you'd rather use a manually generated token (for scripts or non-OAuth clients), see [Generating API tokens](/integrations/api-tokens).
+The assistant also has to support a remote MCP server with OAuth. Claude, ChatGPT, Copilot Studio, and Gemini do. Plan requirements are noted in each guide.
+
+An API token is a different credential, for scripts and for the public API. It does not sign you in to Claude, ChatGPT, Copilot, or Gemini. See [Generating API tokens](/integrations/api-tokens) when a developer needs one.
 
 ## What you can ask
 
@@ -78,14 +100,14 @@ Two different rules apply, depending on how the assistant reads your data:
 - **Natural-language and SbQL query results are always masked on OAuth connections.** When the assistant answers questions through Sessionboard's query engine (most reporting and "how many / show me" prompts), contact email addresses come back as `j***@a***.com`, phone numbers as `***-***-4567`, and similar masking applies to other personal fields. This is enforced server-side for every OAuth connection and can't be turned off.
 - **Direct record reads follow your granted scopes.** When the assistant opens a specific record (for example, pulling up one contact's profile), it receives the fields your authorization allows, unmasked. Only connect assistants you trust, and remember that anything the assistant reads can end up in its conversation history.
 
-If you connect with a manually generated API token instead of OAuth, PII masking on query results is controlled by that token's **PII Obfuscation** setting — it's **off by default**, and we recommend enabling it for AI assistants and third-party integrations. See [Generating API tokens](/integrations/api-tokens#5-pii-obfuscation-recommended-for-ai-and-third-party-integrations).
+A script that calls the public API with an API token follows that token's **PII Obfuscation** setting instead. It is **off by default**. Turn it on for any token a third party will use. See [Generating API tokens](/integrations/api-tokens#5-pii-obfuscation-recommended-for-ai-and-third-party-integrations).
 
 ## Troubleshooting
 
 | Symptom | Likely cause |
 |----|----|
-| Consent screen shows no organizations | Wrong regional URL, AI features not enabled for your org, or your user lacks the AI Access permission |
-| `403 Forbidden` on requests | AI features or MCP access not enabled — see [Prerequisites](#prerequisites) |
+| Consent screen shows no organizations | Wrong regional URL, AI features not enabled for your org, or your role lacks **Connect AI assistants** |
+| `403 Forbidden` on requests | AI features are off for the organization, or the signed-in user lacks **Connect AI assistants** — see [Prerequisites](#prerequisites) |
 | Assistant can read but not create/update | Write scopes weren't granted during authorization — remove and re-add the connector, approving write access |
 
 Each assistant guide has its own troubleshooting table for client-specific issues.
