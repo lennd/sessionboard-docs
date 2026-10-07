@@ -50,11 +50,11 @@ Each automation is a short recipe: **When** something changes, **Then** do this.
 | Piece | What you choose |
 | --- | --- |
 | **Object** | **Sessions** or **People**. A session change enrolls that session. A person change enrolls that contact. |
-| **When** | Which field changed, optionally to which values, and any extra filters — or, for sessions, a **new form submission**. |
+| **When** | Which field changed, optionally to which values, and any extra filters — or, for sessions, a **new form submission**, and for people, a **new contact**. |
 | **Then** | **Send email**, **Assign reviewers**, **Update language value**, or any combination. |
 | **Re-enroll** | Every matching change, or only the first time for that record. |
 
-The email goes to the enrolled record — not a blast list. A people automation emails that contact. A session automation emails that session's participants (speakers, moderators, and chairs), the submitter, or both — you choose with **Send to** on the email action.
+The email goes to the enrolled record — not a blast list. A people automation emails that contact. A session automation emails that session's participants (speakers, moderators, and chairs), the submitter, or both — you choose with **Send to** on the email action. You can also copy in people on the event team with **Team members**.
 
 Assign reviewers is for sessions. It places the enrolled session onto the evaluation plan rounds you pick and assigns the evaluators you choose.
 
@@ -101,16 +101,31 @@ The name at the top of the builder is what appears in the list. Click **Save**. 
 
 The **When** inspector is the trigger.
 
-**Trigger** (sessions only). Session automations choose between two triggers:
+**Trigger.** Session automations choose between two triggers:
 
-- **A field changes** — fires when a session field updates. This is the default, and the only trigger for People automations.
+- **A field changes** — fires when a session field updates. This is the default.
 - **Submission Form: New Submission** — fires when a form submission is completed. Drafts fire when they're finalized, not when they're saved. Pick a specific **Submission form**, or leave it on **Any submission form** to fire for every new submission in this event.
 
 A submission happens exactly once per session, so this trigger always runs once per submission regardless of the re-enroll setting — a redelivered or edited submission won't send the email again.
 
+People automations also choose between two triggers:
+
+- **A field changes** — fires when a person field updates. This is the default.
+- **Contact created** — fires once for each new contact on the event. **Created through** narrows it to where the contact came from; tick any combination, or leave all unticked to fire for every new contact:
+  - **Added by your team** — created in Sessionboard, including Add Person, bulk add and Scout.
+  - **Imported** — new rows from a contact import. Rows that match an existing contact don't fire it.
+  - **From an integration** — created by a connected system, such as a webinar presenter sync or Cvent.
+  - **From a form or portal** — created by a submission, an intake form, an Awards application or a portal sign-up.
+
+  For example, tick everything except **From a form or portal** to welcome people your team added without emailing those who already filled in their own details. Contacts created through the Public API don't fire this trigger, and neither do contacts created at the organization level without an event.
+
+![The Trigger panel with Contact created selected and Created through set to Added by your team, Imported and From an integration](/images/kb/automations-contact-created-trigger.png)
+
 **Field.** Pick the session or person field to watch — Status, Track, a custom dropdown, a date, and so on. Leave the field empty to enroll on any field change for that object.
 
-**Who made the change does not matter.** A field-change automation fires however the value changed: an admin editing the record, a speaker or attendee editing their own profile in a portal, a form submission, an import, a Public API update, or an integration writing back — for example the Visit registration ID landing on a contact after a successful Visit registration. The first value ever written to an empty field counts as a change. There are two exceptions. An automation's own actions never re-trigger the automation that ran them. And [Update language values](/settings/language-translation-variant#fill-a-language-for-many-sessions-at-once) on the Sessions list, which can rewrite thousands of sessions in one run, does not trigger field-change automations.
+**Who made the change.** By default a field-change automation fires however the value changed: an admin editing the record, a speaker or attendee editing their own profile in a portal, a form submission, an import, a Public API update, or an integration writing back — for example the Visit registration ID landing on a contact after a successful Visit registration. The first value ever written to an empty field counts as a change. There are two exceptions. An automation's own actions never re-trigger the automation that ran them. And [Update language values](/settings/language-translation-variant#fill-a-language-for-many-sessions-at-once) on the Sessions list, which can rewrite thousands of sessions in one run, does not trigger field-change automations.
+
+To react only to changes the person made themselves, check **Only when the submitter makes the change** (sessions) or **Only when the contact makes the change** (people). The automation then fires only when the record's own contact — a session's submitter, or the contact — made the change, for example in their portal profile or on a form. Edits by your team, imports and integrations don't trigger it. Use it to tell your team when a speaker updates their own bio.
 
 **Changed to any of these values.** Optional. For Status and other lists, this is the same picker as [embeds](/sessions/embeds) and evaluation plan filters: search, color dots in the admin order, and checkboxes so you can match more than one value (Accepted or Pending). Dates use a date picker. Text fields use a text box. Leave this off to enroll on every change to the field, regardless of the new value.
 
@@ -147,6 +162,8 @@ The enrolled record is the recipient. Use **Send test** on this sheet to preview
 When you pick more than one recipient choice, they are combined: everyone in any selected group gets the email, and someone who matches more than one — a submitter who is also a speaker, say — still receives it once. **Primary speakers** emails only speakers flagged primary. An automation saved before this list existed keeps its previous recipients — all participants, the submitter, or both — until you change **Send to**.
 
 **Session submitters** pairs naturally with the **Submission Form: New Submission** trigger — for example, an instant "we received your submission" email to the submitter.
+
+**Team members.** Also email people on the event team, for example to tell them a contact changed their details. Pick people, team tags, or both; a tag is resolved when the email sends, so it reaches whoever holds the tag at that moment. Merge tags still fill in from the enrolled record. Turn off **Send to the contact** (people) or **Send to the session recipients above** (sessions) to email only the team members. Each email needs at least one recipient: the record, a team member, or a team tag. Each person receives the email once per run.
 
 ### Assign reviewers
 
