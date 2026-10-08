@@ -9,14 +9,15 @@
  * previous send and never repeats itself. Same rule as Slack: only entries
  * that are live in production (US + EU); staged work is never mentioned.
  *
- * Sent through SendGrid from no-reply@sessionboard.com (a verified sender on
- * the account). Recipients come from RELEASE_DIGEST_TO (comma-separated).
+ * Sent through SendGrid from josh@sessionboard.com (a verified sender).
+ * Recipients come from RELEASE_DIGEST_TO (comma-separated; all-team@sessionboard.com).
  *
- *   SENDGRID_API_KEY=… RELEASE_DIGEST_TO=josh@sessionboard.com node scripts/release-email.mjs
+ *   SENDGRID_API_KEY=… RELEASE_DIGEST_TO=all-team@sessionboard.com node scripts/release-email.mjs
  *   node scripts/release-email.mjs --dry-run                 # print the text version, send nothing, write nothing
  *   node scripts/release-email.mjs --since 2026-10-01        # dry-run preview of a range
  *   node scripts/release-email.mjs --dry-run --out /tmp/digest.html   # also write the HTML to open in a browser
  *   node scripts/release-email.mjs --test --since 2026-10-07           # really send a "[Test]" digest of that range; marks nothing
+ *   node scripts/release-email.mjs --now --since 2026-10-07            # really send, no [Test] prefix, marks nothing
  */
 
 import { writeFileSync } from 'node:fs';
@@ -26,7 +27,8 @@ import { byModule, enablementFacts, lastSentFor, markSent, pendingFor, shortSumm
 import { CS_ACTION, formatDate, internalPrefix, loadReleaseNotes, readSite } from '../src/lib/release-notes.mjs';
 
 const TEST = process.argv.includes('--test');
-const DRY = process.argv.includes('--dry-run') || (process.argv.includes('--since') && !TEST);
+const NOW = process.argv.includes('--now');
+const DRY = process.argv.includes('--dry-run') || (process.argv.includes('--since') && !TEST && !NOW);
 const arg = (flag) => {
   const i = process.argv.indexOf(flag);
   return i !== -1 ? process.argv[i + 1] : null;
@@ -36,7 +38,7 @@ const OUT = arg('--out');
 
 const API_KEY = process.env.SENDGRID_API_KEY;
 const TO = (process.env.RELEASE_DIGEST_TO || '').split(',').map((s) => s.trim()).filter(Boolean);
-const FROM = { email: 'no-reply@sessionboard.com', name: 'Sessionboard Product Updates' };
+const FROM = { email: 'josh@sessionboard.com', name: 'Josh Parolin' };
 const REPLY_TO = { email: 'josh@sessionboard.com', name: 'Josh Parolin' };
 
 const site = readSite();
@@ -61,7 +63,11 @@ const n = pending.length;
 const noun = n === 1 ? 'update' : 'updates';
 const headline = `[SB Internal] Release Notes — ${formatDate(today)} (${n} ${noun})`;
 const subject = `${TEST ? '[Test] ' : ''}${headline}`;
-const sinceLine = lastSent ? `Everything that went live since the last digest on ${formatDate(lastSent)}.` : 'Everything that is live in production right now.';
+const sinceLine = SINCE
+  ? `Everything that went live since ${formatDate(SINCE)}.`
+  : lastSent
+    ? `Everything that went live since the last digest on ${formatDate(lastSent)}.`
+    : 'Everything that is live in production right now.';
 const enablementHome = `${base}${prefix}`;
 const releaseNotesUrl = `${base}/help/release-notes`;
 
@@ -229,8 +235,8 @@ if (!res.ok) {
   process.exit(1);
 }
 
-if (TEST) {
-  console.log(`✓ Test email with ${n} update(s) sent to ${TO.join(', ')}; nothing marked.`);
+if (TEST || NOW) {
+  console.log(`✓ ${TEST ? 'Test email' : 'Email'} with ${n} update(s) sent to ${TO.join(', ')}; nothing marked.`);
   process.exit(0);
 }
 const touched = markSent(pending, 'email', today);
