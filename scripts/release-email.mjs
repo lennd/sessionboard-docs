@@ -59,8 +59,11 @@ const today = new Date().toISOString().slice(0, 10);
 const lastSent = lastSentFor(releases, 'email');
 const n = pending.length;
 const noun = n === 1 ? 'update' : 'updates';
-const subject = `${TEST ? '[Test] ' : ''}Now in production — ${formatDate(today)} (${n} ${noun})`;
+const headline = `[SB Internal] Release Notes — ${formatDate(today)} (${n} ${noun})`;
+const subject = `${TEST ? '[Test] ' : ''}${headline}`;
 const sinceLine = lastSent ? `Everything that went live since the last digest on ${formatDate(lastSent)}.` : 'Everything that is live in production right now.';
+const enablementHome = `${base}${prefix}`;
+const releaseNotesUrl = `${base}/help/release-notes`;
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const abs = (p) => (p && /^https?:/.test(p) ? p : `${base}${p}`);
@@ -133,10 +136,20 @@ const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewp
 <body style="margin:0;padding:24px 12px;background:#f9fafb">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
 <table role="presentation" width="640" cellpadding="0" cellspacing="0" style="max-width:640px;width:100%;background:#fff;border:1px solid #eaecf0;border-radius:10px">
-<tr><td style="padding:28px 28px 8px;font-family:Helvetica,Arial,sans-serif">
-  <div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#667085;font-weight:600">Product updates</div>
-  <h1 style="font-size:22px;line-height:1.25;margin:6px 0 8px;color:#101828">Now in production — ${esc(formatDate(today))}</h1>
-  <p style="margin:0;font-size:14px;line-height:1.5;color:#344054">${esc(sinceLine)} ${n} ${noun}, live for every organization (US + EU). Full CS notes, videos and who-should-get-it on <a href="${base}${prefix}" style="color:#175cd3">Enablement</a>; the customer-facing list is <a href="${base}/help/release-notes" style="color:#175cd3">Release notes</a>.</p>
+<tr><td style="padding:0;font-family:Helvetica,Arial,sans-serif">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fef7c3;border-bottom:1px solid #f0d48a">
+    <tr><td style="padding:12px 20px;font:13px/1.5 Helvetica,Arial,sans-serif;color:#713f12">
+      <div style="font:700 11px/1 Helvetica,Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#a16207;margin:0 0 6px">SB Internal — staff only</div>
+      <a href="${enablementHome}" style="color:#854d0e;font-weight:700;text-decoration:underline">Enablement notes</a>
+      <span style="color:#ca8a04"> &nbsp;·&nbsp; </span>
+      <a href="${releaseNotesUrl}" style="color:#854d0e;font-weight:700;text-decoration:underline">Release notes (customers)</a>
+    </td></tr>
+  </table>
+</td></tr>
+<tr><td style="padding:24px 28px 8px;font-family:Helvetica,Arial,sans-serif">
+  <div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#667085;font-weight:600">Sessionboard · Product updates</div>
+  <h1 style="font-size:22px;line-height:1.25;margin:6px 0 8px;color:#101828">${esc(headline)}</h1>
+  <p style="margin:0;font-size:14px;line-height:1.5;color:#344054">${esc(sinceLine)} ${n} ${noun}, live for every organization (US + EU).</p>
 </td></tr>
 <tr><td style="padding:0 28px 28px">${sectionsHtml}</td></tr>
 <tr><td style="padding:16px 28px 22px;border-top:1px solid #eaecf0;font:12px/1.5 Helvetica,Arial,sans-serif;color:#98a2b3">Sent every weekday morning by the Help Center's release workflow. Slack gets the same digest at the end of the day in #product-development. Source: <a href="https://github.com/lennd/sessionboard-docs" style="color:#98a2b3">lennd/sessionboard-docs</a> · src/data/release-notes.</td></tr>
@@ -145,9 +158,11 @@ const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewp
 // ---------- plain text ----------
 
 const text = [
-  `NOW IN PRODUCTION — ${formatDate(today)} (${n} ${noun})`,
+  headline,
+  'SB INTERNAL — staff only',
+  `Enablement notes: ${enablementHome}`,
+  `Release notes (customers): ${releaseNotesUrl}`,
   sinceLine,
-  `Enablement: ${base}${prefix}   Release notes: ${base}/help/release-notes`,
   '',
   ...byModule(pending).flatMap(([module, entries]) => [
     `== ${module.toUpperCase()} (${entries.length}) ==`,
