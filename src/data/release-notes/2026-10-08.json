@@ -37,6 +37,615 @@
           "lennd/sessionboard-web-ui-v2#897"
         ]
       }
+    },
+    {
+      "id": "email-campaigns-next-send-is-accurate",
+      "title": "Email campaigns show the real next send",
+      "summary": "The campaign list and the campaign's **Upcoming send** no longer show an old date left over from a finished send. Recurring campaigns keep sending after their second run, and re-scheduling a campaign while its last send is finishing keeps the new schedule.",
+      "article": "/communications/email-campaigns",
+      "kind": "fixed",
+      "module": "Communications",
+      "features": [
+        "email_campaigns"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event → Send → Campaigns → list and campaign detail"
+      },
+      "use_case": "Organizers can trust the next-send date on a campaign again, and recurring reminders no longer stop silently after two sends.",
+      "internal": {
+        "cs_action": {
+          "kind": "reach_out",
+          "note": "Customers who reported a recurring campaign that stopped after two sends, or a re-scheduled campaign that never went out: check the campaign and re-schedule it once; it now keeps running."
+        },
+        "when_to_bring_up": "A campaign shows a past date as its next send; a recurring reminder stopped; a re-scheduled campaign stayed Sent.",
+        "who_should_get_it": "Customers using scheduled or recurring email campaigns.",
+        "gotchas": "Recurring campaigns that already stopped before the fix are not restarted automatically; re-schedule them."
+      },
+      "shipped": {
+        "docs_only": false,
+        "prs": [
+          "lennd/sessionboard-web-api#4372",
+          "lennd/sessionboard-web-ui-v2#900"
+        ]
+      }
+    },
+    {
+      "id": "advocacy-templates-always-have-a-thumbnail",
+      "title": "Advocacy templates always show a thumbnail",
+      "summary": "Share-card templates created through Quick Launch now save a preview image, so Portal Home and the Templates page show the card instead of the **Share asset** placeholder. Existing templates without one get a preview too.",
+      "article": "/marketing/advocacy",
+      "kind": "fixed",
+      "module": "Marketing",
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Marketing → Advocacy → Templates; the speaker's Portal Home"
+      },
+      "use_case": "Speakers see the actual share card on Portal Home before they open it, which makes them more likely to share.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Existing templates are filled in by a one-off backfill after deploy; nothing for the customer to do."
+        },
+        "when_to_bring_up": "A customer asks why Portal Home shows a generic Share asset tile.",
+        "who_should_get_it": "Advocacy customers.",
+        "gotchas": "Per-advocate text shows sample values (e.g. Jane Smith) in the template preview until each advocate's own preview is generated."
+      },
+      "shipped": {
+        "docs_only": false,
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#827",
+          "lennd/sessionboard-web-api#4370"
+        ]
+      }
+    },
+    {
+      "id": "email-campaigns-copy-from-another-event",
+      "title": "Copy email campaigns from another event, and clone them with the event",
+      "summary": "**Copy from event** on the Email Campaigns list copies campaigns from any other event in your organization as **Drafts** — subject, body, audience, theme and recipient filters re-pointed at this event, with nothing from the send. The Clone Event sidebar gets an **Email Campaigns** option that does the same for every campaign. Anything that had no match here (a role, a field filter, a theme) is dropped and listed so you check recipients before scheduling.",
+      "article": "/communications/email-campaigns#copy-campaigns-from-another-event",
+      "kind": "new",
+      "module": "Communications",
+      "features": [
+        "email_campaigns"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event → Send → Campaigns → Copy from event; Organization → Events → Clone Event → Email Campaigns"
+      },
+      "permissions": [
+        "event.emails.campaigns_create",
+        "event.emails.campaigns_read"
+      ],
+      "use_case": "A recurring conference reuses last year's speaker reminders, sponsor updates and welcome emails in minutes instead of rebuilding each one, and the audience filters follow the new event's roles and tracks automatically.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Nothing to enable. Customers with Clone Events should know the new Email Campaigns clone option is off by default — tick it when cloning a recurring event."
+        },
+        "when_to_bring_up": "Kick-off for a recurring event, any clone request, or a customer asking to 'copy last year's emails'.",
+        "who_should_get_it": "Every customer running an annual or multi-event programme on Email Campaigns; Informa and association accounts first.",
+        "gotchas": "Copies are always Drafts with no schedule. Automations are not copied (they live under Automations). A campaign tied to one session loses that session scope. Filters on a role, track or custom field that does not exist in the destination are removed and flagged on the done screen — check Recipients before scheduling. A clone into a different organization drops hand-picked recipients.",
+        "talk_track": "Copy the campaigns, open each draft, check Recipients, set the schedule. Same content, same audience logic, this year's event."
+      },
+      "shipped": {
+        "docs_only": false,
+        "prs": [
+          "lennd/sessionboard-web-api#4378",
+          "lennd/sessionboard-web-ui-v2#906"
+        ]
+      }
+    },
+    {
+      "id": "role-status-permissions-from-status-conditions",
+      "title": "Roles can be limited in which statuses a session may be moved from",
+      "summary": "On a role's **Statuses** tab, each allowed status gets a **From any status** picker. Tick the statuses the session must currently be in — for example **Accepted** only from **Pending** — so a role can queue decisions without reopening a session you have already **Declined**. Status pickers only offer the move when it is allowed, and imports, bulk updates and the public API refuse it with a message naming the condition.",
+      "article": "/event-team/invite-manage-event-team-members#only-from-certain-statuses",
+      "kind": "improved",
+      "module": "Event team",
+      "availability": "everyone",
+      "enable": {
+        "how": "setting",
+        "path": "Event Team → Permissions → custom role → Statuses → Limit which statuses this role can set → From any status picker"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event Team → Permissions → Role → Statuses; session status pickers for people in that role"
+      },
+      "permissions": [
+        "event.settings.manage_permissions"
+      ],
+      "use_case": "An admin can enforce the review workflow: track chairs and marketing can move sessions forward but cannot override a final decision, which keeps Declined sessions declined without a second review pass.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Existing status limits are unchanged; a condition exists only once the admin ticks statuses in the picker."
+        },
+        "when_to_bring_up": "A customer reports a role 'un-declining' sessions, or asks for a stricter review workflow for track chairs or marketing roles.",
+        "who_should_get_it": "Customers with custom roles and a multi-step review (medical and scientific societies, large CFPs).",
+        "gotchas": "Conditions apply to custom roles only — default roles are read-only on this tab, so duplicate one first. They apply when changing an existing session; a new session can always start as Pending. Admin User and organization Admins are never limited."
+      },
+      "shipped": {
+        "docs_only": false,
+        "prs": [
+          "lennd/sessionboard-web-api#4378",
+          "lennd/sessionboard-web-ui-v2#906"
+        ]
+      }
+    },
+    {
+      "id": "slides-attach-by-default-and-title-slides-folder",
+      "title": "Title slides attach to their sessions by default and export in a Title slides folder",
+      "summary": "**Attach to each session** is now on by default when you generate slides, so each session's deck lands on the session as soon as the run finishes. When you download session files, every title slide sits in its own **Title slides** folder next to the speaker's uploads — in the Download Files zip and in download bundles.",
+      "article": "/marketing/slides#attached-slides",
+      "kind": "improved",
+      "module": "Marketing",
+      "features": [
+        "marketing_slides"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Marketing → Slides → Generate → Attach to each session; Program → Sessions → Download Files"
+      },
+      "use_case": "Production gets every room's opener in one folder of the export, and the organizer no longer re-uploads each slide to its session after generating.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Customers who want a download-only run switch Attach to each session off in the wizard."
+        },
+        "when_to_bring_up": "Any customer using Slides for show-day production, or an AV team asking where the title slides are in the export.",
+        "who_should_get_it": "Slides users with an AV or production partner.",
+        "gotchas": "Only the current title slide is exported; superseded versions stay in the file's history."
+      },
+      "shipped": {
+        "docs_only": false,
+        "prs": [
+          "lennd/sessionboard-web-api#4378"
+        ]
+      }
+    },
+    {
+      "id": "slides-shrink-to-fit-up-to-18",
+      "title": "Shrink to fit shows everyone up to 18 participants",
+      "summary": "With **Shrink to fit** as the overflow rule, a title slide now shows every participant up to 18 on up to three rows, whatever the maximum-participants setting. Before, an eleventh panelist was silently left off. The designer says so next to the setting and in the panel summary.",
+      "article": "/marketing/slides#participants",
+      "kind": "fixed",
+      "module": "Marketing",
+      "features": [
+        "marketing_slides"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Marketing → Slides → template designer → Participants → When more people than fit"
+      },
+      "use_case": "Large panels and author lists render completely with Shrink to fit, so nobody is missing from the slide on stage.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Templates already on Shrink to fit pick this up on the next generation; regenerate out-of-date slides for sessions with more than 10 participants."
+        },
+        "when_to_bring_up": "A customer reports a participant missing from a generated slide on a big panel.",
+        "who_should_get_it": "NAB and other Slides customers with large panels or author lists.",
+        "gotchas": "Past 18 a +N more chip appears. Show '+N more' still honours the maximum you set."
+      },
+      "shipped": {
+        "docs_only": false,
+        "prs": [
+          "lennd/sessionboard-web-api#4378",
+          "lennd/sessionboard-web-ui-v2#906"
+        ]
+      }
+    },
+    {
+      "id": "email-campaigns-right-submission-and-portal-login-link",
+      "title": "Campaigns render the matched submission, and recipient.portal_login_link works",
+      "summary": "A speaker with an accepted and a pending submission who matches an 'accepted only' campaign now sees the accepted session in the preview, the test send and the real send — not the first one found. `{{recipient.portal_login_link}}` renders a working link instead of blank, and the advanced Sessions filter **Status** is relabelled **Submission status** to match the quick filter.",
+      "article": "/communications/email-campaigns#step-3-recipients",
+      "kind": "fixed",
+      "module": "Communications",
+      "features": [
+        "email_campaigns"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event → Send → Campaigns → Recipients and Preview"
+      },
+      "use_case": "Merge tags in a per-session reminder always describe the session the campaign filter matched, so speakers with several submissions get the right details.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": ""
+        },
+        "when_to_bring_up": "A customer reports a speaker email showing the wrong session, or a blank portal login link.",
+        "who_should_get_it": "Customers whose speakers submit more than one abstract.",
+        "gotchas": "Bundled (one email per session) campaigns already used the bundled session and are unchanged."
+      },
+      "shipped": {
+        "docs_only": false,
+        "prs": [
+          "lennd/sessionboard-web-api#4376",
+          "lennd/sessionboard-web-ui-v2#904"
+        ]
+      }
+    },
+    {
+      "id": "cfp-resumed-draft-required-fields",
+      "title": "A resumed CFP draft is sent to the step with blank required fields",
+      "summary": "Resuming a draft used to open on Session Info, and a blank required field under **Your Information** only surfaced as an error at Submit. Submit now checks every step in order and takes the submitter to the first one that is incomplete, with the blanks highlighted, and the Review step shows a Your Information card with an incomplete status and an edit link.",
+      "article": "/sessions/draft-submissions",
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "sessions"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Portal → Call for Presentations → Resume draft → Review & submit"
+      },
+      "use_case": "Submitters no longer get a dead-end error at the last step; they are shown exactly which field to fill in.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": ""
+        },
+        "when_to_bring_up": "A submitter reports 'Submit does nothing' or a generic error on a resumed draft.",
+        "who_should_get_it": "Every CFP customer.",
+        "gotchas": ""
+      },
+      "shipped": {
+        "docs_only": false,
+        "prs": [
+          "lennd/sessionboard-web-api#4376",
+          "lennd/sessionboard-web-ui-v2#904"
+        ]
+      }
+    },
+    {
+      "id": "sites-stale-tab-no-longer-overwrites-draft",
+      "title": "A second builder tab can no longer overwrite your Site draft or undo a publish",
+      "summary": "When a Site is open in two tabs, the older tab now stops autosaving the moment the other one saves or publishes, shows **Changed in another tab — Reload**, and disables Publish until you reload. Before, the older tab's next keystroke silently replaced the draft and could revert a Site you had just published. Four-digit colours such as `#FFFF` are also normalised, so the logged-in portal hero no longer turns yellow.",
+      "article": "/site/site-builder",
+      "kind": "fixed",
+      "module": "CMS",
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Site → Builder; Site → Settings → colours"
+      },
+      "use_case": "Two people (or one person with two tabs) can work on a Site without one quietly losing the other's changes.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": ""
+        },
+        "when_to_bring_up": "A customer reports a published Site reverting, or edits disappearing.",
+        "who_should_get_it": "Sites customers with more than one editor.",
+        "gotchas": "The stale tab must be reloaded; its unsaved edits since the other tab's save are not merged."
+      },
+      "shipped": {
+        "docs_only": false,
+        "prs": [
+          "lennd/sessionboard-web-api#4377",
+          "lennd/sessionboard-web-ui-v2#905",
+          "lennd/sessionboard-web-api#4376",
+          "lennd/sessionboard-web-ui-v2#904",
+          "lennd/sessionboard-web-org-portal#177"
+        ]
+      }
+    },
+    {
+      "id": "sites-edit-blocks-inside-columns",
+      "title": "Blocks inside a Columns block can be edited again",
+      "summary": "Selecting a Text or Image placed inside a Columns block — from the inspector or by clicking it on the canvas — now opens that block's editor instead of selecting the Columns block and collapsing it.",
+      "article": "/site/site-builder",
+      "kind": "fixed",
+      "module": "CMS",
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Site → Builder → Columns block"
+      },
+      "use_case": "Multi-column layouts can be edited in place like any other block.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": ""
+        },
+        "when_to_bring_up": "A customer says they cannot edit content inside columns.",
+        "who_should_get_it": "Sites customers using Columns.",
+        "gotchas": ""
+      },
+      "shipped": {
+        "docs_only": false,
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#905",
+          "lennd/sessionboard-web-org-portal#178"
+        ]
+      }
+    },
+    {
+      "id": "portal-locked-dropdowns-cannot-be-cleared",
+      "title": "Locked dropdown fields can no longer be cleared in the portal",
+      "summary": "A multi-select field marked **Locked** in Manage Portal Fields used to keep a remove button on each selected value, so a portal user could empty it and watch the value snap back on save. Locked values now have no remove control.",
+      "article": "/portals/portals-101#manage-fields",
+      "kind": "fixed",
+      "module": "Portals",
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Portal → session or profile → locked multi-select fields"
+      },
+      "use_case": "Locked means locked: speakers cannot remove tags or tracks your team set.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": ""
+        },
+        "when_to_bring_up": "A customer reports speakers 'removing' locked values.",
+        "who_should_get_it": "Portal customers using locked fields.",
+        "gotchas": ""
+      },
+      "shipped": {
+        "docs_only": false,
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#905"
+        ]
+      }
+    },
+    {
+      "id": "interest-form-renders-every-field-type",
+      "title": "Session & Speaker interest forms show date-time, time, currency and URL fields",
+      "summary": "Interest forms built from an application only rendered number and date fields; Starts At, Ends At, Capacity and any time, currency or URL field were missing for the submitter even though the admin's field list showed them. They render now, with the same inputs as the submission form.",
+      "article": "/applications/building-your-submission-form",
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "applications"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Portal → interest / application form"
+      },
+      "use_case": "Every field the admin adds to an interest form is actually asked of the submitter.",
+      "internal": {
+        "cs_action": {
+          "kind": "reach_out",
+          "note": "Customers with an interest form that included these field types collected no answers for them until now; mention it if they noticed gaps."
+        },
+        "when_to_bring_up": "A customer asks why a field on their interest form never gets answers.",
+        "who_should_get_it": "Applications customers.",
+        "gotchas": ""
+      },
+      "shipped": {
+        "docs_only": false,
+        "prs": [
+          "lennd/sessionboard-web-org-portal#177"
+        ]
+      }
+    },
+    {
+      "id": "team-list-one-row-per-merged-contact",
+      "title": "A merged contact shows once on the event team list",
+      "summary": "Merging two contacts that each had a portal login left both logins on the Team list, so the person appeared twice. The list now shows one row per contact, and new merges keep the login whose email matches the contact (the other is retired, restorable from Trash).",
+      "article": "/contacts/merge-duplicates",
+      "kind": "fixed",
+      "module": "CRM",
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event Team → Team; Contacts → Merge duplicates"
+      },
+      "use_case": "Team lists and seat counts reflect people, not logins.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Portal users whose contact was deleted, or whose links were all revoked, are no longer listed."
+        },
+        "when_to_bring_up": "A customer reports a duplicate on Team after a merge.",
+        "who_should_get_it": "Customers who merge contacts regularly (CROI and other medical societies).",
+        "gotchas": "Existing duplicates created before this change are collapsed in the list but their logins are not retired automatically."
+      },
+      "shipped": {
+        "docs_only": false,
+        "prs": [
+          "lennd/sessionboard-web-api#4376"
+        ]
+      }
+    },
+    {
+      "id": "config-set-session-languages-subsessions",
+      "title": "Session filters match speakers on subsessions",
+      "summary": "A config set or role filter on **[Session] Languages**, tracks, tags, level or format now matches a speaker whose only session is a subsession: subsessions inherit those values from their parent when they set none, and V2 role assignments count.",
+      "article": "/sessions/create-a-subsession",
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "sessions"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event Team → roles with a session filter; config sets"
+      },
+      "use_case": "Track chairs scoped by language or track see the speakers on subsessions too.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": ""
+        },
+        "when_to_bring_up": "A scoped role cannot see a subsession speaker.",
+        "who_should_get_it": "Customers using subsessions with scoped roles.",
+        "gotchas": "Draft or deleted parents contribute nothing."
+      },
+      "shipped": {
+        "docs_only": false,
+        "prs": [
+          "lennd/sessionboard-web-api#4376"
+        ]
+      }
+    },
+    {
+      "id": "field-delete-dialog-says-which-events",
+      "title": "Deleting a field says whether it affects one event or all",
+      "summary": "The delete confirmation names the field and says whether it is an event field (only this event) or an organization field (removed from every event that uses it), with a scoped confirm button, instead of warning about every event each time.",
+      "article": "/faq/how-to-create-and-delete-custom-fields#delete-a-field",
+      "kind": "fixed",
+      "module": "Settings",
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Settings → Fields → delete"
+      },
+      "use_case": "Admins can delete an event-only field without fearing an organization-wide change.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": ""
+        },
+        "when_to_bring_up": "A customer hesitates to delete a field.",
+        "who_should_get_it": "Everyone.",
+        "gotchas": ""
+      },
+      "shipped": {
+        "docs_only": false,
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#905"
+        ]
+      }
+    },
+    {
+      "id": "campaign-preview-scrolls-fully-and-delivery-history-counts",
+      "title": "Campaign final preview scrolls to the end; delivery history counts read clearly",
+      "summary": "The Preview step's email frame no longer stops partway down the page. The automations delivery history banner now says, for example, *4 of those records (9 emails) came from 7 automations that have since been deleted*, so records and emails are not confused.",
+      "article": "/communications/email-campaigns#step-4-preview",
+      "kind": "fixed",
+      "module": "Communications",
+      "features": [
+        "email_campaigns"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event → Send → Campaigns → Preview; Automations → Delivery history"
+      },
+      "use_case": "Organizers can read the whole email before scheduling, and the delivery history numbers add up.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": ""
+        },
+        "when_to_bring_up": "A customer cannot scroll a campaign preview or questions the delivery history count.",
+        "who_should_get_it": "Everyone.",
+        "gotchas": ""
+      },
+      "shipped": {
+        "docs_only": false,
+        "prs": [
+          "lennd/sessionboard-web-api#4377",
+          "lennd/sessionboard-web-ui-v2#905"
+        ]
+      }
+    },
+    {
+      "id": "branding-upload-checks-and-accessible-remove-buttons",
+      "title": "Favicon uploads are checked for real images; remove buttons are labelled",
+      "summary": "A text file renamed `.png` is now rejected before upload instead of being served as the favicon. The remove (X) buttons on branding images, Team Lead links in your own messages, and Evaluations 2.0 labels were tidied for screen readers, dark mode and consistent sentence case.",
+      "article": "/site/site-builder",
+      "kind": "fixed",
+      "module": "CMS",
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Site → Settings → Branding; Team Lead; Evaluations"
+      },
+      "use_case": "Branding settings are safer to upload to and usable with a screen reader.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": ""
+        },
+        "when_to_bring_up": "Accessibility reviews; a broken favicon.",
+        "who_should_get_it": "Everyone.",
+        "gotchas": ""
+      },
+      "shipped": {
+        "docs_only": false,
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#905"
+        ]
+      }
     }
   ]
 }
