@@ -16,6 +16,7 @@
  *   node scripts/release-email.mjs --dry-run                 # print the text version, send nothing, write nothing
  *   node scripts/release-email.mjs --since 2026-10-01        # dry-run preview of a range
  *   node scripts/release-email.mjs --dry-run --out /tmp/digest.html   # also write the HTML to open in a browser
+ *   node scripts/release-email.mjs --test --since 2026-10-07           # really send a "[Test]" digest of that range; marks nothing
  */
 
 import { writeFileSync } from 'node:fs';
@@ -24,7 +25,8 @@ import { mediaForEntry, thumbnailFor } from '../src/lib/article-media.mjs';
 import { byModule, enablementFacts, lastSentFor, markSent, pendingFor, shortSummary } from '../src/lib/release-digest.mjs';
 import { CS_ACTION, formatDate, internalPrefix, loadReleaseNotes, readSite } from '../src/lib/release-notes.mjs';
 
-const DRY = process.argv.includes('--dry-run') || process.argv.includes('--since');
+const TEST = process.argv.includes('--test');
+const DRY = process.argv.includes('--dry-run') || (process.argv.includes('--since') && !TEST);
 const arg = (flag) => {
   const i = process.argv.indexOf(flag);
   return i !== -1 ? process.argv[i + 1] : null;
@@ -57,7 +59,7 @@ const today = new Date().toISOString().slice(0, 10);
 const lastSent = lastSentFor(releases, 'email');
 const n = pending.length;
 const noun = n === 1 ? 'update' : 'updates';
-const subject = `Now in production — ${formatDate(today)} (${n} ${noun})`;
+const subject = `${TEST ? '[Test] ' : ''}Now in production — ${formatDate(today)} (${n} ${noun})`;
 const sinceLine = lastSent ? `Everything that went live since the last digest on ${formatDate(lastSent)}.` : 'Everything that is live in production right now.';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
@@ -212,5 +214,9 @@ if (!res.ok) {
   process.exit(1);
 }
 
+if (TEST) {
+  console.log(`✓ Test email with ${n} update(s) sent to ${TO.join(', ')}; nothing marked.`);
+  process.exit(0);
+}
 const touched = markSent(pending, 'email', today);
 console.log(`✓ Emailed ${n} update(s) to ${TO.join(', ')}; marked emailed in ${touched} file(s).`);
