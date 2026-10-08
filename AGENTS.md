@@ -123,7 +123,7 @@ Copy the newest file as a template; `src/data/release-notes/_config.json` lists 
 
 ### The one automated commit on main
 
-`.github/workflows/release-daily.yml` runs every weekday morning: it refreshes `shipped.live` from the production deploy workflows, posts the Slack digest for entries that became live, writes `shipped.announced_at`, and commits the data files back to `main` as `github-actions[bot]`. That is the single exception to "every change lands through a PR" in this repo, and it touches only `src/data/release-notes/`. If it fails, fix the data; do not post to Slack by hand.
+`.github/workflows/release-daily.yml` runs every weekday morning: it refreshes `shipped.live` from the production deploy workflows, posts the Slack digest for entries that became live, writes `shipped.announced_at`, and commits the data files back to `main` as `github-actions[bot]`. That is the single exception to "every change lands through a PR" in this repo, and it touches only `src/data/release-notes/`. If it fails, fix the data; do not post to Slack by hand. The TAM Hub's **Product Updates** page (`#/product-updates`) shows the working digest (live, not yet announced) all day and dispatches this same workflow on demand — `mode: status` to refresh live dates, `mode: publish` to post now — so a publish from the hub and the morning run never double-post: both key off `shipped.announced_at`.
 
 ### Community "What's new" drafts
 
