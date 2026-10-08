@@ -1,36 +1,47 @@
 name: Release status and product-updates digest
 
-# Every weekday morning: ask production which release entries are actually
-# deployed (scripts/release-status.mjs), commit the flipped dates, then post
-# the digest of what went live since the last one (scripts/release-slack.mjs).
+# Twice every weekday: ask production which release entries are actually
+# deployed (scripts/release-status.mjs), commit the flipped dates, then send
+# the digest of what went live since that channel's last one.
+#
+#   morning  → email  (scripts/release-email.mjs, marker shipped.emailed_at)
+#   evening  → Slack  (scripts/release-slack.mjs, marker shipped.announced_at)
+#
+# Each channel keeps its own marker, so the morning email recaps everything
+# since yesterday's morning email and the evening Slack post everything since
+# yesterday's post — the same item reaches both, once each, and nothing waits
+# more than a day.
 #
 # The commit is pushed with GH_RELEASE_STATUS_TOKEN rather than GITHUB_TOKEN on
 # purpose: pushes made with GITHUB_TOKEN do not trigger other workflows, and
 # this push has to trigger Docs CI so the public release-notes page and the
-# _internal feed rebuild with the new live dates the same morning.
+# _internal feed rebuild with the new live dates.
 #
 # The TAM Hub's Product Updates page (sessionboard-tam/hub, #/product-updates)
 # dispatches this same workflow: `mode: status` to refresh what is live without
-# posting, `mode: publish` to post the working digest right now. The schedule is
-# the fallback so nothing waits more than a day; a hub publish earlier in the
-# day simply leaves the morning run with nothing new to post.
+# sending, `mode: publish` to post the working digest to Slack right now,
+# `mode: email` to send the email now. A hub publish earlier in the day simply
+# leaves the scheduled run with nothing new to send.
 #
-# GH_RELEASE_STATUS_TOKEN: fine-grained PAT with Actions: read and
+# Secrets: GH_RELEASE_STATUS_TOKEN (fine-grained PAT: Actions: read and
 # Pull requests: read on lennd/sessionboard-web-api, sessionboard-web-ui-v2,
-# sessionboard-embeds, sessionboard-public-api, and Contents: write on this repo.
+# sessionboard-embeds, sessionboard-public-api; Contents: write on this repo),
+# SLACK_PRODUCT_UPDATES_WEBHOOK_URL, SENDGRID_API_KEY (any key that may send
+# as no-reply@sessionboard.com), RELEASE_DIGEST_TO (comma-separated recipients).
 
 on:
   schedule:
-    - cron: '0 14 * * 1-5' # 09:00 America/Chicago (CDT); 08:00 in CST
+    - cron: '0 14 * * 1-5' # morning email — 09:00 America/Chicago (CDT); 08:00 in CST
+    - cron: '0 22 * * 1-5' # evening Slack — 17:00 America/Chicago (CDT); 16:00 in CST
   workflow_dispatch:
     inputs:
       mode:
-        description: 'status = refresh live dates only; publish = also post the digest to Slack'
+        description: 'status = refresh live dates only; publish = also post the digest to Slack; email = also send the email digest'
         type: choice
-        options: [publish, status]
+        options: [publish, email, status]
         default: publish
       dry_run:
-        description: 'Report and print the digest without committing or posting'
+        description: 'Report and print the digest without committing or sending'
         type: boolean
         default: false
       requested_by:
@@ -47,7 +58,7 @@ concurrency:
 
 jobs:
   digest:
-    name: Check production, post digest
+    name: Check production, send digest
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -61,6 +72,22 @@ jobs:
 
       - run: npm ci
 
+      - name: Which channel is this run for?
+        id: plan
+        env:
+          EVENT: ${{ github.event_name }}
+          CRON: ${{ github.event.schedule }}
+          MODE: ${{ inputs.mode }}
+        run: |
+          case "$EVENT:$CRON:$MODE" in
+            schedule:0\ 14*) channel=email ;;
+            schedule:0\ 22*) channel=slack ;;
+            workflow_dispatch::publish) channel=slack ;;
+            workflow_dispatch::email)   channel=email ;;
+            *)                          channel=none ;;
+          esac
+          echo "channel=$channel" | tee -a "$GITHUB_OUTPUT"
+
       - name: Release data is valid
         run: node scripts/check-release-notes.mjs
 
@@ -70,20 +97,30 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: node scripts/release-status.mjs ${{ inputs.dry_run && '--dry-run' || '' }}
 
-      - name: Post the digest
-        if: ${{ !inputs.dry_run && (github.event_name == 'schedule' || inputs.mode != 'status') }}
+      - name: Send the email digest
+        if: ${{ !inputs.dry_run && steps.plan.outputs.channel == 'email' }}
+        env:
+          SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
+          RELEASE_DIGEST_TO: ${{ secrets.RELEASE_DIGEST_TO }}
+        run: node scripts/release-email.mjs
+
+      - name: Post the Slack digest
+        if: ${{ !inputs.dry_run && steps.plan.outputs.channel == 'slack' }}
         env:
           SLACK_PRODUCT_UPDATES_WEBHOOK_URL: ${{ secrets.SLACK_PRODUCT_UPDATES_WEBHOOK_URL }}
         run: node scripts/release-slack.mjs
 
       - name: Preview the digest
         if: ${{ inputs.dry_run }}
-        run: node scripts/release-slack.mjs --dry-run
+        run: |
+          node scripts/release-slack.mjs --dry-run
+          node scripts/release-email.mjs --dry-run
 
-      - name: Commit live dates and announced_at
+      - name: Commit live dates and sent markers
         if: ${{ !inputs.dry_run }}
         env:
           REQUESTED_BY: ${{ inputs.requested_by }}
+          CHANNEL: ${{ steps.plan.outputs.channel }}
         run: |
           if git diff --quiet -- src/data/release-notes; then
             echo "No data changes."
@@ -92,5 +129,5 @@ jobs:
           git config user.name 'sessionboard-docs bot'
           git config user.email 'docs-bot@sessionboard.com'
           git add src/data/release-notes
-          git commit -m "chore(release-notes): production status $(date -u +%Y-%m-%d)${REQUESTED_BY:+ (requested by $REQUESTED_BY)}"
+          git commit -m "chore(release-notes): production status $(date -u +%Y-%m-%d) [$CHANNEL]${REQUESTED_BY:+ (requested by $REQUESTED_BY)}"
           git push origin HEAD:refs/heads/main

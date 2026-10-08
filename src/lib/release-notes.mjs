@@ -321,6 +321,7 @@ export function validateEntry(entry, date, contract, { file = '' } = {}) {
     pending: null,
     live: { us: null, eu: null, me: null },
     announced_at: null,
+    emailed_at: null,
     ...(entry.shipped || {}),
   };
   entry.shipped.live = { us: null, eu: null, me: null, ...(entry.shipped.live || {}) };

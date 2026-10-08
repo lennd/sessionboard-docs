@@ -165,7 +165,13 @@ const regionCell = (r) => (live[r] ? `Live since ${live[r]}` : r === 'me' ? 'Pen
         </p>
       )}
       {entry.shipped?.docs_only && <p class="sb-muted">Documentation-only change; nothing to deploy.</p>}
-      {entry.shipped?.announced_at && <p class="sb-muted">Posted to Slack {entry.shipped.announced_at}.</p>}
+      {(entry.shipped?.announced_at || entry.shipped?.emailed_at) && (
+        <p class="sb-muted">
+          {[entry.shipped.announced_at && `Posted to Slack ${entry.shipped.announced_at}`, entry.shipped.emailed_at && `emailed ${entry.shipped.emailed_at}`]
+            .filter(Boolean)
+            .join('; ')}.
+        </p>
+      )}
     </div>
 
     {entry.internal?.gotchas && (
