@@ -5,8 +5,11 @@
  * What's New drafts and Team Lead's "since you were last here" read.
  *
  * Served behind the same bearer token as help-index.json (worker.js
- * INTERNAL_PREFIX). Public fields only: `internal.*` is stripped before this
- * file exists, so a leaked token cannot leak CS notes or staff paths.
+ * INTERNAL_PREFIX). Raw `internal.*` is stripped; what the hub shows per item
+ * is the `enablement` block — the same seven line items as the entry's
+ * /enablement/releases/<id> page (why, when, who, CS action, turn on, where,
+ * show the customer), which is itself unlisted but public. Entries therefore
+ * never hold anything sensitive; that goes in Jira or Slack.
  *
  *   npm run build && node scripts/build-release-feed.mjs
  */
@@ -14,6 +17,7 @@
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
+import { enablementFacts } from '../src/lib/release-digest.mjs';
 import {
   AVAILABILITY,
   ENABLE_HOW,
@@ -29,7 +33,7 @@ import {
 
 const DIST = join(ROOT, 'dist');
 const OUT = join(DIST, '_internal', 'release-notes.json');
-const FEED_VERSION = 1;
+const FEED_VERSION = 2;
 
 if (!existsSync(DIST)) {
   console.error('\n✖ No dist/ — run `npm run build` first.\n');
@@ -55,6 +59,7 @@ const entries = allEntries(releases).map((raw) => {
     article_title: e.article ? articleTitle(e.article) : null,
     article_url: e.article ? `${base}${e.article}` : null,
     live: isLive(raw),
+    enablement: enablementFacts(raw, { base, site }),
   };
 });
 

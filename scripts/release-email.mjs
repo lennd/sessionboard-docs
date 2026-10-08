@@ -21,8 +21,8 @@
 import { writeFileSync } from 'node:fs';
 
 import { mediaForEntry, thumbnailFor } from '../src/lib/article-media.mjs';
-import { byModule, csText, enableText, lastSentFor, markSent, pendingFor, shortSummary, whoText } from '../src/lib/release-digest.mjs';
-import { formatDate, internalPrefix, loadReleaseNotes, readSite } from '../src/lib/release-notes.mjs';
+import { byModule, enablementFacts, lastSentFor, markSent, pendingFor, shortSummary } from '../src/lib/release-digest.mjs';
+import { CS_ACTION, formatDate, internalPrefix, loadReleaseNotes, readSite } from '../src/lib/release-notes.mjs';
 
 const DRY = process.argv.includes('--dry-run') || process.argv.includes('--since');
 const arg = (flag) => {
@@ -63,10 +63,10 @@ const sinceLine = lastSent ? `Everything that went live since the last digest on
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const abs = (p) => (p && /^https?:/.test(p) ? p : `${base}${p}`);
 const enablementUrl = (e) => `${base}${prefix}/releases/${e.id}`;
+const CS_COLOR = { must_enable: '#b42318', can_disable: '#b54708', review_before_customers_see: '#175cd3', reach_out: '#027a48' };
 
 // ---------- HTML ----------
 
-const CS_COLOR = { must_enable: '#b42318', can_disable: '#b54708', review_before_customers_see: '#175cd3', reach_out: '#027a48' };
 
 const thumbCell = (e) => {
   const t = thumbnailFor(mediaForEntry(e));
@@ -75,21 +75,48 @@ const thumbCell = (e) => {
   return `<td width="140" valign="top" style="padding:0 16px 0 0"><a href="${enablementUrl(e)}" style="display:block;position:relative;text-decoration:none"><img src="${abs(t.src)}" alt="${esc(t.alt)}" width="140" style="display:block;width:140px;height:92px;object-fit:cover;border-radius:6px;border:1px solid #e4e7ec">${badge}</a></td>`;
 };
 
+const LABEL = 'font:700 10.5px/1 Helvetica,Arial,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#667085;margin:0 0 5px';
+const BOX = 'padding:10px 12px;border:1px solid #eaecf0;border-radius:6px;font:13px/1.5 Helvetica,Arial,sans-serif;color:#344054;vertical-align:top';
+const panel = (label, inner, extra = '') => `<td width="50%" style="${BOX}${extra}"><div style="${LABEL}">${label}</div>${inner}</td>`;
+const gap = '<td width="8" style="padding:0"></td>';
+const row = (cells) => `<tr>${cells.join(gap)}</tr><tr><td colspan="${cells.length * 2 - 1}" style="height:8px;line-height:8px;font-size:0">&nbsp;</td></tr>`;
+const muted = (t) => `<div style="color:#667085">${t}</div>`;
+
+const factsHtml = (e) => {
+  const f = enablementFacts(e, { base });
+  const who = `<strong>${esc(f.who.label)}</strong> — ${esc(f.who.short)}.${f.who.note ? `<div style="margin-top:4px">${esc(f.who.note)}</div>` : ''}${f.who.seen_by.length ? muted(`Seen by: ${esc(f.who.seen_by.join(', '))}`) : ''}`;
+  const csInner = f.cs
+    ? `<strong style="color:${CS_COLOR[f.cs.kind] || '#344054'}">${esc(f.cs.action)}.</strong>${f.cs.note ? `<div style="margin-top:4px">${esc(f.cs.note)}</div>` : ''}`
+    : muted(esc(CS_ACTION.none));
+  const turnOn = `<div><strong>Customer:</strong> ${esc(f.turn_on.customer)}</div>${f.turn_on.staff ? `<div style="margin-top:4px"><strong>Staff:</strong> ${esc(f.turn_on.staff)}</div>` : ''}${f.turn_on.flags.length ? muted(`Feature flag${f.turn_on.flags.length > 1 ? 's' : ''}: ${esc(f.turn_on.flags.join(', '))}`) : ''}`;
+  const where = f.where.scope || f.where.path ? `${f.where.scope ? `<strong>${esc(f.where.scope)}</strong>` : ''}${f.where.scope && f.where.path ? ' — ' : ''}${esc(f.where.path || '')}` : muted('Not specified');
+  const show = [
+    f.show.guide ? `<div><a href="${f.show.guide.url}" style="color:#175cd3">${esc(f.show.guide.title)}</a> <span style="color:#667085">— the customer-facing guide</span></div>` : muted('No guide linked'),
+    ...f.show.related.map((r) => `<div><a href="${r.url}" style="color:#175cd3">${esc(r.title)}</a></div>`),
+    ...f.show.videos.map(
+      (v) =>
+        `<table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:6px"><tr>${v.poster ? `<td width="72" style="padding:0 8px 0 0"><a href="${v.url}"><img src="${v.poster}" alt="" width="72" style="display:block;width:72px;height:44px;object-fit:cover;border-radius:4px;border:1px solid #e4e7ec"></a></td>` : ''}<td style="font:13px/1.4 Helvetica,Arial,sans-serif"><a href="${v.url}" style="color:#175cd3">${esc(v.title)}</a><div style="color:#667085;font-size:12px">${esc(v.kind)}${v.duration ? ` · ${v.duration}s` : ''}</div></td></tr></table>`,
+    ),
+  ].join('');
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate;margin:10px 0 0">
+${f.why ? `<tr><td colspan="3" style="${BOX}background:#f9fafb"><div style="${LABEL}">Why it matters</div>${esc(f.why)}</td></tr><tr><td colspan="3" style="height:8px;line-height:8px;font-size:0">&nbsp;</td></tr>` : ''}
+${row([panel('When to bring it up', f.when ? esc(f.when) : muted('Not written yet')), panel('Who should get it', who)])}
+${row([panel('What CS has to do', csInner, f.cs ? ';border-left:3px solid #f0b429' : ''), panel('Turn it on', turnOn)])}
+${row([panel('Where to find it', where), panel('Show the customer', show)])}
+</table>`;
+};
+
 const cardHtml = (e) => {
-  const cs = csText(e);
-  const links = [`<a href="${enablementUrl(e)}" style="color:#175cd3">Enablement notes</a>`];
-  if (e.article) links.push(`<a href="${base}${e.article}" style="color:#175cd3">Guide</a>`);
+  const f = enablementFacts(e, { base });
   return `
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:0 0 18px"><tr>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:0 0 26px"><tr>
 ${thumbCell(e)}
 <td valign="top" style="font:14px/1.5 Helvetica,Arial,sans-serif;color:#101828">
-  <div style="font-size:16px;font-weight:700;line-height:1.3;margin:0 0 4px"><a href="${enablementUrl(e)}" style="color:#101828;text-decoration:none">${esc(e.title)}</a></div>
-  <div style="color:#667085;font-size:12px;margin:0 0 6px">${esc(e.module || 'Platform')}${e.kind ? ` · ${esc(e.kind)}` : ''}</div>
-  <div style="margin:0 0 8px">${esc(shortSummary(e, 320))}</div>
-  <div style="font-size:13px;color:#344054;margin:0 0 4px"><strong>Who:</strong> ${esc(whoText(e))} &nbsp;·&nbsp; <strong>Turn on:</strong> ${esc(enableText(e))}</div>
-  ${cs ? `<div style="font-size:13px;margin:0 0 6px;color:${CS_COLOR[cs.kind] || '#344054'}"><strong>CS:</strong> ${esc(cs.text)}</div>` : ''}
-  <div style="font-size:13px">${links.join(' &nbsp;·&nbsp; ')}</div>
-</td></tr></table>`;
+  <div style="font-size:16px;font-weight:700;line-height:1.3;margin:0 0 4px"><a href="${f.links.enablement}" style="color:#101828;text-decoration:none">${esc(e.title)}</a></div>
+  <div style="color:#667085;font-size:12px;margin:0 0 6px">${esc(e.module || 'Platform')}${e.kind ? ` · ${esc(e.kind)}` : ''} &nbsp;·&nbsp; <a href="${f.links.enablement}" style="color:#175cd3">Enablement notes</a></div>
+  <div>${esc(shortSummary(e, 400))}</div>
+</td></tr>
+<tr><td colspan="2" style="padding:0">${factsHtml(e)}</td></tr></table>`;
 };
 
 const sectionsHtml = byModule(pending)
@@ -123,15 +150,22 @@ const text = [
   ...byModule(pending).flatMap(([module, entries]) => [
     `== ${module.toUpperCase()} (${entries.length}) ==`,
     ...entries.flatMap((e) => {
-      const cs = csText(e);
+      const f = enablementFacts(e, { base });
       return [
         `* ${e.title}${e.kind ? ` (${e.kind})` : ''}`,
-        `  ${shortSummary(e, 320)}`,
-        `  Who: ${whoText(e)} · Turn on: ${enableText(e)}`,
-        ...(cs ? [`  CS: ${cs.text}`] : []),
-        `  ${enablementUrl(e)}${e.article ? `   Guide: ${base}${e.article}` : ''}`,
+        `  ${shortSummary(e, 400)}`,
+        f.why && `  Why it matters: ${f.why}`,
+        f.when && `  When to bring it up: ${f.when}`,
+        `  Who should get it: ${f.who.label} — ${f.who.short}${f.who.note ? `. ${f.who.note}` : ''}${f.who.seen_by.length ? ` (seen by ${f.who.seen_by.join(', ')})` : ''}`,
+        `  What CS has to do: ${f.cs ? `${f.cs.action}${f.cs.note ? ` — ${f.cs.note}` : ''}` : CS_ACTION.none}`,
+        `  Turn it on: Customer: ${f.turn_on.customer}${f.turn_on.staff ? ` | Staff: ${f.turn_on.staff}` : ''}${f.turn_on.flags.length ? ` | Flag: ${f.turn_on.flags.join(', ')}` : ''}`,
+        (f.where.scope || f.where.path) && `  Where to find it: ${[f.where.scope, f.where.path].filter(Boolean).join(' — ')}`,
+        f.show.guide && `  Show the customer: ${f.show.guide.title} ${f.show.guide.url}`,
+        ...f.show.related.map((r) => `    ${r.title} ${r.url}`),
+        ...f.show.videos.map((v) => `    ▶ ${v.title}${v.duration ? ` (${v.duration}s)` : ''} ${v.url}`),
+        `  Enablement notes: ${f.links.enablement}`,
         '',
-      ];
+      ].filter((l) => l !== null && l !== undefined && l !== false);
     }),
   ]),
 ].join('\n');

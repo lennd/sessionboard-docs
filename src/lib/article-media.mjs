@@ -90,6 +90,7 @@ function videoItems(path, source) {
     start: v.start || 0,
     kind: v.kind,
     anchor: v.anchor,
+    duration: v.duration || 0,
     // Where in the source the embed sits, so a section-scoped gallery can
     // keep the chapter that is embedded in that section and drop the others.
     offset: source ? source.indexOf(v.src) : -1,

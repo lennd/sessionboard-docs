@@ -11,7 +11,78 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { AVAILABILITY, CS_ACTION, DATA_DIR, allEntries, isLive, stripInline } from './release-notes.mjs';
+import { mediaForEntry } from './article-media.mjs';
+import {
+  AVAILABILITY,
+  CS_ACTION,
+  DATA_DIR,
+  ENABLE_HOW,
+  allEntries,
+  articleTitle,
+  internalPrefix,
+  isLive,
+  readContract,
+  readSite,
+  stripInline,
+  videosForArticle,
+} from './release-notes.mjs';
+
+const SCOPE_LABEL = { org: 'Organization', event: 'Event', both: 'Organization and event' };
+const CS_LABEL = { none: 'Nothing', must_enable: 'Must enable', can_disable: 'Can disable', review_before_customers_see: 'Review with customer', reach_out: 'Reach out' };
+
+let _contract;
+/**
+ * The seven panels of an entry's Enablement page as plain data, so the Slack
+ * post, the morning email, the release feed and the TAM Hub all carry the same
+ * line items a CSM sees on /enablement/releases/<id>: why it matters, when to
+ * bring it up, who should get it, what CS has to do, how to turn it on
+ * (customer and staff), where to find it, and what to show the customer
+ * (guide, related guides, the pertinent training chapter or clip).
+ */
+export function enablementFacts(entry, { base = null, site = readSite() } = {}) {
+  _contract ||= readContract();
+  const host = base || `https://${site.canonicalHost}`;
+  const prefix = internalPrefix(site);
+  const abs = (p) => (p ? (/^https?:/.test(p) ? p : `${host}${p}`) : null);
+  const i = entry.internal || {};
+  const csKind = i.cs_action?.kind || 'none';
+  const flags = (entry.features || []).map((f) => _contract.featureNames?.[f] || f);
+
+  const pertinent = mediaForEntry(entry).filter((m) => m.type === 'video');
+  const videos = (pertinent.length ? pertinent : entry.article ? videosForArticle(entry.article) : []).map((v) => ({
+    title: v.title || 'Watch the walkthrough',
+    url: abs(v.anchor || (entry.article ? entry.article.replace(/#.*$/, '') : null)),
+    kind: v.kind === 'training' || v.id ? 'Training chapter' : 'Walkthrough clip',
+    duration: v.duration ? Math.round(v.duration) : null,
+    poster: abs(v.poster),
+  }));
+  for (const v of i.videos || []) videos.push({ title: v.title || v.url || v, url: v.url || v, kind: 'Video', duration: null, poster: null });
+
+  return {
+    why: entry.use_case || null,
+    when: i.when_to_bring_up || null,
+    who: {
+      label: AVAILABILITY[entry.availability]?.label || 'Everyone',
+      short: AVAILABILITY[entry.availability]?.short || 'On for every organization',
+      note: i.who_should_get_it || null,
+      seen_by: entry.audience || [],
+    },
+    cs: csKind === 'none' ? null : { kind: csKind, label: CS_LABEL[csKind] || csKind, action: CS_ACTION[csKind], note: i.cs_action?.note || null },
+    turn_on: {
+      customer: `${ENABLE_HOW[entry.enable?.how] || 'See the guide'}${entry.enable?.path ? ` — ${entry.enable.path}` : ''}`,
+      staff: i.staff_path || null,
+      flags,
+    },
+    where: { scope: SCOPE_LABEL[entry.where?.scope] || null, path: entry.where?.path || null },
+    show: {
+      guide: entry.article ? { title: articleTitle(entry.article), url: abs(entry.article) } : null,
+      related: (entry.related || []).map((r) => ({ title: articleTitle(r), url: abs(r) })),
+      videos,
+    },
+    gotchas: i.gotchas || null,
+    links: { enablement: `${host}${prefix}/releases/${entry.id}`, release: `${host}/help/release-notes#${entry.id}` },
+  };
+}
 
 export const CHANNELS = {
   slack: { field: 'announced_at', label: 'Slack' },

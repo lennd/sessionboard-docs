@@ -9,18 +9,19 @@
  * never mentioned: a CSM who reads the channel should be able to open any
  * customer's org and find the thing.
  *
- * Each card is deliberately short — what, module, who gets it, how to turn it
- * on, and a CS flag when CS has to do something — and links to the internal
- * enablement page for the full story (why it is valuable, when to bring it up,
- * who should get it, the staff path, videos, gotchas) and to the public guide.
+ * Each card carries the same seven line items as the entry's Enablement page
+ * (src/lib/release-digest.mjs enablementFacts): why it matters, when to bring
+ * it up, who should get it, what CS has to do, how to turn it on (customer
+ * and staff), where to find it, and what to show the customer — guide,
+ * related guides and the pertinent training chapter — plus a link to the page.
  *
  *   SLACK_PRODUCT_UPDATES_WEBHOOK_URL=… node scripts/release-slack.mjs
  *   node scripts/release-slack.mjs --dry-run      # print the payload, post nothing, write nothing
  *   node scripts/release-slack.mjs --since 2026-10-01   # dry-run preview of what a day's digest looks like
  */
 
-import { formatDate, internalPrefix, loadReleaseNotes, readSite } from '../src/lib/release-notes.mjs';
-import { CS_EMOJI, byModule, csText, enableText, markSent, pendingFor, shortSummary, whoText } from '../src/lib/release-digest.mjs';
+import { CS_ACTION, formatDate, internalPrefix, loadReleaseNotes, readSite } from '../src/lib/release-notes.mjs';
+import { CS_EMOJI, byModule, csText, enablementFacts, markSent, pendingFor, shortSummary } from '../src/lib/release-digest.mjs';
 
 const DRY = process.argv.includes('--dry-run') || process.argv.includes('--since');
 const sinceIdx = process.argv.indexOf('--since');
@@ -47,17 +48,32 @@ if (pending.length === 0) {
 const today = new Date().toISOString().slice(0, 10);
 
 const card = (e) => {
-  const lines = [
-    `*<${base}${prefix}/releases/${e.id}|${e.title}>*  ·  ${e.module || 'Platform'}${e.kind ? ` · ${e.kind}` : ''}`,
-    shortSummary(e),
-    `• *Who:* ${whoText(e)}   • *Turn on:* ${enableText(e)}`,
-  ];
+  const f = enablementFacts(e, { base });
   const cs = csText(e);
-  if (cs) lines.push(`• ${CS_EMOJI[cs.kind] || ':information_source:'} *CS:* ${cs.text}`);
-  const links = [`<${base}${prefix}/releases/${e.id}|Enablement notes>`];
-  if (e.article) links.push(`<${base}${e.article}|Guide>`);
-  lines.push(links.join('  ·  '));
-  return { type: 'section', text: { type: 'mrkdwn', text: lines.join('\n') } };
+  const who = `${f.who.label} — ${f.who.short}${f.who.note ? `. ${f.who.note}` : ''}${f.who.seen_by.length ? `  _(seen by ${f.who.seen_by.join(', ')})_` : ''}`;
+  const turnOn = [`Customer: ${f.turn_on.customer}`, f.turn_on.staff && `Staff: ${f.turn_on.staff}`, f.turn_on.flags.length && `Flag: ${f.turn_on.flags.join(', ')}`].filter(Boolean).join('  ·  ');
+  const where = f.where.path || f.where.scope ? `${f.where.scope || ''}${f.where.scope && f.where.path ? ' — ' : ''}${f.where.path || ''}` : null;
+  const show = [
+    f.show.guide && `<${f.show.guide.url}|${f.show.guide.title}>`,
+    ...f.show.related.map((r) => `<${r.url}|${r.title}>`),
+    ...f.show.videos.map((v) => `<${v.url}|▶ ${v.title}>${v.duration ? ` (${v.duration}s)` : ''}`),
+  ].filter(Boolean);
+  const lines = [
+    `*<${f.links.enablement}|${e.title}>*  ·  ${e.module || 'Platform'}${e.kind ? ` · ${e.kind}` : ''}`,
+    shortSummary(e),
+    f.why && `• *Why it matters:* ${f.why}`,
+    f.when && `• *When to bring it up:* ${f.when}`,
+    `• *Who should get it:* ${who}`,
+    `• ${cs ? CS_EMOJI[cs.kind] || ':information_source:' : ':white_check_mark:'} *What CS has to do:* ${cs ? cs.text : CS_ACTION.none}`,
+    `• *Turn it on:* ${turnOn}`,
+    where && `• *Where to find it:* ${where}`,
+    show.length && `• *Show the customer:* ${show.join('  ·  ')}`,
+    `<${f.links.enablement}|Enablement notes>`,
+  ].filter(Boolean);
+  // A Slack section holds 3000 characters; trim the tail rather than fail the post.
+  let text = lines.join('\n');
+  if (text.length > 2900) text = `${text.slice(0, 2880)}…\n<${f.links.enablement}|Read the rest on Enablement>`;
+  return { type: 'section', text: { type: 'mrkdwn', text } };
 };
 
 // Slack caps a message at 50 blocks; group by module so a big day still reads.
