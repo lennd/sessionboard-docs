@@ -19,12 +19,17 @@ import {
   publicEntry,
   renderInline,
 } from '../lib/release-notes.mjs';
+import { mediaForArticle } from '../lib/article-media.mjs';
+import MediaGallery from './MediaGallery.astro';
 
 const { releases, problems } = loadReleaseNotes();
 if (problems.length) {
   throw new Error(`release notes are invalid:\n${problems.join('\n')}\nRun node scripts/check-release-notes.mjs`);
 }
-const live = liveReleases(releases).map((r) => ({ date: r.date, entries: r.entries.map(publicEntry) }));
+const live = liveReleases(releases).map((r) => ({
+  date: r.date,
+  entries: r.entries.map((e) => ({ ...publicEntry(e), media: e.article ? mediaForArticle(e.article) : [] })),
+}));
 const modulesPresent = MODULES.filter((m) => live.some((r) => r.entries.some((e) => e.module === m)));
 
 const enableLine = (entry) => {
@@ -51,7 +56,13 @@ const enableLine = (entry) => {
       <h2 id={release.date}>{formatDate(release.date)}</h2>
       <ul class="sb-rn-list">
         {release.entries.map((entry) => (
-          <li class="sb-rn-entry" data-sb-rn-entry data-module={entry.module || ''} id={entry.id}>
+          <li class:list={['sb-rn-entry', entry.media.length > 0 && 'sb-rn-entry--media']} data-sb-rn-entry data-module={entry.module || ''} id={entry.id}>
+            {entry.media.length > 0 && (
+              <div class="sb-rn-media">
+                <MediaGallery media={entry.media} label={entry.title} />
+              </div>
+            )}
+            <div class="sb-rn-body">
             <div class="sb-rn-head">
               <h3 class="sb-rn-title">{entry.title}</h3>
               <span class="sb-rn-badges">
@@ -93,6 +104,7 @@ const enableLine = (entry) => {
                 )}
               </dl>
             )}
+            </div>
           </li>
         ))}
       </ul>
@@ -175,6 +187,32 @@ const enableLine = (entry) => {
   .sb-rn-entry + .sb-rn-entry {
     margin-top: 0.75rem;
   }
+  /* Entries whose guide has screenshots or a video get a thumbnail column;
+     the rest stay full width rather than carrying an empty slot. */
+  .sb-rn-entry--media {
+    display: grid;
+    grid-template-columns: 11rem minmax(0, 1fr);
+    gap: 1.1rem;
+  }
+  .sb-rn-media,
+  .sb-rn-body {
+    margin: 0 !important;
+    min-width: 0;
+  }
+  .sb-rn-media {
+    padding-top: 0.15rem;
+  }
+  .sb-rn-body > :first-child {
+    margin-top: 0 !important;
+  }
+  @media (max-width: 50rem) {
+    .sb-rn-entry--media {
+      grid-template-columns: 1fr;
+    }
+    .sb-rn-media .sb-gal-thumb {
+      max-width: 16rem;
+    }
+  }
   .sb-rn-head {
     display: flex;
     flex-wrap: wrap;
@@ -238,11 +276,16 @@ const enableLine = (entry) => {
     border-top: 1px dashed var(--sl-color-hairline);
     font-size: var(--sl-text-sm);
   }
+  /* Starlight's `* + *` content rule adds margin-top to every dt/dd, which
+     knocks the two grid columns out of step — kill it here. */
+  :global(.sl-markdown-content) .sb-rn-facts > dt,
+  :global(.sl-markdown-content) .sb-rn-facts > dd {
+    margin: 0 !important;
+    align-self: start;
+    line-height: 1.5;
+  }
   .sb-rn-facts dt {
     font-weight: 600;
     color: var(--sl-color-gray-3);
-  }
-  .sb-rn-facts dd {
-    margin: 0;
   }
 </style>

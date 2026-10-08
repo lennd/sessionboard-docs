@@ -7,6 +7,8 @@
 import site from '../../../site.json';
 import { AVAILABILITY, ENABLE_HOW, articleTitle, formatDate, internalPrefix, renderInline, videosForArticle } from '../../lib/release-notes.mjs';
 import { csLabel, csTone, statusOf } from '../../lib/enablement.mjs';
+import { mediaForArticle } from '../../lib/article-media.mjs';
+import MediaGallery from '../MediaGallery.astro';
 
 interface Props {
   entry: any;
@@ -18,6 +20,7 @@ const prefix = internalPrefix(site);
 const status = statusOf(entry);
 const cs = entry.internal?.cs_action?.kind || 'none';
 const videos = entry.article ? videosForArticle(entry.article) : [];
+const media = entry.article ? mediaForArticle(entry.article) : [];
 const enableText = (() => {
   const how = ENABLE_HOW[entry.enable?.how];
   if (entry.enable?.how === 'default_on' && !entry.enable?.path) return how;
@@ -35,6 +38,10 @@ const enableText = (() => {
   data-kind={entry.kind || ''}
   id={entry.id}
 >
+  <div class="sb-en-card-media">
+    <MediaGallery media={media} label={entry.title} emptyHint={entry.article ? 'No screenshots in the guide yet' : 'No guide linked'} />
+  </div>
+  <div class="sb-en-card-body">
   <div class="sb-en-card-head">
     <h3 class="sb-en-card-title">
       <a href={`${prefix}/releases/${entry.id}`}>{entry.title}</a>
@@ -83,4 +90,5 @@ const enableText = (() => {
       </a>
     )}
   </p>
+  </div>
 </li>

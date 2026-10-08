@@ -43,7 +43,7 @@ function findRoot() {
 
 export const ROOT = findRoot();
 export const DATA_DIR = join(ROOT, 'src', 'data', 'release-notes');
-const DOCS_DIR = join(ROOT, 'src', 'content', 'docs');
+export const DOCS_DIR = join(ROOT, 'src', 'content', 'docs');
 
 /** Entries dated on or after this day must carry every field; earlier ones were migrated from prose. */
 export const CUTOVER = '2026-10-07';

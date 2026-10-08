@@ -1,0 +1,491 @@
+---
+/**
+ * A gallery of an article's media — videos first, then screenshots — behind
+ * either a single thumbnail (release notes, Enablement cards) or a grid
+ * (<Gallery /> inside an article). Clicking opens one shared lightbox per
+ * page: arrows / keys to thumb through, a filmstrip underneath, videos play
+ * in place from the chapter marker the article was scripted from.
+ *
+ * Items come from mediaForArticle(); nothing is curated by hand.
+ */
+import { thumbnailFor } from '../lib/article-media.mjs';
+
+interface Props {
+  media: any[];
+  /** Accessible label — usually the entry or article title. */
+  label: string;
+  variant?: 'thumb' | 'grid';
+  /** Shown in the empty thumb slot when an article has no media yet. */
+  emptyHint?: string;
+}
+
+const { media = [], label, variant = 'thumb', emptyHint } = Astro.props;
+const thumb = thumbnailFor(media);
+const videos = media.filter((m) => m.type === 'video').length;
+const images = media.length - videos;
+const payload = JSON.stringify(media);
+const countLabel = [videos ? `${videos} video${videos === 1 ? '' : 's'}` : '', images ? `${images} screenshot${images === 1 ? '' : 's'}` : '']
+  .filter(Boolean)
+  .join(' · ');
+---
+
+{
+  variant === 'thumb' && thumb && (
+    <button
+      type="button"
+      class="sb-gal-thumb"
+      data-sb-gallery={payload}
+      data-sb-gallery-label={label}
+      aria-label={`Open gallery for ${label}: ${countLabel}`}
+      title={countLabel}
+    >
+      {thumb.src ? <img src={thumb.src} alt="" loading="lazy" decoding="async" /> : <span class="sb-gal-thumb-blank" />}
+      {thumb.isVideo && <span class="sb-gal-play" aria-hidden="true" />}
+      {media.length > 1 && <span class="sb-gal-count" aria-hidden="true">{media.length}</span>}
+    </button>
+  )
+}
+{
+  variant === 'thumb' && !thumb && emptyHint && (
+    <span class="sb-gal-thumb sb-gal-thumb--empty" title={emptyHint}>
+      <span>{emptyHint}</span>
+    </span>
+  )
+}
+{
+  variant === 'grid' && media.length > 0 && (
+    <div class="sb-gal-grid" role="list" aria-label={`Gallery: ${label}`}>
+      {media.map((m, i) => (
+        <button
+          type="button"
+          role="listitem"
+          class:list={['sb-gal-cell', m.type === 'video' && 'sb-gal-cell--video']}
+          data-sb-gallery={payload}
+          data-sb-gallery-label={label}
+          data-sb-gallery-index={i}
+          aria-label={m.type === 'video' ? `Play: ${m.title}` : m.alt || `Screenshot ${i + 1}`}
+        >
+          {(m.type === 'video' ? m.poster : m.src) ? (
+            <img src={m.type === 'video' ? m.poster : m.src} alt="" loading="lazy" decoding="async" />
+          ) : (
+            <span class="sb-gal-thumb-blank" />
+          )}
+          {m.type === 'video' && <span class="sb-gal-play" aria-hidden="true" />}
+          {m.type === 'video' && m.title && <span class="sb-gal-cell-cap">{m.title}</span>}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+<script>
+  type Item = { type: 'video' | 'image'; src: string; poster?: string | null; alt?: string; title?: string; start?: number };
+
+  let dlg: HTMLDialogElement | null = null;
+  let items: Item[] = [];
+  let index = 0;
+  let label = '';
+
+  const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] as string);
+
+  function ensureDialog(): HTMLDialogElement {
+    if (dlg) return dlg;
+    dlg = document.createElement('dialog');
+    dlg.className = 'sb-gal';
+    dlg.innerHTML = `
+      <div class="sb-gal-bar">
+        <span class="sb-gal-title" data-title></span>
+        <span class="sb-gal-pos" data-pos></span>
+        <button type="button" class="sb-gal-x" data-close aria-label="Close">×</button>
+      </div>
+      <button type="button" class="sb-gal-nav sb-gal-prev" data-prev aria-label="Previous">‹</button>
+      <div class="sb-gal-stage" data-stage></div>
+      <button type="button" class="sb-gal-nav sb-gal-next" data-next aria-label="Next">›</button>
+      <p class="sb-gal-cap" data-cap></p>
+      <div class="sb-gal-strip" data-strip></div>`;
+    document.body.appendChild(dlg);
+    dlg.querySelector('[data-close]')!.addEventListener('click', close);
+    dlg.querySelector('[data-prev]')!.addEventListener('click', () => go(-1));
+    dlg.querySelector('[data-next]')!.addEventListener('click', () => go(1));
+    dlg.addEventListener('click', (e) => {
+      // Backdrop or empty stage space closes; controls and media do not.
+      const t = e.target as HTMLElement;
+      if (t === dlg || t.hasAttribute('data-stage')) close();
+    });
+    dlg.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight') go(1);
+      else if (e.key === 'ArrowLeft') go(-1);
+    });
+    dlg.addEventListener('close', () => stopVideo());
+    return dlg;
+  }
+
+  function stopVideo() {
+    dlg?.querySelector('video')?.pause();
+  }
+
+  function render() {
+    const d = ensureDialog();
+    const it = items[index];
+    if (!it) return;
+    stopVideo();
+    const stage = d.querySelector('[data-stage]')!;
+    if (it.type === 'video') {
+      const start = it.start && it.start > 0 ? `#t=${it.start}` : '';
+      stage.innerHTML = `<video src="${esc(it.src)}${start}" ${it.poster ? `poster="${esc(it.poster)}"` : ''} controls autoplay playsinline preload="metadata"></video>`;
+    } else {
+      stage.innerHTML = `<img src="${esc(it.src)}" alt="${esc(it.alt || '')}" decoding="async">`;
+    }
+    d.querySelector('[data-title]')!.textContent = label;
+    d.querySelector('[data-pos]')!.textContent = `${index + 1} / ${items.length}`;
+    d.querySelector('[data-cap]')!.textContent = it.type === 'video' ? it.title || '' : it.alt || '';
+    (d.querySelector('[data-prev]') as HTMLButtonElement).disabled = items.length < 2;
+    (d.querySelector('[data-next]') as HTMLButtonElement).disabled = items.length < 2;
+
+    const strip = d.querySelector('[data-strip]')!;
+    strip.innerHTML = items
+      .map((m, i) => {
+        const src = m.type === 'video' ? m.poster : m.src;
+        return `<button type="button" class="sb-gal-dot${i === index ? ' is-current' : ''}${m.type === 'video' ? ' is-video' : ''}" data-i="${i}" aria-label="${esc(m.type === 'video' ? m.title || 'Video' : m.alt || `Screenshot ${i + 1}`)}">${src ? `<img src="${esc(src)}" alt="" loading="lazy">` : ''}</button>`;
+      })
+      .join('');
+    strip.querySelectorAll<HTMLButtonElement>('[data-i]').forEach((b) =>
+      b.addEventListener('click', () => {
+        index = Number(b.dataset.i);
+        render();
+      }),
+    );
+    strip.querySelector('.is-current')?.scrollIntoView({ block: 'nearest', inline: 'center' });
+    strip.hidden = items.length < 2;
+  }
+
+  function go(delta: number) {
+    if (items.length < 2) return;
+    index = (index + delta + items.length) % items.length;
+    render();
+  }
+
+  function open(trigger: HTMLElement) {
+    try {
+      items = JSON.parse(trigger.dataset.sbGallery || '[]');
+    } catch {
+      items = [];
+    }
+    if (!items.length) return;
+    label = trigger.dataset.sbGalleryLabel || '';
+    index = Math.min(Number(trigger.dataset.sbGalleryIndex || 0), items.length - 1);
+    const d = ensureDialog();
+    render();
+    if (!d.open) d.showModal();
+  }
+
+  function close() {
+    dlg?.close();
+  }
+
+  document.addEventListener('click', (e) => {
+    const t = (e.target as HTMLElement).closest<HTMLElement>('[data-sb-gallery]');
+    if (!t) return;
+    e.preventDefault();
+    open(t);
+  });
+</script>
+
+<style is:global>
+  /* ── triggers ─────────────────────────────────────────────────────────── */
+  .sb-gal-thumb {
+    position: relative;
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+    border: 1px solid var(--sl-color-hairline);
+    border-radius: 0.5rem;
+    background: var(--sl-color-gray-6);
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .sb-gal-thumb:hover,
+  .sb-gal-cell:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgb(0 0 0 / 0.12);
+  }
+  .sb-gal-thumb img,
+  .sb-gal-cell img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top left;
+  }
+  .sb-gal-thumb--empty {
+    display: grid;
+    place-items: center;
+    cursor: default;
+    color: var(--sl-color-gray-3);
+    font-size: 0.72rem;
+    text-align: center;
+    padding: 0.5rem;
+    background: repeating-linear-gradient(135deg, var(--sl-color-gray-6) 0 6px, var(--sl-color-bg) 6px 12px);
+  }
+  .sb-gal-thumb--empty:hover {
+    transform: none;
+    box-shadow: none;
+  }
+  .sb-gal-thumb-blank {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background: var(--sl-color-gray-5);
+  }
+  .sb-gal-play {
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 50%;
+    background: rgb(0 0 0 / 0.62);
+    box-shadow: 0 0 0 2px rgb(255 255 255 / 0.85);
+  }
+  .sb-gal-play::after {
+    content: '';
+    position: absolute;
+    left: 56%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    border-style: solid;
+    border-width: 0.5rem 0 0.5rem 0.8rem;
+    border-color: transparent transparent transparent #fff;
+  }
+  .sb-gal-count {
+    position: absolute;
+    right: 0.35rem;
+    bottom: 0.35rem;
+    padding: 0.05rem 0.45rem;
+    border-radius: 999px;
+    background: rgb(0 0 0 / 0.7);
+    color: #fff;
+    font-size: 0.68rem;
+    font-weight: 700;
+    line-height: 1.5;
+  }
+
+  .sb-gal-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+    gap: 0.75rem;
+    margin: 1.25rem 0 !important;
+  }
+  .sb-gal-cell {
+    position: relative;
+    display: block;
+    padding: 0;
+    margin: 0 !important;
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+    border: 1px solid var(--sl-color-hairline);
+    border-radius: 0.5rem;
+    background: var(--sl-color-gray-6);
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .sb-gal-cell--video {
+    grid-column: span 2;
+  }
+  .sb-gal-cell-cap {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 1.6rem 0.65rem 0.5rem;
+    background: linear-gradient(transparent, rgb(0 0 0 / 0.75));
+    color: #fff;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-align: left;
+    line-height: 1.3;
+  }
+  @media (max-width: 40rem) {
+    .sb-gal-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  /* ── lightbox ─────────────────────────────────────────────────────────── */
+  .sb-gal {
+    width: min(96vw, 1400px);
+    max-width: none;
+    height: 94vh;
+    max-height: none;
+    margin: auto;
+    padding: 0;
+    border: 0;
+    border-radius: 0.9rem;
+    background: #0f1115;
+    color: #e8eaee;
+    display: grid;
+    grid-template-rows: auto 1fr auto auto;
+    grid-template-columns: 3.25rem 1fr 3.25rem;
+    grid-template-areas:
+      'bar bar bar'
+      'prev stage next'
+      'cap cap cap'
+      'strip strip strip';
+    overflow: hidden;
+  }
+  .sb-gal:not([open]) {
+    display: none;
+  }
+  .sb-gal::backdrop {
+    background: rgb(5 7 12 / 0.82);
+    backdrop-filter: blur(4px);
+  }
+  .sb-gal-bar {
+    grid-area: bar;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.7rem 0.9rem 0.7rem 1.1rem;
+    font-size: 0.9rem;
+  }
+  .sb-gal-title {
+    flex: 1;
+    font-weight: 600;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .sb-gal-pos {
+    color: #9aa1ad;
+    font-variant-numeric: tabular-nums;
+  }
+  .sb-gal-x,
+  .sb-gal-nav {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: #e8eaee;
+    cursor: pointer;
+    font: inherit;
+    line-height: 1;
+  }
+  .sb-gal-x {
+    font-size: 1.6rem;
+    padding: 0 0.35rem;
+    border-radius: 0.4rem;
+  }
+  .sb-gal-x:hover,
+  .sb-gal-nav:hover:not(:disabled) {
+    background: rgb(255 255 255 / 0.08);
+  }
+  .sb-gal-nav {
+    font-size: 2.6rem;
+    padding: 0;
+    align-self: stretch;
+  }
+  .sb-gal-nav:disabled {
+    opacity: 0.2;
+    cursor: default;
+  }
+  .sb-gal-prev {
+    grid-area: prev;
+  }
+  .sb-gal-next {
+    grid-area: next;
+  }
+  .sb-gal-stage {
+    grid-area: stage;
+    display: grid;
+    place-items: center;
+    min-height: 0;
+    min-width: 0;
+    padding: 0.25rem 0;
+  }
+  .sb-gal-stage img,
+  .sb-gal-stage video {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border-radius: 0.4rem;
+    box-shadow: 0 10px 40px rgb(0 0 0 / 0.5);
+  }
+  .sb-gal-stage video {
+    width: 100%;
+    background: #000;
+  }
+  .sb-gal-cap {
+    grid-area: cap;
+    margin: 0;
+    padding: 0.6rem 1.1rem 0.2rem;
+    font-size: 0.85rem;
+    color: #c6cbd3;
+    text-align: center;
+    min-height: 1.4rem;
+  }
+  .sb-gal-strip {
+    grid-area: strip;
+    display: flex;
+    gap: 0.4rem;
+    padding: 0.5rem 1.1rem 0.8rem;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+  .sb-gal-strip[hidden] {
+    display: none;
+  }
+  .sb-gal-dot {
+    flex: none;
+    position: relative;
+    width: 5.5rem;
+    aspect-ratio: 16 / 10;
+    padding: 0;
+    border: 2px solid transparent;
+    border-radius: 0.35rem;
+    overflow: hidden;
+    background: #1b1f27;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.12s ease;
+  }
+  .sb-gal-dot img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top left;
+  }
+  .sb-gal-dot:hover,
+  .sb-gal-dot.is-current {
+    opacity: 1;
+  }
+  .sb-gal-dot.is-current {
+    border-color: #fff;
+  }
+  .sb-gal-dot.is-video::after {
+    content: '▶';
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: #fff;
+    font-size: 0.9rem;
+    text-shadow: 0 1px 4px rgb(0 0 0 / 0.8);
+  }
+  @media (max-width: 40rem) {
+    .sb-gal {
+      width: 100vw;
+      height: 100vh;
+      border-radius: 0;
+      grid-template-columns: 2.4rem 1fr 2.4rem;
+    }
+    .sb-gal-nav {
+      font-size: 2rem;
+    }
+  }
+</style>

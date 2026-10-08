@@ -144,5 +144,6 @@ Copy the newest file as a template; `src/data/release-notes/_config.json` lists 
 
 ## Related pipelines
 
+- **Galleries are derived, never curated.** `src/lib/article-media.mjs` reads an article's own MDX for its training chapters, walkthrough clips and `![]()` screenshots (videos first, then the screenshots from the section an anchor points at, then the rest). That one list drives the thumbnail on every release-notes entry and Enablement card, the "What it looks like" grid on `/enablement/releases/<id>`, and `<Gallery />` inside an article (`<Gallery only="images" />` when the chapter is already embedded above it — put it after the intro, before `## Why use it`). All of them open the same lightbox (`src/components/MediaGallery.astro`: arrows/keys, filmstrip, videos play from the chapter marker). So: to give a release a thumbnail, add a screenshot to its guide — there is no image field on the entry.
 - `walkthroughs/` — auto-generated narrated video clips (spec → Playwright capture → TTS → render → `<Walkthrough>` embed). See `walkthroughs/README.md`.
 - `scripts/` — parity/import tooling.

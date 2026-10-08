@@ -1,0 +1,64 @@
+---
+/**
+ * `<Gallery />` — a thumbnail grid of everything this article shows: its
+ * training chapters and walkthrough clips first, then every screenshot, each
+ * opening the shared lightbox. Nothing to list: the media is read from the
+ * article's own source at build time (lib/article-media.mjs), so it is the
+ * same set the release notes and Enablement cards show for this guide.
+ *
+ * Place it once, usually after the intro and the video. Pass `only="images"`
+ * to skip the videos when the chapter is already embedded directly above.
+ */
+import { mediaForArticle } from '../../lib/article-media.mjs';
+import MediaGallery from '../MediaGallery.astro';
+
+interface Props {
+  /** Defaults to the current page. */
+  article?: string;
+  only?: 'images' | 'videos';
+  title?: string;
+}
+
+const { article, only, title = 'In pictures' } = Astro.props;
+const path = article || Astro.url.pathname.replace(/\.html$/, '').replace(/\/$/, '') || '/';
+let media = mediaForArticle(path);
+if (only === 'images') media = media.filter((m) => m.type === 'image');
+if (only === 'videos') media = media.filter((m) => m.type === 'video');
+const label = title === 'In pictures' ? path.split('/').filter(Boolean).pop()?.replace(/-/g, ' ') || 'Gallery' : title;
+---
+
+{
+  media.length > 0 && (
+    <section class="sb-gallery not-content">
+      <p class="sb-gallery-eyebrow">
+        {title} <span class="sb-gallery-count">{media.length}</span>
+      </p>
+      <MediaGallery media={media} label={label} variant="grid" />
+    </section>
+  )
+}
+
+<style>
+  .sb-gallery {
+    margin: 1.75rem 0;
+  }
+  .sb-gallery-eyebrow {
+    margin: 0 0 0.25rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--sl-color-gray-3);
+  }
+  .sb-gallery-count {
+    display: inline-block;
+    min-width: 1.4em;
+    padding: 0 0.35em;
+    margin-left: 0.2em;
+    border-radius: 999px;
+    background: var(--sl-color-gray-6);
+    color: var(--sl-color-gray-2);
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+</style>
