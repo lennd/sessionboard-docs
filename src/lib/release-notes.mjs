@@ -268,6 +268,17 @@ export function validateEntry(entry, date, contract, { file = '' } = {}) {
   if (!entry.summary || typeof entry.summary !== 'string') at('summary is required');
   if (entry.article && !articleExists(entry.article)) at(`article ${entry.article} does not resolve to an MDX page`);
   for (const r of entry.related || []) if (!articleExists(r)) at(`related ${r} does not resolve to an MDX page`);
+  if (entry.media !== undefined) {
+    if (!Array.isArray(entry.media)) at('media must be an array of image paths / video URLs');
+    else {
+      for (const m of entry.media) {
+        const src = typeof m === 'string' ? m : m?.src;
+        if (!src || typeof src !== 'string') at('media items must be a path string or { src, alt? }');
+        else if (!/^https?:\/\//.test(src) && !existsSync(join(ROOT, 'public', src.replace(/^\//, '').replace(/\?.*$/, ''))))
+          at(`media ${src} does not exist under public/`);
+      }
+    }
+  }
   if (entry.kind && !KINDS.includes(entry.kind)) at(`kind must be one of ${KINDS.join(', ')}`);
   if (entry.module && !MODULES.includes(entry.module)) at(`module "${entry.module}" is not one of ${MODULES.join(', ')}`);
   for (const f of entry.features || []) {
@@ -298,6 +309,7 @@ export function validateEntry(entry, date, contract, { file = '' } = {}) {
   entry.enable = { how: deriveEnableHow(entry.availability), path: null, ...(entry.enable || {}) };
   entry.where = { scope: deriveScope(entry.features, contract), path: null, ...(entry.where || {}) };
   entry.related = entry.related || [];
+  entry.media = entry.media || [];
   entry.features = entry.features || [];
   entry.permissions = entry.permissions || [];
   entry.audience = entry.audience?.length ? entry.audience : ['organizer'];

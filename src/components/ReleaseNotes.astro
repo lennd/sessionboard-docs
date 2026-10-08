@@ -19,7 +19,7 @@ import {
   publicEntry,
   renderInline,
 } from '../lib/release-notes.mjs';
-import { mediaForArticle } from '../lib/article-media.mjs';
+import { mediaForEntry } from '../lib/article-media.mjs';
 import MediaGallery from './MediaGallery.astro';
 
 const { releases, problems } = loadReleaseNotes();
@@ -28,7 +28,7 @@ if (problems.length) {
 }
 const live = liveReleases(releases).map((r) => ({
   date: r.date,
-  entries: r.entries.map((e) => ({ ...publicEntry(e), media: e.article ? mediaForArticle(e.article) : [] })),
+  entries: r.entries.map((e) => ({ ...publicEntry(e), media: mediaForEntry(e) })),
 }));
 const modulesPresent = MODULES.filter((m) => live.some((r) => r.entries.some((e) => e.module === m)));
 
@@ -176,6 +176,11 @@ const enableLine = (entry) => {
     list-style: none;
     padding: 0;
     margin: 0;
+  }
+  /* The date heading sits on top of the first card; Starlight only spaces
+     headings above, so give the list air below it. */
+  :global(.sl-markdown-content) .sb-rn-release > h2 + .sb-rn-list {
+    margin-top: 1.1rem;
   }
   .sb-rn-entry {
     margin: 0 0 1.25rem;

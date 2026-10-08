@@ -7,7 +7,7 @@
 import site from '../../../site.json';
 import { AVAILABILITY, ENABLE_HOW, articleTitle, formatDate, internalPrefix, renderInline, videosForArticle } from '../../lib/release-notes.mjs';
 import { csLabel, csTone, statusOf } from '../../lib/enablement.mjs';
-import { mediaForArticle } from '../../lib/article-media.mjs';
+import { mediaForEntry } from '../../lib/article-media.mjs';
 import MediaGallery from '../MediaGallery.astro';
 
 interface Props {
@@ -20,7 +20,7 @@ const prefix = internalPrefix(site);
 const status = statusOf(entry);
 const cs = entry.internal?.cs_action?.kind || 'none';
 const videos = entry.article ? videosForArticle(entry.article) : [];
-const media = entry.article ? mediaForArticle(entry.article) : [];
+const media = mediaForEntry(entry);
 const enableText = (() => {
   const how = ENABLE_HOW[entry.enable?.how];
   if (entry.enable?.how === 'default_on' && !entry.enable?.path) return how;
@@ -39,7 +39,7 @@ const enableText = (() => {
   id={entry.id}
 >
   <div class="sb-en-card-media">
-    <MediaGallery media={media} label={entry.title} emptyHint={entry.article ? 'No screenshots in the guide yet' : 'No guide linked'} />
+    <MediaGallery media={media} label={entry.title} emptyHint={entry.article ? 'No screenshot for this item — anchor the article link to its section, or add media[] to the entry' : 'No guide linked'} />
   </div>
   <div class="sb-en-card-body">
   <div class="sb-en-card-head">

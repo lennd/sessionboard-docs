@@ -44,18 +44,56 @@ function stripFences(src) {
   return src.replace(FENCE_RE, '');
 }
 
-/** Split MDX into [{ id, text }] by h2–h4; the preamble gets id ''. */
+/** Split MDX into [{ id, level, text }] by h2–h4; the preamble gets id '' and level 1. */
 function sections(src) {
   const out = [];
   let last = 0;
   let id = '';
+  let level = 1;
   for (const m of src.matchAll(HEADING_RE)) {
-    out.push({ id, text: src.slice(last, m.index) });
+    out.push({ id, level, start: last, text: src.slice(last, m.index) });
     id = slugify(m[2]);
+    level = m[1].length;
     last = m.index;
   }
-  out.push({ id, text: src.slice(last) });
+  out.push({ id, level, start: last, text: src.slice(last) });
   return out;
+}
+
+/**
+ * The anchored section plus its subsections — everything up to the next
+ * heading of the same or a higher level. That is "the part of the guide this
+ * link is about".
+ */
+function sectionTree(secs, anchor) {
+  const i = secs.findIndex((s) => s.id === anchor);
+  if (i < 0) return [];
+  const out = [secs[i]];
+  for (let j = i + 1; j < secs.length && secs[j].level > secs[i].level; j++) out.push(secs[j]);
+  return out;
+}
+
+function parseArticlePath(path) {
+  const raw = String(path || '');
+  const anchor = raw.includes('#') ? raw.slice(raw.indexOf('#') + 1) : '';
+  const clean = raw.replace(/#.*$/, '').replace(/^\//, '');
+  const file = join(DOCS_DIR, `${clean}.mdx`);
+  return { anchor, clean, file };
+}
+
+function videoItems(path, source) {
+  return videosForArticle(path).map((v) => ({
+    type: 'video',
+    src: v.src,
+    poster: v.poster || null,
+    title: v.title || '',
+    start: v.start || 0,
+    kind: v.kind,
+    anchor: v.anchor,
+    // Where in the source the embed sits, so a section-scoped gallery can
+    // keep the chapter that is embedded in that section and drop the others.
+    offset: source ? source.indexOf(v.src) : -1,
+  }));
 }
 
 function imagesIn(text) {
@@ -78,24 +116,11 @@ function imagesIn(text) {
  * Returns [] for a missing article so callers never branch on existence.
  */
 export function mediaForArticle(path) {
-  const raw = String(path || '');
-  const anchor = raw.includes('#') ? raw.slice(raw.indexOf('#') + 1) : '';
-  const clean = raw.replace(/#.*$/, '').replace(/^\//, '');
-  const file = join(DOCS_DIR, `${clean}.mdx`);
+  const { anchor, clean, file } = parseArticlePath(path);
   if (!clean || !existsSync(file)) return [];
 
   const source = stripFences(readFileSync(file, 'utf8'));
-
-  const videos = videosForArticle(path).map((v) => ({
-    type: 'video',
-    src: v.src,
-    poster: v.poster || null,
-    title: v.title || '',
-    start: v.start || 0,
-    kind: v.kind,
-    anchor: v.anchor,
-  }));
-
+  const videos = videoItems(path, source).map(({ offset, ...v }) => v);
   const secs = sections(source);
   const seen = new Set();
   const pick = (list) => list.filter((img) => (seen.has(img.src) ? false : (seen.add(img.src), true)));
@@ -108,6 +133,55 @@ export function mediaForArticle(path) {
   const rest = pick(secs.flatMap((s) => imagesIn(s.text)));
 
   return [...videos, ...first, ...rest];
+}
+
+/**
+ * Media for ONE release entry — only what is pertinent to that line item,
+ * never the whole guide:
+ *
+ *   1. `entry.media` when the author listed it: image paths (or video URLs)
+ *      in display order. Alt text is taken from the article when the image
+ *      appears there, else the entry title.
+ *   2. Otherwise, when `entry.article` has an anchor, the screenshots and any
+ *      chapter embedded in that section (and its subsections).
+ *   3. Otherwise nothing. An un-anchored link to a long guide says nothing
+ *      about which screenshots show the change, so the card has no thumbnail
+ *      until someone adds an anchor or a `media` list.
+ */
+export function mediaForEntry(entry) {
+  const article = entry?.article;
+  const { anchor, clean, file } = parseArticlePath(article);
+  const exists = Boolean(clean && existsSync(file));
+  const source = exists ? stripFences(readFileSync(file, 'utf8')) : '';
+  const articleImages = exists ? imagesIn(source) : [];
+
+  if (Array.isArray(entry?.media) && entry.media.length) {
+    const videos = exists ? videoItems(article, source) : [];
+    return entry.media
+      .map((raw) => {
+        const item = typeof raw === 'string' ? { src: raw } : raw || {};
+        if (!item.src) return null;
+        const v = videos.find((x) => x.src === item.src);
+        if (v || /\.(mp4|webm|m3u8)(\?.*)?$/i.test(item.src)) {
+          return { type: 'video', src: item.src, poster: item.poster ?? v?.poster ?? null, title: item.title ?? v?.title ?? entry.title, start: item.start ?? v?.start ?? 0 };
+        }
+        const known = articleImages.find((x) => x.src === item.src);
+        return { type: 'image', src: item.src, alt: item.alt ?? known?.alt ?? entry.title };
+      })
+      .filter(Boolean);
+  }
+
+  if (!exists || !anchor) return [];
+  const tree = sectionTree(sections(source), anchor);
+  if (!tree.length) return [];
+  const lo = tree[0].start;
+  const hi = tree[tree.length - 1].start + tree[tree.length - 1].text.length;
+  const videos = videoItems(article, source)
+    .filter((v) => v.offset >= lo && v.offset < hi)
+    .map(({ offset, ...v }) => v);
+  const seen = new Set();
+  const images = tree.flatMap((s) => imagesIn(s.text)).filter((i) => (seen.has(i.src) ? false : (seen.add(i.src), true)));
+  return [...videos, ...images];
 }
 
 /** The one item a thumbnail shows: the first video's poster, else the first image. */
