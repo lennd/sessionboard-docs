@@ -1006,6 +1006,144 @@
           "lennd/sessionboard-web-org-portal#179"
         ]
       }
+    },
+    {
+      "id": "tahaluf-portal-assignment-campaign-filter",
+      "title": "Email people who have not finished a portal task or form",
+      "summary": "On a campaign's **Recipients** step, **Portal assignment** picks a named portal task or form and **Incomplete** or **Complete**. The live count is people who have that item in that state. A recurring campaign drops people once they finish.",
+      "article": "/communications/email-campaigns#step-3-recipients",
+      "kind": "new",
+      "module": "Communications",
+      "features": ["email_campaigns"],
+      "availability": "everyone",
+      "enable": { "how": "default_on", "path": null },
+      "where": { "scope": "event", "path": "Send → campaign → Recipients → Portal assignment" },
+      "use_case": "Two weeks out, remind only speakers who still owe the speaker agreement, without exporting a column and pasting emails.",
+      "internal": {
+        "cs_action": { "kind": "none", "note": "Ships with the Tahaluf onboarding batch. Confirm the API and UI PRs are both live before telling a customer to look for the filter." },
+        "when_to_bring_up": "Task reminder campaigns; Tahaluf / Informa KSA onboarding.",
+        "who_should_get_it": "Anyone chasing incomplete portal tasks or forms.",
+        "gotchas": "The person must already have the task or form assigned (portal membership or a direct assignment). Complete is also available if they want a thank-you send."
+      },
+      "shipped": {
+        "docs_only": false,
+        "prs": ["lennd/sessionboard-web-api#4393", "lennd/sessionboard-web-ui-v2#917"]
+      }
+    },
+    {
+      "id": "tahaluf-date-window-automation",
+      "title": "Automations can fire when a date has passed or is within N days",
+      "summary": "People automations gain **Date field window**: a daily check on one date field. Enroll when the date has already passed, or when it is within the next N days in the event timezone. Re-enroll is available, same as a field-change trigger.",
+      "article": "/automations/overview#when",
+      "kind": "new",
+      "module": "Program",
+      "features": ["automations"],
+      "availability": "everyone",
+      "enable": { "how": "default_on", "path": null },
+      "where": { "scope": "event", "path": "Automations → People recipe → When → Date field window" },
+      "use_case": "Visa expiry or membership end should email the person the day it matters, even if nobody edited the field that day.",
+      "internal": {
+        "cs_action": { "kind": "none", "note": "Daily cron WORKFLOW_DATE_WINDOW_CRON (15 6 * * * by default). Cap 500 enrollments per scan." },
+        "when_to_bring_up": "Date-driven reminders that are not a field change.",
+        "who_should_get_it": "Medical/scientific events with visa, membership or disclosure dates.",
+        "gotchas": "Blank dates never match. The check uses the event timezone. Sessions automations do not get this trigger."
+      },
+      "shipped": {
+        "docs_only": false,
+        "prs": ["lennd/sessionboard-web-api#4393", "lennd/sessionboard-web-ui-v2#917"]
+      }
+    },
+    {
+      "id": "tahaluf-relative-task-due",
+      "title": "Task due dates can start from assignment or the request email",
+      "summary": "On a portal task's **Edit Settings**, **Due date relative to assignment** stamps a personal due date N days after the person is assigned, or after the assignment email is sent. Dates already set on a person are left alone. Preview and send-test do not stamp.",
+      "article": "/portals/portals-101#assign-items",
+      "kind": "new",
+      "module": "Program",
+      "features": ["new_portals"],
+      "availability": "everyone",
+      "enable": { "how": "default_on", "path": null },
+      "where": { "scope": "event", "path": "Program → Portals → Edit Tasks → task pencil → Due date relative to assignment" },
+      "use_case": "A speaker added late gets 14 days from their invite, instead of sharing last month's portal-wide due date.",
+      "internal": {
+        "cs_action": { "kind": "none", "note": "Needs the Config_Set_Tasks due_offset migration. Changing N later does not rewrite existing Record_Assigned_Task.close_date rows." },
+        "when_to_bring_up": "Rolling speaker adds; Informa KSA / Tahaluf onboarding.",
+        "who_should_get_it": "Events that add speakers over weeks, not all at once.",
+        "gotchas": "A shared Due Date on the task is still the fallback. Preview/send-test never stamp. Email stamp runs only on the live assignment email."
+      },
+      "shipped": {
+        "docs_only": false,
+        "prs": ["lennd/sessionboard-web-api#4393", "lennd/sessionboard-web-ui-v2#917"]
+      }
+    },
+    {
+      "id": "tahaluf-country-list-and-phone-default",
+      "title": "Hide or rename countries, and empty phones start on the event country",
+      "summary": "Organization **Details** has **Country list**: hide or rename countries on the system Country field for every event. Stored ISO codes stay the same. An empty phone input now starts on the event's country, from language and timezone.",
+      "article": "/concepts/custom-field-type-reference#contact-and-link-types",
+      "kind": "improved",
+      "module": "Settings",
+      "features": ["crm"],
+      "availability": "everyone",
+      "enable": { "how": "setting", "path": "Organization settings → Details → Country list" },
+      "where": { "scope": "org", "path": "Organization settings → Details; any Country or Phone field" },
+      "use_case": "A KSA meeting can show Saudi Arabia as KSA and hide countries they never collect, while a new phone field opens on +966.",
+      "internal": {
+        "cs_action": { "kind": "none", "note": "Hide does not delete saved values — they stay readable. Renames are display-only." },
+        "when_to_bring_up": "Tahaluf / GCC events; any org that wants a shorter country list.",
+        "who_should_get_it": "International orgs that do not want the full ISO list on forms.",
+        "gotchas": "Need Organization Settings update permission. Phone default is a starting country, not a locked country."
+      },
+      "shipped": {
+        "docs_only": false,
+        "prs": ["lennd/sessionboard-web-api#4393", "lennd/sessionboard-web-ui-v2#917"]
+      }
+    },
+    {
+      "id": "tahaluf-send-date-tags-and-formula-dates",
+      "title": "Email Send Date merge tags, and days-until on formula fields",
+      "summary": "Campaigns can insert **Email Send Date** and **+ 7 / 14 / 30 Days**, resolved when the email actually goes out — a recurring campaign uses that run's day. Formula fields can use `days_until` and `add_days` on a date field and still store a number.",
+      "article": "/communications/email-campaigns#merge-tags-reference",
+      "kind": "new",
+      "module": "Communications",
+      "features": ["email_campaigns"],
+      "availability": "everyone",
+      "enable": { "how": "default_on", "path": null },
+      "where": { "scope": "event", "path": "Send → campaign → Basic info → Merge tags; Settings → Fields → Formula" },
+      "use_case": "A weekly reminder can say reply by the send date plus seven days without rewriting the draft each week, and a Days until visa expiry column stays a number.",
+      "internal": {
+        "cs_action": { "kind": "none", "note": "Send-date tags resolve at send, not preview-as-draft-day. Formula date helpers are UTC whole days." },
+        "when_to_bring_up": "Recurring campaigns with a reply-by line; visa or membership countdown columns.",
+        "who_should_get_it": "Anyone writing date-relative email copy or countdown fields.",
+        "gotchas": "add_days still returns a number (days from today to date+N), not a new date string."
+      },
+      "shipped": {
+        "docs_only": false,
+        "prs": ["lennd/sessionboard-web-api#4393", "lennd/sessionboard-web-ui-v2#917"]
+      }
+    },
+    {
+      "id": "tahaluf-add-to-session-from-contact",
+      "title": "Add a contact to a session from their Program tab",
+      "summary": "On a contact, the **Program** tab has **Add to session**. Pick the session and role without opening the session first. Adding them to the event also queues portal membership so Assigned Portal and tasks catch up without re-saving portal filters.",
+      "article": "/speakers/create-assign-speakers#2-assign-them-to-a-session",
+      "kind": "new",
+      "module": "CRM",
+      "features": ["crm"],
+      "availability": "everyone",
+      "enable": { "how": "default_on", "path": null },
+      "where": { "scope": "event", "path": "CRM → contact → Program → Add to session" },
+      "use_case": "A CSM already looking at a speaker can put them on the keynote from the contact, instead of hunting the session Participants tab.",
+      "internal": {
+        "cs_action": { "kind": "none", "note": "Hidden when the contact is on no event. Portal sync is the Event_Module_Records hook (SB-9633)." },
+        "when_to_bring_up": "Assigned Portal stayed empty after adding a contact to the event.",
+        "who_should_get_it": "Anyone building a program from the contact side.",
+        "gotchas": "The contact must already be on the event. Role list is the event's participant roles."
+      },
+      "shipped": {
+        "docs_only": false,
+        "prs": ["lennd/sessionboard-web-api#4393", "lennd/sessionboard-web-ui-v2#917"]
+      }
     }
   ]
 }
