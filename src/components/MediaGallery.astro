@@ -398,17 +398,24 @@ const countLabel = [videos ? `${videos} video${videos === 1 ? '' : 's'}` : '', i
   }
   .sb-gal-stage {
     grid-area: stage;
-    display: grid;
-    place-items: center;
+    position: relative;
     min-height: 0;
     min-width: 0;
     padding: 0.25rem 0;
+    overflow: hidden; /* a tall image can never run under the caption or strip */
   }
+  /* Absolutely positioned so the media is sized by the stage, not the other
+     way round: `max-height: 100%` on a grid child does not reliably resolve
+     against a 1fr row, and in a short window the image spilled under the
+     caption (unreadable) and the filmstrip. */
   .sb-gal-stage img,
   .sb-gal-stage video {
+    position: absolute;
+    inset: 0.25rem 0;
+    margin: auto;
     display: block;
     max-width: 100%;
-    max-height: 100%;
+    max-height: calc(100% - 0.5rem);
     width: auto;
     height: auto;
     object-fit: contain;
@@ -417,24 +424,32 @@ const countLabel = [videos ? `${videos} video${videos === 1 ? '' : 's'}` : '', i
   }
   .sb-gal-stage video {
     width: 100%;
+    height: calc(100% - 0.5rem);
     background: #000;
   }
   .sb-gal-cap {
     grid-area: cap;
+    position: relative;
+    z-index: 1;
     margin: 0;
     padding: 0.6rem 1.1rem 0.2rem;
     font-size: 0.85rem;
-    color: #c6cbd3;
+    line-height: 1.45;
+    color: #e3e6eb;
     text-align: center;
     min-height: 1.4rem;
+    background: #0f1115;
   }
   .sb-gal-strip {
     grid-area: strip;
+    position: relative;
+    z-index: 1;
     display: flex;
     gap: 0.4rem;
     padding: 0.5rem 1.1rem 0.8rem;
     overflow-x: auto;
     scrollbar-width: thin;
+    background: #0f1115;
   }
   .sb-gal-strip[hidden] {
     display: none;
