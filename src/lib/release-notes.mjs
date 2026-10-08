@@ -248,6 +248,13 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const ID_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const PR_RE = /^(?:lennd\/)?[a-z0-9-]+#\d+$/;
 
+let _statusConfig;
+/** `_config.json`: the repos (and their prod deploy workflows) release-status.mjs knows how to check. */
+export function statusConfig() {
+  if (!_statusConfig) _statusConfig = JSON.parse(readFileSync(join(DATA_DIR, '_config.json'), 'utf8'));
+  return _statusConfig;
+}
+
 function articleExists(path) {
   const clean = String(path).replace(/#.*$/, '').replace(/^\//, '');
   if (!clean) return false;
@@ -296,7 +303,17 @@ export function validateEntry(entry, date, contract, { file = '' } = {}) {
   if (entry.enable?.how && !ENABLE_HOW[entry.enable.how]) at(`enable.how "${entry.enable.how}" unknown`);
   if (entry.where?.scope && !SCOPES.includes(entry.where.scope)) at(`where.scope "${entry.where.scope}" unknown`);
   if (entry.internal?.cs_action?.kind && !CS_ACTION[entry.internal.cs_action.kind]) at(`internal.cs_action.kind "${entry.internal.cs_action.kind}" unknown`);
-  for (const pr of entry.shipped?.prs || []) if (!PR_RE.test(pr)) at(`shipped.prs "${pr}" must look like lennd/sessionboard-web-api#4120`);
+  for (const pr of entry.shipped?.prs || []) {
+    if (!PR_RE.test(pr)) {
+      at(`shipped.prs "${pr}" must look like lennd/sessionboard-web-api#4120`);
+      continue;
+    }
+    // Fail here, at PR time, rather than in the 09:00 status run: every repo a
+    // PR names must have its production deploy workflows in _config.json.
+    const repo = pr.replace(/^lennd\//, '').replace(/#\d+$/, '');
+    const known = statusConfig().repos[statusConfig().aliases[repo] || repo];
+    if (!known) at(`shipped.prs "${pr}": repo ${repo} is not in src/data/release-notes/_config.json — add its publish-prod-* workflows there`);
+  }
   for (const [region, value] of Object.entries(entry.shipped?.live || {})) {
     if (!['us', 'eu', 'me'].includes(region)) at(`shipped.live.${region} is not a region`);
     if (value !== null && !DATE_RE.test(String(value))) at(`shipped.live.${region} must be YYYY-MM-DD or null`);
