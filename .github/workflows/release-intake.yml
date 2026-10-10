@@ -134,7 +134,9 @@ jobs:
 
       - name: Rebuild the drafts branch (main + every unmerged draft) and keep its PR current
         id: pr
-        if: ${{ !inputs.dry_run && steps.draft.outputs.drafted != '0' }}
+        # Every run, not only runs that drafted: a fix on main (a rule, an article)
+        # must reach the carried-over drafts without waiting for the next merge.
+        if: ${{ !inputs.dry_run }}
         env:
           GH_TOKEN: ${{ secrets.GH_RELEASE_STATUS_TOKEN || github.token }}
           JOB_TOKEN: ${{ github.token }}
@@ -147,6 +149,7 @@ jobs:
           else
             echo '[]' > /tmp/prev-drafts.json
           fi
+          [ -f /tmp/release-intake-result.json ] || echo '{"drafts":[],"drafted":[],"skipped":[]}' > /tmp/release-intake-result.json
           git checkout -q -B "$DRAFT_BRANCH" origin/main
           node scripts/release-intake.mjs --apply-drafts /tmp/prev-drafts.json --apply-drafts /tmp/release-intake-result.json
           node scripts/check-release-notes.mjs || echo "::warning::release:check reports problems on the drafts — the PR's CI will show them"
@@ -161,10 +164,21 @@ jobs:
             git checkout -q main
             exit 0
           fi
+          if [ "$had_branch" = 1 ] && git diff --cached --quiet "origin/$DRAFT_BRANCH"; then
+            echo "Drafts branch is already current — nothing to push."
+            git checkout -q main
+            exit 0
+          fi
           git commit -q -m "release-notes: $((n_prev + n_new)) draft entr$([ $((n_prev + n_new)) = 1 ] && echo y || echo ies) awaiting review ($n_new new)"
           git push -q --force origin "HEAD:refs/heads/$DRAFT_BRANCH"
 
           url=$(gh pr list --head "$DRAFT_BRANCH" --base main --state open --json url --jq '.[0].url')
+          if [ -n "$url" ] && [ "$n_new" = 0 ]; then
+            echo "Rebuilt the carried-over drafts on current main: $url"
+            echo "url=$url" >> "$GITHUB_OUTPUT"
+            git checkout -q main
+            exit 0
+          fi
           body_file=/tmp/pr-body.md
           {
             echo "Drafts written by \`scripts/release-intake.mjs\` from merged product PRs. Each entry carries \`internal.draft\` (model, confidence, docs gap). **Review the copy, fix anything CI flags, and merge** — merging publishes nothing by itself; every entry still waits for its PR to reach production."
