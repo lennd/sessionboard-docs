@@ -179,6 +179,7 @@ If it is user-visible, draft ONE release entry as JSON that follows the schema e
 - The products are named Dispatch and Advocacy — never "Amplify" in anything a human reads.
 - "article" MUST be a path from the article index you are given, optionally with "#" + one of its listed headings turned into a slug (lowercase, spaces → hyphens, punctuation removed). Choose the guide that documents the surface the PR changed. If no guide covers it, still pick the closest one and set "docs_gap" to one sentence saying what the guide should add.
 - "features" are slugs from the feature list, only when the change belongs to that feature.
+- "permissions" are exact slugs from the permission list (e.g. event.contacts.read) that a user must hold to use the change. Leave it [] unless the PR names a permission check; never write prose there.
 - "kind": new = a capability that did not exist; improved = an existing capability does more or reads better; fixed = behaviour that was wrong now works.
 - "use_case": one or two sentences a customer success manager could say to a customer about why they would want this.
 - "internal" is for staff only: cs_action.kind ∈ ${Object.keys(CS_ACTION).join(' | ')}; when_to_bring_up, who_should_get_it, gotchas, talk_track are short sentences.
@@ -190,6 +191,18 @@ If it is user-visible, draft ONE release entry as JSON that follows the schema e
 Answer with JSON only, no prose, in one of these two shapes:
 {"decision":"skip","reason":"<one sentence>"}
 {"decision":"entry","confidence":"high|medium|low","docs_gap":"<sentence or null>","entry":{ ... }}`;
+
+/** 246 slugs folded to one line per resource: `event.contacts: create, delete, export, read, update`. */
+function permissionIndex() {
+  const groups = new Map();
+  for (const slug of contract.permissions || []) {
+    const i = slug.lastIndexOf('.');
+    const [res, action] = i > 0 ? [slug.slice(0, i), slug.slice(i + 1)] : [slug, ''];
+    if (!groups.has(res)) groups.set(res, []);
+    if (action) groups.get(res).push(action);
+  }
+  return [...groups].map(([res, actions]) => `${res}: ${actions.join(', ')}`).join('\n');
+}
 
 function userPrompt({ pr, files, p, articles, features, example }) {
   const fileList = files
@@ -245,10 +258,35 @@ function userPrompt({ pr, files, p, articles, features, example }) {
     '## Feature slugs',
     features.join('\n'),
     '',
+    '## Permission slugs (scope.resource: actions)',
+    permissionIndex(),
+    '',
     '## Article index (path | title | h2 headings)',
     articles.map((a) => `${a.path} | ${a.title} | ${a.headings.join('; ')}`).join('\n'),
   ].join('\n');
 }
+
+/**
+ * The answer comes back as a forced tool call, so the model never has to hand-escape
+ * JSON inside a text block (three of the first fifteen drafts died on a stray quote).
+ * The schema is deliberately loose on `entry`; validateEntry is the real gate.
+ */
+const DECISION_TOOL = {
+  name: 'release_decision',
+  description: 'Record whether the pull request is user-visible and, if so, the drafted release entry.',
+  input_schema: {
+    type: 'object',
+    additionalProperties: false,
+    required: ['decision'],
+    properties: {
+      decision: { type: 'string', enum: ['skip', 'entry'] },
+      reason: { type: 'string', description: 'skip only: one sentence' },
+      confidence: { type: 'string', enum: ['high', 'medium', 'low'] },
+      docs_gap: { type: ['string', 'null'] },
+      entry: { type: 'object', additionalProperties: true },
+    },
+  },
+};
 
 async function askModel(system, user) {
   const key = process.env.ANTHROPIC_API_KEY;
@@ -257,13 +295,25 @@ async function askModel(system, user) {
   const res = await fetch(`${base}/v1/messages`, {
     method: 'POST',
     headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-    body: JSON.stringify({ model: MODEL, max_tokens: 4000, temperature: 0, system, messages: [{ role: 'user', content: user }] }),
+    body: JSON.stringify({
+      model: MODEL,
+      max_tokens: 4000,
+      temperature: 0,
+      system,
+      tools: [DECISION_TOOL],
+      tool_choice: { type: 'tool', name: DECISION_TOOL.name },
+      messages: [{ role: 'user', content: user }],
+    }),
   });
   if (!res.ok) throw new Error(`anthropic ${res.status}: ${(await res.text()).slice(0, 300)}`);
   const data = await res.json();
+  const call = (data.content || []).find((c) => c.type === 'tool_use' && c.name === DECISION_TOOL.name);
+  if (call && call.input && typeof call.input === 'object') return call.input;
+  // A stub or an older model may still answer in text; take the first JSON object in it.
   const text = (data.content || []).map((c) => c.text || '').join('');
   const json = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
   const start = json.indexOf('{');
+  if (start < 0) throw new Error(`model returned no decision (stop_reason ${data.stop_reason})`);
   return JSON.parse(json.slice(start));
 }
 
@@ -286,7 +336,14 @@ function cleanEntry(raw, p, meta) {
   e.shipped = { prs: [p.ref], docs_only: false, live: { us: null, eu: null, me: null } };
   if (e.enable && e.enable.path == null && e.enable.how === 'default_on') delete e.enable.path;
   if (e.availability && !AVAILABILITY[e.availability]) delete e.availability;
-  e.internal = { ...(e.internal || {}), draft: { by: 'release-intake', model: MODEL, confidence: meta.confidence || null, docs_gap: meta.docs_gap || null, at: new Date().toISOString() } };
+  // Permissions are contract slugs (event.contacts.read …). The model tends to write
+  // prose here; keep the prose for the reviewer instead of shipping a validation problem.
+  const known = new Set(contract.permissions || []);
+  const dropped = (Array.isArray(e.permissions) ? e.permissions : []).filter((x) => !known.has(x));
+  e.permissions = (Array.isArray(e.permissions) ? e.permissions : []).filter((x) => known.has(x));
+  const draft = { by: 'release-intake', model: MODEL, confidence: meta.confidence || null, docs_gap: meta.docs_gap || null, at: new Date().toISOString() };
+  if (dropped.length) draft.permissions_to_confirm = dropped;
+  e.internal = { ...(e.internal || {}), draft };
   return e;
 }
 
