@@ -19,6 +19,7 @@
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
+import { mediaForEntry } from '../src/lib/article-media.mjs';
 import { enablementFacts } from '../src/lib/release-digest.mjs';
 import {
   AVAILABILITY,
@@ -51,10 +52,23 @@ if (problems.length) {
 const site = readSite();
 const base = `https://${site.canonicalHost}`;
 
+// Media items are site-relative in the source (`/images/kb/x.png`); the feed is
+// read from other hosts (web-api → What's New, the hub), so make them absolute.
+const absolute = (src) => (src && !/^https?:\/\//i.test(src) ? `${base}${src.startsWith('/') ? '' : '/'}${src}` : src || null);
+const feedMedia = (raw) =>
+  mediaForEntry(raw).map((m) =>
+    m.type === 'video'
+      ? { type: 'video', src: absolute(m.src), poster: absolute(m.poster), title: m.title || raw.title }
+      : { type: 'image', src: absolute(m.src), alt: m.alt || raw.title },
+  );
+
 const entries = allEntries(releases).map((raw) => {
   const e = publicEntry(raw);
   return {
     ...e,
+    // The same gallery the release-notes page shows for the entry: the listed
+    // `media`, else the screenshots in the anchored article section.
+    media: feedMedia(raw),
     summary_text: stripInline(e.summary),
     availability_label: AVAILABILITY[e.availability]?.label ?? null,
     enable_label: enableHowLabel(e.enable?.how, { staff: true }) ?? null,
