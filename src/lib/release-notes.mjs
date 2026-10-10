@@ -75,7 +75,7 @@ export const AVAILABILITY = {
   preview: { label: 'Early Access Preview', short: 'Self-serve from Preview' },
   beta: { label: 'Early Access Beta', short: 'Request from Preview; our team enables it' },
   add_on: { label: 'Add-on', short: 'Sold separately; ask your Customer Success Manager' },
-  on_request: { label: 'On request', short: 'Support enables it for your organization or event', staff: 'CS enables it for the organization or event' },
+  on_request: { label: 'On request', short: 'Your Customer Success Manager enables it for your organization or event', staff: 'CS enables it for the organization or event' },
   limited_release: { label: 'Limited release', short: 'Enabled for named customers by their Customer Success Manager' },
   enterprise: { label: 'Enterprise', short: 'Enterprise plans' },
 };
@@ -85,14 +85,15 @@ export const ENABLE_HOW = {
   default_on: 'On by default — nothing to turn on',
   setting: 'Turn on a setting',
   self_serve: 'Toggle it on from Preview',
-  support: 'Ask support to enable it',
+  support: 'Ask your Customer Success Manager to enable it',
   csm: 'Ask your Customer Success Manager',
 };
 
 /**
  * Staff wording for the enablement section, Slack, email and the hub feed. CS owns
  * enabling features (Jasmine, 2026-10-08) so it can confirm the customer's plan
- * includes it and talk through the use case first; public pages keep `short`.
+ * includes it and talk through the use case first; public pages point customers at
+ * their Customer Success Manager (the `support` key name predates that).
  */
 const ENABLE_HOW_STAFF = { ...ENABLE_HOW, support: 'CS enables it' };
 

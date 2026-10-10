@@ -48,8 +48,8 @@ test('nothing from internal.* reaches the draft', () => {
 
 test('gated availability is spelled out and default-on needs no path', () => {
   const gated = draftFor(entry({ availability: 'on_request', enable: { how: 'support', path: null } }), base);
-  assert.match(gated.detailsMarkdown, /\*\*Who gets it\*\* — On request \(support enables it for your organization or event\)\./);
-  assert.match(gated.detailsMarkdown, /\*\*How to turn it on\*\* — Ask support to enable it\./);
+  assert.match(gated.detailsMarkdown, /\*\*Who gets it\*\* — On request \(your Customer Success Manager enables it for your organization or event\)\./);
+  assert.match(gated.detailsMarkdown, /\*\*How to turn it on\*\* — Ask your Customer Success Manager to enable it\./);
   const on = draftFor(entry({ enable: { how: 'default_on', path: null } }), base);
   assert.match(on.detailsMarkdown, /nothing to turn on/);
 });

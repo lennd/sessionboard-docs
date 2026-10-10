@@ -19,7 +19,7 @@ export function draftFor(entry, base) {
   const whoShort = AVAILABILITY[entry.availability]?.short;
   const lines = [stripInline(entry.summary), ''];
   if (entry.use_case) lines.push(`**Why you'd use it** — ${entry.use_case}`, '');
-  lines.push(`**Who gets it** — ${who}${whoShort && entry.availability !== 'everyone' ? ` (${whoShort.toLowerCase()})` : ''}.`);
+  lines.push(`**Who gets it** — ${who}${whoShort && entry.availability !== 'everyone' ? ` (${whoShort[0].toLowerCase()}${whoShort.slice(1)})` : ''}.`);
   lines.push(`**How to turn it on** — ${enableLine(entry)}`);
   if (entry.where?.path) lines.push(`**Where** — ${entry.where.path}.`);
   lines.push('');

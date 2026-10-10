@@ -371,9 +371,9 @@ function hydrateRoute(el, context) {
 /**
  * Re-point an add-on callout at the reader's own event.
  *
- * On the public site the component already rendered "contact support to enable
- * this". In-product we know whether they have it, so a customer who already
- * owns Awards should not be told to contact support about Awards.
+ * On the public site the component already rendered "ask your Customer Success
+ * Manager to turn it on". In-product we know whether they have it, so a customer
+ * who already owns Awards should not be told to ask about Awards.
  */
 function hydrateAddon(el, context) {
   const slug = el.getAttribute(ATTR.addon);
