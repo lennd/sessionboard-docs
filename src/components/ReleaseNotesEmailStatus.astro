@@ -1,0 +1,149 @@
+---
+/**
+ * Outcome page for release-notes email links (/help/release-notes/email).
+ *
+ * Static HTML; the message is picked client-side from the query string the
+ * Worker redirects with (src/lib/product-updates-proxy.mjs):
+ *   ?result=confirmed | already_confirmed | expired | invalid | check_email |
+ *           unsubscribed | already_unsubscribed | unavailable | error | slow_down
+ *   ?action=unsubscribe&t=<token>   → shows the "Unsubscribe" button (POST)
+ *
+ * Every state is rendered in the HTML and toggled with `hidden`, so the page
+ * reads correctly without JavaScript (the default state asks the visitor to
+ * use the link from their email) and nothing is injected from the URL.
+ */
+import { UNSUBSCRIBE_PATH } from '../lib/product-updates-proxy.mjs';
+---
+
+<div class="sb-rn-email" data-sb-rn-email>
+  <section data-result="confirmed" hidden>
+    <h2>You’re subscribed</h2>
+    <p>Thanks for confirming. On the days something new goes live in Sessionboard, you’ll get one short email with a link to each note here.</p>
+  </section>
+  <section data-result="already_confirmed" hidden>
+    <h2>You were already subscribed</h2>
+    <p>Nothing to do — this address is already on the list.</p>
+  </section>
+  <section data-result="check_email" hidden>
+    <h2>Check your inbox</h2>
+    <p>We sent a link to confirm your subscription. It’s good for 24 hours. If it doesn’t arrive, check your spam folder or try again from the <a href="/help/release-notes#subscribe">release notes</a>.</p>
+  </section>
+  <section data-result="expired" hidden>
+    <h2>That link has expired</h2>
+    <p>Confirmation links are good for 24 hours. Subscribe again from the <a href="/help/release-notes#subscribe">release notes</a> and we’ll send a fresh one.</p>
+  </section>
+  <section data-result="invalid" hidden>
+    <h2>That link isn’t valid</h2>
+    <p>It may have been used already, or copied incompletely. Open the most recent email from us and use the link in it, or subscribe again from the <a href="/help/release-notes#subscribe">release notes</a>.</p>
+  </section>
+  <section data-result="unsubscribed" hidden>
+    <h2>You’ve been unsubscribed</h2>
+    <p>You won’t get release notes by email any more. Changed your mind? You can subscribe again from the <a href="/help/release-notes#subscribe">release notes</a> at any time.</p>
+  </section>
+  <section data-result="already_unsubscribed" hidden>
+    <h2>You’re already unsubscribed</h2>
+    <p>This address isn’t on the list. Nothing more to do.</p>
+  </section>
+  <section data-result="slow_down" hidden>
+    <h2>Too many attempts</h2>
+    <p>Try again in an hour.</p>
+  </section>
+  <section data-result="unavailable" hidden>
+    <h2>Not available right now</h2>
+    <p>Email subscriptions are briefly unavailable. Try again later.</p>
+  </section>
+  <section data-result="error" hidden>
+    <h2>Something went wrong</h2>
+    <p>Try again in a few minutes. If it keeps happening, email <a href="mailto:support@sessionboard.com">support@sessionboard.com</a>.</p>
+  </section>
+
+  <section data-action="unsubscribe" hidden>
+    <h2>Stop receiving release notes by email?</h2>
+    <p>You’ll no longer get the digest. You can subscribe again any time from the release notes page.</p>
+    <form method="post" action={UNSUBSCRIBE_PATH} data-sb-rn-unsubscribe>
+      <input type="hidden" name="t" value="" />
+      <button type="submit" class="sb-rn-email-button">Unsubscribe</button>
+      <a class="sb-rn-email-cancel" href="/help/release-notes">Keep my subscription</a>
+    </form>
+  </section>
+
+  <section data-result="" data-default>
+    <h2>Release notes by email</h2>
+    <p>This page confirms what happened when you used a link from one of our emails. To subscribe, go to the <a href="/help/release-notes#subscribe">release notes</a>.</p>
+  </section>
+
+  <p class="sb-rn-email-back"><a href="/help/release-notes">← Back to the release notes</a></p>
+</div>
+
+<script>
+  const root = document.querySelector<HTMLElement>('[data-sb-rn-email]');
+  if (root) {
+    const params = new URL(location.href).searchParams;
+    const result = params.get('result') ?? '';
+    const action = params.get('action') ?? '';
+    const token = params.get('t') ?? '';
+    const sections = [...root.querySelectorAll<HTMLElement>('section')];
+    let shown: HTMLElement | undefined;
+    if (action === 'unsubscribe' && /^[A-Za-z0-9_-]{16,128}$/.test(token)) {
+      shown = root.querySelector<HTMLElement>('section[data-action="unsubscribe"]') ?? undefined;
+      const field = shown?.querySelector<HTMLInputElement>('input[name="t"]');
+      if (field) field.value = token;
+    } else if (result) {
+      shown = sections.find((s) => s.dataset.result === result) ?? root.querySelector<HTMLElement>('section[data-result="error"]') ?? undefined;
+    }
+    if (shown) {
+      for (const s of sections) s.hidden = s !== shown;
+      const h = shown.querySelector<HTMLElement>('h2');
+      if (h) {
+        h.tabIndex = -1;
+        h.focus({ preventScroll: true });
+        document.title = `${h.textContent} · Sessionboard`;
+      }
+    }
+  }
+</script>
+
+<style>
+  .sb-rn-email section {
+    padding: 1.25rem 1.4rem;
+    border: 1px solid var(--sl-color-hairline);
+    border-radius: 0.9rem;
+    background: var(--sl-color-bg);
+  }
+  :global(.sl-markdown-content) .sb-rn-email section > h2 {
+    margin-top: 0;
+    font-size: var(--sl-text-xl);
+  }
+  :global(.sl-markdown-content) .sb-rn-email section > h2:focus {
+    outline: none;
+  }
+  .sb-rn-email form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1rem;
+    margin-top: 1rem;
+  }
+  .sb-rn-email-button {
+    font: inherit;
+    font-size: var(--sl-text-sm);
+    font-weight: 600;
+    padding: 0.55rem 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--sl-color-red);
+    background: var(--sl-color-red);
+    color: #fff;
+    cursor: pointer;
+  }
+  .sb-rn-email-button:focus-visible {
+    outline: 2px solid var(--sl-color-accent);
+    outline-offset: 2px;
+  }
+  .sb-rn-email-cancel {
+    font-size: var(--sl-text-sm);
+  }
+  .sb-rn-email-back {
+    margin-top: 1.25rem;
+    font-size: var(--sl-text-sm);
+  }
+</style>

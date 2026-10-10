@@ -43,6 +43,12 @@ export const collections = {
     loader: docsLoader(),
     schema: docsSchema({
       extend: z.object({
+        unlisted: z
+          .boolean()
+          .default(false)
+          .describe(
+            'Reachable only from a link we send (e.g. the release-notes email outcome page): noindex, no share card, out of the sitemap. Not the staff enablement section — that is the internalPrefix.',
+          ),
         features: z
           .array(z.enum(FEATURE_IDS))
           .default([])

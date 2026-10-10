@@ -12,6 +12,9 @@ import rehypeAppLinks from './plugins/rehype-app-links.mjs';
 // Starlight adds @astrojs/sitemap itself unless one is configured here, so
 // this is the only way to keep those URLs out of sitemap.xml.
 const INTERNAL = `https://${site.canonicalHost}/${site.internalPrefix}`;
+// Pages with `unlisted: true` in frontmatter (src/content.config.ts) — reached
+// only from a link we email, so kept out of the sitemap as well as noindexed.
+const UNLISTED = new Set([`https://${site.canonicalHost}/help/release-notes/email`]);
 
 export default defineConfig({
   site: `https://${site.canonicalHost}`,
@@ -25,7 +28,7 @@ export default defineConfig({
     rehypePlugins: [rehypeAppLinks],
   },
   integrations: [
-    sitemap({ filter: (page) => page !== INTERNAL && !page.startsWith(`${INTERNAL}/`) }),
+    sitemap({ filter: (page) => page !== INTERNAL && !page.startsWith(`${INTERNAL}/`) && !UNLISTED.has(page.replace(/\.html$/, '')) }),
     starlight({
       title: 'Sessionboard Help Center',
       logo: {

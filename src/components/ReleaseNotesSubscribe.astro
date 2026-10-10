@@ -1,0 +1,211 @@
+---
+/**
+ * "Get release notes by email" — the public opt-in on /help/release-notes.
+ *
+ * Posts to the Worker (/help/release-notes/subscribe), which relays to
+ * sessionboard-web-api. Double opt-in: the visitor gets a confirmation email
+ * and nothing is sent until they click it. Works without JavaScript (plain
+ * form POST → redirect to /help/release-notes/email?result=…); with it, the
+ * card swaps to the outcome in place and announces it to screen readers.
+ *
+ * `website` is a honeypot: visually hidden, tabindex -1, autocomplete off —
+ * bots fill it, people never see it.
+ */
+import { SUBSCRIBE_PATH } from '../lib/product-updates-proxy.mjs';
+---
+
+<section class="sb-sub" id="subscribe" aria-labelledby="sb-sub-title" data-sb-subscribe>
+  <div class="sb-sub-copy">
+    <h2 id="sb-sub-title" class="sb-sub-title">Get release notes by email</h2>
+    <p class="sb-sub-lede">
+      A short digest on the days something new goes live — each change with a link to its note here. No marketing, and one click to stop.
+    </p>
+  </div>
+  <form class="sb-sub-form" method="post" action={SUBSCRIBE_PATH} data-sb-subscribe-form novalidate>
+    <label class="sb-sub-label" for="sb-sub-email">Work email</label>
+    <div class="sb-sub-row">
+      <input
+        id="sb-sub-email"
+        class="sb-sub-input"
+        type="email"
+        name="email"
+        inputmode="email"
+        autocomplete="email"
+        required
+        maxlength="320"
+        placeholder="you@organization.org"
+        aria-describedby="sb-sub-hint"
+      />
+      <button class="sb-sub-button" type="submit">Subscribe</button>
+    </div>
+    <p id="sb-sub-hint" class="sb-sub-hint">We’ll send one email to confirm it’s you. Already use Sessionboard? You can also turn this on under <strong>Community → What’s new</strong>.</p>
+    <div class="sb-sub-hp" aria-hidden="true">
+      <label for="sb-sub-website">Website</label>
+      <input id="sb-sub-website" type="text" name="website" tabindex="-1" autocomplete="off" />
+    </div>
+  </form>
+  <p class="sb-sub-status" role="status" aria-live="polite" data-sb-subscribe-status hidden></p>
+</section>
+
+<script>
+  const root = document.querySelector<HTMLElement>('[data-sb-subscribe]');
+  const form = root?.querySelector<HTMLFormElement>('[data-sb-subscribe-form]');
+  const status = root?.querySelector<HTMLElement>('[data-sb-subscribe-status]');
+  const MESSAGES: Record<string, string> = {
+    check_email: 'Check your inbox — we sent a link to confirm your subscription. It’s good for 24 hours.',
+    email_required: 'Enter your email address to subscribe.',
+    invalid: 'That doesn’t look like an email address. Check it and try again.',
+    slow_down: 'Too many attempts from this network. Try again in an hour.',
+    unavailable: 'Email subscriptions aren’t available right now. Try again later.',
+    error: 'Something went wrong on our side. Try again in a few minutes.',
+  };
+  if (root && form && status) {
+    const input = form.querySelector<HTMLInputElement>('input[name="email"]');
+    const button = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+    const show = (key: string, ok: boolean) => {
+      status.textContent = MESSAGES[key] ?? MESSAGES.error;
+      status.hidden = false;
+      status.dataset.state = ok ? 'ok' : 'error';
+      if (ok) form.hidden = true;
+    };
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const email = input?.value.trim() ?? '';
+      if (!email || !input?.checkValidity()) {
+        show(email ? 'invalid' : 'email_required', false);
+        input?.focus();
+        return;
+      }
+      if (button) button.disabled = true;
+      status.hidden = true;
+      try {
+        const res = await fetch(form.action, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({ email, website: (form.querySelector<HTMLInputElement>('input[name="website"]')?.value ?? '') }),
+        });
+        const body = await res.json().catch(() => ({}));
+        show(body.result ?? body.error ?? (res.ok ? 'check_email' : 'error'), Boolean(body.ok));
+      } catch {
+        show('error', false);
+      } finally {
+        if (button) button.disabled = false;
+      }
+    });
+  }
+</script>
+
+<style>
+  .sb-sub {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    gap: 1.25rem 2rem;
+    align-items: center;
+    margin: 1.5rem 0 0;
+    padding: 1.25rem 1.4rem;
+    border: 1px solid var(--sl-color-hairline);
+    border-radius: 0.9rem;
+    background: var(--sl-color-accent-low);
+  }
+  :global(.sl-markdown-content) .sb-sub-title {
+    margin: 0;
+    font-size: var(--sl-text-lg);
+    line-height: 1.3;
+  }
+  .sb-sub-lede {
+    margin: 0.35rem 0 0;
+    font-size: var(--sl-text-sm);
+    color: var(--sl-color-gray-2);
+  }
+  .sb-sub-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+  .sb-sub-label {
+    font-size: var(--sl-text-xs);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--sl-color-gray-3);
+  }
+  .sb-sub-row {
+    display: flex;
+    gap: 0.5rem;
+  }
+  .sb-sub-input {
+    flex: 1 1 auto;
+    min-width: 0;
+    font: inherit;
+    font-size: var(--sl-text-sm);
+    padding: 0.55rem 0.75rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--sl-color-gray-5);
+    background: var(--sl-color-bg);
+    color: var(--sl-color-white);
+  }
+  .sb-sub-input:focus-visible,
+  .sb-sub-button:focus-visible {
+    outline: 2px solid var(--sl-color-accent);
+    outline-offset: 2px;
+  }
+  .sb-sub-button {
+    font: inherit;
+    font-size: var(--sl-text-sm);
+    font-weight: 600;
+    padding: 0.55rem 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--sb-btn-border, var(--sl-color-accent));
+    background: var(--sb-btn, var(--sl-color-accent));
+    color: #fff;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .sb-sub-button:hover {
+    filter: brightness(1.06);
+  }
+  .sb-sub-button[disabled] {
+    opacity: 0.6;
+    cursor: progress;
+  }
+  .sb-sub-hint {
+    margin: 0.1rem 0 0;
+    font-size: var(--sl-text-xs);
+    line-height: 1.5;
+    color: var(--sl-color-gray-3);
+  }
+  .sb-sub-hp {
+    position: absolute;
+    left: -10000px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+  .sb-sub-status {
+    grid-column: 1 / -1;
+    margin: 0;
+    padding: 0.6rem 0.8rem;
+    border-radius: 0.5rem;
+    font-size: var(--sl-text-sm);
+    border: 1px solid var(--sl-color-hairline);
+    background: var(--sl-color-bg);
+  }
+  .sb-sub-status[data-state='ok'] {
+    border-color: var(--sl-color-green);
+    color: var(--sl-color-green-high);
+    background: var(--sl-color-green-low);
+  }
+  .sb-sub-status[data-state='error'] {
+    border-color: var(--sl-color-red);
+    color: var(--sl-color-red-high);
+    background: var(--sl-color-red-low);
+  }
+  @media (max-width: 50rem) {
+    .sb-sub {
+      grid-template-columns: 1fr;
+    }
+    .sb-sub-row {
+      flex-direction: column;
+    }
+  }
+</style>

@@ -39,7 +39,10 @@ const canonical = slug ? `${SITE}/${slug}` : `${SITE}/`;
 // noindex/nofollow, no share card, no structured data, no analytics. The
 // Worker adds the matching X-Robots-Tag header; this is the in-document half.
 const INTERNAL_PREFIX = String((site as { internalPrefix?: string }).internalPrefix || 'enablement').replace(/^\/|\/$/g, '');
-const isInternal = slug === INTERNAL_PREFIX || slug.startsWith(`${INTERNAL_PREFIX}/`);
+// `unlisted: true` in frontmatter gets the same in-document treatment for a
+// public page nobody should find by search (an email outcome page).
+const isInternal =
+  slug === INTERNAL_PREFIX || slug.startsWith(`${INTERNAL_PREFIX}/`) || Boolean((entry.data as { unlisted?: boolean }).unlisted);
 const title = entry.data.title;
 const description = entry.data.description ?? '';
 const ogKey = slug === '' ? 'home' : slug.replace(/\//g, '--');
