@@ -196,6 +196,10 @@ const INTERNAL_REDIRECTS = {
   '/videos/video-ai-agenda-builder': '/agents/overview',
   '/videos/video-ai-content-remix': '/agents/overview',
   '/videos/video-ai-evaluations': '/agents/overview',
+  // Merged into the Session submission forms reference, 2026-10-09 — the
+  // Sessions 2.0 walkthrough duplicated it; its v1/v2, cross-field limits,
+  // Membership & Access and participant-limit sections moved across.
+  '/applications/building-your-submission-form': '/sessions/submission-forms',
   // Search Console shows this truncated slug getting clicks (2026-09-28); the
   // article has always been the long form.
   '/sessions/converting-a-subsession': '/sessions/converting-a-session-to-a-subsession',
