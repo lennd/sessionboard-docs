@@ -66,6 +66,7 @@ import {
   validateEntry,
 } from '../src/lib/release-notes.mjs';
 import { gh, parsePrRef, releaseConfig, requireToken } from '../src/lib/github-api.mjs';
+import { SENTENCE_SPLIT, sentenceClaims } from '../src/lib/unshipped.mjs';
 import { loadIntake, saveIntake, recordFor, heuristicSkip } from './release-gaps.mjs';
 
 const argv = process.argv.slice(2);
@@ -182,10 +183,12 @@ If it is user-visible, draft ONE release entry as JSON that follows the schema e
 - "permissions" are exact slugs from the permission list (e.g. event.contacts.read) that a user must hold to use the change. Leave it [] unless the PR names a permission check; never write prose there.
 - "kind": new = a capability that did not exist; improved = an existing capability does more or reads better; fixed = behaviour that was wrong now works.
 - "use_case": one or two sentences a customer success manager could say to a customer about why they would want this.
+- "why_use_it": the long form of use_case — two to four sentences addressed to the customer ("you"), saying what problem this solves and when they would reach for it. It becomes the "## Why use it" section of the linked article, so it must stand on its own without the release entry. Describe what the product does; never say it is unfinished.
 - "internal" is for staff only: cs_action.kind ∈ ${Object.keys(CS_ACTION).join(' | ')}; when_to_bring_up, who_should_get_it, gotchas, talk_track are short sentences.
-- "enable.path" is the menu path to turn it on (omit when it is on for everyone by default); "where.path" is the menu path where the change shows up.
+- "enable.path" is the menu path to turn it on, and it is REQUIRED unless enable.how is default_on. For support or csm write "Ask your Customer Success Manager to enable <feature>; then <where.path>"; for self_serve write "Get started → Early Access → Preview → <feature>". "where.path" is the menu path where the change shows up.
 - "where.scope" ∈ ${SCOPES.join(' | ')}; "audience" ⊆ ${AUDIENCES.join(', ')}; "module" ∈ ${MODULES.join(' | ')}.
 - "id" is a short kebab-case slug unique to this change.
+- Never write an email address, URL with a token, or any secret in any field — say "Sessionboard Support" instead of a support address.
 - Do not invent facts that are not in the PR. If the PR body has a QA or Problem/Solution section, trust it over the diff file list.
 
 Answer by calling the release_decision tool. A skip is {"decision":"skip","reason":"<one sentence>"}. An entry is {"decision":"entry","confidence":"high|medium|low","docs_gap":"<sentence or null>", ...} with every entry field (id, title, summary, article, kind, where, use_case, internal, …) given as a structured value at the top level of the tool input — never as a JSON string.`;
@@ -328,15 +331,22 @@ const DECISION_TOOL = {
       reason: { type: 'string', description: 'skip only: one sentence' },
       confidence: { type: 'string', enum: ['high', 'medium', 'low'], description: 'entry only' },
       docs_gap: { type: ['string', 'null'], description: 'entry only: what the linked guide should add, or null' },
+      why_use_it: { type: 'string', description: 'entry only: 2–4 sentences, the "## Why use it" section of the linked article' },
       ...ENTRY_PROPERTIES,
     },
   },
 };
-const META_KEYS = new Set(['decision', 'reason', 'confidence', 'docs_gap']);
+const META_KEYS = new Set(['decision', 'reason', 'confidence', 'docs_gap', 'why_use_it']);
 
-/** Tool input → { decision, reason, confidence, docs_gap, entry }. Tolerates an `entry` blob (object or JSON string). */
+/** Tool input → { decision, reason, confidence, docs_gap, why_use_it, entry }. Tolerates an `entry` blob (object or JSON string). */
 function normalizeDecision(input) {
-  const out = { decision: input.decision, reason: input.reason, confidence: input.confidence, docs_gap: input.docs_gap ?? null };
+  const out = {
+    decision: input.decision,
+    reason: input.reason,
+    confidence: input.confidence,
+    docs_gap: input.docs_gap ?? null,
+    why_use_it: input.why_use_it ?? null,
+  };
   let entry = {};
   for (const [k, v] of Object.entries(input)) if (!META_KEYS.has(k) && k !== 'entry') entry[k] = v;
   if (input.entry != null) {
@@ -380,12 +390,37 @@ function decisionFrom(data) {
   return { call: null, input: JSON.parse(json.slice(start)) };
 }
 
-async function askModel(system, user) {
+/**
+ * `validate(answer)` returns the validateEntry problems for an entry answer. When
+ * there are any, the model gets one more turn with them as the tool result: a
+ * draft that fails release:check turns the drafts PR red for everyone.
+ */
+async function askModel(system, user, validate = () => []) {
   const messages = [{ role: 'user', content: user }];
   const first = await callAnthropic({ system, messages });
   const { call, input } = decisionFrom(first);
   try {
-    return normalizeDecision(input);
+    const answer = normalizeDecision(input);
+    const problems = answer.decision === 'entry' ? validate(answer) : [];
+    if (!problems.length || !call) return answer;
+    messages.push({ role: 'assistant', content: first.content });
+    messages.push({
+      role: 'user',
+      content: [
+        {
+          type: 'tool_result',
+          tool_use_id: call.id,
+          is_error: true,
+          content: `The entry fails validation:\n- ${problems.join('\n- ')}\nCall release_decision again with the same entry, every problem fixed.`,
+        },
+      ],
+    });
+    try {
+      const fixed = normalizeDecision(decisionFrom(await callAnthropic({ system, messages })).input);
+      return fixed.decision === 'entry' && validate(fixed).length >= problems.length ? answer : fixed;
+    } catch {
+      return answer;
+    }
   } catch (err) {
     if (!call) throw err;
     // One retry, telling the model exactly what it did: the tool result carries the error.
@@ -420,8 +455,37 @@ function uniqueId(base, taken) {
   return id;
 }
 
+/**
+ * validateEntry requires enable.path unless the change is on by default, and the
+ * model leaves it empty about one draft in ten when CS turns the feature on. Fill
+ * it from enable.how + where.path, in the wording published entries use, and mark
+ * it so the reviewer knows to check it. Returns true when it filled one.
+ */
+function fillEnablePath(e) {
+  if (!e.enable || e.enable.path || !e.enable.how || e.enable.how === 'default_on') return false;
+  const feature = (e.features || []).map((slug) => featureFacts(slug, contract)).find((f) => f?.name)?.name || e.title || 'this feature';
+  const where = e.where?.path ? `; then ${e.where.path}` : '';
+  if (e.enable.how === 'self_serve') e.enable.path = `Get started → Early Access → Preview → ${feature}`;
+  else if (e.enable.how === 'support' || e.enable.how === 'csm') e.enable.path = `Ask your Customer Success Manager to enable ${feature}${where}`;
+  else if (e.where?.path) e.enable.path = e.where.path;
+  else return false;
+  if (e.internal?.draft) e.internal.draft.enable_path_derived = true;
+  return true;
+}
+
+/** check-internal fails the build on any email address in release data. Swap them for a role. */
+const EMAIL = /`?([A-Za-z0-9._%+-]+)@[A-Za-z0-9.-]+\.[A-Za-z]{2,}`?/g;
+function scrubEmails(value) {
+  if (typeof value === 'string') {
+    return value.replace(EMAIL, (_, local) => (/^(support|help|success|cs)$/i.test(local) ? 'Sessionboard Support' : 'the contact on file'));
+  }
+  if (Array.isArray(value)) return value.map(scrubEmails);
+  if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, scrubEmails(v)]));
+  return value;
+}
+
 function cleanEntry(raw, p, meta) {
-  const e = { ...raw };
+  const e = scrubEmails({ ...raw });
   e.shipped = { prs: [p.ref], docs_only: false, live: { us: null, eu: null, me: null } };
   if (e.enable && e.enable.path == null && e.enable.how === 'default_on') delete e.enable.path;
   if (e.availability && !AVAILABILITY[e.availability]) delete e.availability;
@@ -430,9 +494,17 @@ function cleanEntry(raw, p, meta) {
   const known = new Set(contract.permissions || []);
   const dropped = (Array.isArray(e.permissions) ? e.permissions : []).filter((x) => !known.has(x));
   e.permissions = (Array.isArray(e.permissions) ? e.permissions : []).filter((x) => known.has(x));
-  const draft = { by: 'release-intake', model: MODEL, confidence: meta.confidence || null, docs_gap: meta.docs_gap || null, at: new Date().toISOString() };
+  const draft = {
+    by: 'release-intake',
+    model: MODEL,
+    confidence: meta.confidence || null,
+    docs_gap: meta.docs_gap || null,
+    why_use_it: meta.why_use_it || null,
+    at: new Date().toISOString(),
+  };
   if (dropped.length) draft.permissions_to_confirm = dropped;
   e.internal = { ...(e.internal || {}), draft };
+  fillEnablePath(e);
   return e;
 }
 
@@ -483,15 +555,62 @@ function applyDrafts(lists) {
   for (const [date, entries] of byDate) {
     const { file, data } = releaseFile(date);
     const have = new Set(data.entries.map((e) => e.id));
-    for (const e of entries) {
-      if (have.has(e.id)) continue;
+    for (const raw of entries) {
+      if (have.has(raw.id)) continue;
+      const e = scrubEmails(raw);
+      fillEnablePath(e);
       data.entries.push(e);
       have.add(e.id);
       added++;
     }
     writeFileSync(file, `${JSON.stringify(data, null, 2)}\n`);
   }
-  return added;
+  const sections = [];
+  for (const entries of byDate.values()) {
+    for (const e of entries) {
+      const file = addWhyUseIt(scrubEmails(e));
+      if (file) sections.push(file);
+    }
+  }
+  return { added, sections };
+}
+
+/**
+ * check-style requires every article a post-cutover entry links to to carry a
+ * "## Why use it" section. Write the draft's long form (or the use_case) into the
+ * article above its first H2, so the drafts PR passes CI and the reviewer edits
+ * the copy in place. Returns the article path when it wrote one.
+ */
+function addWhyUseIt(entry) {
+  const slug = String(entry.article || '').replace(/#.*$/, '').replace(/^\//, '');
+  const clean = (s) =>
+    String(s || '')
+      .split(SENTENCE_SPLIT)
+      .filter((x) => x.trim() && !sentenceClaims(x).length)
+      .join(' ')
+      .trim();
+  const text = clean(entry.internal?.draft?.why_use_it) || clean(entry.use_case);
+  if (!slug || !text) return null;
+  const file = [join(DOCS_DIR, `${slug}.mdx`), join(DOCS_DIR, slug, 'index.mdx')].find(existsSync);
+  if (!file) return null;
+  const src = readFileSync(file, 'utf8');
+  const fm = /^---\n[\s\S]*?\n---\n/.exec(src);
+  if (!fm || /^## Why use it\s*$/m.test(src)) return null;
+  const lines = src.slice(fm[0].length).split('\n');
+  let fenced = false;
+  let at = lines.length;
+  for (let i = 0; i < lines.length; i++) {
+    if (/^\s*(```|~~~)/.test(lines[i])) fenced = !fenced;
+    if (!fenced && /^##\s/.test(lines[i])) {
+      at = i;
+      break;
+    }
+  }
+  const block = ['## Why use it', '', text, ''];
+  if (at > 0 && lines[at - 1].trim() !== '') block.unshift('');
+  lines.splice(at, 0, ...block);
+  writeFileSync(file, fm[0] + lines.join('\n'));
+  return relative(process.cwd(), file);
 }
 
 if (COLLECT) {
@@ -500,8 +619,9 @@ if (COLLECT) {
 }
 if (APPLY.length) {
   const lists = APPLY.filter(existsSync).map((f) => JSON.parse(readFileSync(f, 'utf8')));
-  const added = applyDrafts(lists);
-  console.log(`Applied ${added} draft(s) from ${APPLY.length} file(s).`);
+  const { added, sections } = applyDrafts(lists);
+  console.log(`Applied ${added} draft(s) from ${APPLY.length} file(s); added "Why use it" to ${sections.length} article(s).`);
+  for (const f of sections) console.log(`  + ${f}`);
   process.exit(0);
 }
 
@@ -576,7 +696,13 @@ for (const p of refs) {
   }
   let answer;
   try {
-    answer = await askModel(SYSTEM, userPrompt({ pr, files, p, articles, features, example }));
+    const validate = (a) => {
+      if (!a.entry || typeof a.entry !== 'object') return [];
+      const e = cleanEntry(a.entry, p, a);
+      e.id = e.id || `${p.repo}-${p.number}`;
+      return validateEntry(e, TODAY, contract, { file: `src/data/release-notes/${TODAY}.json` }).map((x) => x.replace(/^.*?\]\s*/, ''));
+    };
+    answer = await askModel(SYSTEM, userPrompt({ pr, files, p, articles, features, example }), validate);
   } catch (err) {
     result.problems.push(`${p.ref}: model — ${err.message}`);
     console.error(`${p.ref}: model failed — ${err.message}`);

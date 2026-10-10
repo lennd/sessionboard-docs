@@ -150,7 +150,9 @@ jobs:
           git checkout -q -B "$DRAFT_BRANCH" origin/main
           node scripts/release-intake.mjs --apply-drafts /tmp/prev-drafts.json --apply-drafts /tmp/release-intake-result.json
           node scripts/check-release-notes.mjs || echo "::warning::release:check reports problems on the drafts — the PR's CI will show them"
-          git add src/data/release-notes/*.json
+          # Docs CI fails the PR on any style problem; fail here instead, before the push.
+          node scripts/check-style.mjs
+          git add src/data/release-notes/*.json src/content/docs
           git reset -q src/data/release-notes/_intake.json || true
           n_prev=$(jq length /tmp/prev-drafts.json)
           n_new=$(jq '.drafts | length' /tmp/release-intake-result.json)
