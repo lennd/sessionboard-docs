@@ -131,4 +131,18 @@ jobs:
           git config user.email 'docs-bot@sessionboard.com'
           git add src/data/release-notes
           git commit -m "chore(release-notes): production status $(date -u +%Y-%m-%d) [$CHANNEL]${REQUESTED_BY:+ (requested by $REQUESTED_BY)}"
-          git push origin HEAD:refs/heads/main
+          # Docs authors push to main all day, so the ref has usually moved
+          # during the status check. A rejected push here is not harmless:
+          # the digest above has already gone out and this commit is the only
+          # record that it did (2026-10-10, 93 live dates lost to a race).
+          # Rebase onto main and retry; give up only on a real conflict.
+          for attempt in 1 2 3 4 5; do
+            if git push origin HEAD:refs/heads/main; then
+              exit 0
+            fi
+            echo "Push rejected (attempt $attempt): main moved, rebasing."
+            git fetch --deepen=50 origin main
+            git rebase origin/main || { git rebase --abort; echo "::error::release-notes commit conflicts with main — resolve by hand"; exit 1; }
+          done
+          echo "::error::could not push release-notes status after 5 attempts"
+          exit 1
