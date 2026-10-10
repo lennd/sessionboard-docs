@@ -95,10 +95,14 @@ Verify against the live host afterwards, not `dist/` — the build being right i
 
 Docs are organized to mirror the **admin nav** (org/event level):
 
-- **Guides** — Get started · Core concepts · Program (Sessions, Speakers, Evaluations, Sponsors & exhibitors, Portals, Contacts) · CRM · Marketing · Awards · CMS · Reports · Agents · Event Team · Settings
+- **Guides**, in four clusters separated by a hairline — Get started · Core concepts | Program · Awards · Portals | CRM · Marketing · Pathways · CMS | Reporting & Dashboards · Communications · Automations · Agents · Event Team · Settings
 - **Participant guide** — end-user docs for speakers/sponsors/exhibitors using portals
 - **Apps** — App Marketplace connectors + Developer (API, webhooks, MCP)
-- **Help** — FAQ & troubleshooting · Video tutorials · Release notes
+- **Help** — Release notes · Community · FAQ & troubleshooting
+
+The Guides order is Josh's (2026-10-10) and is not alphabetical or nav-order; keep it. The separators are CSS: `src/components/Sidebar.astro` overrides Starlight's sidebar only so that `src/components/SidebarSublist.astro` (a copy of Starlight's, re-copy on upgrade) can stamp `data-group="<label>"` on every group; the "Sidebar separators" rule in `src/styles/custom.css` draws a hairline above **Program**, **CRM** and **Reporting & Dashboards**. Reorder `src/sidebar.json` and that list moves with it.
+
+**No standalone video pages.** The `videos/` folder (Guidde and Arcade embeds, plus the generated `training-NN` pages) was retired on 2026-10-10 — Guidde and Arcade are cancelled, and every training chapter plays inside the article it was scripted from via `<TrainingVideo>`. A new recording goes into the article that covers the workflow (`<Walkthrough>` for an mp4 under `public/media/walkthroughs/`, with the transcript in an `sb-accordion`), never into a page of its own. Old `/videos/*` paths 301 from `INTERNAL_REDIRECTS` in `worker.js`.
 
 When adding a page: put the MDX file in the matching folder under `src/content/docs/`, add its slug to the matching group in `src/sidebar.json`, and add a row to `redirects-301.csv` if it replaces a HubSpot article.
 

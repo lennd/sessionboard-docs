@@ -196,6 +196,50 @@ const INTERNAL_REDIRECTS = {
   '/videos/video-ai-agenda-builder': '/agents/overview',
   '/videos/video-ai-content-remix': '/agents/overview',
   '/videos/video-ai-evaluations': '/agents/overview',
+  // Video tutorials retired 2026-10-10: the Guidde plan was cancelled (24 pages
+  // embedded its playbooks) and every training chapter now plays inside the
+  // article it was scripted from. Each page goes to the article that hosts the
+  // chapter covering the same ground (sessionboard-tam/training-videos/audits/
+  // 2026-09-28/help-center-embeds.md §1d); the Docusign walkthrough moved into
+  // the Contracts guide; the Loom import video is covered by chapter 09.
+  '/videos/overview': '/get-started/overview#training-00-platform-overview',
+  '/videos/decline-sessions': '/sessions/accept-decline',
+  '/videos/video-agenda-building': '/sessions/agenda#training-06-sessions-agenda',
+  '/videos/video-contracts-docusign': '/speaker-crm/contracts#watch-it-end-to-end',
+  '/videos/video-create-a-contact': '/contacts/add-delete-a-contact',
+  '/videos/video-create-a-session': '/sessions/agenda#training-06-sessions-agenda',
+  '/videos/video-creating-sending-emails': '/communications/create-send-emails#training-02-communications-emails',
+  '/videos/video-custom-portals': '/portals/portals-101#training-01-speaker-portal-tasks',
+  '/videos/video-email-templates': '/settings/email-templates#training-11-organization-settings',
+  '/videos/video-embeds': '/integrations/overview#training-05-integrations',
+  '/videos/video-evaluation-plans': '/evaluations/evaluation-plans#training-07-review-evaluation',
+  '/videos/video-event-settings': '/events/event-details#training-03-event-setup',
+  '/videos/video-event-team': '/event-team/invite-manage-event-team-members#training-08-users-permissions',
+  '/videos/video-file-requests': '/portals/portals-101#training-01-speaker-portal-tasks',
+  '/videos/video-files': '/portals/portals-101#training-01-speaker-portal-tasks',
+  '/videos/video-forms': '/portals/portals-101#training-01-speaker-portal-tasks',
+  '/videos/video-history': '/communications/email-sms-history',
+  '/videos/video-importing-data': '/settings/importing-data#training-09-contacts-imports',
+  '/videos/video-portal-settings-appearance': '/portals/portals-101#training-01-speaker-portal-tasks',
+  '/videos/video-reports': '/reporting/report-builder#training-10-reports-views-exports',
+  '/videos/video-session-files': '/portals/portals-101#training-01-speaker-portal-tasks',
+  '/videos/video-session-settings': '/sessions/program-settings',
+  '/videos/video-session-submission-form': '/sessions/submission-forms#training-04-call-for-papers-form',
+  '/videos/video-settings-record-settings': '/events/event-details#training-03-event-setup',
+  '/videos/video-tasks': '/portals/portals-101#training-01-speaker-portal-tasks',
+  '/videos/video': '/speaker-crm/creating-crm-fields#training-28-fields',
+  '/videos/wiki-pages': '/portals/portals-101#training-01-speaker-portal-tasks',
+  '/videos/portals-pro': '/portals/portals-101',
+  // Its only content was an Arcade (plan cancelled 2026-10-10); the group
+  // portal is explained on the "Share your group portal" page.
+  '/portals/how-to-navigate-your-group-portal': '/participants/exhibitor-portal',
+  // The App Marketplace (web-ui-v2 appsCatalog.ts, shipped in #952 on 2026-10-10)
+  // links "Learn more" for the HubSpot and Salesforce CRM connectors to guides
+  // that are not written yet. Until they are, land on the Pathways overview,
+  // which is where the HubSpot connection lives (Pathways > Data). Remove each
+  // line when its guide exists at that path.
+  '/apps/hubspot-integration': '/pathways/overview',
+  '/apps/salesforce-integration': '/pathways/overview',
   // Merged into the Session submission forms reference, 2026-10-09 — the
   // Sessions 2.0 walkthrough duplicated it; its v1/v2, cross-field limits,
   // Membership & Access and participant-limit sections moved across.
