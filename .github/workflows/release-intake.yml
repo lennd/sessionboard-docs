@@ -1,0 +1,228 @@
+name: Release notes intake (draft entries for merged PRs)
+
+# The real-time half of release notes. Each product repo announces a merge
+# into its `main` with a repository_dispatch (event `pr-merged`, sent by its
+# notify-docs-release.yml). This workflow reads the PR, asks Claude whether a
+# user can see the change and, if so, drafts the full entry
+# (scripts/release-intake.mjs). Drafts are not published: they go to ONE
+# rolling branch, release-intake/drafts, rebuilt every run as main + every
+# draft not yet merged, with a single open PR that a person reviews and merges.
+# The entry then waits, like every other, for scripts/release-status.mjs to
+# see its PR in a production deploy before it appears publicly.
+#
+# Skips (not user-visible) are written straight to the ledger,
+# src/data/release-notes/_intake.json, with the model's reason, so
+# `npm run release:gaps` can show them and a person can overturn one.
+#
+# Also runs on demand: `pr` for one PR, or blank to triage every `pending` PR
+# in the ledger (the daily job dispatches that each morning).
+#
+# Secrets: ANTHROPIC_API_KEY (without it the run records heuristics only and
+# says so), GH_RELEASE_STATUS_TOKEN (same PAT as release-daily.yml — reads the
+# product repos' PRs, pushes here so Docs CI runs on the review PR).
+
+on:
+  repository_dispatch:
+    types: [pr-merged]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: 'One PR as lennd/<repo>#<n>; blank = every pending PR in _intake.json'
+        type: string
+        default: ''
+      limit:
+        description: 'Most PRs to draft in one run when triaging pending'
+        type: string
+        default: '15'
+      dry_run:
+        description: 'Print the model answers; write nothing'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: release-intake
+  cancel-in-progress: false
+
+env:
+  DRAFT_BRANCH: release-intake/drafts
+
+jobs:
+  intake:
+    name: Draft release entries
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      HAS_MODEL_KEY: ${{ secrets.ANTHROPIC_API_KEY != '' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.GH_RELEASE_STATUS_TOKEN || github.token }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: What triggered this?
+        id: what
+        env:
+          EVENT: ${{ github.event_name }}
+          PAYLOAD_REF: ${{ github.event.client_payload.pr.ref }}
+          PAYLOAD_TITLE: ${{ github.event.client_payload.pr.title }}
+          INPUT_PR: ${{ inputs.pr }}
+          INPUT_LIMIT: ${{ inputs.limit }}
+        run: |
+          if [ "$EVENT" = repository_dispatch ]; then
+            echo "args=--event $GITHUB_EVENT_PATH" >> "$GITHUB_OUTPUT"
+            echo "::notice::merged: $PAYLOAD_REF — $PAYLOAD_TITLE"
+          elif [ -n "$INPUT_PR" ]; then
+            echo "args=--pr $INPUT_PR" >> "$GITHUB_OUTPUT"
+          else
+            echo "args=--pending --limit ${INPUT_LIMIT:-15}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Reconcile the ledger with GitHub and the entries
+        env:
+          GH_RELEASE_STATUS_TOKEN: ${{ secrets.GH_RELEASE_STATUS_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/release-gaps.mjs --write --days 7
+
+      - name: Draft
+        id: draft
+        env:
+          GH_RELEASE_STATUS_TOKEN: ${{ secrets.GH_RELEASE_STATUS_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          RELEASE_INTAKE_MODEL: ${{ vars.RELEASE_INTAKE_MODEL }}
+          RELEASE_INTAKE_RESULT: /tmp/release-intake-result.json
+        run: |
+          extra=""
+          if [ "$HAS_MODEL_KEY" != "true" ]; then
+            echo "::warning::ANTHROPIC_API_KEY is not set — recording heuristics only, no drafts. Add the secret to turn drafting on."
+            extra="--no-model"
+          fi
+          ${{ inputs.dry_run && 'DRY=--dry-run' || 'DRY=' }}
+          node scripts/release-intake.mjs ${{ steps.what.outputs.args }} $extra $DRY
+          if [ -f /tmp/release-intake-result.json ]; then
+            echo "drafted=$(jq '.drafted | length' /tmp/release-intake-result.json)" >> "$GITHUB_OUTPUT"
+            echo "refs=$(jq -r '[.drafted[].ref] | join(" ")' /tmp/release-intake-result.json)" >> "$GITHUB_OUTPUT"
+            cp src/data/release-notes/_intake.json /tmp/intake.json
+            {
+              echo "### Release intake"
+              echo
+              echo "| PR | Result |"
+              echo "| --- | --- |"
+              jq -r '.drafted[] | "| \(.ref) | drafted `\(.id)` (\(.confidence // "?"))\(if .docs_gap then " — docs gap: " + .docs_gap else "" end)\(if (.problems|length) > 0 then " — **" + (.problems|length|tostring) + " validation problem(s)**" else "" end) |"' /tmp/release-intake-result.json
+              jq -r '.skipped[] | "| \(.ref) | skip — \(.reason) |"' /tmp/release-intake-result.json
+              jq -r '.problems[] | "| | ⚠ \(.) |"' /tmp/release-intake-result.json
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "drafted=0" >> "$GITHUB_OUTPUT"
+            cp src/data/release-notes/_intake.json /tmp/intake.json
+          fi
+          # Leave the tree clean: entries go to the draft branch, the ledger to main, below.
+          git checkout -- src/data/release-notes/
+
+      - name: Rebuild the drafts branch (main + every unmerged draft) and keep its PR current
+        id: pr
+        if: ${{ !inputs.dry_run && steps.draft.outputs.drafted != '0' }}
+        env:
+          GH_TOKEN: ${{ secrets.GH_RELEASE_STATUS_TOKEN || github.token }}
+          JOB_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name 'sessionboard-docs bot'
+          git config user.email 'docs-bot@sessionboard.com'
+          git fetch origin "$DRAFT_BRANCH" 2>/dev/null && had_branch=1 || had_branch=0
+          if [ "$had_branch" = 1 ]; then
+            node scripts/release-intake.mjs --collect-drafts "origin/$DRAFT_BRANCH" > /tmp/prev-drafts.json
+          else
+            echo '[]' > /tmp/prev-drafts.json
+          fi
+          git checkout -q -B "$DRAFT_BRANCH" origin/main
+          node scripts/release-intake.mjs --apply-drafts /tmp/prev-drafts.json --apply-drafts /tmp/release-intake-result.json
+          node scripts/check-release-notes.mjs || echo "::warning::release:check reports problems on the drafts — the PR's CI will show them"
+          git add src/data/release-notes/*.json
+          git reset -q src/data/release-notes/_intake.json || true
+          n_prev=$(jq length /tmp/prev-drafts.json)
+          n_new=$(jq '.drafts | length' /tmp/release-intake-result.json)
+          if git diff --cached --quiet; then
+            echo "Every draft is already on main — nothing to push."
+            git checkout -q main
+            exit 0
+          fi
+          git commit -q -m "release-notes: $((n_prev + n_new)) draft entr$([ $((n_prev + n_new)) = 1 ] && echo y || echo ies) awaiting review ($n_new new)"
+          git push -q --force origin "HEAD:refs/heads/$DRAFT_BRANCH"
+
+          url=$(gh pr list --head "$DRAFT_BRANCH" --base main --state open --json url --jq '.[0].url')
+          body_file=/tmp/pr-body.md
+          {
+            echo "Drafts written by \`scripts/release-intake.mjs\` from merged product PRs. Each entry carries \`internal.draft\` (model, confidence, docs gap). **Review the copy, fix anything CI flags, and merge** — merging publishes nothing by itself; every entry still waits for its PR to reach production."
+            echo
+            echo "Rebuilt from \`main\` on every run, so this branch never conflicts; new drafts are appended as more PRs merge."
+            echo
+            echo "## In this batch"
+            echo
+            jq -r '.drafted[] | "- \(.ref) → `\(.id)` (\(.confidence // "?"))\(if .docs_gap then "\n  - docs gap: " + .docs_gap else "" end)\(if (.problems|length) > 0 then "\n  - ⚠ " + (.problems|join("\n  - ⚠ ")) else "" end)"' /tmp/release-intake-result.json
+            if [ "$n_prev" != 0 ]; then
+              echo
+              echo "## Carried over"
+              echo
+              jq -r '.[] | "- `\(.entry.id)` (\(.date))"' /tmp/prev-drafts.json
+            fi
+            echo
+            echo "_Not user-visible this run_: $(jq -r '[.skipped[].ref] | join(", ")' /tmp/release-intake-result.json)"
+          } > "$body_file"
+          if [ -z "$url" ]; then
+            # The PAT first (a PR it opens gets Docs CI); fall back to the job
+            # token if the PAT lacks pull-requests: write on this repo.
+            url=$(gh pr create --base main --head "$DRAFT_BRANCH" --label release-intake \
+              --title "Release notes: drafts awaiting review" --body-file "$body_file" 2>/dev/null \
+              || GH_TOKEN="$JOB_TOKEN" gh pr create --base main --head "$DRAFT_BRANCH" \
+              --title "Release notes: drafts awaiting review" --body-file "$body_file")
+          else
+            gh pr edit "$url" --body-file "$body_file" >/dev/null
+            gh pr comment "$url" --body "$(jq -r '"Added " + (.drafted|length|tostring) + " draft(s): " + ([.drafted[] | "`" + .id + "` (" + .ref + ")"] | join(", "))' /tmp/release-intake-result.json)" >/dev/null
+          fi
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "::notice::drafts PR: $url"
+          echo >> "$GITHUB_STEP_SUMMARY"
+          echo "Review PR: $url" >> "$GITHUB_STEP_SUMMARY"
+          git checkout -q main
+
+      - name: Commit the ledger to main
+        if: ${{ !inputs.dry_run }}
+        env:
+          DRAFT_PR: ${{ steps.pr.outputs.url }}
+          REFS: ${{ steps.draft.outputs.refs }}
+        run: |
+          git config user.name 'sessionboard-docs bot'
+          git config user.email 'docs-bot@sessionboard.com'
+          git checkout -q main
+          cp /tmp/intake.json src/data/release-notes/_intake.json
+          if [ -n "$DRAFT_PR" ] && [ -n "$REFS" ]; then
+            args=""; for r in $REFS; do args="$args --pr $r"; done
+            node scripts/release-intake.mjs --mark-drafted --draft-pr "$DRAFT_PR" $args
+          fi
+          if git diff --quiet -- src/data/release-notes/_intake.json; then
+            echo "Ledger unchanged."
+            exit 0
+          fi
+          git add src/data/release-notes/_intake.json
+          git commit -q -m "chore(release-notes): intake ledger $(date -u +%Y-%m-%d) [${{ github.event_name }}]"
+          # Same race as release-daily.yml: authors push to main all day.
+          for attempt in 1 2 3 4 5; do
+            git push origin HEAD:refs/heads/main && exit 0
+            echo "Push rejected (attempt $attempt): main moved, rebasing."
+            git fetch origin main
+            git rebase origin/main || { git rebase --abort; echo "::error::_intake.json conflicts with main — resolve by hand"; exit 1; }
+          done
+          echo "::error::could not push the intake ledger after 5 attempts"
+          exit 1

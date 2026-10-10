@@ -23,6 +23,16 @@ name: Release status and product-updates digest
 # `mode: email` to send the email now. A hub publish earlier in the day simply
 # leaves the scheduled run with nothing new to send.
 #
+# Real time: each product repo's notify-docs-release.yml sends a
+# repository_dispatch `production-deployed` the moment one of its production
+# publish workflows succeeds, which runs this in status mode — live dates flip
+# within minutes of a deploy instead of at the next weekday cron. A 4-hourly
+# status poll (every day, weekends included) is the backstop for a missed
+# dispatch or a repo without the token. The scheduled channel runs are also
+# the daily sweep: they list merged PRs no entry covers (release-gaps) and
+# entries with no thumbnail (release-media) in the job summary, and the
+# morning run dispatches release-intake.yml to draft entries for the backlog.
+#
 # Secrets: GH_RELEASE_STATUS_TOKEN (fine-grained PAT: Actions: read and
 # Pull requests: read on lennd/sessionboard-web-api, sessionboard-web-ui-v2,
 # sessionboard-embeds, sessionboard-public-api; Contents: write on this repo),
@@ -34,6 +44,9 @@ on:
   schedule:
     - cron: '0 14 * * 1-5' # morning email — 09:00 America/Chicago (CDT); 08:00 in CST
     - cron: '0 22 * * 1-5' # evening Slack — 17:00 America/Chicago (CDT); 16:00 in CST
+    - cron: '30 2,6,10,18 * * *' # status-only backstop, every day — catches deploys the dispatch missed
+  repository_dispatch:
+    types: [production-deployed] # sent by each product repo's notify-docs-release.yml
   workflow_dispatch:
     inputs:
       mode:
@@ -52,6 +65,7 @@ on:
 
 permissions:
   contents: write
+  actions: write # dispatches release-intake.yml for the backlog
 
 concurrency:
   group: release-daily
@@ -79,15 +93,18 @@ jobs:
           EVENT: ${{ github.event_name }}
           CRON: ${{ github.event.schedule }}
           MODE: ${{ inputs.mode }}
+          DEPLOY: ${{ github.event.client_payload.deploy.repo }} ${{ github.event.client_payload.deploy.workflow }} @${{ github.event.client_payload.deploy.head_sha }}
         run: |
           case "$EVENT:$CRON:$MODE" in
-            schedule:0\ 14*) channel=email ;;
-            schedule:0\ 22*) channel=slack ;;
-            workflow_dispatch::publish) channel=slack ;;
-            workflow_dispatch::email)   channel=email ;;
-            *)                          channel=none ;;
+            schedule:0\ 14*) channel=email; sweep=true ;;
+            schedule:0\ 22*) channel=slack; sweep=true ;;
+            workflow_dispatch::publish) channel=slack; sweep=false ;;
+            workflow_dispatch::email)   channel=email; sweep=false ;;
+            *)                          channel=none;  sweep=false ;;
           esac
+          [ "$EVENT" = repository_dispatch ] && echo "::notice::production deploy: $DEPLOY"
           echo "channel=$channel" | tee -a "$GITHUB_OUTPUT"
+          echo "sweep=$sweep" | tee -a "$GITHUB_OUTPUT"
 
       - name: Release data is valid
         run: node scripts/check-release-notes.mjs
@@ -97,6 +114,23 @@ jobs:
           GH_RELEASE_STATUS_TOKEN: ${{ secrets.GH_RELEASE_STATUS_TOKEN }}
           GITHUB_TOKEN: ${{ github.token }}
         run: node scripts/release-status.mjs ${{ inputs.dry_run && '--dry-run' || '' }}
+
+      - name: Sweep — merged PRs without an entry, entries without a thumbnail
+        if: ${{ steps.plan.outputs.sweep == 'true' }}
+        env:
+          GH_RELEASE_STATUS_TOKEN: ${{ secrets.GH_RELEASE_STATUS_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          # Read-only here: release-intake.yml is the ledger's single writer, so
+          # the two workflows never race on _intake.json.
+          node scripts/release-gaps.mjs --days 7 --summary "$GITHUB_STEP_SUMMARY"
+          node scripts/release-media.mjs --summary "$GITHUB_STEP_SUMMARY"
+
+      - name: Draft entries for the backlog (morning)
+        if: ${{ !inputs.dry_run && steps.plan.outputs.channel == 'email' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run release-intake.yml --ref main -f limit=15 || echo "::warning::could not dispatch release-intake.yml"
 
       - name: Send the email digest
         if: ${{ !inputs.dry_run && steps.plan.outputs.channel == 'email' }}
