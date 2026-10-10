@@ -263,6 +263,8 @@ export function featureFacts(slug, contract) {
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const ID_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+/** Community_Ideas.id — the in-app Community idea a change delivers (Roadmap → Shipped). */
+const IDEA_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const PR_RE = /^(?:lennd\/)?[a-z0-9-]+#\d+$/;
 
 let _statusConfig;
@@ -301,6 +303,13 @@ export function validateEntry(entry, date, contract, { file = '' } = {}) {
         else if (!/^https?:\/\//.test(src) && !existsSync(join(ROOT, 'public', src.replace(/^\//, '').replace(/\?.*$/, ''))))
           at(`media ${src} does not exist under public/`);
       }
+    }
+  }
+  if (entry.ideas !== undefined) {
+    if (!Array.isArray(entry.ideas)) at('ideas must be an array of Community idea ids');
+    else {
+      for (const i of entry.ideas) if (!IDEA_ID_RE.test(String(i))) at(`ideas "${i}" must be a Community idea id (uuid, from the idea's Console URL)`);
+      if (new Set(entry.ideas).size !== entry.ideas.length) at('ideas has duplicates');
     }
   }
   if (entry.kind && !KINDS.includes(entry.kind)) at(`kind must be one of ${KINDS.join(', ')}`);
@@ -343,6 +352,7 @@ export function validateEntry(entry, date, contract, { file = '' } = {}) {
   entry.enable = { how: deriveEnableHow(entry.availability), path: null, ...(entry.enable || {}) };
   entry.where = { scope: deriveScope(entry.features, contract), path: null, ...(entry.where || {}) };
   entry.related = entry.related || [];
+  entry.ideas = entry.ideas || [];
   entry.media = entry.media || [];
   entry.features = entry.features || [];
   entry.permissions = entry.permissions || [];

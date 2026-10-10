@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 /**
  * Emits dist/_internal/release-notes.json — the machine-readable release notes
- * that the TAM Hub (renewal "product evolution" timeline), the Community
- * What's New drafts and Team Lead's "since you were last here" read.
+ * that the TAM Hub (renewal "product evolution" timeline), the in-app Community
+ * (What's New and the Roadmap's Shipped column — web-api syncs this file and
+ * reads `ideas`, `live`, `live_at` and `url`) and Team Lead's "since you were
+ * last here" read.
  *
  * Served behind the same bearer token as help-index.json (worker.js
  * INTERNAL_PREFIX). Raw `internal.*` is stripped; what the hub shows per item
@@ -59,6 +61,9 @@ const entries = allEntries(releases).map((raw) => {
     article_title: e.article ? articleTitle(e.article) : null,
     article_url: e.article ? `${base}${e.article}` : null,
     live: isLive(raw),
+    live_at: isLive(raw) ? (raw.shipped?.docs_only ? raw.date : [raw.shipped.live.us, raw.shipped.live.eu].sort().at(-1)) : null,
+    url: `${base}/help/release-notes#${raw.id}`,
+    ideas: raw.ideas || [],
     enablement: enablementFacts(raw, { base, site }),
   };
 });
