@@ -5,7 +5,7 @@
  * Links to the detail page, the customer guide and any training video.
  */
 import site from '../../../site.json';
-import { AVAILABILITY, ENABLE_HOW, articleTitle, formatDate, internalPrefix, renderInline, videosForArticle } from '../../lib/release-notes.mjs';
+import { AVAILABILITY, articleTitle, availabilityShort, enableHowLabel, formatDate, internalPrefix, renderInline, videosForArticle } from '../../lib/release-notes.mjs';
 import { csLabel, csTone, statusOf } from '../../lib/enablement.mjs';
 import { mediaForEntry } from '../../lib/article-media.mjs';
 import MediaGallery from '../MediaGallery.astro';
@@ -23,7 +23,7 @@ const cs = entry.internal?.cs_action?.kind || 'none';
 const videos = entry.article ? videosForArticle(entry.article) : [];
 const media = mediaForEntry(entry);
 const enableText = (() => {
-  const how = ENABLE_HOW[entry.enable?.how];
+  const how = enableHowLabel(entry.enable?.how, { staff: true });
   if (entry.enable?.how === 'default_on' && !entry.enable?.path) return how;
   return entry.enable?.path ? `${how}: ${entry.enable.path}` : how;
 })();
@@ -64,7 +64,7 @@ const enableText = (() => {
   <dl class="sb-en-facts">
     <dt>Who gets it</dt>
     <dd>
-      {AVAILABILITY[entry.availability]?.short}
+      {availabilityShort(entry.availability, { staff: true })}
       {entry.internal?.who_should_get_it && <span class="sb-muted"> — {entry.internal.who_should_get_it}</span>}
     </dd>
     <dt>Turn it on</dt>

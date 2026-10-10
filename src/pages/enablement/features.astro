@@ -11,7 +11,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import site from '../../../site.json';
 import EnablementLayout from '../../components/enablement/EnablementLayout.astro';
-import { AVAILABILITY, ENABLE_HOW, ROOT, allEntries, featureFacts, internalPrefix, loadReleaseNotes, readContract } from '../../lib/release-notes.mjs';
+import { AVAILABILITY, ROOT, allEntries, availabilityShort, enableHowLabel, featureFacts, internalPrefix, loadReleaseNotes, readContract } from '../../lib/release-notes.mjs';
 
 const prefix = internalPrefix(site);
 const contract = readContract();
@@ -126,12 +126,12 @@ const byAvailability = Object.keys(AVAILABILITY).map((k) => ({ key: k, count: ro
             <td>
               <strong>{AVAILABILITY[r.availability]?.label}</strong>
               <br />
-              <span class="sb-muted">{AVAILABILITY[r.availability]?.short}</span>
+              <span class="sb-muted">{availabilityShort(r.availability, { staff: true })}</span>
               {r.early_access && (
                 <div class="sb-muted">Early Access {r.early_access.stage} · "{r.early_access.name}"{r.early_access.requiresOrgAi ? ' · needs org AI' : ''}</div>
               )}
             </td>
-            <td>{ENABLE_HOW[r.enable_how]}</td>
+            <td>{enableHowLabel(r.enable_how, { staff: true })}</td>
             <td>{r.scopes.map((s) => (s === 'org' ? 'Organization' : 'Event')).join(', ') || '—'}</td>
             <td>
               {r.lifecycle === 'ga'

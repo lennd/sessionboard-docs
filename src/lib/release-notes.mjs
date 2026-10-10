@@ -75,7 +75,7 @@ export const AVAILABILITY = {
   preview: { label: 'Early Access Preview', short: 'Self-serve from Preview' },
   beta: { label: 'Early Access Beta', short: 'Request from Preview; our team enables it' },
   add_on: { label: 'Add-on', short: 'Sold separately; ask your Customer Success Manager' },
-  on_request: { label: 'On request', short: 'Support enables it for your organization or event' },
+  on_request: { label: 'On request', short: 'Support enables it for your organization or event', staff: 'CS enables it for the organization or event' },
   limited_release: { label: 'Limited release', short: 'Enabled for named customers by their Customer Success Manager' },
   enterprise: { label: 'Enterprise', short: 'Enterprise plans' },
 };
@@ -88,6 +88,22 @@ export const ENABLE_HOW = {
   support: 'Ask support to enable it',
   csm: 'Ask your Customer Success Manager',
 };
+
+/**
+ * Staff wording for the enablement section, Slack, email and the hub feed. CS owns
+ * enabling features (Jasmine, 2026-10-08) so it can confirm the customer's plan
+ * includes it and talk through the use case first; public pages keep `short`.
+ */
+const ENABLE_HOW_STAFF = { ...ENABLE_HOW, support: 'CS enables it' };
+
+export function availabilityShort(key, { staff = false } = {}) {
+  const a = AVAILABILITY[key];
+  return (staff && a?.staff) || a?.short;
+}
+
+export function enableHowLabel(how, { staff = false } = {}) {
+  return (staff ? ENABLE_HOW_STAFF : ENABLE_HOW)[how];
+}
 
 /** What CS has to do. Internal only. */
 export const CS_ACTION = {

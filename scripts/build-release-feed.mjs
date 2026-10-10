@@ -20,10 +20,10 @@ import { join, relative } from 'node:path';
 import { enablementFacts } from '../src/lib/release-digest.mjs';
 import {
   AVAILABILITY,
-  ENABLE_HOW,
   ROOT,
   allEntries,
   articleTitle,
+  enableHowLabel,
   isLive,
   loadReleaseNotes,
   publicEntry,
@@ -55,7 +55,7 @@ const entries = allEntries(releases).map((raw) => {
     ...e,
     summary_text: stripInline(e.summary),
     availability_label: AVAILABILITY[e.availability]?.label ?? null,
-    enable_label: ENABLE_HOW[e.enable?.how] ?? null,
+    enable_label: enableHowLabel(e.enable?.how, { staff: true }) ?? null,
     article_title: e.article ? articleTitle(e.article) : null,
     article_url: e.article ? `${base}${e.article}` : null,
     live: isLive(raw),

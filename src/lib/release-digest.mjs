@@ -16,9 +16,10 @@ import {
   AVAILABILITY,
   CS_ACTION,
   DATA_DIR,
-  ENABLE_HOW,
   allEntries,
   articleTitle,
+  availabilityShort,
+  enableHowLabel,
   internalPrefix,
   isLive,
   readContract,
@@ -63,13 +64,13 @@ export function enablementFacts(entry, { base = null, site = readSite() } = {}) 
     when: i.when_to_bring_up || null,
     who: {
       label: AVAILABILITY[entry.availability]?.label || 'Everyone',
-      short: AVAILABILITY[entry.availability]?.short || 'On for every organization',
+      short: availabilityShort(entry.availability, { staff: true }) || 'On for every organization',
       note: i.who_should_get_it || null,
       seen_by: entry.audience || [],
     },
     cs: csKind === 'none' ? null : { kind: csKind, label: CS_LABEL[csKind] || csKind, action: CS_ACTION[csKind], note: i.cs_action?.note || null },
     turn_on: {
-      customer: `${ENABLE_HOW[entry.enable?.how] || 'See the guide'}${entry.enable?.path ? ` — ${entry.enable.path}` : ''}`,
+      customer: `${enableHowLabel(entry.enable?.how, { staff: true }) || 'See the guide'}${entry.enable?.path ? ` — ${entry.enable.path}` : ''}`,
       staff: i.staff_path || null,
       flags,
     },
@@ -120,7 +121,7 @@ export function byModule(entries) {
 
 export function enableText(e) {
   if (e.enable.how === 'default_on' && !e.enable.path) return 'On for everyone — nothing to turn on';
-  return e.enable.path || AVAILABILITY[e.availability]?.short || 'See the guide';
+  return e.enable.path || availabilityShort(e.availability, { staff: true }) || 'See the guide';
 }
 
 export function whoText(e) {
