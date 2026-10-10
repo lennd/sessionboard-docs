@@ -44,6 +44,22 @@ if (!existsSync(distDir)) {
 // recognise them and send them onward, or they would fall back to the FAQ hub.
 const routedOffSite = (path) => path.startsWith('/release-notes');
 
+// A target that was itself retired after launch is still a live mapping: the
+// worker resolves `movedTo(mapped)` and sends the legacy slug to the
+// replacement in one hop. Dropping such rows here would send those slugs to
+// the FAQ hub instead. worker.js cannot be imported from Node (its JSON
+// imports have no attributes), so read its INTERNAL_REDIRECTS block as text.
+const workerSrc = readFileSync(new URL('../worker.js', import.meta.url), 'utf8');
+const internalBlock = workerSrc.match(/const INTERNAL_REDIRECTS = \{([\s\S]*?)\n\};/)?.[1] ?? '';
+const movedTo = Object.fromEntries(
+  [...internalBlock.matchAll(/^\s*'(\/[^']+)':\s*'(\/[^']+)',?\s*$/gm)].map((m) => [m[1], m[2]]),
+);
+Object.assign(movedTo, JSON.parse(readFileSync(new URL('../training-redirects.json', import.meta.url), 'utf8')));
+const retiredButRedirected = (path) => {
+  const next = movedTo[path.replace(/\/$/, '')];
+  return Boolean(next) && pageExists(next.replace(/#.*$/, ''));
+};
+
 const map = {};
 let skipped = 0;
 for (const line of lines.slice(1)) {
@@ -56,7 +72,7 @@ for (const line of lines.slice(1)) {
     skipped++;
     continue;
   }
-  if (!pageExists(newPath) && !routedOffSite(newPath)) {
+  if (!pageExists(newPath) && !routedOffSite(newPath) && !retiredButRedirected(newPath)) {
     skipped++;
     continue;
   }
