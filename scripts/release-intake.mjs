@@ -188,9 +188,7 @@ If it is user-visible, draft ONE release entry as JSON that follows the schema e
 - "id" is a short kebab-case slug unique to this change.
 - Do not invent facts that are not in the PR. If the PR body has a QA or Problem/Solution section, trust it over the diff file list.
 
-Answer with JSON only, no prose, in one of these two shapes:
-{"decision":"skip","reason":"<one sentence>"}
-{"decision":"entry","confidence":"high|medium|low","docs_gap":"<sentence or null>","entry":{ ... }}`;
+Answer by calling the release_decision tool. A skip is {"decision":"skip","reason":"<one sentence>"}. An entry is {"decision":"entry","confidence":"high|medium|low","docs_gap":"<sentence or null>", ...} with every entry field (id, title, summary, article, kind, where, use_case, internal, …) given as a structured value at the top level of the tool input — never as a JSON string.`;
 
 /** 246 slugs folded to one line per resource: `event.contacts: create, delete, export, read, update`. */
 function permissionIndex() {
@@ -221,7 +219,7 @@ function userPrompt({ pr, files, p, articles, features, example }) {
     `## Changed files (${files.length})`,
     fileList || '(unavailable)',
     '',
-    '## Entry schema (fill every field; shipped.prs must be exactly this PR)',
+    '## Entry fields (fill every one, each as a top-level tool-input field; shipped is set for you)',
     JSON.stringify(
       {
         id: 'kebab-case-slug',
@@ -271,9 +269,56 @@ function userPrompt({ pr, files, p, articles, features, example }) {
  * JSON inside a text block (three of the first fifteen drafts died on a stray quote).
  * The schema is deliberately loose on `entry`; validateEntry is the real gate.
  */
+const ENTRY_PROPERTIES = {
+  id: { type: 'string', description: 'kebab-case slug unique to this change' },
+  title: { type: 'string' },
+  summary: { type: 'string' },
+  article: { type: 'string', description: '/folder/guide or /folder/guide#section-slug from the article index' },
+  related: { type: 'array', items: { type: 'string' } },
+  kind: { type: 'string', enum: KINDS },
+  module: { type: 'string', enum: MODULES },
+  features: { type: 'array', items: { type: 'string' } },
+  availability: { type: 'string', enum: Object.keys(AVAILABILITY) },
+  enable: {
+    type: 'object',
+    properties: { how: { type: 'string', enum: Object.keys(ENABLE_HOW) }, path: { type: ['string', 'null'] } },
+  },
+  where: {
+    type: 'object',
+    required: ['scope', 'path'],
+    properties: { scope: { type: 'string', enum: SCOPES }, path: { type: 'string' } },
+  },
+  permissions: { type: 'array', items: { type: 'string' } },
+  audience: { type: 'array', items: { type: 'string', enum: AUDIENCES } },
+  use_case: { type: 'string' },
+  internal: {
+    type: 'object',
+    required: ['when_to_bring_up'],
+    properties: {
+      cs_action: {
+        type: 'object',
+        properties: { kind: { type: 'string', enum: Object.keys(CS_ACTION) }, note: { type: ['string', 'null'] } },
+      },
+      when_to_bring_up: { type: 'string' },
+      who_should_get_it: { type: ['string', 'null'] },
+      staff_path: { type: ['string', 'null'] },
+      gotchas: { type: ['string', 'null'] },
+      talk_track: { type: ['string', 'null'] },
+    },
+  },
+};
+
+/**
+ * The answer comes back as a forced tool call, so the model never has to hand-escape
+ * JSON inside a text block (three of the first fifteen drafts died on a stray quote).
+ * The entry's fields sit at the top level of the input next to the decision: when they
+ * were nested under one `entry` object the model handed that object over as a JSON
+ * string — and mis-escaped it — on about one PR in five. validateEntry is the real gate.
+ */
 const DECISION_TOOL = {
   name: 'release_decision',
-  description: 'Record whether the pull request is user-visible and, if so, the drafted release entry.',
+  description:
+    'Record whether the pull request is user-visible. decision=skip needs only reason. decision=entry fills the entry fields (id, title, summary, article, kind, where, use_case, internal, …) as structured values — never as a JSON string.',
   input_schema: {
     type: 'object',
     additionalProperties: false,
@@ -281,40 +326,76 @@ const DECISION_TOOL = {
     properties: {
       decision: { type: 'string', enum: ['skip', 'entry'] },
       reason: { type: 'string', description: 'skip only: one sentence' },
-      confidence: { type: 'string', enum: ['high', 'medium', 'low'] },
-      docs_gap: { type: ['string', 'null'] },
-      entry: { type: 'object', additionalProperties: true },
+      confidence: { type: 'string', enum: ['high', 'medium', 'low'], description: 'entry only' },
+      docs_gap: { type: ['string', 'null'], description: 'entry only: what the linked guide should add, or null' },
+      ...ENTRY_PROPERTIES,
     },
   },
 };
+const META_KEYS = new Set(['decision', 'reason', 'confidence', 'docs_gap']);
 
-async function askModel(system, user) {
+/** Tool input → { decision, reason, confidence, docs_gap, entry }. Tolerates an `entry` blob (object or JSON string). */
+function normalizeDecision(input) {
+  const out = { decision: input.decision, reason: input.reason, confidence: input.confidence, docs_gap: input.docs_gap ?? null };
+  let entry = {};
+  for (const [k, v] of Object.entries(input)) if (!META_KEYS.has(k) && k !== 'entry') entry[k] = v;
+  if (input.entry != null) {
+    let blob = input.entry;
+    if (typeof blob === 'string') blob = JSON.parse(blob); // throws → caller retries once
+    if (blob && typeof blob === 'object' && !Array.isArray(blob)) entry = { ...entry, ...blob };
+  }
+  if (out.decision === 'entry') out.entry = entry;
+  return out;
+}
+
+async function callAnthropic(body) {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error('ANTHROPIC_API_KEY is not set');
   const base = process.env.ANTHROPIC_BASE_URL || 'https://api.anthropic.com';
   const res = await fetch(`${base}/v1/messages`, {
     method: 'POST',
     headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: 4000,
-      temperature: 0,
-      system,
-      tools: [DECISION_TOOL],
-      tool_choice: { type: 'tool', name: DECISION_TOOL.name },
-      messages: [{ role: 'user', content: user }],
-    }),
+    body: JSON.stringify({ model: MODEL, max_tokens: 4000, temperature: 0, tools: [DECISION_TOOL], tool_choice: { type: 'tool', name: DECISION_TOOL.name }, ...body }),
   });
   if (!res.ok) throw new Error(`anthropic ${res.status}: ${(await res.text()).slice(0, 300)}`);
-  const data = await res.json();
+  return res.json();
+}
+
+function decisionFrom(data) {
   const call = (data.content || []).find((c) => c.type === 'tool_use' && c.name === DECISION_TOOL.name);
-  if (call && call.input && typeof call.input === 'object') return call.input;
+  if (call && call.input && typeof call.input === 'object') return { call, input: call.input };
   // A stub or an older model may still answer in text; take the first JSON object in it.
   const text = (data.content || []).map((c) => c.text || '').join('');
   const json = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
   const start = json.indexOf('{');
   if (start < 0) throw new Error(`model returned no decision (stop_reason ${data.stop_reason})`);
-  return JSON.parse(json.slice(start));
+  return { call: null, input: JSON.parse(json.slice(start)) };
+}
+
+async function askModel(system, user) {
+  const messages = [{ role: 'user', content: user }];
+  const first = await callAnthropic({ system, messages });
+  const { call, input } = decisionFrom(first);
+  try {
+    return normalizeDecision(input);
+  } catch (err) {
+    if (!call) throw err;
+    // One retry, telling the model exactly what it did: the tool result carries the error.
+    messages.push({ role: 'assistant', content: first.content });
+    messages.push({
+      role: 'user',
+      content: [
+        {
+          type: 'tool_result',
+          tool_use_id: call.id,
+          is_error: true,
+          content: `Rejected: ${err.message}. Call release_decision again with every entry field as a structured value at the top level of the input (title, summary, where: {scope, path}, internal: {…}). Do not pass a JSON string.`,
+        },
+      ],
+    });
+    const second = await callAnthropic({ system, messages });
+    return normalizeDecision(decisionFrom(second).input);
+  }
 }
 
 // ── writing ────────────────────────────────────────────────────────────────
@@ -547,4 +628,5 @@ if (!DRY) {
   saveIntake(intake);
   writeFileSync(RESULT_FILE, JSON.stringify(result, null, 2));
 }
+for (const problem of result.problems) console.log(`  ⚠ ${problem}`);
 console.log(`\n${result.drafted.length} drafted, ${result.skipped.length} skipped, ${result.problems.length} problem(s).${DRY ? ' (dry run — nothing written)' : ''}`);
