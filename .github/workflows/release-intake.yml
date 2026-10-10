@@ -27,7 +27,7 @@ on:
   workflow_dispatch:
     inputs:
       pr:
-        description: 'One PR as lennd/<repo>#<n>; blank = every pending PR in _intake.json'
+        description: 'PR(s) as lennd/<repo>#<n>, space-separated; blank = pending PRs in _intake.json'
         type: string
         default: ''
       limit:
@@ -84,7 +84,8 @@ jobs:
             echo "args=--event $GITHUB_EVENT_PATH" >> "$GITHUB_OUTPUT"
             echo "::notice::merged: $PAYLOAD_REF — $PAYLOAD_TITLE"
           elif [ -n "$INPUT_PR" ]; then
-            echo "args=--pr $INPUT_PR" >> "$GITHUB_OUTPUT"
+            args=""; for r in $INPUT_PR; do args="$args --pr $r"; done   # space-separated list is fine
+            echo "args=$args" >> "$GITHUB_OUTPUT"
           else
             echo "args=--pending --limit ${INPUT_LIMIT:-15}" >> "$GITHUB_OUTPUT"
           fi

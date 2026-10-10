@@ -503,7 +503,17 @@ for (const p of refs) {
     console.log(`${p.ref}: skip — ${rec.reason}`);
     continue;
   }
-  if (answer.decision !== 'entry' || !answer.entry) {
+  // The tool schema says `entry` is an object, but the model sometimes hands it over
+  // as a JSON string; spreading that gives an entry of single characters (run 2, 3 PRs).
+  if (typeof answer.entry === 'string') {
+    try {
+      answer.entry = JSON.parse(answer.entry);
+    } catch (err) {
+      result.problems.push(`${p.ref}: entry was a string that is not JSON — ${err.message}`);
+      continue;
+    }
+  }
+  if (answer.decision !== 'entry' || !answer.entry || typeof answer.entry !== 'object' || Array.isArray(answer.entry)) {
     result.problems.push(`${p.ref}: model returned neither skip nor entry`);
     continue;
   }
