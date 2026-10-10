@@ -1,13 +1,15 @@
 ---
 /**
- * Everything that shipped in one module, newest first, plus the feature flags
- * the product contract files under that module's articles.
+ * Everything that shipped in one module, newest first. Live entries first;
+ * merged-but-not-deployed ones at the bottom as "Coming next".
  */
 import site from '../../../../site.json';
 import EnablementLayout from '../../../components/enablement/EnablementLayout.astro';
+import ComingNext from '../../../components/enablement/ComingNext.astro';
 import EntryCard from '../../../components/enablement/EntryCard.astro';
 import EntryFilters from '../../../components/enablement/EntryFilters.astro';
-import { MODULES, allEntries, formatDate, internalPrefix, loadReleaseNotes } from '../../../lib/release-notes.mjs';
+import ReviewTracker from '../../../components/enablement/ReviewTracker.astro';
+import { MODULES, allEntries, formatDate, internalPrefix, isLive, loadReleaseNotes } from '../../../lib/release-notes.mjs';
 import { moduleSlug } from '../../../lib/enablement.mjs';
 
 export async function getStaticPaths() {
@@ -22,21 +24,29 @@ export async function getStaticPaths() {
 
 const { module, releases } = Astro.props;
 const prefix = internalPrefix(site);
+const shown = (e) => isLive(e) || e.shipped?.docs_only;
 const byDate = releases
-  .map((r) => ({ date: r.date, entries: r.entries.filter((e) => e.module === module) }))
+  .map((r) => ({ date: r.date, entries: r.entries.filter((e) => e.module === module && shown(e)) }))
   .filter((r) => r.entries.length > 0);
+const staged = allEntries(releases).filter((e) => e.module === module && !shown(e));
 const total = byDate.reduce((n, r) => n + r.entries.length, 0);
 ---
 
 <EnablementLayout title={module} description={`Every ${module} change, from the CS point of view.`} current={`${prefix}/modules/${moduleSlug(module)}`}>
-  <p>{total} {total === 1 ? 'change' : 'changes'} filed under <strong>{module}</strong>, newest first.</p>
+  <p>{total} live {total === 1 ? 'change' : 'changes'} filed under <strong>{module}</strong>, newest first.{staged.length > 0 && <> {staged.length} more <a href="#coming-next">coming next</a>.</>}</p>
+  <ReviewTracker />
   <EntryFilters showModule={false} />
   {byDate.map((r) => (
     <section data-sb-en-section>
-      <h2 id={r.date}>{formatDate(r.date)}</h2>
+      <div class="sb-en-date-h">
+        <h2 id={r.date}>{formatDate(r.date)}</h2>
+        <button type="button" class="sb-en-mark-day" data-sb-en-mark-day hidden>Mark this day reviewed</button>
+      </div>
       <ul class="sb-en-list">
         {r.entries.map((e) => <EntryCard entry={e} />)}
       </ul>
     </section>
   ))}
+
+  <ComingNext entries={staged} />
 </EnablementLayout>

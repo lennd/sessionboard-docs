@@ -1,0 +1,144 @@
+---
+/**
+ * Per-browser "mark as reviewed" for the live EntryCards on a page: progress,
+ * a tick box on each card, "Mark this day reviewed" on each date heading,
+ * a "New since your last visit" badge, and a flash on the card a deep link
+ * (the morning email's `#<entry-id>`) lands on.
+ *
+ * State lives in localStorage only — the Enablement section has no login, so
+ * there is no per-person record and nothing is sent anywhere.
+ */
+---
+
+<div class="sb-en-review" data-sb-en-review hidden>
+  <div class="sb-en-review-row">
+    <strong data-sb-en-review-count></strong>
+    <span class="sb-en-review-cheer" data-sb-en-review-cheer></span>
+  </div>
+  <div class="sb-en-review-bar" aria-hidden="true"><span data-sb-en-review-fill></span></div>
+  <p class="sb-en-review-note">Saved in this browser only.</p>
+</div>
+
+<script>
+  const READ_KEY = 'sb-enablement-reviewed-v1';
+  const VISIT_KEY = 'sb-enablement-last-visit';
+
+  const load = (): Set<string> => {
+    try {
+      const v = JSON.parse(localStorage.getItem(READ_KEY) || '[]');
+      return new Set(Array.isArray(v) ? v : []);
+    } catch {
+      return new Set();
+    }
+  };
+  const save = (ids: Set<string>) => {
+    try {
+      localStorage.setItem(READ_KEY, JSON.stringify([...ids]));
+    } catch {
+      /* private mode or storage full: ticks just don't persist */
+    }
+  };
+
+  const box = document.querySelector<HTMLElement>('[data-sb-en-review]');
+  const cards = [...document.querySelectorAll<HTMLElement>('[data-sb-en-entry][data-reviewable]')];
+
+  if (box && cards.length) {
+    const reviewed = load();
+    const total = new Set(cards.map((c) => c.id)).size;
+    const count = box.querySelector('[data-sb-en-review-count]')!;
+    const cheer = box.querySelector('[data-sb-en-review-cheer]')!;
+    const fill = box.querySelector<HTMLElement>('[data-sb-en-review-fill]')!;
+
+    const cheerFor = (done: number) => {
+      if (done === 0) return 'Tick each update as you read it.';
+      if (done === total) return 'All caught up.';
+      if (done / total >= 0.5) return 'More than halfway there.';
+      return 'Nice start — keep going.';
+    };
+
+    const render = () => {
+      let done = 0;
+      const seen = new Set<string>();
+      for (const c of cards) {
+        const on = reviewed.has(c.id);
+        c.dataset.reviewed = on ? 'yes' : 'no';
+        c.querySelector<HTMLInputElement>('[data-sb-en-read]')!.checked = on;
+        if (on) c.querySelector<HTMLElement>('[data-sb-en-new]')?.setAttribute('hidden', '');
+        if (on && !seen.has(c.id)) done += 1;
+        seen.add(c.id);
+      }
+      count.textContent = `${done} of ${total} ${total === 1 ? 'update' : 'updates'} reviewed`;
+      cheer.textContent = cheerFor(done);
+      fill.style.width = `${total ? (done / total) * 100 : 0}%`;
+      for (const btn of document.querySelectorAll<HTMLButtonElement>('[data-sb-en-mark-day]')) {
+        const day = btn.closest('[data-sb-en-section]')?.querySelectorAll<HTMLElement>('[data-sb-en-entry][data-reviewable]');
+        if (!day?.length) continue;
+        btn.hidden = false;
+        btn.textContent = [...day].every((c) => reviewed.has(c.id)) ? 'Unmark this day' : 'Mark this day reviewed';
+      }
+      document.dispatchEvent(new CustomEvent('sb-en:reviewed'));
+    };
+
+    for (const c of cards) {
+      c.querySelector<HTMLInputElement>('[data-sb-en-read]')!.addEventListener('change', (ev) => {
+        if ((ev.target as HTMLInputElement).checked) reviewed.add(c.id);
+        else reviewed.delete(c.id);
+        save(reviewed);
+        render();
+      });
+    }
+
+    for (const btn of document.querySelectorAll<HTMLButtonElement>('[data-sb-en-mark-day]')) {
+      btn.addEventListener('click', () => {
+        const day = [...(btn.closest('[data-sb-en-section]')?.querySelectorAll<HTMLElement>('[data-sb-en-entry][data-reviewable]') || [])];
+        const allOn = day.every((c) => reviewed.has(c.id));
+        for (const c of day) {
+          if (allOn) reviewed.delete(c.id);
+          else reviewed.add(c.id);
+        }
+        save(reviewed);
+        render();
+      });
+    }
+
+    // "New" = went live after the previous visit's date. The first visit marks nothing new.
+    let lastVisit: string | null = null;
+    try {
+      lastVisit = localStorage.getItem(VISIT_KEY);
+      const d = new Date();
+      localStorage.setItem(VISIT_KEY, `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+    } catch {
+      /* no storage: no badges */
+    }
+    if (lastVisit) {
+      for (const c of cards) {
+        const since = c.dataset.liveSince;
+        if (since && since >= lastVisit && !reviewed.has(c.id)) c.querySelector<HTMLElement>('[data-sb-en-new]')?.removeAttribute('hidden');
+      }
+    }
+
+    box.hidden = false;
+    render();
+  }
+
+  const flash = () => {
+    const id = decodeURIComponent(location.hash.slice(1));
+    if (!id) return;
+    const target = document.getElementById(id);
+    if (!target?.matches('[data-sb-en-entry], .sb-en-next-list > li')) return;
+    if (target.hidden) {
+      // A saved filter is hiding the card the link points at: clear the filters.
+      for (const s of document.querySelectorAll<HTMLSelectElement>('[data-sb-en-filters] select')) {
+        s.value = '';
+        s.dispatchEvent(new Event('change'));
+      }
+    }
+    target.querySelector('details')?.setAttribute('open', '');
+    target.scrollIntoView({ block: 'start' });
+    target.classList.remove('sb-en-flash');
+    void target.offsetWidth;
+    target.classList.add('sb-en-flash');
+  };
+  flash();
+  window.addEventListener('hashchange', flash);
+</script>

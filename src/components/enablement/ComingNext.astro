@@ -1,0 +1,45 @@
+---
+/**
+ * Merged-but-not-in-production entries, as a compact list at the bottom of a
+ * page: CS reads what is live first, and nothing here should reach a customer
+ * until it moves up into the live list on the next deploy.
+ */
+import site from '../../../site.json';
+import { internalPrefix, renderInline } from '../../lib/release-notes.mjs';
+import { statusOf } from '../../lib/enablement.mjs';
+
+interface Props {
+  entries: any[];
+}
+
+const { entries } = Astro.props;
+const prefix = internalPrefix(site);
+---
+
+{entries.length > 0 && (
+  <section class="sb-en-next">
+    <h2 id="coming-next">Coming next — not in production yet</h2>
+    <p class="sb-muted">
+      <strong>Don't mention these to customers yet.</strong> {entries.length}{' '}
+      {entries.length === 1 ? 'change is' : 'changes are'} merged and documented, and will appear in the next deploy.
+    </p>
+    <ul class="sb-en-next-list">
+      {entries.map((e) => (
+        <li id={e.id}>
+          <details>
+            <summary>
+              <span class="sb-en-next-title">{e.title}</span>
+              {e.module && <span class="sb-badge sb-badge-module">{e.module}</span>}
+            </summary>
+            <div class="sb-en-next-body">
+              <p set:html={renderInline(e.summary)} />
+              {e.internal?.cs_action?.note && <p class="sb-muted"><strong>CS:</strong> {e.internal.cs_action.note}</p>}
+              <p class="sb-muted">{statusOf(e).detail}</p>
+              <a href={`${prefix}/releases/${e.id}`}>Full notes →</a>
+            </div>
+          </details>
+        </li>
+      ))}
+    </ul>
+  </section>
+)}

@@ -139,6 +139,23 @@ export function csText(e) {
   return { kind, text: `${CS_ACTION[kind]}${note}` };
 }
 
+const CS_RANK = { must_enable: 0, review_before_customers_see: 1, can_disable: 2, reach_out: 3, none: 4 };
+
+/**
+ * The few entries the email leads with: whatever CS has to act on first
+ * (must enable, then review, can disable, reach out, then nothing), newest
+ * release date first within each tier.
+ */
+export function topForEmail(entries, n = 5) {
+  return [...entries]
+    .sort((a, b) => {
+      const ra = CS_RANK[a.internal?.cs_action?.kind || 'none'] ?? 4;
+      const rb = CS_RANK[b.internal?.cs_action?.kind || 'none'] ?? 4;
+      return ra - rb || (a.date < b.date ? 1 : a.date > b.date ? -1 : 0);
+    })
+    .slice(0, n);
+}
+
 /** Summary trimmed to one readable line. */
 export function shortSummary(e, max = 220) {
   return stripInline(e.summary).replace(new RegExp(`^(.{0,${max}}\\S)(\\s.*)?$`, 's'), (m, head, tail) => (tail ? `${head}…` : head));

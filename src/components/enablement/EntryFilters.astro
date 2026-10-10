@@ -1,7 +1,9 @@
 ---
 /**
- * Module / CS action / status filters for any list of EntryCards. Hides cards
- * and empty release sections client-side; persists the selection in the URL.
+ * Module / CS action / type / reviewed filters for any list of EntryCards.
+ * Hides cards and empty release sections client-side; persists the selection
+ * in the URL. ReviewTracker keeps each card's data-reviewed current and fires
+ * `sb-en:reviewed` so the Show filter re-applies as boxes are ticked.
  */
 import { MODULES } from '../../lib/release-notes.mjs';
 
@@ -35,21 +37,20 @@ const { modules = MODULES, showModule = true } = Astro.props;
     </select>
   </label>
   <label>
-    Status
-    <select data-filter="state" aria-label="Filter by production status">
-      <option value="">Any</option>
-      <option value="live">Live</option>
-      <option value="staged">Not in production</option>
-      <option value="partial">One region only</option>
-    </select>
-  </label>
-  <label>
     Type
     <select data-filter="kind" aria-label="Filter by type of change">
       <option value="">Any</option>
       <option value="new">New</option>
       <option value="improved">Improved</option>
       <option value="fixed">Fixed</option>
+    </select>
+  </label>
+  <label>
+    Show
+    <select data-filter="reviewed" aria-label="Filter by whether you have reviewed it">
+      <option value="">All</option>
+      <option value="no">To review</option>
+      <option value="yes">Reviewed</option>
     </select>
   </label>
   <span class="sb-en-count" data-sb-en-count></span>
@@ -86,6 +87,7 @@ const { modules = MODULES, showModule = true } = Astro.props;
       if (v && [...s.options].some((o) => o.value === v)) s.value = v;
       s.addEventListener('change', apply);
     }
+    document.addEventListener('sb-en:reviewed', apply);
     apply();
   }
 </script>

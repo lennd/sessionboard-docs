@@ -18,6 +18,7 @@ interface Props {
 const { entry, showDate = false } = Astro.props;
 const prefix = internalPrefix(site);
 const status = statusOf(entry);
+const reviewable = status.state === 'live';
 const cs = entry.internal?.cs_action?.kind || 'none';
 const videos = entry.article ? videosForArticle(entry.article) : [];
 const media = mediaForEntry(entry);
@@ -36,6 +37,8 @@ const enableText = (() => {
   data-cs={cs}
   data-availability={entry.availability}
   data-kind={entry.kind || ''}
+  data-reviewable={reviewable ? '' : undefined}
+  data-live-since={status.since || undefined}
   id={entry.id}
 >
   <div class="sb-en-card-media">
@@ -47,6 +50,7 @@ const enableText = (() => {
       <a href={`${prefix}/releases/${entry.id}`}>{entry.title}</a>
     </h3>
     <span class="sb-en-badges">
+      {reviewable && <span class="sb-badge sb-badge-fresh" data-sb-en-new hidden>New since your last visit</span>}
       <span class={`sb-status sb-status-${status.state}`} title={status.detail}>{status.label}</span>
       {entry.module && <span class="sb-badge sb-badge-module">{entry.module}</span>}
       {entry.kind && <span class={`sb-badge sb-badge-${entry.kind}`}>{entry.kind}</span>}
@@ -88,6 +92,12 @@ const enableText = (() => {
       <a href={videos[0].anchor}>
         {videos.length === 1 ? 'Video' : `${videos.length} videos`}
       </a>
+    )}
+    {reviewable && (
+      <label class="sb-en-read">
+        <input type="checkbox" data-sb-en-read />
+        <span>Mark as reviewed</span>
+      </label>
     )}
   </p>
   </div>
