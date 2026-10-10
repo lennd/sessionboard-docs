@@ -344,7 +344,15 @@ function normalizeDecision(input) {
     if (typeof blob === 'string') blob = JSON.parse(blob); // throws → caller retries once
     if (blob && typeof blob === 'object' && !Array.isArray(blob)) entry = { ...entry, ...blob };
   }
-  if (out.decision === 'entry') out.entry = entry;
+  // "decision": "fixed" — the model put the kind where the decision goes (2 of 80 PRs).
+  if (KINDS.includes(out.decision)) {
+    entry.kind = entry.kind || out.decision;
+    out.decision = 'entry';
+  }
+  if (out.decision === 'entry') {
+    if (!entry.title && !entry.summary) throw new Error('decision=entry but no entry fields (title, summary, …) were given'); // → retry
+    out.entry = entry;
+  }
   return out;
 }
 
