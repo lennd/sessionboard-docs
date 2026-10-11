@@ -3,7 +3,7 @@ title: "Swapcard"
 description: "Swapcard is an AI-powered event and matchmaking platform that runs successful in-person, virtual, and hybrid events."
 ---
 
-import { Note } from '@compat';
+import { Note, Accordion, AccordionGroup } from '@compat';
 
 <img src="/logo/apps/swapcard-integration.png" alt="Swapcard logo" width="52" height="52" style={{borderRadius:"12px"}} />
 
@@ -64,9 +64,24 @@ Once your event is connected, you will be able to identify if you would like to 
 **Mapping Criteria**
 
 1. More than one event can be mapped per Sessionboard organization.
-   1. **NOTE:** Within your Sessionboard organization, only one API Key can be utilized. If you would like to map more than one event from Sessionboard into Swapcard, please ensure that every event in Swapcard is associated with the same API Key.
+   1. **NOTE:** Each connection uses one API key, and the Swapcard events you map must be reachable with that key. If some of your Swapcard events use a different API key, add a second connection for them with **Add New Connection**.
 2. At least one Sessionboard event must be mapped to Swapcard for the sync option to appear in the UI.
 3. Once a Swapcard event has been mapped to a Sessionboard event, neither can be remapped to another event.
+
+### Roles and groups in Swapcard
+
+Everyone Sessionboard sends to Swapcard is created as a speaker. **Speakers** always sync; moderators and chairpersons sync only when **Sync Moderators** or **Sync Chairpersons** is on for the event mapping.
+
+With **Sync Contact Type to Groups** on, Sessionboard also places each person in Swapcard groups named **Speakers**, **Moderators** and **Chairpersons** (under **People > Settings > Groups** in Swapcard), creating a group if it doesn't exist:
+
+| Role on a session in Sessionboard | Swapcard groups |
+| --- | --- |
+| Speaker | Speakers |
+| Moderator | Moderators and Speakers |
+| Chairperson | Chairpersons and Speakers |
+| Several of these roles | Every matching group |
+
+Because moderators and chairpersons are synced as speakers, they are always in the **Speakers** group as well, so a count of that group includes them. Other roles you create in Sessionboard don't get a group of their own. Groups with any other name — for example ones a registration import adds — are kept when Sessionboard updates a person's groups.
 
 ## Mapping session fields
 Once your events have been connected, your next window will allow you to map your designated session fields. Within the dropdown, be sure you have selected the correct event that you wish to map the session fields for.
@@ -127,7 +142,7 @@ Also, verify that the timezone matches in both events before syncing. To do this
 ![Syncing Sessions and Speakers](/images/kb/282e2d04-image-png-Feb-26-2026-05-48-11-8979-PM.png)
 
 <Note>
-Sessions and/or speakers will not be removed from Swapcard if speaker and/or session statuses are changed in Sessionboard. Admins will have to manually delete the session/speaker record in Swapcard.Similarly, deleting a a session or speaker from Sessionboard, won't delete it from Swapcard. You'll need to manually delete it from Swapcard.
+By default, sessions and speakers are not removed from Swapcard when you delete them or change their status in Sessionboard — delete them in Swapcard. To have the sync remove them, turn on **Remove Deleted Sessions** and **Remove Deleted Speakers** for the event mapping.
 </Note>
 
 ### Synced Fields
@@ -178,8 +193,8 @@ If your speaker exists in Swapcard, we will match the profiles via email. Please
 ---
 
 ## How to Initiate a Sync
-1. Go to your event Sessions > Agenda.
-2. Under Options, click “Sync to Swapcard”
+1. Go to **Program > Collect & Review > Agenda**.
+2. Click **Options**, then **Sync to Swapcard (event: …)**. The ID is the Swapcard event the sync writes to.
 
    ![How to Initiate a Sync](/images/kb/3845df01-image-png-Feb-27-2026-04-55-16-1832-PM.png)
 
@@ -191,9 +206,41 @@ If your speaker exists in Swapcard, we will match the profiles via email. Please
 
 On resync, new sessions and speakers that have been added to the agenda in Sessionboard will be sent to Swapcard. Any updates that are made to previously synced fields (such as correcting a speaker’s title or changing a session time) will also be applied.
 
-In addition to syncing all sessions and their speakers, you have the ability to choose individual sessions to sync. This can be done under the Sessions > Agenda tab and by selecting the individual sessions you wish to sync. You will want to select your session(s) and then under 'More' click 'Sync to Swapcard'.
+In addition to syncing all sessions and their speakers, you have the ability to choose individual sessions to sync. Go to **Program > Collect & Review > Agenda**, select the sessions you wish to sync, then click **More > Sync to Swapcard (event: …)**.
 
 ![Resync Behavior](/images/kb/c65dd40e-image-png-Mar-03-2026-08-29-16-0530-PM.png)
+
+Every run is listed in **History > Integrations > Sync History** with its **Sync ID**, status, error count and duration. Click the results link on a row for counts of sessions and speakers synced and the error summary.
+
+## Frequently asked questions
+
+<AccordionGroup>
+  <Accordion title="Why is a session missing in Swapcard?">
+Only sessions that meet every sync condition are sent. Check the session against this list, then sync it again.
+
+1. Its status is accepted.
+2. It has a date, start time and end time, and it hasn't already ended.
+3. A sync has run since the session was accepted or changed. With **Enable Continuous Sync** on, that happens about every 30 minutes; otherwise, go to **Program > Collect & Review > Agenda**, select the session and click **More > Sync to Swapcard (event: …)**.
+4. The latest run in **History > Integrations > Sync History** shows no error for it.
+  </Accordion>
+  <Accordion title="A speaker keeps disappearing from a session in Swapcard">
+Sessionboard decides who speaks on a synced session. Each sync sends the session's speakers from Sessionboard, so a speaker you add to the session only in Swapcard can be removed by the next sync.
+
+1. Add the person to the session in Sessionboard, not in Swapcard.
+2. Make sure their email address is valid and unique. Swapcard matches people by email and rejects a speaker it can't accept, and a rejected speaker isn't attached to the session.
+3. Sync, then open the run's results in **History > Integrations > Sync History** to confirm the speaker synced without an error.
+  </Accordion>
+  <Accordion title="Can one Sessionboard event sync to two Swapcard events?">
+Not as a split. Each sync sends all of the event's accepted sessions to the Swapcard event it is mapped to, so one Sessionboard event can't send some sessions to one Swapcard event and the rest to another. For two co-located conferences that each have their own Swapcard event, keep each conference's sessions in its own Sessionboard event and map each one to its Swapcard event.
+  </Accordion>
+  <Accordion title="The sync failed, but I don't see an error">
+Send the run's details to support so they can look it up.
+
+1. Go to **History > Integrations > Sync History** and find the run.
+2. Note its **Sync ID**, status and start time, and open the results to copy any counts or messages.
+3. Email [support@sessionboard.com](mailto:support@sessionboard.com) with the event name and those details.
+  </Accordion>
+</AccordionGroup>
 
 ---
 

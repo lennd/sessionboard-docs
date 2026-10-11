@@ -58,6 +58,20 @@ That's contacts. They are the foundation, search before you add, import people b
 
 The template only contains fields that are on the module — so [create any custom fields](/faq/how-to-create-and-delete-custom-fields) you want to fill before you generate it, and add them to the module view's **Columns** so they are included.
 
+### Required columns and session values
+
+Only **Title** is required on a Sessions import; on a Contacts import, **First Name**, **Last Name** and **Email** are. Every other column is optional — leave it out or set it to **Ignore this column**.
+
+Some session columns point at things that already exist on the event, and the cell has to match them:
+
+| Column | What the cell takes |
+| --- | --- |
+| **Track**, **Format**, **Level**, **Language** | One existing value, matched ignoring case and extra spaces. An unknown value fails the row with *Dropdown value does not match an option*. |
+| **Tags** | Existing tags, pipe-separated. Each one must match a tag in [Program settings → Tags](/sessions/program-settings#tags), ignoring case — the import does not create tags, so add new ones there first. A session can't take more tags than the event allows. |
+| **Location** | A room name. A room that doesn't exist yet is created. |
+| **Speakers**, **Chairpersons**, **Moderators** | Contact emails, comma-separated. Each person must already be a contact on the event. |
+| **Sponsors**, **Exhibitors** | Existing sponsor or exhibitor names, pipe-separated. |
+
 ## Get the template
 
 <Steps>
@@ -164,6 +178,23 @@ Yes. For events in the same organization, [copy sessions from another event](/se
 <Accordion title="Our importer looks different — an upload box with a progress bar and a results table">
 
 Your account has **Sessionboard Imports** turned on, Sessionboard's own importer. The steps are the same in a different order: drop the file, **Match your columns** (each of your columns against a Sessionboard field, with a preview of its values), choose what happens **When a row already exists** — **Create new and update existing**, **Create new rows only** or **Update existing rows only** — and click **Import N rows**. The result lists rows **Created**, **Updated** and **Failed**; rows that passed are imported, and **Download or retry failed rows** gives you just the rest to fix and re-import. You can close the panel and keep working while it runs.
+
+</Accordion>
+
+<Accordion title="Can I add tags to existing sessions with an import?">
+
+Yes, with an update import — but the **Tags** cell replaces the session's tags rather than adding to them. Export the sessions with **Session Friendly ID** and **Tags** in the view, add the new tag to the existing ones in each cell (pipe-separated), set **Update session if already exists** to `TRUE`, and map only those columns. Every tag must already exist in [Program settings → Tags](/sessions/program-settings#tags).
+
+</Accordion>
+
+<Accordion title="How do I move values from a custom field into a standard field?">
+
+Re-import them into the standard field, then point your forms at it. Nothing is lost along the way, because the custom field keeps its values.
+
+1. Add **Email** and the custom field to the Contacts view and click **Options → Export .CSV**.
+2. In the file, rename the custom field's column header to the standard field's label, add an **Update record if already exists** column set to `TRUE`, and delete any other columns.
+3. Import the file, mapping **Email**, the switch and the renamed column.
+4. On each submission form's **Participant Information** step, add the standard field and remove the custom one. Keep the custom field rather than deleting it until you have checked the values arrived.
 
 </Accordion>
 

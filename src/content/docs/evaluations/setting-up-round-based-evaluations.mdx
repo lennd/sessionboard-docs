@@ -7,17 +7,18 @@ features: ["sessions"]
 reviewed: "2026-09-29"
 ---
 
-import { Note, Tip, Warning, Gallery } from '@compat';
+import { Note, Tip, Warning, Gallery, Accordion, AccordionGroup } from '@compat';
 
 {/* label-ok: Demote */}
 {/* label-ok: Can promote sessions */}
 {/* label-ok: Apply to N */}
+{/* label-ok: Evaluator Login Link */}
 
 <Gallery />
 
 ## Why use it
 
-Reviewing hundreds of abstracts fairly means the right reviewers see the right submissions, conflicts are kept out, and nobody reviews forty while someone else reviews four. An evaluation plan writes those rules down once — who reviews what, in which round, with what workload cap — and applies them to the whole round, with a preview and counts before anything is committed, so a re-tracked submission never leaves a reviewer holding it by mistake.
+Reviewing hundreds of abstracts fairly means the right reviewers see the right submissions, conflicts are kept out, and nobody reviews forty while someone else reviews four. An evaluation plan writes those rules down once — who reviews what, in which round, with what workload cap — and applies them to the whole round, with a preview and counts before anything is committed. Re-run a rule after re-tracking submissions and the reviewers who should no longer have them lose them.
 
 ## How evaluations work in Sessions 2.0
 
@@ -368,9 +369,11 @@ A fourth sub-section — Visible Participant Fields to Reviewers — lets you ch
 
 The Evaluators step (labeled "Select users who can evaluate" in the sidebar) is where you choose who will review submissions for this plan.
 
-Evaluators must already be users on this event. To add an evaluator:
+To add someone who is already a user on this event:
 1. Use the Search by name or email... bar to find the user.
 2. Click on their name to select them.
+
+To add someone new, click **Add evaluator** and enter their name and email. They're added to the event and enrolled in the rounds selected on this step. You can also add evaluators to any plan from **Program → Evaluation → Evaluators → Add Evaluator**.
 
 At the top of the page, the Rounds section shows which rounds new evaluators are enrolled in. New evaluators are enrolled in the rounds you select here. Check or uncheck rounds to control which review stages each evaluator participates in.
 
@@ -383,8 +386,16 @@ Resending invites to existing evaluators: To resend an invite to an evaluator wh
 ![Resending invites to existing evaluators](/images/kb/22e48ae3-image-png-Jun-24-2026-09-51-01-2589-PM.png)
 
 <Note>
-Evaluators must already exist as users on this event. If you need to add someone who is not yet a user, add them to the event first, then return to this step to select them as an evaluator.
+Add evaluators here or from **Program → Evaluation → Evaluators**, not from the event team. On Sessions 2.0 events the event team invite doesn't offer the Evaluator role.
 </Note>
+
+### How evaluators sign in
+
+Evaluators review on **this event's Program Site**, under **My Reviews**. They sign in however the Site allows (an emailed sign-in link and/or SSO), with the email address you enrolled. Set up the Program Site under **Program → Site** before you invite anyone; an organization-wide Site can't host session reviews.
+
+The invitation, plan-opened, and assignment emails Sessionboard sends already link to the event's Program Site, so you don't need to send a link of your own. If you write your own email to evaluators, link to the Program Site address. Don't use the **Evaluator Login Link** merge tag for this: it opens the general Sessionboard sign-in page, not the Program Site.
+
+To see what one evaluator sees, open the plan's **Evaluators** tab, click the ⋯ menu next to their name and choose **Preview as evaluator in portal**. It opens the Program Site in a new tab signed in as that evaluator for two hours. You need permission to view the portal as other users.
 
 ---
 
@@ -480,6 +491,23 @@ Click **Run all in order** to create the assignments top to bottom. Each one giv
 If the preview shows submissions short of their reviewers, raise the cap slightly or move the short track higher in the run order. A cap set to the exact even split often leaves a thinly staffed track under-covered.
 </Tip>
 
+### Import assignments from a spreadsheet
+
+When you already know who reviews what — a committee chair's spreadsheet, or dozens of subtracks — import the pairs instead of building a rule for each. Open the plan, choose **Plan Options → Import Assignments**, click **Generate Template** for a sample file pre-filled with this plan, fill it in, then **Upload File**.
+
+Each row assigns one evaluator to one submission:
+
+| Column | Required | What goes in it |
+| --- | --- | --- |
+| `Email` | Yes | The evaluator's email. Someone who isn't a user yet is invited. |
+| `First Name`, `Last Name` | For new users | The evaluator's name. |
+| `Evaluation Plan Name` | Yes | The plan, matched without regard to capitals. One file can cover several plans. |
+| `Round Name` | No | The round. Leave it blank for the plan's default round. |
+| `Submission ID` | Yes | The submission's ID (for example `SESS-123`). |
+| `Send Invite Email` | No | `true` (the default) emails evaluators the import newly enrolls; `false` sends nothing. |
+
+Evaluators who aren't on the event, plan, or round yet are enrolled automatically. An import only adds: rows that already exist are left as they are, and nothing is removed. It doesn't check the plan cap or the round's conflict settings, so check the plan's **Submissions** and **Evaluators** tabs afterwards. To try it out first, import a few rows into a closed plan.
+
 ---
 
 ## Step 5: Ballot
@@ -516,7 +544,7 @@ From the Evaluation Plans list, you can perform the following actions on any pla
 - **Edit:** Re-open the plan wizard to modify settings, rounds, evaluators, and assignments.
 - **Open / Close:** Control whether evaluators can currently access and submit reviews.
 - **Export Results:** Download evaluation data in two formats: Individual Grade Report (every evaluator's responses per submission) or Cumulative Grades Report (aggregated scores per submission).
-- **Duplicate:** Create a copy of the plan with the same configuration, useful for running similar evaluations across multiple tracks or events.
+- **Duplicate:** Create a closed copy of the plan with the same configuration, useful for running similar evaluations across multiple tracks. The copy also keeps the original's evaluators, assignments, and round dates, but no scores — see the [frequently asked questions](#frequently-asked-questions) for what to change.
 - **Notify:** Notify evaluators.
 - **Delete:** Permanently remove the plan and all associated data.
 
@@ -575,6 +603,71 @@ Additional metrics on the Summary page include: Total Evaluations, Evaluated Sub
 - **Preview assignments before saving:** Use the Impact Preview panel to verify session counts and evaluator workload before anything goes live.
 - **Monitor progress via the Summary page:** Use the Started / In progress / Complete metrics to spot evaluators who are behind, and follow up before your close date.
 - **Export early and often:** Download interim reports to track trends, even before all evaluations are complete.
+
+---
+
+## Frequently asked questions
+
+<AccordionGroup>
+
+<Accordion title="Evaluators got more submissions than the maximum I set. Why?">
+
+**Max submissions per evaluator** limits only the one assignment you're running, and only while its switch is on. Every **Assign** run, every saved assignment and every **Assign reviewers** automation counts on its own, so three runs of 20 can give someone 60. An **Assign reviewers** automation gives each session to every evaluator it names.
+
+To bring workloads back down:
+
+1. Under **Evaluator workload across the plan**, enter **Max submissions per evaluator (whole plan)** and click **Save cap**. Evaluators at or over it get no new assignments from the wizard, saved assignments or automations. The cap removes nothing.
+2. Remove the extras. On the plan's **Evaluators** tab, find the submissions under that evaluator and choose **Remove assignment** from the ⋯ menu of the ones they haven't started.
+3. Make further changes while the plan is closed. Assignments made to a closed plan send no email; evaluators hear about the whole batch when you open the plan and notify them.
+
+</Accordion>
+
+<Accordion title="How do I check a plan before I open it?">
+
+Check the numbers, then look at it as an evaluator.
+
+1. On the **Assignments** step, the **Current state** panel shows each round's **Submissions in round**, **With evaluators** and **Existing assignments**. Before you click **Assign**, the preview lists the new assignments **By submission** and **By evaluator**.
+2. On the plan's **Evaluators** tab, choose **Preview as evaluator in portal** from an evaluator's ⋯ menu to open the Program Site as that person.
+3. To click through a review yourself, add yourself as an evaluator on a round (turn off **Send invite email to new evaluators** first), assign yourself a submission or two, and open the event's Program Site. While the plan is closed your queue is view-only. When you're done, **Remove from plan** takes you off and deletes your scores on that plan.
+
+</Accordion>
+
+<Accordion title="My plan shows 0 submissions. What's wrong?">
+
+The submission count on a plan's card only includes submissions that have at least one evaluator assigned in a round, so a plan shows 0 until you assign.
+
+- **Save changes** at the bottom of the wizard doesn't assign anything. On the **Assignments** step, click the **Assign…** button.
+- If the preview's **Filtered submissions** is 0, the rule selects nothing. Loosen its filters, or switch to **All submissions in plan scope** to see what the plan covers. Draft submissions are never included.
+
+</Accordion>
+
+<Accordion title="I duplicated a plan for another track. What do I change?">
+
+A copy starts closed, with the original plan's evaluators, assignments and round dates — everything except scores. Before you open it:
+
+1. Change its evaluators on the **Evaluators** step.
+2. On the **Assignments** step, run the rule for the new track with **Replace not-yet-reviewed**. That removes the copied assignments that don't match and leaves the round holding only what the rule selects.
+3. Set the round dates when you open it — the **Open plan** dialog has **Review opens** and **Review closes** for each round.
+
+</Accordion>
+
+<Accordion title="I moved submissions to another track or category. How do I refresh assignments?">
+
+Assignments don't follow a track change on their own. An **Assign reviewers** automation adds the submission to the new track's plan, but it never takes it out of the plan or round it was in before.
+
+For each plan the submissions left, open the **Assignments** step and run its rule again with **Replace not-yet-reviewed**. Assignments that no longer match and haven't been started are removed, and submissions left with no evaluators leave the round. Assignments a reviewer has already started stay; remove those by hand with **Remove assignment** on the **Evaluators** tab if they should go too.
+
+</Accordion>
+
+<Accordion title="Why does the assignment preview show more than my number of submissions?">
+
+Usually because it's counting assignments, not submissions. The **Assign** button counts evaluations — one per evaluator per submission — so 5 submissions and 3 evaluators reads **Assign 15 evaluations**, with "5 submissions · 3 evaluators" underneath.
+
+If **Filtered submissions** itself is higher than you expect, remember that **All submissions in plan scope** includes submissions from every submission form unless the plan's scope is limited. To assign one form's submissions only, choose **By submission filters** and add a **Source** filter for that form.
+
+</Accordion>
+
+</AccordionGroup>
 
 ---
 
