@@ -67,6 +67,7 @@ import {
 } from '../src/lib/release-notes.mjs';
 import { gh, parsePrRef, releaseConfig, requireToken } from '../src/lib/github-api.mjs';
 import { SENTENCE_SPLIT, sentenceClaims } from '../src/lib/unshipped.mjs';
+import { WHY_USE_IT_KINDS, changelogPhrase } from '../src/lib/why-use-it.mjs';
 import { loadIntake, saveIntake, recordFor, heuristicSkip } from './release-gaps.mjs';
 
 const argv = process.argv.slice(2);
@@ -183,7 +184,7 @@ If it is user-visible, draft ONE release entry as JSON that follows the schema e
 - "permissions" are exact slugs from the permission list (e.g. event.contacts.read) that a user must hold to use the change. Leave it [] unless the PR names a permission check; never write prose there.
 - "kind": new = a capability that did not exist; improved = an existing capability does more or reads better; fixed = behaviour that was wrong now works.
 - "use_case": one or two sentences a customer success manager could say to a customer about why they would want this.
-- "why_use_it": the long form of use_case — two to four sentences addressed to the customer ("you"), saying what problem this solves and when they would reach for it. It becomes the "## Why use it" section of the linked article, so it must stand on its own without the release entry. Describe what the product does; never say it is unfinished.
+- "why_use_it": only for kind new or improved, otherwise null. Two to four sentences addressed to the customer ("you") about the feature the linked article documents as a whole — what problem it solves and when they would reach for it — not about this pull request. It becomes the article's permanent "## Why use it" section, so it must read as true a year from now: no "now", "can now", "no longer", "anymore". Describe what the product does; never say it is unfinished.
 - "internal" is for staff only: cs_action.kind ∈ ${Object.keys(CS_ACTION).join(' | ')}; when_to_bring_up, who_should_get_it, gotchas, talk_track are short sentences.
 - "enable.path" is the menu path to turn it on, and it is REQUIRED unless enable.how is default_on. For support or csm write "Ask your Customer Success Manager to enable <feature>; then <where.path>"; for self_serve write "Get started → Early Access → Preview → <feature>". "where.path" is the menu path where the change shows up.
 - "where.scope" ∈ ${SCOPES.join(' | ')}; "audience" ⊆ ${AUDIENCES.join(', ')}; "module" ∈ ${MODULES.join(' | ')}.
@@ -589,8 +590,8 @@ function addWhyUseIt(entry) {
       .filter((x) => x.trim() && !sentenceClaims(x).length)
       .join(' ')
       .trim();
-  const text = clean(entry.internal?.draft?.why_use_it) || clean(entry.use_case);
-  if (!slug || !text) return null;
+  const text = [clean(entry.internal?.draft?.why_use_it), clean(entry.use_case)].find((t) => t && !changelogPhrase(t));
+  if (!slug || !text || !WHY_USE_IT_KINDS.has(entry.kind)) return null;
   const file = [join(DOCS_DIR, `${slug}.mdx`), join(DOCS_DIR, slug, 'index.mdx')].find(existsSync);
   if (!file) return null;
   const src = readFileSync(file, 'utf8');

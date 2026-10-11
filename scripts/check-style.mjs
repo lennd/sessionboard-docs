@@ -19,6 +19,7 @@ import { globSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { unshippedClaims } from '../src/lib/unshipped.mjs';
+import { WHY_USE_IT_KINDS, changelogPhrase } from '../src/lib/why-use-it.mjs';
 
 const DOCS = 'src/content/docs';
 const files = globSync(`${DOCS}/**/*.mdx`);
@@ -33,7 +34,7 @@ for (const f of globSync('src/data/release-notes/*.json')) {
   const date = f.match(/(\d{4}-\d{2}-\d{2})\.json$/)?.[1];
   if (!date || date < RELEASE_CUTOVER) continue;
   for (const e of JSON.parse(readFileSync(f, 'utf8')).entries || []) {
-    if (e.article) releaseLinked.add(String(e.article).replace(/#.*$/, '').replace(/^\//, ''));
+    if (e.article && WHY_USE_IT_KINDS.has(e.kind)) releaseLinked.add(String(e.article).replace(/#.*$/, '').replace(/^\//, ''));
   }
 }
 
@@ -74,6 +75,11 @@ for (const file of files) {
   }
   if (releaseLinked.has(slug) && !/^## Why use it\s*$/m.test(body)) {
     add(file, 'why-use-it', 'a release entry links here — add a "## Why use it" section (the long form of the entry\'s use_case) before the first how-to heading');
+  }
+  const why = /^## Why use it\s*\n([\s\S]*?)(?=^## |(?![\s\S]))/m.exec(body)?.[1];
+  const stale = why && changelogPhrase(why);
+  if (stale) {
+    add(file, 'why-use-it', `"Why use it" reads like a release note ("${stale}") — describe what the feature is for, not what changed`);
   }
 
   for (const [label, sentence] of unshippedClaims(`${description}\n${body}`)) {
