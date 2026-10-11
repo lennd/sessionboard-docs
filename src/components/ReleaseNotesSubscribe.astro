@@ -8,13 +8,36 @@
  * form POST → redirect to /help/release-notes/email?result=…); with it, the
  * card swaps to the outcome in place and announces it to screen readers.
  *
- * `website` is a honeypot: visually hidden, tabindex -1, autocomplete off —
- * bots fill it, people never see it.
+ * Bot defence, none of it visible to a person (the Worker enforces it —
+ * src/lib/product-updates-proxy.mjs): `website` is a honeypot (visually
+ * hidden, tabindex -1, autocomplete off — bots fill it, people never see
+ * it); `t0` is when the card rendered, so a submit a few hundred ms later is
+ * a script; and an *invisible* Turnstile widget supplies a token when it
+ * loads. If the widget is blocked or slow the form still submits without a
+ * token — the API's throttles and the double opt-in are the backstop.
+ *
+ * The Turnstile widget is "Help Center release-notes opt-in" in the
+ * Sessionboard Cloudflare account, bound to learn.sessionboard.com, mode
+ * invisible. web-api verifies tokens with that widget's secret
+ * (PRODUCT_UPDATES_TURNSTILE_SECRET_KEY). The site key is public.
  */
 import { SUBSCRIBE_PATH } from '../lib/product-updates-proxy.mjs';
+
+const TURNSTILE_SITE_KEY = '0x4AAAAAAFTeCPKTQumIpeOI';
+/** How long to wait for a Turnstile token before submitting without one. */
+const TURNSTILE_WAIT_MS = 2500;
 ---
 
-<section class="sb-sub" id="subscribe" aria-labelledby="sb-sub-title" data-sb-subscribe>
+<script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
+
+<section
+  class="sb-sub"
+  id="subscribe"
+  aria-labelledby="sb-sub-title"
+  data-sb-subscribe
+  data-turnstile-site-key={TURNSTILE_SITE_KEY}
+  data-turnstile-wait-ms={TURNSTILE_WAIT_MS}
+>
   <div class="sb-sub-copy">
     <h2 id="sb-sub-title" class="sb-sub-title">Get release notes by email</h2>
     <p class="sb-sub-lede">
@@ -43,6 +66,8 @@ import { SUBSCRIBE_PATH } from '../lib/product-updates-proxy.mjs';
       <label for="sb-sub-website">Website</label>
       <input id="sb-sub-website" type="text" name="website" tabindex="-1" autocomplete="off" />
     </div>
+    <input type="hidden" name="t0" value="" data-sb-subscribe-t0 />
+    <div class="sb-sub-turnstile" data-sb-subscribe-turnstile aria-hidden="true"></div>
   </form>
   <p class="sb-sub-status" role="status" aria-live="polite" data-sb-subscribe-status hidden></p>
 </section>
@@ -56,12 +81,68 @@ import { SUBSCRIBE_PATH } from '../lib/product-updates-proxy.mjs';
     email_required: 'Enter your email address to subscribe.',
     invalid: 'That doesn’t look like an email address. Check it and try again.',
     slow_down: 'Too many attempts from this network. Try again in an hour.',
-    unavailable: 'Email subscriptions aren’t available right now. Try again later.',
+    unavailable: 'Email sign-up isn’t open yet — we’re switching it on shortly. Check back soon, or turn it on under Community → What’s new in Sessionboard.',
     error: 'Something went wrong on our side. Try again in a few minutes.',
   };
   if (root && form && status) {
     const input = form.querySelector<HTMLInputElement>('input[name="email"]');
     const button = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+    const t0 = form.querySelector<HTMLInputElement>('[data-sb-subscribe-t0]');
+    if (t0) t0.value = String(Date.now());
+
+    // Invisible Turnstile. Rendered lazily on first focus so the script is
+    // not fetched for readers who never touch the form; resolves to '' when
+    // the widget is blocked, errors, or takes longer than TURNSTILE_WAIT_MS.
+    type Turnstile = {
+      render: (el: Element, opts: Record<string, unknown>) => string;
+      execute: (id: string) => void;
+      reset: (id: string) => void;
+    };
+    const siteKey = root.dataset.turnstileSiteKey ?? '';
+    const waitMs = Number(root.dataset.turnstileWaitMs) || 2500;
+    const slot = form.querySelector<HTMLElement>('[data-sb-subscribe-turnstile]');
+    let widgetId: string | null = null;
+    let pending: ((token: string) => void) | null = null;
+    const turnstile = () => (window as unknown as { turnstile?: Turnstile }).turnstile;
+    const mountTurnstile = () => {
+      const ts = turnstile();
+      if (widgetId !== null || !ts || !slot || !siteKey) return;
+      try {
+        widgetId = ts.render(slot, {
+          sitekey: siteKey,
+          execution: 'execute',
+          callback: (token: string) => pending?.(token),
+          'error-callback': () => pending?.(''),
+          'expired-callback': () => pending?.(''),
+          'timeout-callback': () => pending?.(''),
+        });
+      } catch {
+        widgetId = null;
+      }
+    };
+    input?.addEventListener('focus', mountTurnstile, { once: true });
+    const turnstileToken = (): Promise<string> =>
+      new Promise((resolve) => {
+        mountTurnstile();
+        const ts = turnstile();
+        if (widgetId === null || !ts) return resolve('');
+        const timer = window.setTimeout(() => {
+          pending = null;
+          resolve('');
+        }, waitMs);
+        pending = (token) => {
+          window.clearTimeout(timer);
+          pending = null;
+          resolve(token);
+        };
+        try {
+          ts.execute(widgetId);
+        } catch {
+          window.clearTimeout(timer);
+          pending = null;
+          resolve('');
+        }
+      });
     const show = (key: string, ok: boolean) => {
       status.textContent = MESSAGES[key] ?? MESSAGES.error;
       status.hidden = false;
@@ -70,7 +151,8 @@ import { SUBSCRIBE_PATH } from '../lib/product-updates-proxy.mjs';
     };
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
-      const email = input?.value.trim() ?? '';
+      const email = (input?.value ?? '').trim().toLowerCase();
+      if (input && input.value !== email) input.value = email;
       if (!email || !input?.checkValidity()) {
         show(email ? 'invalid' : 'email_required', false);
         input?.focus();
@@ -79,10 +161,16 @@ import { SUBSCRIBE_PATH } from '../lib/product-updates-proxy.mjs';
       if (button) button.disabled = true;
       status.hidden = true;
       try {
+        const token = await turnstileToken();
         const res = await fetch(form.action, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-          body: JSON.stringify({ email, website: (form.querySelector<HTMLInputElement>('input[name="website"]')?.value ?? '') }),
+          body: JSON.stringify({
+            email,
+            website: form.querySelector<HTMLInputElement>('input[name="website"]')?.value ?? '',
+            t0: t0?.value ?? '',
+            turnstileToken: token || undefined,
+          }),
         });
         const body = await res.json().catch(() => ({}));
         show(body.result ?? body.error ?? (res.ok ? 'check_email' : 'error'), Boolean(body.ok));
@@ -90,6 +178,14 @@ import { SUBSCRIBE_PATH } from '../lib/product-updates-proxy.mjs';
         show('error', false);
       } finally {
         if (button) button.disabled = false;
+        const ts = turnstile();
+        if (ts && widgetId !== null) {
+          try {
+            ts.reset(widgetId);
+          } catch {
+            /* a fresh token is fetched on the next submit anyway */
+          }
+        }
       }
     });
   }
@@ -179,6 +275,11 @@ import { SUBSCRIBE_PATH } from '../lib/product-updates-proxy.mjs';
     left: -10000px;
     width: 1px;
     height: 1px;
+    overflow: hidden;
+  }
+  /* Invisible widget: renders nothing visible, but needs a box in the DOM. */
+  .sb-sub-turnstile {
+    height: 0;
     overflow: hidden;
   }
   .sb-sub-status {

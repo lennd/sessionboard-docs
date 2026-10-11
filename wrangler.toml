@@ -20,6 +20,16 @@ run_worker_first = true
 [vars]
 PRODUCT_UPDATES_API_URL = "https://api.sessionboard.com"
 
+# Edge throttle on POST /help/release-notes/subscribe, per visitor IP
+# (src/lib/product-updates-proxy.mjs withinRateLimit). 5 attempts a minute is
+# plenty for a person retyping an address and starves a script. Counters are
+# per server within a colo (not synced), so this is the flood brake; the
+# accurate per-visitor limit is web-api's (20/h → 429 "slow_down").
+[[ratelimits]]
+name = "SUBSCRIBE_RATE_LIMITER"
+namespace_id = "1001"
+simple = { limit = 5, period = 60 }
+
 # ── Hostnames ──
 # A Custom Domain rather than a route: the Worker answers every request from its
 # ASSETS binding, so this hostname has no origin at all and cannot 522.

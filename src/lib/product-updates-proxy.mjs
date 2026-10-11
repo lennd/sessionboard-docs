@@ -17,6 +17,20 @@
  *
  * Env: PRODUCT_UPDATES_API_URL (var), PRODUCT_UPDATES_INTERNAL_SECRET (secret).
  * Without either, the routes answer 503 and the form shows "unavailable".
+ *
+ * Bot defence on /subscribe, none of it visible to a person:
+ *   - the address is validated and normalised (trim + lowercase) here, so
+ *     junk never reaches the API;
+ *   - `website` is a honeypot (hidden field, bots fill it) and `t0` is the
+ *     time the form rendered — a submit under MIN_FILL_MS later is a script.
+ *     Both are answered with the same "check your inbox" as a real request,
+ *     so the bot learns nothing; nothing is relayed;
+ *   - SUBSCRIBE_RATE_LIMITER (Workers Rate Limiting binding, per visitor IP)
+ *     answers 429 / "slow_down" past a handful of attempts a minute;
+ *   - the form sends an invisible Turnstile token when the widget loaded
+ *     (site key in ReleaseNotesSubscribe.astro), which web-api verifies. No token
+ *     is still accepted — the API's own per-address and per-IP throttles and
+ *     the double opt-in are the backstop — so an ad blocker costs nothing.
  */
 
 export const SUBSCRIBE_PATH = '/help/release-notes/subscribe';
@@ -31,6 +45,54 @@ const API_ROUTES = {
 };
 
 const TOKEN_RE = /^[A-Za-z0-9_-]{16,128}$/;
+// Same shape web-api accepts (lib/community/product-updates.js); anything
+// else is answered "invalid" without an API call.
+const EMAIL_RE = /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/;
+const EMAIL_MAX = 320;
+/** A form filled in under this many ms after render was not filled by a person. */
+export const MIN_FILL_MS = 1500;
+/** `t0` older than this is ignored (a tab left open, a clock skew) rather than trusted. */
+const MAX_T0_AGE_MS = 24 * 60 * 60 * 1000;
+
+export const normalizeEmail = (value) => String(value ?? '').trim().toLowerCase();
+export const isValidEmail = (email) => EMAIL_RE.test(email) && email.length <= EMAIL_MAX;
+
+/**
+ * True when `t0` (ms since epoch, set by the form's script when the card
+ * rendered) says the submit came too fast for a person. Missing or
+ * nonsensical values do not count against the visitor: the no-JS form has no
+ * t0 at all.
+ */
+export const submittedTooFast = (t0, now = Date.now()) => {
+  const start = Number(t0);
+  if (!Number.isFinite(start) || start <= 0) return false;
+  const elapsed = now - start;
+  if (elapsed < 0 || elapsed > MAX_T0_AGE_MS) return false;
+  return elapsed < MIN_FILL_MS;
+};
+
+/**
+ * Per-visitor edge throttle via the Workers Rate Limiting binding. Returns
+ * true when the request may proceed; with no binding (local dev, tests) or a
+ * binding error it lets the request through — the API throttles too.
+ *
+ * Cloudflare keeps these counters per server inside a colo and syncs nothing,
+ * so a handful of requests fanned across machines never trips it; it is the
+ * flood brake. The accurate per-visitor limit (20/h) lives in web-api and
+ * comes back as 429 → "slow_down" through the same path.
+ */
+async function withinRateLimit(env, request) {
+  const limiter = env?.SUBSCRIBE_RATE_LIMITER;
+  if (!limiter || typeof limiter.limit !== 'function') return true;
+  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+  try {
+    const { success } = await limiter.limit({ key: `subscribe:${ip}` });
+    return success !== false;
+  } catch (err) {
+    console.warn('subscribe rate limiter failed open:', err?.message ?? err);
+    return true;
+  }
+}
 
 export const isProductUpdatesPath = (pathname) =>
   pathname === SUBSCRIBE_PATH || pathname === CONFIRM_PATH || pathname === UNSUBSCRIBE_PATH;
@@ -98,7 +160,8 @@ async function callApi(env, route, payload, request, fetchImpl) {
       body = {};
     }
     return { status: res.status, body: body?.payload ?? body };
-  } catch {
+  } catch (err) {
+    console.warn('subscribe upstream unreachable:', err?.message ?? err);
     return { status: 0, body: { error: 'unreachable' } };
   }
 }
@@ -115,22 +178,33 @@ export async function productUpdatesResponse(request, url, env, fetchImpl = fetc
 
   if (url.pathname === SUBSCRIBE_PATH) {
     if (method !== 'POST') return redirectTo(origin, {});
+    const asJson = wantsJson(request);
+    const answer = (ok, result, status) => (asJson ? json({ ok, result }, status) : redirectTo(origin, { result }));
+
+    if (!(await withinRateLimit(env, request))) return answer(false, 'slow_down', 429);
+
     const body = await readBody(request);
-    const email = String(body.email ?? '').trim();
-    if (!email) {
-      return wantsJson(request) ? json({ ok: false, error: 'email_required' }, 400) : redirectTo(origin, { result: 'invalid' });
-    }
+    const email = normalizeEmail(body.email);
+    if (!email) return asJson ? json({ ok: false, error: 'email_required' }, 400) : redirectTo(origin, { result: 'invalid' });
+    if (!isValidEmail(email)) return answer(false, 'invalid', 400);
+
+    // Honeypot filled or filled in faster than a person types: say thanks,
+    // relay nothing. The address is never stored.
+    if (String(body.website ?? '').trim() || submittedTooFast(body.t0)) return answer(true, 'check_email', 200);
+
     const api = await callApi(
       env,
       'subscribe',
-      { email, website: String(body.website ?? ''), turnstileToken: body['cf-turnstile-response'] || body.turnstileToken || undefined },
+      { email, website: '', turnstileToken: body['cf-turnstile-response'] || body.turnstileToken || undefined },
       request,
       fetchImpl,
     );
     const ok = api.status >= 200 && api.status < 300;
-    const result = ok ? 'check_email' : api.status === 503 ? 'unavailable' : api.status === 429 ? 'slow_down' : 'error';
-    if (wantsJson(request)) return json({ ok, result }, ok ? 200 : api.status === 503 ? 503 : api.status === 429 ? 429 : 502);
-    return redirectTo(origin, { result });
+    // 404: the API build in front of us predates the route — the list is not
+    // open yet, which is "unavailable", not an error on our side.
+    const unavailable = api.status === 503 || api.status === 404;
+    const result = ok ? 'check_email' : unavailable ? 'unavailable' : api.status === 429 ? 'slow_down' : 'error';
+    return answer(ok, result, ok ? 200 : unavailable ? 503 : api.status === 429 ? 429 : 502);
   }
 
   if (url.pathname === CONFIRM_PATH) {
