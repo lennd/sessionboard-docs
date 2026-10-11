@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+# Pre-push: run Docs CI locally against the exact commit going to main.
+#
+# main deploys straight to learn.sessionboard.com, and this checkout is shared by
+# several agent sessions at once, so a push that fails CI costs a red run, a
+# failure email, and a publish that never happens. Every one so far would have
+# been caught by `npm run build` (broken link / invalid hash), `check:style`
+# or a stale breadcrumbs.json — all of which the workflow runs, and all of which
+# this hook runs first, on a throwaway worktree of the pushed commit so other
+# sessions' uncommitted edits in this tree can neither hide a failure nor cause
+# a false one.
+#
+# Installed by `npm install` (package.json "prepare" sets core.hooksPath).
+# Escape hatch for a true emergency only: DOCS_SKIP_PREFLIGHT=1 git push …
+# — and say so in the commit message, because CI will still judge the push.
+
+set -euo pipefail
+
+if [ "${DOCS_SKIP_PREFLIGHT:-}" = "1" ]; then
+  echo "pre-push: DOCS_SKIP_PREFLIGHT=1 — skipping Docs CI preflight" >&2
+  exit 0
+fi
+
+zero=0000000000000000000000000000000000000000
+shas=()
+while read -r _local_ref local_sha remote_ref _remote_sha; do
+  [ "$remote_ref" = "refs/heads/main" ] || continue
+  [ "$local_sha" != "$zero" ] || continue   # branch deletion
+  shas+=("$local_sha")
+done
+[ "${#shas[@]}" -gt 0 ] || exit 0
+
+# Agent shells often have no node on PATH (nvm is not sourced). Find one rather
+# than silently passing: a hook that cannot run its checks must not approve.
+if ! command -v node >/dev/null 2>&1; then
+  latest=$(ls -d "$HOME"/.nvm/versions/node/v*/bin 2>/dev/null | sort -V | tail -1 || true)
+  if [ -n "$latest" ] && [ -x "$latest/node" ]; then
+    export PATH="$latest:$PATH"
+  else
+    echo "pre-push: node not found (PATH or ~/.nvm). Install Node 24 or push with DOCS_SKIP_PREFLIGHT=1 and watch CI." >&2
+    exit 1
+  fi
+fi
+
+top=$(git rev-parse --show-toplevel)
+if [ ! -d "$top/node_modules" ]; then
+  echo "pre-push: $top/node_modules is missing — run npm install first." >&2
+  exit 1
+fi
+
+for sha in "${shas[@]}"; do
+  tmp=$(mktemp -d "${TMPDIR:-/tmp}/docs-preflight.XXXXXX")
+  cleanup() { git worktree remove --force "$tmp" >/dev/null 2>&1 || rm -rf "$tmp"; }
+  trap cleanup EXIT
+  echo "pre-push: running Docs CI steps against $(git rev-parse --short "$sha") before it reaches main…"
+  git worktree add --detach --quiet "$tmp" "$sha"
+  ln -s "$top/node_modules" "$tmp/node_modules"
+  if ! node "$tmp/scripts/preflight.mjs" --cwd "$tmp"; then
+    echo >&2
+    echo "pre-push: refusing to push $(git rev-parse --short "$sha") to main — it would fail Docs CI (see above)." >&2
+    exit 1
+  fi
+  cleanup
+  trap - EXIT
+done
