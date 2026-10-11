@@ -585,51 +585,39 @@
     },
     {
       "id": "live-transcribe-regenerate-stale-summary-fix",
-      "title": "Live Transcribe recap regeneration now uses the latest transcript when the instruction is blank",
-      "summary": "When you click **Regenerate with AI** on a recap with a blank instruction, Sessionboard now re-summarizes from the current transcript if it was edited after the last summary was generated, instead of returning the outdated summary. Uploading an empty preview thumbnail to an Advocacy campaign now returns a clear error message instead of a server crash.",
-      "article": "/marketing/recaps",
+      "title": "Regenerating a recap after editing the transcript uses the edited transcript",
+      "summary": "Clicking **Regenerate with AI** on a recap with no instruction re-summarizes from the transcript when it was edited after the last summary, instead of reusing the old summary.",
+      "article": "/marketing/recaps#edit-a-recap",
       "related": [
-        "/marketing/live-transcribe",
-        "/marketing/advocacy"
+        "/marketing/live-transcribe"
       ],
       "kind": "fixed",
-      "module": "Marketing",
       "features": [
-        "marketing_transcribe",
-        "marketing_advocacy"
+        "marketing_transcribe"
       ],
-      "availability": "everyone",
       "enable": {
         "how": "default_on",
         "path": null
       },
       "where": {
         "scope": "event",
-        "path": "Marketing → Recaps; Marketing → Advocacy"
+        "path": "Marketing → Transcribe → Recaps → a recap → Regenerate with AI"
       },
       "permissions": [],
       "audience": [
         "organizer"
       ],
-      "use_case": "Event marketers who edit a Live Transcribe transcript and then regenerate the recap without a custom instruction will now get a summary that reflects their edits, not the stale pre-edit version. Teams uploading Advocacy preview thumbnails get a clear validation error if the file is empty, so they know immediately what to fix.",
+      "use_case": "A team that corrects names and terms in a transcript gets recaps that reflect the corrections.",
       "internal": {
         "cs_action": {
           "kind": "none",
-          "note": "Both fixes are automatic. No configuration needed."
+          "note": null
         },
-        "when_to_bring_up": "When a customer reports that regenerating a recap after editing the transcript doesn't seem to pick up their changes, or when they get an unexplained error uploading an Advocacy thumbnail.",
-        "who_should_get_it": "Any customer using Live Transcribe recaps or Advocacy campaigns.",
+        "when_to_bring_up": "A customer edited a transcript and the regenerated recap ignored the edits.",
+        "who_should_get_it": "Customers publishing Live Transcribe recaps.",
         "staff_path": null,
-        "gotchas": "The stale-summary fix only applies when the instruction field is blank; a non-blank instruction always triggers a fresh generation regardless.",
-        "talk_track": "If you edit a transcript and regenerate the recap without a custom instruction, Sessionboard now automatically detects the transcript changed and produces a fresh summary from your updated text.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "medium",
-          "docs_gap": "The recaps guide should note that a blank instruction on Regenerate with AI will re-summarize from the current transcript if it was edited after the last summary, and that an empty thumbnail file upload in Advocacy returns a validation error.",
-          "why_use_it": "When you edit a session transcript and then click **Regenerate with AI** without typing a custom instruction, Sessionboard checks whether the transcript changed since the last summary was made. If it did, it re-summarizes from the updated text so your recap reflects the corrected content. Previously, a blank instruction caused the old summary to be reused silently, meaning edits were ignored. Separately, if you accidentally upload a zero-byte file as an Advocacy preview thumbnail, you now see a clear \"Preview thumbnail is empty\" message rather than an unexplained server error, so you can fix the file and try again right away.",
-          "at": "2026-10-11T07:15:17.882Z"
-        }
+        "gotchas": "With an instruction typed in, Regenerate always writes a new recap, as before.",
+        "talk_track": null
       },
       "shipped": {
         "prs": [
@@ -778,19 +766,14 @@
     },
     {
       "id": "site-sign-in-i18n-and-form-link-redirect",
-      "title": "Site sign-in page now fully translated and login-gated form links redirect correctly after sign-in",
-      "summary": "The portal **Sign In** page is now fully translated in English, German, Spanish, and French — about 55 previously untranslated strings, including server banner messages, now appear in the visitor's language. Separately, clicking a login-gated form link while signed out now correctly starts the sign-in flow and lands the visitor on the form after they authenticate via magic link, even when opened in a new tab.",
-      "article": "/settings/portal-login-methods",
+      "title": "The Site sign-in page is fully translated, and form links bring visitors back to the form after sign-in",
+      "summary": "The Site sign-in page appears fully in English, German, Spanish or French, including its banner messages. A signed-out visitor who opens a link to a form that needs sign-in sees sign-in start, and after the magic link lands on that form — even if the link opens in a new tab.",
+      "article": "/site/site-builder#sign-in-options",
       "related": [
-        "/awards/setting-up-your-sessionboard-site",
-        "/site/site-builder"
+        "/site/site-builder#languages"
       ],
       "kind": "fixed",
-      "module": "Portals",
-      "features": [
-        "new_portals",
-        "languages"
-      ],
+      "features": [],
       "availability": "everyone",
       "enable": {
         "how": "default_on",
@@ -798,32 +781,24 @@
       },
       "where": {
         "scope": "org",
-        "path": "Site → Sign In page"
+        "path": "Your Site → Sign in"
       },
       "permissions": [],
       "audience": [
         "participant",
         "speaker"
       ],
-      "use_case": "Events with international attendees no longer show a partially English sign-in page. Speakers or participants who click a form link before signing in are taken directly to that form after authenticating, rather than landing on the portal home.",
+      "use_case": "International speakers sign in without a page that is half in English, and nobody loses the form they were trying to open.",
       "internal": {
         "cs_action": {
           "kind": "none",
-          "note": "Both fixes are default-on. No configuration needed."
+          "note": null
         },
-        "when_to_bring_up": "When a customer reports that their non-English speakers see English text on the sign-in page, or that participants end up on the portal home instead of the intended form after signing in.",
-        "who_should_get_it": "Any customer using a multilingual site or sharing direct form links with unauthenticated visitors.",
+        "when_to_bring_up": "A customer’s non-English visitors see English on the sign-in page, or visitors end up on the Site home instead of the form after signing in.",
+        "who_should_get_it": "Customers with Sites in German, Spanish or French, or who share direct form links.",
         "staff_path": null,
-        "gotchas": "The LCP performance improvement (SB-9574, ~30% reduction) is a side-effect of sharing one site-info request between auth and the landing page; it does not yet reach the mobile Lighthouse target of 80 — that requires server-rendered HTML and is a separate decision.",
-        "talk_track": "Your international attendees will now see a fully translated sign-in page, and anyone clicking a form link before logging in will land exactly where they expect after authenticating.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "medium",
-          "docs_gap": "The portal-login-methods guide should note that the sign-in page is available in English, German, Spanish, and French, and that direct links to login-gated forms preserve the destination after magic-link authentication.",
-          "why_use_it": "When you run a multilingual event, every touchpoint — including the sign-in screen — should appear in the visitor's language. Previously, about 55 strings on the portal sign-in page were missing translations, so German, Spanish, and French visitors saw English text mixed in. Now the full sign-in experience, including any server banner messages, is translated. Additionally, if a visitor clicks a direct link to a login-gated form before they are signed in, they are now taken straight to that form after completing magic-link authentication, even if they opened the link in a new tab — so no one loses their place in the flow.",
-          "at": "2026-10-11T06:10:38.556Z"
-        }
+        "gotchas": "The Site landing page also loads faster (one site lookup instead of two), but has not reached the mobile Lighthouse target.",
+        "talk_track": null
       },
       "shipped": {
         "prs": [
@@ -844,58 +819,44 @@
     },
     {
       "id": "awards-coi-round-settings-and-evaluator-exclusion",
-      "title": "Conflict-of-interest settings now save correctly and exclude conflicted evaluators from assignment",
-      "summary": "Saving an awards round now correctly persists **Conflict of Interest** settings — including **COI Enforcement** and **Require Disclosure** — without returning an error. Evaluators who have declared a conflict in a matching category are automatically excluded from reviewer assignment for those submissions.",
-      "article": "/awards/managing-submissions-reviewers-rounds#assigning-reviewers",
+      "title": "Awards rounds can exclude conflicted reviewers from assignment",
+      "summary": "In an awards round’s settings, **Privacy & conflict of interest** offers **When a conflict is detected → Exclude from assignment** to every organizer, and the setting saves. A reviewer who has declared a conflict is then left out when reviewers are matched to submissions by category. The assignment shortfall warning gives the real pair and capacity numbers, and imported entries land in the program’s first round so they can be assigned.",
+      "article": "/awards/managing-submissions-reviewers-rounds#conflicts-of-interest",
       "related": [
-        "/contacts/disclosures",
-        "/awards/call-for-reviewers"
+        "/awards/managing-submissions-reviewers-rounds#assigning-reviewers"
       ],
       "kind": "fixed",
-      "module": "Awards",
       "features": [
-        "awards",
-        "credits_disclosure"
+        "awards"
       ],
-      "availability": "add_on",
       "enable": {
-        "how": "default_on",
-        "path": null
+        "how": "setting",
+        "path": "Awards → a program → Rounds → a round → Settings → Privacy & conflict of interest → Enable COI declarations → When a conflict is detected"
       },
       "where": {
         "scope": "org",
-        "path": "Awards → program → Rounds → round → Settings"
+        "path": "Awards → a program → Rounds → a round → Settings"
       },
-      "permissions": [
-        "org.awards.update",
-        "org.disclosures.update"
-      ],
+      "permissions": [],
       "audience": [
         "organizer"
       ],
-      "use_case": "Awards programs that require conflict-of-interest declarations can now reliably save COI enforcement rules on each round, and the system will automatically skip conflicted evaluators when assigning reviewers to category-matched submissions.",
+      "use_case": "An awards program with strict judging rules keeps conflicted judges off the entries they declared, without someone checking every assignment by hand.",
       "internal": {
         "cs_action": {
-          "kind": "review_before_customers_see",
-          "note": "The org-level round settings page was silently returning 400 on every save since the Disclosures Phase 5 UI deploy (web-ui-v2 #962, 2026-10-10). This API fix must ship before the next UI deploy. Customers who saved round settings during that window may have lost COI configuration changes without knowing it — Sentry did not surface 400s."
+          "kind": "none",
+          "note": null
         },
-        "when_to_bring_up": "When a customer reports that COI or disclosure settings on an awards round are not sticking, or that conflicted evaluators are still appearing in assignment.",
-        "who_should_get_it": "Any customer running an awards program with conflict-of-interest or disclosure requirements.",
-        "staff_path": "Awards → program → Rounds → round → Settings",
-        "gotchas": "The 400 error was silent (not reported to Sentry). Customers who saved round settings between the Disclosures Phase 5 UI deploy and this API fix may have lost COI configuration silently. Proactively check with customers who use COI enforcement.",
-        "talk_track": "COI settings on awards rounds now save reliably, and the system automatically keeps conflicted evaluators out of assignment — no manual filtering needed.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The guide should document the COI Enforcement and Require Disclosure fields on the round settings page, and explain how a declared conflict automatically excludes an evaluator from category-matched assignment.",
-          "why_use_it": "When running a rigorous awards program, you need to ensure that evaluators with a declared conflict of interest are never assigned to review submissions in their conflicting category. Previously, saving COI settings on a round returned an error, so those rules could not be applied. Now the settings save correctly, and any evaluator who has declared a conflict is automatically excluded from assignment for matching submissions — keeping your review process fair and auditable without manual workarounds.",
-          "at": "2026-10-11T06:06:20.478Z"
-        }
+        "when_to_bring_up": "A customer asks how to stop conflicted judges reviewing entries, or says round settings would not save.",
+        "who_should_get_it": "Awards customers whose reviewers declare conflicts of interest.",
+        "staff_path": null,
+        "gotchas": "The exclusion applies to category-matched assignment. Evaluation-plan rounds are unchanged — their conflict rules live on the plan.",
+        "talk_track": null
       },
       "shipped": {
         "prs": [
-          "lennd/sessionboard-web-api#4465"
+          "lennd/sessionboard-web-api#4465",
+          "lennd/sessionboard-web-ui-v2#978"
         ],
         "docs_only": false,
         "pending": null,
@@ -912,46 +873,36 @@
     },
     {
       "id": "team-lead-stale-approval-card-cleared",
-      "title": "Team Lead clears a stale approval card when the approval is no longer pending",
-      "summary": "When the server reports that an approval request is no longer pending, the Team Lead chat now removes the approval card and displays the resolved message in its place, instead of leaving a card whose **Approve** button does nothing.",
+      "title": "Team Lead removes an approval card that is no longer waiting on you",
+      "summary": "When an approval in Team Lead has already been handled, the chat replaces its card with the message saying so, instead of leaving an **Approve** button that does nothing.",
       "article": "/agents/team-lead",
       "kind": "fixed",
-      "module": "Agents",
       "features": [
         "coordinators"
       ],
-      "availability": "everyone",
       "enable": {
         "how": "default_on",
         "path": null
       },
       "where": {
-        "scope": "event",
-        "path": "Team Lead chat panel → approval card"
+        "scope": "org",
+        "path": "Assistant panel (Team Lead) → an approval card"
       },
       "permissions": [],
       "audience": [
         "organizer"
       ],
-      "use_case": "Organizers who return to a Team Lead conversation after an approval has already been handled elsewhere will no longer see a broken Approve button — the chat reflects the current state automatically.",
+      "use_case": "People working with Team Lead only see approvals that still need them.",
       "internal": {
         "cs_action": {
           "kind": "none",
           "note": null
         },
-        "when_to_bring_up": "When a customer reports that the Approve button in Team Lead does nothing, or that old approval cards linger after an approval has been handled.",
-        "who_should_get_it": "Any customer using Team Lead with approval workflows, especially those running subagent checkpoints.",
-        "staff_path": "Team Lead chat panel → approval card",
-        "gotchas": "The companion fix (subagent checkpoints overwriting the main conversation's pending approval) is in sessionboard-agents #125 — both PRs should be deployed together for the full fix.",
-        "talk_track": "Team Lead now automatically clears approval cards that are no longer actionable, so organizers always see an accurate picture of what still needs their attention.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The guide should note that approval cards are automatically dismissed when the server reports the approval is no longer pending, and explain how subagent checkpoints interact with the main conversation's approval state.",
-          "why_use_it": "When a Team Lead approval is resolved outside the current chat window — for example by a subagent checkpoint or another team member — the approval card used to remain visible with an Approve button that had no effect. Now the card is replaced by the resolved message as soon as the server confirms the approval is no longer pending, so the conversation always reflects the true state of the workflow. This prevents confusion and accidental double-action on approvals that have already been handled.",
-          "at": "2026-10-11T06:02:08.582Z"
-        }
+        "when_to_bring_up": "A customer says the Approve button in Team Lead did nothing.",
+        "who_should_get_it": "Customers using Team Lead actions that ask for approval.",
+        "staff_path": null,
+        "gotchas": "The cause — a sub-agent checkpoint overwriting the main conversation’s pending approval — is fixed in sessionboard-agents #125, which deploys separately from this UI change.",
+        "talk_track": null
       },
       "shipped": {
         "prs": [
@@ -973,54 +924,43 @@
     },
     {
       "id": "qa-w10-awards-automations-community-fixes",
-      "title": "Awards COI settings, automation step summaries, team-member recipient names, and training search fixed",
-      "summary": "Several QA fixes across Awards, Automations, and Learning: **Round Settings** now shows conflict-of-interest (COI) enforcement options to all organizers (not just staff preview); the reviewer-assign shortfall warning now reads correctly instead of showing blank capacity text; the automation builder's step list shows each saved action's real summary instead of a hard-coded \"Send email · Not set\"; the **Team members** picker in **Send email** actions loads event-team members before you search; saved team-member recipients show their names after a page reload; and the training video library search box keeps your typed text correctly.",
-      "article": "/automations/overview",
+      "title": "Automations: step list shows what each email does, and team-member recipients load and keep their names",
+      "summary": "In the automation builder, the step list shows each saved action’s summary instead of “Send email · Not set”. In a **Send email** action, the **Team members** picker lists the event team before you search, and saved recipients show their names after a reload. The training video library search keeps every key you type.",
+      "article": "/automations/overview#send-email",
       "related": [
-        "/awards/managing-submissions-reviewers-rounds",
-        "/events/event-dashboard"
+        "/automations/overview#assign-reviewers"
       ],
       "kind": "fixed",
-      "module": "Automations",
       "features": [
-        "automations",
-        "awards"
+        "automations"
       ],
-      "availability": "everyone",
       "enable": {
         "how": "default_on",
         "path": null
       },
       "where": {
-        "scope": "both",
-        "path": "Automations → automation builder → step list; Awards → program → Rounds → Round Settings; Event Dashboard → Training"
+        "scope": "event",
+        "path": "Automations → an automation → Then → Send email → Team members"
       },
       "permissions": [],
       "audience": [
         "organizer"
       ],
-      "use_case": "Organizers building automations can now see accurate summaries of each saved email step at a glance, pick team members from a pre-populated list, and trust that recipient names persist after a reload — reducing confusion when reviewing or editing complex automation workflows. Awards admins can now configure COI enforcement on round settings without needing a staff preview flag.",
+      "use_case": "A team that emails colleagues from automations can see at a glance who each step notifies and pick them without guessing names.",
       "internal": {
         "cs_action": {
           "kind": "none",
-          "note": "All fixes are default-on. The Awards COI controls are now visible to all organizers; no flag to flip. Requires the companion web-api PR #4465 to be deployed first — a UI-only deploy causes the team-member picker to fall back to mock data."
+          "note": null
         },
-        "when_to_bring_up": "When a customer reports that their automation step list shows 'Send email · Not set' for every step, that team-member recipients lose their names on reload, or that they cannot find COI settings in Awards round configuration.",
-        "who_should_get_it": "Any customer using Automations with email steps targeting team members, or running Awards programs with COI enforcement.",
+        "when_to_bring_up": "A customer’s steps all read “Not set”, the team picker is empty until they search, or recipients show as “Team member #…”.",
+        "who_should_get_it": "Customers using automations that email their own team.",
         "staff_path": null,
-        "gotchas": "Deploy the web-api PR (#4465) before or alongside this UI release. A UI-first deploy makes the team-member picker fall back to mock team members.",
-        "talk_track": "These are polish fixes — the automation builder now shows you exactly what each step does, and Awards round COI settings are fully accessible to all admins.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "medium",
-          "docs_gap": "The Automations guide should add a note explaining that the step list displays each action's canvas-card summary, and that the Team members picker pre-loads event-team members before a search.",
-          "why_use_it": "When you build an automation with multiple email steps, the step list now shows you the real summary of each saved action — the same text shown on the canvas card — so you can tell at a glance what each step does without opening it. The **Team members** picker pre-loads your event team before you type anything, and saved recipients show their actual names after you reload the page, so you are never left guessing who \"Team member #42\" is. In Awards, the **Round Settings** page now lets every organizer choose a COI enforcement option (such as \"exclude\"), and the shortfall warning when assigning reviewers reads as a complete sentence with the correct capacity number.",
-          "at": "2026-10-11T06:01:11.415Z"
-        }
+        "gotchas": "The team picker excludes portal-only users. An Assign reviewers test run with no record now reports Skipped instead of Failed.",
+        "talk_track": null
       },
       "shipped": {
         "prs": [
+          "lennd/sessionboard-web-api#4465",
           "lennd/sessionboard-web-ui-v2#978"
         ],
         "docs_only": false,
@@ -1038,55 +978,42 @@
     },
     {
       "id": "email-domain-ux-improvements",
-      "title": "Sending-domain setup gets inline typo detection, a searchable form picker, and a Cancel Setup button",
-      "summary": "Three improvements to email-domain and site configuration: (1) The **sending domain** field now detects common misspellings (e.g. `.cmo` instead of `.com`) inline and suggests the correct domain before setup begins. (2) A **Cancel Setup** button — with a confirmation step — lets you abandon a pending sending-domain setup without contacting support. (3) The Site builder's **Open a form** picker is now searchable and shows each form's event name, so it stays usable when you have hundreds of forms. Additionally, the **Event Domains** tab now shows which organization-level sender a domain inherits.",
-      "article": "/settings/domains",
+      "title": "Site builder: a searchable Open a form picker, and drafts that keep the changes you reverted",
+      "summary": "In the Site builder, the **Open a form** picker on a button is searchable by form or event name and shows each form’s event, so it stays usable with hundreds of forms. Saving a draft replaces the stored draft, so a setting you changed back (such as the hero background) is not restored from an older draft. Interest forms open for submissions show as open on the Site.",
+      "article": "/site/site-builder#drafts-and-publishing",
       "related": [
-        "/site/site-builder",
-        "/communications/email-campaigns",
-        "/faq/custom-domains-and-login-links"
+        "/site/site-builder#forms"
       ],
       "kind": "improved",
-      "module": "Settings",
-      "features": [
-        "custom_sending_domain",
-        "site_domains"
-      ],
-      "availability": "on_request",
+      "features": [],
+      "availability": "everyone",
       "enable": {
-        "how": "support",
-        "path": "Ask your Customer Success Manager to enable Email Domain; then Settings → Domains"
+        "how": "default_on",
+        "path": null
       },
       "where": {
         "scope": "org",
-        "path": "Settings → Domains; Site builder → block settings → Open a form"
+        "path": "Site → builder → a button → Open a form; Save draft"
       },
       "permissions": [],
       "audience": [
         "organizer"
       ],
-      "use_case": "Organizers setting up a custom sending domain catch typos before DNS records are created, and can cancel a pending setup themselves if they entered the wrong domain — no support ticket needed. Site builders with large form libraries can search by name or event instead of scrolling.",
+      "use_case": "An organization with a large catalogue of forms can link the right one from its Site in seconds, and an editor’s draft looks the way they left it.",
       "internal": {
         "cs_action": {
           "kind": "none",
-          "note": "All three changes are default-on within the existing Email Domain and Site Domains features. No new flags to flip."
+          "note": null
         },
-        "when_to_bring_up": "When a customer is setting up or troubleshooting a custom sending domain, or when they ask how to undo a pending domain setup.",
-        "who_should_get_it": "Any customer using the custom sending domain add-on or building sites with form links.",
-        "staff_path": "Settings → Domains (org level)",
-        "gotchas": "The Event Domains inherited-sender display requires a matching web-api change (SB-9597) to show data; the UI renders harmlessly without it until the API ships.",
-        "talk_track": "The domain setup flow now catches typos before DNS records are touched, and you can cancel a pending setup yourself — no need to reach out to support.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The guide should add a section covering the inline domain-typo warning, the Cancel Setup confirmation flow, and the inherited organization sender shown on the Event Domains tab.",
-          "why_use_it": "Entering a misspelled domain and waiting for DNS propagation wastes hours. The inline typo check flags the error the moment you type it and suggests the correct spelling, so you fix it before any records are created. If a setup is already in progress and needs to be scrapped, the new **Cancel Setup** button lets you do it yourself with a single confirmation click. For site builders managing many events, the searchable **Open a form** picker means you can find the right form in seconds rather than scrolling through an unsorted list.",
-          "at": "2026-10-11T05:41:23.176Z"
-        }
+        "when_to_bring_up": "A customer cannot find a form in the Site builder picker, says a reverted setting came back, or an open interest form shows as closed.",
+        "who_should_get_it": "Customers building Sites, especially with many forms.",
+        "staff_path": null,
+        "gotchas": "Connecting a custom site domain now returns a specific error when Cloudflare refuses it, instead of a bare server error.",
+        "talk_track": null
       },
       "shipped": {
         "prs": [
+          "lennd/sessionboard-web-api#4461",
           "lennd/sessionboard-web-ui-v2#973"
         ],
         "docs_only": false,
@@ -1104,47 +1031,35 @@
     },
     {
       "id": "rooms-widget-capacity-and-scroll-fixes",
-      "title": "Rooms widget hides zero capacity and scrolls correctly on narrow screens",
-      "summary": "Two display fixes for the embedded **Rooms** widget: rooms with a capacity of 0 no longer show a \"Capacity 0\" label — the line is hidden entirely. On narrow viewports, the day tabs and room columns now scroll inside the widget instead of pushing the page wider.",
-      "article": "/sessions/embeds#embed-outputs",
+      "title": "Rooms layout on Site program pages: no “Capacity 0”, and it scrolls inside the page on phones",
+      "summary": "On a Site program page using the **Rooms** layout, a room with a capacity of 0 shows no capacity line instead of “Capacity 0”. On narrow screens the day tabs and room columns scroll inside the layout instead of widening the page.",
+      "article": "/site/site-builder#layouts-1",
       "kind": "fixed",
-      "module": "Program",
-      "features": [
-        "sessions"
-      ],
+      "features": [],
       "availability": "everyone",
       "enable": {
         "how": "default_on",
         "path": null
       },
       "where": {
-        "scope": "both",
-        "path": "Sessions → Embeds → Rooms widget (published embed on your website)"
+        "scope": "org",
+        "path": "Your Site → a program page with the Rooms layout"
       },
       "permissions": [],
       "audience": [
-        "organizer",
         "participant"
       ],
-      "use_case": "Organizers who publish a Rooms widget on their event website no longer see a meaningless \"Capacity 0\" label on rooms without a set capacity, and attendees browsing on a phone or narrow browser window can scroll through days and rooms without the page layout breaking.",
+      "use_case": "Attendees browsing the program by room on a phone get a page that fits the screen.",
       "internal": {
         "cs_action": {
           "kind": "none",
-          "note": "Both fixes are automatic for all published Rooms embeds. No action needed."
+          "note": null
         },
-        "when_to_bring_up": "When a customer reports that their Rooms embed shows 'Capacity 0' on rooms, or that the embed breaks their page layout on mobile.",
-        "who_should_get_it": "Any customer using the Rooms embed widget on their event website.",
+        "when_to_bring_up": "A customer’s Rooms page shows “Capacity 0” or breaks their layout on mobile.",
+        "who_should_get_it": "Customers whose Site shows the program in the Rooms layout.",
         "staff_path": null,
-        "gotchas": "Rooms with capacity explicitly set to 0 will now show no capacity line at all — this is intentional. If a customer wants to display '0', they should set a non-zero capacity or leave the field blank and note the change.",
-        "talk_track": "The Rooms widget now looks polished on every screen size and won't show a confusing 'Capacity 0' label — no changes needed on your end.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The Embeds guide should note that the Rooms widget suppresses the capacity line when capacity is 0, and that the widget scrolls internally on narrow viewports rather than expanding the page.",
-          "why_use_it": "When you embed the Rooms widget on your event website, rooms that have no capacity set previously displayed a distracting \"Capacity 0\" line. That label is now suppressed, keeping the widget clean and professional. On mobile or narrow browser windows, the day tabs and room columns previously caused the entire page to expand horizontally; they now scroll within the widget boundary, so your site layout stays intact for every attendee.",
-          "at": "2026-10-11T05:22:51.820Z"
-        }
+        "gotchas": "A capacity of 0 is treated the same as no capacity.",
+        "talk_track": null
       },
       "shipped": {
         "prs": [
@@ -1228,7 +1143,9 @@
         "emailed_at": null
       },
       "ideas": [],
-      "media": []
+      "media": [
+        "/images/kb/sessions-bulk-edit.png"
+      ]
     },
     {
       "id": "contact-support-via-team-lead-handoff",
@@ -1296,56 +1213,45 @@
     },
     {
       "id": "advocacy-video-render-restored",
-      "title": "Advocacy video and image rendering restored after Oct 6 outage",
-      "summary": "All Advocacy video and image renders that were failing since Oct 6 now complete successfully. Speakers who tried to download a generated video will see a short, readable error message instead of a raw stack trace if a render does fail in future.",
-      "article": "/marketing/advocacy",
+      "title": "Advocacy video and image cards render again",
+      "summary": "Advocacy videos and image cards generate again; renders had been failing since October 6. If a video cannot be created, the speaker sees a short message instead of a technical error, and uploading an empty preview thumbnail says “Preview thumbnail is empty” instead of failing.",
+      "article": "/marketing/advocacy#manage-a-live-campaign",
       "related": [
-        "/marketing/clips",
-        "/marketing/slides",
-        "/marketing/media-library"
+        "/marketing/clips"
       ],
       "kind": "fixed",
-      "module": "Marketing",
       "features": [
         "marketing_advocacy"
       ],
-      "availability": "everyone",
       "enable": {
         "how": "default_on",
         "path": null
       },
       "where": {
-        "scope": "both",
-        "path": "Marketing → Advocacy"
+        "scope": "event",
+        "path": "Marketing → Advocacy; the speaker’s Creator Companion and Portal Home"
       },
       "permissions": [],
       "audience": [
         "organizer",
         "speaker"
       ],
-      "use_case": "Any organizer or speaker who tried to generate or download an Advocacy video or image between Oct 6 and Oct 11 was silently failing; renders now complete and downloads work again.",
+      "use_case": "Speakers get the personalised video and card they were promised to share, which is the point of an Advocacy campaign.",
       "internal": {
         "cs_action": {
-          "kind": "review_before_customers_see",
-          "note": "Any customer who attempted an Advocacy video or image render between Oct 6 and Oct 11 will have failed renders. Staff should re-trigger those renders after deploy is confirmed healthy. Check that new Amplify_Template_Renders rows reach 'completed' before proactively reaching out."
+          "kind": "reach_out",
+          "note": "Every Advocacy video and image render failed from Oct 6 until this deploy. Customers who launched or edited a campaign in that window should be told renders work again; staff can re-trigger failed renders once new ones complete."
         },
-        "when_to_bring_up": "When a customer reports that their Advocacy videos or images never generated, or when following up on any support tickets opened between Oct 6–11.",
-        "who_should_get_it": "Any customer using Advocacy video or image generation — particularly those who reported failures or noticed missing renders in that window.",
-        "staff_path": "Amplify_Template_Renders (internal DB table) — confirm rows reach 'completed' status post-deploy.",
-        "gotchas": "A thumbnail backfill script must be re-run for one specific video template (ID: 2a0dfd0a-55aa-4569-bd41-6d4f534bb509) — dry run first with --template-id flag, then apply. Customers will not see this gap unless they use that template.",
-        "talk_track": "A renderer dependency update on Sept 30 caused all video and image generation in Advocacy to fail starting Oct 6. The fix is deployed and renders are completing again. If you had any failed renders in that window, we can re-trigger them for you.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The Advocacy guide should note that video and image generation depends on a render service and describe what a speaker or organizer should do if a render fails (e.g., retry or contact support).",
-          "why_use_it": "Between Oct 6 and Oct 11, every Advocacy video and image render failed silently due to an incompatibility between a renderer update and the system image it ran on. That incompatibility is now resolved, so all new renders complete as expected. If a render does fail in future, you will see a short, plain-language message rather than a technical error trace, making it easier to know what to do next.",
-          "at": "2026-10-11T04:23:37.187Z"
-        }
+        "when_to_bring_up": "A customer or speaker reported a video or card that never generated, or a download that failed, between Oct 6 and this release.",
+        "who_should_get_it": "Customers running Advocacy campaigns with video or image templates.",
+        "staff_path": null,
+        "gotchas": "One video template still needs its thumbnail backfilled after deploy (engineering task). A creator override that names a removed background is dropped silently.",
+        "talk_track": null
       },
       "shipped": {
         "prs": [
-          "lennd/sessionboard-web-api#4462"
+          "lennd/sessionboard-web-api#4462",
+          "lennd/sessionboard-web-api#4466"
         ],
         "docs_only": false,
         "pending": null,
@@ -1362,53 +1268,44 @@
     },
     {
       "id": "sender-domain-typo-detection-and-cancel",
-      "title": "Sender domain setup catches common misspellings and lets you cancel a pending setup",
-      "summary": "When adding a custom sending domain, Sessionboard now detects common misspellings (e.g. `gmial.com`, `sessionboard.con`) and shows a message naming the likely correct domain. A new **Cancel setup** action lets you remove a pending domain setup before it is verified; verified setups cannot be cancelled. The **Domains** tab on an event also now shows the organization-level sender that the event inherits, and legacy senders display **In use** instead of **Not set up**.",
-      "article": "/communications/add-on-custom-email-domain",
+      "title": "Sending-domain setup catches misspelled domains, can be cancelled, and event Domains show the inherited sender",
+      "summary": "Setting up a custom sending domain flags common misspellings such as `gmial.com` or `sessionboard.con` as you type and names the likely fix. A setup that is still waiting on DNS has a **Cancel setup** button, with a confirmation. An event’s **Domains** tab shows the organization sender it inherits, and an address that was set up before Domains existed shows **In use** instead of **Not set up**.",
+      "article": "/settings/domains#cancel-a-setup",
       "related": [
-        "/settings/domains"
+        "/communications/add-on-custom-email-domain"
       ],
       "kind": "improved",
-      "module": "Communications",
       "features": [
         "custom_sending_domain"
       ],
-      "availability": "on_request",
       "enable": {
         "how": "support",
-        "path": "Ask your Customer Success Manager to enable Email Domain; then Settings → Domains"
+        "path": "Ask your Customer Success Manager to enable Custom Sending Domain for the organization; then Settings → Domains"
       },
       "where": {
         "scope": "both",
-        "path": "Settings → Domains"
+        "path": "Settings → Domains (organization and event)"
       },
       "permissions": [],
       "audience": [
         "organizer"
       ],
-      "use_case": "Organizers who mistype their sending domain during setup now get an immediate, specific correction hint rather than discovering the error after DNS propagation. Those who started a setup with the wrong domain can cancel it and start fresh without contacting support.",
+      "use_case": "An admin setting up branded email catches a typo before handing DNS records to IT, and can start over without a support ticket if the address was wrong.",
       "internal": {
         "cs_action": {
           "kind": "none",
-          "note": "All three improvements are automatic once the custom sending domain feature is enabled for the org."
+          "note": null
         },
-        "when_to_bring_up": "When a customer is setting up or troubleshooting a custom sending domain, or when they ask how to undo a pending domain setup.",
-        "who_should_get_it": "Any customer using or evaluating the custom email domain add-on.",
-        "staff_path": "Settings → Domains",
-        "gotchas": "Typo detection only flags known misspellings; real look-alike domains (e.g. aon.com) still pass. The cancel endpoint returns 403 if the domain is already verified — customers must contact support to remove a verified domain.",
-        "talk_track": "If you mistype your sending domain, Sessionboard now tells you what it should be right away. And if you need to start over, you can cancel a pending setup yourself from the Domains tab.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "medium",
-          "docs_gap": "The guide should document the typo-detection behaviour, the new Cancel setup action for pending domains, and the inherited-sender display on the event Domains tab.",
-          "why_use_it": "Typos in a sending domain (like `gmial.com` instead of `gmail.com`) can waste hours waiting for DNS records that will never authenticate. Sessionboard now catches the most common misspellings at entry time and tells you what the domain should be, so you can correct it before publishing any DNS records. If you have already started a setup and need to change the domain, the new cancel action removes the pending setup immediately — no support ticket required. The event-level Domains tab also now shows which organization sender the event inherits, so your team always knows which address outbound mail will come from.",
-          "at": "2026-10-11T04:21:12.777Z"
-        }
+        "when_to_bring_up": "A customer is setting up a sending domain, typed the wrong one, or asks which address an event sends from.",
+        "who_should_get_it": "Customers with the Custom Sending Domain add-on.",
+        "staff_path": "Settings → Domains.",
+        "gotchas": "Only known misspellings are flagged; a real look-alike domain still passes. A verified domain cannot be cancelled — see “Go back to the default sender” in the guide.",
+        "talk_track": null
       },
       "shipped": {
         "prs": [
-          "lennd/sessionboard-web-api#4461"
+          "lennd/sessionboard-web-api#4461",
+          "lennd/sessionboard-web-ui-v2#973"
         ],
         "docs_only": false,
         "pending": null,
@@ -1425,50 +1322,42 @@
     },
     {
       "id": "session-participant-acceptance-invite-sent-at",
-      "title": "Public API now returns when a participant's acceptance invitation was sent",
-      "summary": "The session participant object in the public API now includes `acceptance_invite_sent_at`, showing the timestamp when the acceptance invitation was last sent, or `null` if no invitation has been sent yet. This lets integrations track invitation delivery without a separate lookup.",
-      "article": "/speakers/speaker-acceptance",
+      "title": "Public API returns when a participant’s acceptance invitation was sent",
+      "summary": "Session participants in the Public API include `acceptance_invite_sent_at` — when the acceptance invitation was last sent, or `null` if it has not been sent.",
+      "article": "/speakers/speaker-acceptance#view-participant-status",
       "kind": "improved",
-      "module": "Program",
       "features": [
-        "speaker_acceptance"
+        "sessions"
       ],
-      "availability": "everyone",
+      "availability": "on_request",
       "enable": {
-        "how": "default_on",
-        "path": null
+        "how": "setting",
+        "path": "Settings → Record Settings → Participant Acceptance → Enable Participant Acceptance and Save; then the Invitations and deadlines panel"
       },
       "where": {
         "scope": "event",
-        "path": "Public API → session participants endpoint"
+        "path": "Public API → sessions → participants"
       },
       "permissions": [],
       "audience": [
         "organizer"
       ],
-      "use_case": "Teams using the public API to sync participant data into external systems can now see exactly when an acceptance invitation was sent — or confirm that none has been sent yet — without building a separate tracking mechanism.",
+      "use_case": "A team that tracks speaker confirmations in its own CRM or a reporting tool can see who has been invited, and when, without checking Sessionboard by hand.",
       "internal": {
         "cs_action": {
           "kind": "none",
-          "note": "This is a public API change only; no UI change. Customers using the API will see the new field automatically."
+          "note": null
         },
-        "when_to_bring_up": "When a customer using the public API asks how to track whether acceptance invitations have been sent to session participants.",
-        "who_should_get_it": "Customers who pull session participant data via the public API and manage acceptance workflows in external tools.",
+        "when_to_bring_up": "A customer integrating through the Public API asks how to tell whether a participant has been sent an acceptance invitation.",
+        "who_should_get_it": "Customers using Participant Acceptance who read sessions through the Public API.",
         "staff_path": null,
-        "gotchas": "Field is null when no invitation has ever been sent — integrations should handle null gracefully.",
-        "talk_track": "If you're syncing participant data to an external CRM or automation tool, you can now see the acceptance invite timestamp directly in the API response — no extra lookups needed.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "medium",
-          "docs_gap": "The speaker-acceptance guide should add a section noting which fields are available on the public API participant object, including `acceptance_invite_sent_at` and its null state.",
-          "why_use_it": "When you manage speaker acceptance at scale, knowing whether an invitation has been sent — and when — is essential for follow-up workflows. The `acceptance_invite_sent_at` field on each session participant tells you the exact timestamp of the last invitation, or returns `null` if the participant has never been invited. You can use this in your integration or automation to trigger reminders, flag uninvited participants, or audit your outreach without logging into Sessionboard.",
-          "at": "2026-10-11T04:20:14.794Z"
-        }
+        "gotchas": "The value is null until the first invitation; integrations should handle null.",
+        "talk_track": null
       },
       "shipped": {
         "prs": [
-          "lennd/sessionboard-public-api#174"
+          "lennd/sessionboard-public-api#174",
+          "lennd/sessionboard-web-api#4460"
         ],
         "docs_only": false,
         "pending": null,
@@ -1480,56 +1369,49 @@
         "announced_at": null,
         "emailed_at": null
       },
-      "related": [],
+      "related": [
+        "/integrations/api-tokens"
+      ],
       "ideas": [],
       "media": []
     },
     {
       "id": "advocacy-campaign-card-thumbnail-refresh-on-save",
-      "title": "Advocacy campaign card thumbnail refreshes when you save a card design",
-      "summary": "Saving a card design inside **Edit campaign** now re-renders the Advocacy template thumbnail immediately, the same way it does at campaign creation via Quick Launch. The Portal Home card no longer shows a blank or stale image after a design change.",
-      "article": "/marketing/advocacy",
+      "title": "Changing a campaign’s card design refreshes its thumbnail on Portal Home",
+      "summary": "Saving a card design in **Edit campaign** re-renders the Advocacy card thumbnail, as **Quick Launch** does when a campaign is created, so Portal Home shows the current design instead of a blank or old image.",
+      "article": "/marketing/advocacy#manage-a-live-campaign",
       "kind": "fixed",
-      "module": "Marketing",
       "features": [
         "marketing_advocacy"
       ],
-      "availability": "everyone",
       "enable": {
         "how": "default_on",
         "path": null
       },
       "where": {
-        "scope": "both",
-        "path": "Marketing → Advocacy → campaign → Edit campaign → Card design"
+        "scope": "event",
+        "path": "Marketing → Advocacy → a campaign → Edit campaign → card design; Portal Home"
       },
       "permissions": [],
       "audience": [
         "organizer"
       ],
-      "use_case": "Organizers who update a campaign's card design mid-campaign will see the Portal Home thumbnail reflect the new design right away, without needing to recreate the campaign.",
+      "use_case": "A marketer who tweaks a live campaign’s card sees speakers get the new design straight away.",
       "internal": {
         "cs_action": {
           "kind": "none",
-          "note": "Fix is automatic; no action needed. Depends on the companion API fix in SB-9621."
+          "note": null
         },
-        "when_to_bring_up": "When a customer reports that their Advocacy campaign card looks blank or outdated on Portal Home after they edited the card design.",
-        "who_should_get_it": "Any customer using Advocacy campaigns who edits card designs after initial launch.",
-        "staff_path": "Marketing → Advocacy → campaign → Edit campaign → Card design",
-        "gotchas": "The thumbnail render also depends on the web-api fix (SB-9621); both must be deployed for the fix to take effect.",
-        "talk_track": "If you've ever tweaked your campaign card design and then seen a blank thumbnail on Portal Home, that's now fixed — the card updates the moment you save.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "medium",
-          "docs_gap": "The guide should note that saving a card design in Edit campaign immediately refreshes the Portal Home thumbnail.",
-          "why_use_it": "When you update the card design of a live Advocacy campaign, the thumbnail shown on Portal Home should match what sharers actually see. Previously, editing the design in **Edit campaign** left the thumbnail blank or showing the old design until the campaign was recreated. Now the thumbnail re-renders as soon as you save, so your Portal Home always shows an accurate preview of the current card.",
-          "at": "2026-10-11T03:01:26.685Z"
-        }
+        "when_to_bring_up": "A customer edited a campaign card and Portal Home still shows the old or a blank image.",
+        "who_should_get_it": "Customers running Advocacy campaigns.",
+        "staff_path": null,
+        "gotchas": "Depends on the render fix in the “Advocacy video and image cards render again” entry.",
+        "talk_track": null
       },
       "shipped": {
         "prs": [
-          "lennd/sessionboard-web-ui-v2#974"
+          "lennd/sessionboard-web-ui-v2#974",
+          "lennd/sessionboard-web-api#4462"
         ],
         "docs_only": false,
         "pending": null,
@@ -1547,23 +1429,14 @@
     },
     {
       "id": "qa-sweep-w6-acceptance-contacts-portals-translations",
-      "title": "Six fixes: acceptance invitations, field-rule warnings, duplicate merge, contact removal, file-drop uploads, and bulk language updates",
-      "summary": "Six admin-UI corrections shipped together: **Acceptance Invitations** now shows a human-readable deadline, an **Awaiting response** tab, an \"already responded\" count in the send summary, and correct singular/plural rule-card text. When a **Field Rule** cannot be applied on session save, the profile and side panel show \"Saved, but a field rule was not applied\" with the reason instead of a plain \"Saved\". **Merge Duplicates** pre-checks only the contact being viewed and contacts sharing the same email, not an unrelated top-3 list. The **Remove** dialog for contacts now lists which sponsor or exhibitor access the contact will lose. Files dropped onto a **File Request** task's drag-and-drop zone now upload correctly with the same type, size, and safety checks as the file picker. **Bulk Update** for language values now offers every stored session text field—including custom fields—not just the columns visible in the grid.",
-      "article": "/speakers/speaker-acceptance",
+      "title": "Removing a contact warns about sponsor and exhibitor access, and Merge Duplicates pre-selects the right people",
+      "summary": "The **Remove** dialog for a contact lists the sponsor or exhibitor access they will lose, and the removal is recorded in History. **Merge Duplicates** pre-checks only the contact you are viewing and rows with the same email, not the three highest-scoring matches.",
+      "article": "/contacts/merge-duplicates#merge",
       "related": [
-        "/contacts/merge-duplicates",
-        "/contacts/add-delete-a-contact",
-        "/portals/collect-documents",
-        "/settings/language-translation-variant",
-        "/settings/field-rules"
+        "/contacts/add-delete-a-contact#delete-or-remove-a-contact"
       ],
       "kind": "fixed",
-      "module": "Program",
-      "features": [
-        "speaker_acceptance",
-        "field_rules",
-        "languages"
-      ],
+      "features": [],
       "availability": "everyone",
       "enable": {
         "how": "default_on",
@@ -1571,34 +1444,27 @@
       },
       "where": {
         "scope": "event",
-        "path": "Sessions → participant record → Acceptance Invitations; Sessions → session profile / side panel (field-rule warning); Contacts → Merge Duplicates; Contacts → contact profile → Remove; Portals → File Request task (drag-and-drop zone); Sessions → Bulk Update → Language values"
+        "path": "CRM → Contacts → a contact → Remove; CRM → Contacts → a contact → Merge Duplicates"
       },
       "permissions": [],
       "audience": [
         "organizer"
       ],
-      "use_case": "Organizers running acceptance workflows, deduplication, sponsor/exhibitor contact management, portal file collection, and multilingual session data entry all get more accurate feedback and fewer silent errors in a single release.",
+      "use_case": "An admin cleaning up contacts sees what a removal takes away before confirming, and does not merge people who only look alike.",
       "internal": {
         "cs_action": {
           "kind": "none",
-          "note": "All six fixes are default-on corrections to existing behaviour; nothing needs to be enabled."
+          "note": null
         },
-        "when_to_bring_up": "When a customer reports confusion about acceptance invitation counts, silent field-rule saves, unexpected merge candidates, missing sponsor-access warnings on contact removal, failed file drops in portals, or missing custom fields in bulk language update.",
-        "who_should_get_it": "Any customer using participant acceptance, field rules, contact deduplication, sponsor/exhibitor contacts, portal file requests, or language variants.",
+        "when_to_bring_up": "A customer removed a contact and a sponsor lost a portal user, or merged contacts that were not duplicates.",
+        "who_should_get_it": "Customers with sponsor or exhibitor portals, and anyone deduplicating contacts.",
         "staff_path": null,
-        "gotchas": "The Merge Duplicates pre-selection change (SB-9670) means the pre-checked set will look different to customers who were used to the old top-3-by-score behaviour; reassure them the new logic is more accurate.",
-        "talk_track": "We fixed six rough edges in the admin UI that were causing silent failures or confusing feedback—acceptance invitation counts are now accurate, field-rule failures are explained, duplicate merges start with the right contacts pre-checked, removing a contact warns about sponsor access, file drops in portals work reliably, and bulk language updates reach all custom fields.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The speaker-acceptance guide should document the Awaiting response tab, the already-responded count in the send summary, and the human-readable deadline format; the field-rules guide should note the \"Saved, but a field rule was not applied\" warning and where it appears; the merge-duplicates guide should clarify the email-match pre-selection logic; the add-delete-a-contact guide should mention the sponsor/exhibitor access warning in the Remove dialog; the collect-documents guide should confirm drag-and-drop upload works with the same validation as the file picker; and the language-translation-variant guide should state that Bulk Update covers all stored text fields including custom fields.",
-          "why_use_it": "These fixes close six gaps where the UI either showed misleading information or silently failed. You can now trust that the acceptance send summary reflects who has already responded, that a field-rule failure is surfaced with a clear reason rather than a false \"Saved\", that the merge pre-selection targets only genuinely related contacts, that removing a contact warns you about sponsor or exhibitor access loss, that speakers can drop files onto a file-request task just as reliably as using the file picker, and that bulk-updating translated text reaches every custom field—not just the ones currently visible in the grid.",
-          "at": "2026-10-11T03:00:33.695Z"
-        }
+        "gotchas": "Customers used to the old top-three pre-selection will see fewer rows ticked; that is intended. A merge with an invalid primary or source contact now fails up front with a clear error.",
+        "talk_track": null
       },
       "shipped": {
         "prs": [
+          "lennd/sessionboard-web-api#4460",
           "lennd/sessionboard-web-ui-v2#972"
         ],
         "docs_only": false,
@@ -1616,60 +1482,45 @@
     },
     {
       "id": "qa-sweep-w6-acceptance-contacts-portals-agenda-media-translations",
-      "title": "Multiple fixes: acceptance reminders, invite deadlines, agenda calendar, media transcripts, and more",
-      "summary": "A batch of fixes across Participant Acceptance, contacts, portals, agenda, media, and language variants. Key changes: acceptance **reminder emails** now fire on the same day an invite is sent (not 24 hours later); **Send** and **Resend** are blocked once an Accept-by date has passed; the **agenda calendar** no longer rejects card-display fields with non-UUID IDs (e.g. Chairperson columns), so sessions appear correctly; a session now shows the **transcript** and **audio** from a recording linked via **Add media**; **Edit Language Variants** lists any language with a saved value even when its per-language toggle is off; the send-results report correctly labels contacts who already answered as \"already answered\" rather than \"blocked\"; and removing a contact from an event now records the sponsor/exhibitor access they lose in the audit log.",
-      "article": "/speakers/speaker-acceptance",
+      "title": "Participant Acceptance: reminders the same day, no sends after the deadline, clearer send results",
+      "summary": "An invitation sent late in the day gets its first reminder before the day ends in the event’s timezone, instead of waiting 24 hours. **Send** and **Resend** are blocked once a participant’s **Accept by** date has passed, until you extend it. The invitations table on a session has an **Awaiting response** filter, deadlines read in words instead of a code, and the send summary counts and labels people who **already responded** separately from blocked rows.",
+      "article": "/speakers/speaker-acceptance#reminders-and-overdue-invitations",
       "related": [
-        "/sessions/agenda",
-        "/marketing/media-library",
-        "/settings/language-translation-variant",
-        "/contacts/merge-duplicates",
-        "/portals/portals-101"
+        "/speakers/speaker-acceptance#send-invitations"
       ],
       "kind": "fixed",
-      "module": "Program",
       "features": [
-        "speaker_acceptance",
-        "languages",
-        "media"
+        "sessions"
       ],
-      "availability": "everyone",
+      "availability": "on_request",
       "enable": {
-        "how": "default_on",
-        "path": null
+        "how": "setting",
+        "path": "Settings → Record Settings → Participant Acceptance → Enable Participant Acceptance and Save; then the Invitations and deadlines panel"
       },
       "where": {
         "scope": "event",
-        "path": "Sessions → Participant Acceptance; Sessions → Agenda; Marketing → Media; Settings → Language Variants"
+        "path": "Program → Sessions → a session → Acceptance invitations; Program → Sessions → select → Send invitations"
       },
       "permissions": [],
       "audience": [
-        "organizer",
-        "speaker"
+        "organizer"
       ],
-      "use_case": "Organizers running acceptance campaigns no longer miss the first reminder window when invites go out late in the day, and the system prevents accidental sends after a deadline has passed. Agenda and media views that were silently broken now display their content correctly.",
+      "use_case": "A team chasing speaker confirmations gets every invitee reminded on time and cannot accidentally invite someone after their deadline.",
       "internal": {
         "cs_action": {
           "kind": "none",
-          "note": "All fixes are default-on. No configuration required. Staff running the SB-9644 stale-row cleanup SQL should do so on the writer after deploy (US only; 13 rows identified on QA events)."
+          "note": null
         },
-        "when_to_bring_up": "When a customer reports missing acceptance reminders, greyed-out Send buttons, a blank agenda calendar, missing transcripts on sessions, or language-variant fields not showing saved values.",
-        "who_should_get_it": "Any customer using Participant Acceptance, the agenda calendar with role columns, Media recordings linked to sessions, or Language Variants.",
-        "staff_path": null,
-        "gotchas": "SB-9644 requires a one-time ops SQL cleanup (13 stale rows in US, 0 in EU) to remove phantom Speaker/Chairperson/Moderator copy-table rows on existing events. Josh runs this post-deploy. ME was unreachable at dry-run time.",
-        "talk_track": "A handful of quiet bugs that were causing reminders to fire late, sessions to vanish from the agenda, and transcripts not to appear on sessions are all resolved in this release — no action needed on your end.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "medium",
-          "docs_gap": "The speaker-acceptance guide should note that reminders are held only until the end of the send day (in the event timezone), and that Send/Resend are disabled after the Accept-by date until the deadline is extended.",
-          "why_use_it": "When you send a participant invitation late in the afternoon, the first reminder used to be held for a full 24 hours — meaning it often fired the next day or was skipped entirely. Reminders now go out within the same calendar day in your event's timezone, so every invitee gets a timely nudge. Once an Accept-by deadline has passed, **Send** and **Resend** are disabled until you extend the deadline, preventing confusing late invitations. On the agenda calendar, sessions were disappearing when card-display fields like Chairperson (whose IDs are not UUIDs) were selected — that is now fixed. A recording linked to a session via **Add media** now correctly surfaces its transcript and audio on the session record.",
-          "at": "2026-10-11T02:49:08.551Z"
-        }
+        "when_to_bring_up": "A customer says first reminders never went out, invitations were sent after a deadline, or the send summary called responders “blocked”.",
+        "who_should_get_it": "Customers using Participant Acceptance.",
+        "staff_path": "Participant Acceptance is enabled per event under Record Settings.",
+        "gotchas": "Extending the deadline re-enables Send for that participant. Someone already invited is still not emailed again unless the organizer chooses Resend.",
+        "talk_track": null
       },
       "shipped": {
         "prs": [
-          "lennd/sessionboard-web-api#4460"
+          "lennd/sessionboard-web-api#4460",
+          "lennd/sessionboard-web-ui-v2#972"
         ],
         "docs_only": false,
         "pending": null,
@@ -1947,47 +1798,37 @@
     },
     {
       "id": "cfp-draft-resume-correct-step",
-      "title": "Resuming a CFP draft opens at the first incomplete step",
-      "summary": "When a submitter returns to a saved CFP draft, the form now opens on the first step they have not yet completed — **Session**, **Participants**, or whichever comes first — instead of always landing on **Your Information**. The **Review** step also flags every incomplete card so nothing is missed before submitting.",
-      "article": "/sessions/draft-submissions",
+      "title": "A resumed call-for-papers draft opens where the submitter left off and keeps what organizers added",
+      "summary": "Reopening a saved submission draft lands on the first step that is not finished — **Session** or **Participants**, not always **Your Information** — and **Review** flags every incomplete card. The draft shows values an organizer saved on the session after the draft was started, such as an uploaded file. The form’s default status is applied when the draft is submitted, and the “Leave site?” prompt appears only when there are unsaved changes.",
+      "article": "/sessions/draft-submissions#open-a-draft",
       "kind": "fixed",
-      "module": "Program",
       "features": [
         "sessions"
       ],
-      "availability": "everyone",
       "enable": {
         "how": "default_on",
         "path": null
       },
       "where": {
         "scope": "event",
-        "path": "Submission form → Resume draft"
+        "path": "Portal → Call for Presentations → a saved draft"
       },
       "permissions": [],
       "audience": [
         "speaker",
         "participant"
       ],
-      "use_case": "Submitters who save a partial CFP draft and return later are taken straight to the step that needs attention, reducing confusion and abandoned submissions.",
+      "use_case": "Submitters who finish a proposal over several sittings pick up at the step that still needs them, which means fewer half-finished drafts at the deadline.",
       "internal": {
         "cs_action": {
           "kind": "none",
           "note": null
         },
-        "when_to_bring_up": "When a customer reports that submitters are confused about where to continue after saving a draft.",
-        "who_should_get_it": "All customers using CFP submission forms with draft saving enabled.",
+        "when_to_bring_up": "A customer says submitters are lost when they return to a draft, organizer uploads vanish from drafts, or submitted drafts got the wrong status.",
+        "who_should_get_it": "Every customer whose call for papers allows saving drafts.",
         "staff_path": null,
-        "gotchas": null,
-        "talk_track": "Submitters who save drafts now land on the right step automatically, and the Review page will call out anything still missing.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The guide should note that resuming a draft opens the first incomplete step and that the Review step flags all incomplete cards.",
-          "why_use_it": "When you save a CFP draft and come back later, you no longer have to click through every step to find where you left off. The form opens directly on the first incomplete step, and the Review page highlights every card that still needs information before you can submit. This makes it easier to finish a submission across multiple sessions without losing your place.",
-          "at": "2026-10-11T01:18:03.264Z"
-        }
+        "gotchas": "An organizer opening the form while signed in as admin now sees the submitter’s draft instead of an “another user’s draft” message. The submitter’s own later re-save still wins over an organizer’s value. Re-editing an already-submitted session keeps its status.",
+        "talk_track": null
       },
       "related": [
         "/participants/save-a-submission-as-a-draft",
@@ -1995,6 +1836,7 @@
       ],
       "shipped": {
         "prs": [
+          "lennd/sessionboard-web-api#4453",
           "lennd/sessionboard-web-ui-v2#967"
         ],
         "docs_only": false,
@@ -2071,54 +1913,45 @@
     },
     {
       "id": "interest-form-portal-fixes-w5",
-      "title": "Interest form portal: correct confirmation copy, Open form for signed-in visitors, and more speaker question types",
-      "summary": "Three fixes to interest forms on the org portal Site: (1) The confirmation page for a **Speakers Only** interest form now correctly says \"Speaker Proposal\" (in English, German, Spanish, and French) and no longer flashes the wrong wording while loading. (2) An **Open form** button on a public Site page now starts a new submission immediately for a visitor who is already signed in, instead of redirecting them to sign-in. (3) Date, time, date-time, currency, and radio speaker questions now render correctly on the portal form.",
-      "article": "/speaker-crm/speaker-crm-interest-forms",
+      "title": "Interest forms: Speakers Only confirmation wording, Open form for signed-in visitors, more question types",
+      "summary": "A **Speakers Only** interest form’s confirmation page says “Speaker Proposal” (in English, German, Spanish and French) without flashing the session wording first. **Open form** on a public Site page starts a new submission straight away for a visitor who is already signed in. Date, time, date-time, currency and radio speaker questions appear on the form. Assigning a submission to an event carries its **Format** and **Track** across, and the form builder’s **Preview** shows help text formatted.",
+      "article": "/speaker-crm/speaker-crm-interest-forms#the-speaker-experience",
       "related": [
-        "/site/site-builder",
-        "/site/program-site"
+        "/site/site-builder#forms"
       ],
       "kind": "fixed",
-      "module": "CRM",
       "features": [
-        "applications"
+        "crm"
       ],
-      "availability": "everyone",
       "enable": {
         "how": "default_on",
         "path": null
       },
       "where": {
         "scope": "org",
-        "path": "Organization → Sites → [Site] → Interest form confirmation page; public Site page with an Open form button"
+        "path": "Site → an interest form and its confirmation page; CRM → Interest Forms → form builder → Preview; CRM → Pipeline → Assign to event"
       },
       "permissions": [],
       "audience": [
         "organizer",
         "speaker"
       ],
-      "use_case": "Organizers running a Speakers Only interest form no longer have to explain to confused speakers why the confirmation page said \"Session Proposal\" instead of \"Speaker Proposal.\" Signed-in visitors can now click Open form and go straight to submitting, and all common speaker question types appear correctly on the form.",
+      "use_case": "Speakers applying through a standing interest form get the right wording and every question the organizer asked, and the team does not retype Format and Track after assigning.",
       "internal": {
         "cs_action": {
           "kind": "none",
-          "note": "All three fixes are default-on; nothing to enable."
+          "note": null
         },
-        "when_to_bring_up": "When a customer reports that their Speakers Only confirmation page shows wrong copy, that signed-in visitors are being bounced to sign-in when clicking Open form, or that certain speaker question types are missing from their interest form.",
-        "who_should_get_it": "Any customer using interest forms on a Site, especially those with Speakers Only forms or multilingual audiences.",
-        "staff_path": "Organization → Sites → [Site] → Interest form",
-        "gotchas": "Localization fix covers en, de, es, fr only; other locales are unchanged.",
-        "talk_track": "These are polish fixes that make the interest form experience feel complete and professional — the right label on confirmation, no friction for signed-in visitors, and all question types rendering as expected.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The guide should note which speaker question field types are supported on the portal interest form (date, time, date-time, currency, radio) and clarify the Open form behaviour for signed-in vs. signed-out visitors.",
-          "why_use_it": "When you publish a Speakers Only interest form on your Site, the confirmation page now correctly labels the submission as a \"Speaker Proposal\" in English, German, Spanish, and French — removing a confusing mismatch that could undermine trust at the finish line. Visitors who are already signed in and click **Open form** on a public Site page are taken directly into a new submission, saving them an unnecessary detour through the sign-in screen. Speaker questions using date, time, date-time, currency, and radio field types now appear and behave correctly on the portal form, so you can collect the full range of information you need without workarounds.",
-          "at": "2026-10-11T00:55:55.013Z"
-        }
+        "when_to_bring_up": "A customer reports wrong wording on a Speakers Only confirmation, signed-in visitors bounced to sign-in, missing question types, or Format/Track lost on assign.",
+        "who_should_get_it": "Speaker CRM customers publishing interest forms on a Site.",
+        "staff_path": null,
+        "gotchas": "Format and Track carry across by label: the event needs a Format or Track with the same name as the organization library option.",
+        "talk_track": null
       },
       "shipped": {
         "prs": [
+          "lennd/sessionboard-web-api#4453",
+          "lennd/sessionboard-web-ui-v2#967",
           "lennd/sessionboard-web-org-portal#187"
         ],
         "docs_only": false,
@@ -2136,52 +1969,39 @@
     },
     {
       "id": "primary-presenter-star-build-pool-filters",
-      "title": "Primary presenter star and sidebar filters now work correctly in the reviewer portal",
-      "summary": "The **primary presenter** star now appears on the participant list inside a parent session's evaluation block, so reviewers can immediately see which speaker is the lead presenter. In **Build sessions** mode, sidebar filters now correctly apply to the **Your assigned abstracts** pool, so the list updates when filters are changed.",
+      "title": "Reviewer portal: primary presenter star on parent sessions, and Build sessions filters apply to your abstracts",
+      "summary": "In the reviewer portal, the participant list of a parent session shows the **primary presenter** star. In **Build sessions**, the sidebar filters now narrow **Your assigned abstracts**, so the pool updates when you change a filter.",
       "article": "/evaluations/how-to-evaluate-sessions#building-sessions-from-your-abstracts",
       "kind": "fixed",
-      "module": "Program",
       "features": [
-        "sessions"
+        "sessions_v2"
       ],
-      "availability": "everyone",
       "enable": {
         "how": "default_on",
         "path": null
       },
       "where": {
         "scope": "event",
-        "path": "Program → Evaluation → [plan] → reviewer portal → session block / Build sessions"
+        "path": "Reviewer portal → My Reviews → a round → a parent session; Build sessions"
       },
-      "permissions": [
-        "event.evaluation_plans.read_assigned_evaluations"
-      ],
+      "permissions": [],
       "audience": [
         "reviewer"
       ],
-      "use_case": "Reviewers who need to identify the lead presenter at a glance no longer have to open the full submission. Reviewers using Build sessions mode can now filter their assigned abstract pool and see accurate, filtered results immediately.",
+      "use_case": "A reviewer building sessions from a large abstract pool can filter down to one track or format and see who leads each session without opening it.",
       "internal": {
         "cs_action": {
           "kind": "none",
-          "note": "Both fixes are default-on bug fixes; nothing to enable."
+          "note": null
         },
-        "when_to_bring_up": "When a reviewer reports that the primary presenter star is missing on a parent session, or that sidebar filters in Build sessions mode don't seem to update the abstract list.",
-        "who_should_get_it": "Any customer running round-based evaluations with parent sessions or using the Build sessions workflow.",
-        "staff_path": "Program → Evaluation → [plan] → reviewer portal",
-        "gotchas": "The fix requires companion PRs in sessionboard-web-api and sessionboard-web-ui-v2 to be fully deployed.",
-        "talk_track": "Two small but noticeable reviewer-portal fixes shipped together: the primary presenter star now shows on parent sessions, and Build sessions filters actually filter the assigned abstract pool.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "medium",
-          "docs_gap": "The guide should document the primary presenter star indicator in the parent-session participant list and explain how sidebar filters apply to the assigned abstracts pool in Build sessions mode.",
-          "why_use_it": "When evaluating a parent session with multiple participants, you can now see the primary presenter star directly in the participant list without opening the full submission detail. In Build sessions mode, the sidebar filters you apply to **Your assigned abstracts** now take effect immediately, so you can narrow a large abstract pool by track, format, or any other filter and work through only the submissions that match — no stale results from a previous filter state.",
-          "at": "2026-10-11T00:54:54.189Z"
-        }
+        "when_to_bring_up": "A reviewer says Build sessions filters do nothing, or cannot tell who the primary presenter is on a parent session.",
+        "who_should_get_it": "Customers whose reviewers build sessions from abstracts (reviewer session builds), and plans that evaluate parent sessions.",
+        "staff_path": null,
+        "gotchas": null,
+        "talk_track": null
       },
       "related": [
-        "/evaluations/setting-up-round-based-evaluations",
-        "/concepts/participant-roles"
+        "/evaluations/setting-up-round-based-evaluations"
       ],
       "shipped": {
         "prs": [
@@ -2202,56 +2022,44 @@
     },
     {
       "id": "hide-event-dates-in-emails",
-      "title": "Hide event dates from automated emails with a single setting",
-      "summary": "A new **Hide dates in emails** toggle in event details suppresses the `{{event.date}}` and `{{event_date}}` merge tags across all automated and system-generated emails for that event. When the setting is on, those tags render as blank instead of the event's date range.",
-      "article": "/events/event-details",
+      "title": "Leave the event date out of automated emails while your schedule is unconfirmed",
+      "summary": "Turn on **Hide event dates in emails** in **Settings → Record Settings → Dates & IDs** and the automated emails Sessionboard sends for the event — submission confirmations, evaluation invitations and reminders, receipts — leave out the event date, including where a template uses the event date merge tag.",
+      "article": "/events/event-details#date--time",
       "related": [
-        "/communications/automated-emails",
-        "/communications/email-campaigns"
+        "/communications/automated-emails"
       ],
       "kind": "new",
-      "module": "Communications",
       "features": [
         "sessions"
       ],
-      "availability": "everyone",
       "enable": {
         "how": "setting",
-        "path": "Event → Settings → Details → Hide dates in emails"
+        "path": "Settings → Record Settings → Dates & IDs → Date & Time → Hide event dates in emails"
       },
       "where": {
         "scope": "event",
-        "path": "Event → Settings → Details"
+        "path": "Settings → Record Settings → Dates & IDs"
       },
-      "permissions": [
-        "event.settings.update"
-      ],
+      "permissions": [],
       "audience": [
         "organizer"
       ],
-      "use_case": "Useful for events whose dates aren't finalised yet, or multi-day conferences where the date range in emails would confuse recipients — turn the setting on and the date simply won't appear in any outgoing email.",
+      "use_case": "A team that opens its call for papers before the dates are final can send confirmations without printing a date it may have to correct later.",
       "internal": {
         "cs_action": {
           "kind": "none",
-          "note": "Default off; organizers enable it themselves in event details."
+          "note": "Off by default; organizers turn it on per event."
         },
-        "when_to_bring_up": "When a customer asks how to stop event dates appearing in emails before dates are confirmed, or when they report that the date in emails is wrong.",
-        "who_should_get_it": "Any organizer running an event whose dates are not yet public or are subject to change.",
-        "staff_path": "Event → Settings → Details → Hide dates in emails",
-        "gotchas": "Only suppresses the {{event.date}} / {{event_date}} merge tags; any date text typed directly into an email template is unaffected.",
-        "talk_track": "If your event dates aren't locked in yet, flip this toggle and the date simply won't show up in any email we send — no need to edit every template.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The event-details guide should document the new Hide dates in emails toggle and explain which merge tags it affects.",
-          "why_use_it": "When event dates are still being confirmed, or when the date range shown in emails would be misleading (for example, a rolling programme or a multi-city tour), you can turn on **Hide dates in emails** in event details. Once enabled, the `{{event.date}}` and `{{event_date}}` merge tags return blank in every automated and campaign email for that event, so recipients never see an incorrect or placeholder date. The setting can be toggled off again as soon as the dates are ready to share.",
-          "at": "2026-10-11T00:51:52.086Z"
-        }
+        "when_to_bring_up": "A customer’s dates are provisional, or they want to stop the date appearing in submission confirmations.",
+        "who_should_get_it": "Customers who open a call for papers or evaluation before the event dates are confirmed.",
+        "staff_path": "Settings → Record Settings → Dates & IDs → Date & Time. Changes are written to History.",
+        "gotchas": "Only Sessionboard’s automated emails read this setting. Email campaigns the customer writes, and any date typed into a template by hand, are unaffected.",
+        "talk_track": null
       },
       "shipped": {
         "prs": [
-          "lennd/sessionboard-web-api#4453"
+          "lennd/sessionboard-web-api#4453",
+          "lennd/sessionboard-web-ui-v2#967"
         ],
         "docs_only": false,
         "pending": null,
@@ -2264,7 +2072,9 @@
         "emailed_at": null
       },
       "ideas": [],
-      "media": []
+      "media": [
+        "/images/kb/record-settings-hide-dates-in-emails.png"
+      ]
     },
     {
       "id": "portal-speaker-feedback-flags-no-403",
@@ -2331,50 +2141,39 @@
     },
     {
       "id": "public-voting-ineligible-header-ballot-count-tab",
-      "title": "Public voting portal now shows round details to ineligible voters and syncs ballot counts to the active tab",
-      "summary": "Signed-in voters who are not on the eligible list now see the voting round's plan name and instructions instead of a blank screen. The **ballot result count** also updates correctly when switching between the **All**, **Voted**, and **Not voted** tabs.",
+      "title": "Public voting shows the round to signed-in visitors who are not eligible, and the ballot count follows the tab",
+      "summary": "A signed-in visitor who is not on a round’s eligible-voter list sees the plan name and instructions instead of an empty page. On the ballot, the result count matches the **All**, **Voted** or **Not voted** tab you are on.",
       "article": "/site/program-site#public-voting",
       "related": [
         "/evaluations/how-to-evaluate-sessions#public-voting"
       ],
       "kind": "fixed",
-      "module": "Program",
       "features": [
         "sessions"
       ],
-      "availability": "everyone",
       "enable": {
         "how": "default_on",
         "path": null
       },
       "where": {
         "scope": "event",
-        "path": "Program Site → Public Voting portal"
+        "path": "Program Site → a public voting round"
       },
       "permissions": [],
       "audience": [
-        "participant",
-        "organizer"
+        "participant"
       ],
-      "use_case": "When a signed-in attendee visits a public voting round they are not eligible for, they now see the round name and instructions rather than a blank or broken page. Organizers reviewing ballot progress also get accurate counts no matter which tab they are viewing.",
+      "use_case": "Attendees who land on a vote they cannot take still see what it is, instead of assuming the page is broken.",
       "internal": {
         "cs_action": {
           "kind": "none",
-          "note": "Both fixes are default-on; no configuration required."
+          "note": null
         },
-        "when_to_bring_up": "When a customer reports that ineligible voters see a blank voting page, or that ballot counts look wrong when filtering by voted/not voted.",
-        "who_should_get_it": "Any customer running a public voting round with an eligibility list.",
+        "when_to_bring_up": "A customer says some voters see a blank voting page, or the count on the ballot does not match the filter.",
+        "who_should_get_it": "Customers running public voting restricted to an eligible-voter list.",
         "staff_path": null,
-        "gotchas": "The ineligible-voter header is fetched anonymously, so only publicly visible round metadata (plan name, instructions) is shown — no submission details are exposed.",
-        "talk_track": "Voters who aren't on your eligible list will now land on a proper page that explains the round, rather than a confusing blank screen. And when you're checking participation, the ballot count always matches whichever tab you're on.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The public voting section of the Program Site guide should note that ineligible signed-in visitors see the round name and instructions, and explain how the All / Voted / Not voted tabs affect the displayed ballot count.",
-          "why_use_it": "Public voting rounds sometimes restrict eligibility to a specific list of voters. Previously, signed-in users who were not on that list saw no context at all — no round name, no instructions — leaving them confused about what the page was for. Now the portal fetches the round's public header anonymously after a 403, so ineligible visitors still see the plan name and instructions. Separately, the ballot result count was not updating when switching between the **All**, **Voted**, and **Not voted** tabs, making it hard to track participation at a glance; that count now follows the active tab correctly.",
-          "at": "2026-10-11T00:36:33.580Z"
-        }
+        "gotchas": "Only the round’s public header (plan name, instructions) is shown to an ineligible visitor; no submissions.",
+        "talk_track": null
       },
       "shipped": {
         "prs": [
@@ -2520,57 +2319,43 @@
     },
     {
       "id": "evaluation-plans-qa-wave3-fixes",
-      "title": "Eight evaluation-plan display and behaviour fixes for round-based reviews",
-      "summary": "A batch of fixes for round-based evaluation plans: points-mode plans now show scores as **N pts** (not \"%\") in the monitor sidebar, average line, and print view; reopening a plan no longer shifts the round's review end date; a failed re-preview clears stale recommendations and disables **Apply to N**; rows outside the chosen round cannot be selected for **Apply recommendations** and select-all skips them (a tooltip explains why); the preview footer pluralises submissions and assignments correctly in English, German, Spanish, and French; later-round Impact Preview uses the server's round-pool count with updated confirm-dialog wording; the **Rounds** tab warns which deleted submissions a move skipped; and breadcrumb links (**Programs › program › Rounds**) now route through the Assign tab's unsaved-changes dialog.",
-      "article": "/evaluations/setting-up-round-based-evaluations",
+      "title": "Evaluation plans: points shown as points, reopening keeps dates, safer Apply recommendations",
+      "summary": "In round-based evaluation plans, points-scored plans show **N pts** instead of a percentage in the monitor, the average line and the printed report. Reopening a plan keeps the round’s review end date. **Apply recommendations** can only select sessions that are in the chosen round, and a failed re-preview clears the old recommendations instead of leaving them applicable. Moving submissions between rounds moves the live ones and names any deleted ones it skipped, and **Add pre-created session** finds a session by `SESS-20`, `sess20` or `20`.",
+      "article": "/evaluations/setting-up-round-based-evaluations#reviewer-recommendations",
       "related": [
-        "/evaluations/evaluation-plans",
-        "/evaluations/evaluation-summary"
+        "/evaluations/how-to-evaluate-sessions"
       ],
       "kind": "fixed",
-      "module": "Program",
       "features": [
         "sessions_v2"
       ],
-      "availability": "add_on",
       "enable": {
         "how": "default_on",
         "path": null
       },
       "where": {
         "scope": "event",
-        "path": "Program → Evaluation → Evaluation Plans → plan → Rounds / Submissions / Monitor"
+        "path": "Program → Evaluation → an evaluation plan → Monitor, Submissions and Rounds tabs"
       },
       "permissions": [],
       "audience": [
         "organizer"
       ],
-      "use_case": "Program chairs running multi-round point-scored reviews will see accurate score units, correct date handling when reopening a plan, and reliable recommendation workflows — reducing the chance of acting on stale or misleading data during selection.",
+      "use_case": "A program chair running a multi-round, points-scored review can trust the numbers on screen and in print, and cannot apply a stale recommendation to a session that is not in the round.",
       "internal": {
         "cs_action": {
           "kind": "none",
-          "note": "All fixes are default-on for any customer using Sessions 2.0 round-based evaluation plans. No configuration needed."
+          "note": null
         },
-        "when_to_bring_up": "When a customer reports score display showing '%' instead of points, unexpected date changes after reopening a plan, or confusion about why Apply Recommendations is greyed out.",
-        "who_should_get_it": "Any customer using Sessions 2.0 (add-on) with multi-round evaluation plans.",
-        "staff_path": "Program → Evaluation → Evaluation Plans → plan",
-        "gotchas": "Companion API and org-portal PRs are part of this release; all three must be deployed together for full effect.",
-        "talk_track": "These are polish fixes for the round-based evaluation workflow — scores display correctly as points, dates are stable when you reopen a plan, and the Apply Recommendations flow is more reliable.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The guide should add a section covering points-mode score display in the monitor and print view, the behaviour of reopening a plan (date preservation), and the out-of-round row restriction in Apply Recommendations.",
-          "why_use_it": "When you run a multi-round evaluation with a points scorecard, scores should read as points — not percentages — everywhere you look: the monitor sidebar, the average line, and the printed report. These fixes also make reopening a plan safe (the end date stays where you set it), keep the Apply Recommendations workflow honest (a failed preview clears old results so you can't accidentally apply them), and prevent you from selecting out-of-round submissions by mistake. The Rounds tab now tells you exactly which deleted submissions were skipped when you move a round, and navigating away via breadcrumbs prompts you to save unsaved assignment changes first.",
-          "at": "2026-10-11T00:14:35.637Z",
-          "permissions_to_confirm": [
-            "event.evaluation_plans:read",
-            "event.evaluation_plans:update"
-          ]
-        }
+        "when_to_bring_up": "A customer sees “%” on a points plan, says reopening a plan moved the review deadline, or cannot apply recommendations to some rows.",
+        "who_should_get_it": "Sessions 2.0 customers running multi-round evaluation plans.",
+        "staff_path": "Program → Evaluation → plan → Submissions → Apply recommendations; Rounds tab → Move.",
+        "gotchas": "Rows outside the selected round are deliberately unselectable for Apply recommendations (a tooltip says why); select-all skips them. A round move returns an error only when every selected submission is deleted.",
+        "talk_track": null
       },
       "shipped": {
         "prs": [
+          "lennd/sessionboard-web-api#4450",
           "lennd/sessionboard-web-ui-v2#965"
         ],
         "docs_only": false,
@@ -2650,6 +2435,363 @@
       },
       "ideas": [],
       "media": []
+    },
+    {
+      "shipped": {
+        "announced_at": null,
+        "emailed_at": null,
+        "docs_only": false,
+        "pending": null,
+        "prs": [
+          "lennd/sessionboard-web-api#4453",
+          "lennd/sessionboard-web-ui-v2#967"
+        ],
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        }
+      },
+      "id": "bulk-mark-tasks-complete-contacts-and-sessions",
+      "title": "Mark portal tasks complete or incomplete for many people or sessions at once",
+      "summary": "Select records and choose **Mark tasks complete** or **Mark tasks incomplete** — from **Assign** in Contacts, or from **More** on the Sessions agenda list and Submissions — then pick the tasks. Large selections are processed in batches, and each change is written to the record’s History.",
+      "article": "/faq/mark-tasks-complete-for-portal-users#mark-tasks-complete-for-many-people",
+      "related": [
+        "/portals/portals-101"
+      ],
+      "kind": "new",
+      "features": [
+        "sessions"
+      ],
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "CRM → Contacts → select → Assign; Program → Sessions (agenda list) or Submissions → select → More"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "When a team collects headshots or agreements outside the portal, it can close those tasks for a whole batch of speakers in one step instead of opening each profile.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer collected something by email and wants the portal checklist to reflect it, or needs to reopen a task for a group.",
+        "who_should_get_it": "Any customer using portal tasks.",
+        "staff_path": null,
+        "gotchas": "Form tasks are excluded — a form is complete when it is submitted. Up to 500 records and 50 tasks per run; History rows are written only where the status actually changed. The single-record toggle on a contact or account profile now also checks permissions and writes History.",
+        "talk_track": null
+      }
+    },
+    {
+      "shipped": {
+        "announced_at": null,
+        "emailed_at": null,
+        "docs_only": false,
+        "pending": null,
+        "prs": [
+          "lennd/sessionboard-web-api#4460",
+          "lennd/sessionboard-web-ui-v2#972"
+        ],
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        }
+      },
+      "id": "field-rule-not-applied-warning-on-session-save",
+      "title": "Saving a session tells you when a field rule could not be applied",
+      "summary": "When a field rule — such as a **Min/Max Participants** limit — cannot be written on a session save, the session page and side panel say “Saved, but a field rule was not applied” with the reason, instead of a plain “Saved”. The rule’s log records it as **Not applied** with the same reason.",
+      "article": "/settings/field-rules#set-participant-limits-with-a-rule",
+      "related": [
+        "/sessions/participant-inventory"
+      ],
+      "kind": "fixed",
+      "features": [
+        "field_rules"
+      ],
+      "enable": {
+        "how": "support",
+        "path": "Field Rules are turned on by support; then Library → Fields → Field Rules"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Program → a session (profile or side panel) → Save"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "A team relying on rules to keep participant limits right knows straight away when a save did not apply one, instead of finding out from a wrong count later.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer says a field rule silently did nothing on some sessions.",
+        "who_should_get_it": "Customers using Field Rules, especially participant-limit rules.",
+        "staff_path": null,
+        "gotchas": "The session itself is saved; only the rule’s write was refused.",
+        "talk_track": null
+      }
+    },
+    {
+      "shipped": {
+        "announced_at": null,
+        "emailed_at": null,
+        "docs_only": false,
+        "pending": null,
+        "prs": [
+          "lennd/sessionboard-web-api#4460"
+        ],
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        }
+      },
+      "id": "agenda-calendar-shows-sessions-with-role-card-fields",
+      "title": "The agenda calendar shows sessions when card display includes a role such as Chairperson",
+      "summary": "Choosing a participant role column — such as **Chairperson** — as a card display field no longer leaves the agenda calendar empty; sessions appear with the role on their cards. Adding, editing or removing a session participant also re-checks which portal that contact belongs in.",
+      "article": "/sessions/agenda#the-agenda-views",
+      "related": [
+        "/sessions/program-settings#agenda"
+      ],
+      "kind": "fixed",
+      "features": [
+        "sessions"
+      ],
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Program → Agenda (Day, Week and Rooms views)"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "A scheduler who wants to see who chairs each session on the calendar can do so without losing the calendar.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer’s agenda calendar suddenly showed no sessions after changing card display fields.",
+        "who_should_get_it": "Customers who show participant roles on agenda cards.",
+        "staff_path": null,
+        "gotchas": null,
+        "talk_track": null
+      }
+    },
+    {
+      "shipped": {
+        "announced_at": null,
+        "emailed_at": null,
+        "docs_only": false,
+        "pending": null,
+        "prs": [
+          "lennd/sessionboard-web-api#4460",
+          "lennd/sessionboard-web-ui-v2#972"
+        ],
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        }
+      },
+      "id": "language-variants-show-saved-values-and-bulk-fill-every-field",
+      "title": "Language variants: saved translations always show, and bulk fill reaches every text field",
+      "summary": "**Edit Language Variants** lists every language that has a saved value, even when that field’s per-language switch is off, so translations are not hidden. **Bulk Update** for language values offers every session text field that stores translations, including custom fields, not only the columns showing in the grid.",
+      "article": "/settings/language-translation-variant#enter-translated-values-on-a-record",
+      "related": [
+        "/settings/language-translation-variant#enter-translated-values-on-a-record"
+      ],
+      "kind": "fixed",
+      "features": [
+        "languages"
+      ],
+      "enable": {
+        "how": "support",
+        "path": "Languages are turned on by support; then Settings → Languages, and Enable variants on each field"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Program → a session → Edit Language Variants; Program → Sessions → select → Bulk Update"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "A multilingual event can fill one language across many sessions in one pass and never loses sight of a translation it already entered.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer says a translation disappeared, or a custom field is missing from the language bulk update.",
+        "who_should_get_it": "Customers running events in more than one language.",
+        "staff_path": null,
+        "gotchas": null,
+        "talk_track": null
+      }
+    },
+    {
+      "shipped": {
+        "announced_at": null,
+        "emailed_at": null,
+        "docs_only": false,
+        "pending": null,
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#972"
+        ],
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        }
+      },
+      "id": "file-request-drag-and-drop-uploads",
+      "title": "Files dropped onto a portal file request upload",
+      "summary": "Dragging a file onto a **File Request** task’s drop zone in the portal uploads it, with the same file type, size and safety checks as choosing it with the file picker.",
+      "article": "/portals/collect-documents#what-the-person-sees",
+      "related": [],
+      "kind": "fixed",
+      "features": [
+        "new_portals"
+      ],
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Portal → a File Request task"
+      },
+      "permissions": [],
+      "audience": [
+        "speaker",
+        "participant"
+      ],
+      "use_case": "Speakers and sponsors hand over documents the way they expect to, so fewer of them email files instead.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer says participants’ dropped files never arrived.",
+        "who_should_get_it": "Customers collecting documents through portal file requests.",
+        "staff_path": null,
+        "gotchas": null,
+        "talk_track": null
+      }
+    },
+    {
+      "shipped": {
+        "announced_at": null,
+        "emailed_at": null,
+        "docs_only": false,
+        "pending": null,
+        "prs": [
+          "lennd/sessionboard-web-api#4460"
+        ],
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        }
+      },
+      "id": "session-shows-transcript-of-recording-added-from-media",
+      "title": "A recording linked to a session through Add media shows its transcript and audio on the session",
+      "summary": "When a recording is linked to a session with **Add media**, the session shows that recording’s transcript and audio.",
+      "article": "/marketing/media-library#work-with-a-recording",
+      "related": [],
+      "kind": "fixed",
+      "features": [
+        "marketing_media"
+      ],
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Program → a session → Media"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "A team that links recordings to sessions by hand gets the transcript on the session too, ready for recaps and clips.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer linked a recording to a session and the transcript did not appear.",
+        "who_should_get_it": "Customers who import recordings into Marketing → Media.",
+        "staff_path": null,
+        "gotchas": null,
+        "talk_track": null
+      }
+    },
+    {
+      "shipped": {
+        "announced_at": null,
+        "emailed_at": null,
+        "docs_only": false,
+        "pending": null,
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#979"
+        ],
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        }
+      },
+      "id": "slides-title-slide-progress-and-wizard-session-names",
+      "title": "Slides: Add title slide finishes in view, and the wizard from Sessions names your selection",
+      "summary": "The **Add title slide to presentations** dialog in **Marketing → Slides** keeps checking until the job finishes, even if you switch tabs. Opening the Slides wizard from **Sessions → Create** says how many sessions the current filter selected and shows their titles. **Add to gallery** no longer flashes “No galleries can take this media yet” after a successful add.",
+      "article": "/marketing/slides#add-a-title-slide-to-uploaded-presentations",
+      "related": [
+        "/marketing/slides#generate-slides"
+      ],
+      "kind": "fixed",
+      "features": [
+        "marketing_slides"
+      ],
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Marketing → Slides → Presentations & files → Add title slide to presentations; Program → Sessions → Create → Slides; Add to gallery"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "A team adding title slides to a whole program sees the job finish, and knows exactly which sessions a slides run will cover.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer says the title slide dialog sat on “processing”, or the Slides wizard said “All sessions” when they had filtered.",
+        "who_should_get_it": "Customers generating slides or adding title slides to uploaded presentations.",
+        "staff_path": null,
+        "gotchas": "With “select all matching” across several pages, chips for sessions not on the loaded page still show the short id.",
+        "talk_track": null
+      }
     }
   ]
 }
