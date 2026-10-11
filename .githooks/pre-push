@@ -49,8 +49,13 @@ if [ ! -d "$top/node_modules" ]; then
 fi
 
 for sha in "${shas[@]}"; do
-  tmp=$(mktemp -d "${TMPDIR:-/tmp}/docs-preflight.XXXXXX")
-  cleanup() { git worktree remove --force "$tmp" >/dev/null 2>&1 || rm -rf "$tmp"; }
+  # Inside the checkout (gitignored), not under $TMPDIR: Vite serves the
+  # symlinked node_modules by real path and only allows paths under the
+  # project's workspace root, so a worktree in /private/var fails the build with
+  # "No cached compile metadata found" for every Starlight component.
+  mkdir -p "$top/.preflight"
+  tmp=$(mktemp -d "$top/.preflight/docs-preflight.XXXXXX")
+  cleanup() { git worktree remove --force "$tmp" >/dev/null 2>&1 || rm -rf "$tmp"; rmdir "$top/.preflight" 2>/dev/null || true; }
   trap cleanup EXIT
   echo "pre-push: running Docs CI steps against $(git rev-parse --short "$sha") before it reaches main…"
   git worktree add --detach --quiet "$tmp" "$sha"
