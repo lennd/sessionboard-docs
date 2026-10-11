@@ -43,7 +43,6 @@ would otherwise generate tickets:
 
 | Surface | Reality | Where noted |
 |---|---|---|
-| Advocacy **Attendees** audience | Assign API throws "Attendees audience is not available yet" | `marketing/advocacy.mdx` warning |
 | Advocacy conversions | Funnel and KPIs deliberately stop at Clicked | `marketing/advocacy.mdx` note |
 | Dispatch **Source** dropdown | Not persisted; no auto-generation from it | `marketing/dispatch.mdx` warning |
 | Plan **Publish** | Creates an Advocacy link only — no recipients, no notify, no LinkedIn post | `marketing/content-plan.mdx` warning |
