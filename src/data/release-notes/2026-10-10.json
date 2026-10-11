@@ -6154,6 +6154,672 @@
           "me": null
         }
       }
+    },
+    {
+      "id": "agenda-permission-fixes-security-sweep-w1",
+      "title": "Agenda drag/resize respects field permissions, session drawer no longer errors for restricted roles, and the no-access page names your signed-in account",
+      "summary": "Three permission-related fixes shipped together: (1) Roles with **Starts At** or **Ends At** locked can no longer drag, resize, drop, or range-select sessions on the **Agenda** — a banner explains the lock. (2) Opening a session drawer or **Add Session** sidebar as a role with only Sessions read/update no longer shows a red \"Request failed\" toast. (3) The event or org no-access page now shows the email address you are signed in with and offers a **Sign out** link, making it easier to switch to the right account.",
+      "article": "/sessions/agenda#common-questions",
+      "related": [
+        "/event-team/invite-manage-event-team-members",
+        "/faq/common-speaker-portal-issues-and-how-to-fix-them"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "sessions"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Program → Sessions → Agenda; Program → Sessions → session drawer / Add Session"
+      },
+      "permissions": [
+        "event.sessions.read",
+        "event.sessions.update",
+        "event.session_settings.read"
+      ],
+      "audience": [
+        "organizer",
+        "reviewer"
+      ],
+      "use_case": "Teams using field-level permissions to lock session dates can now trust that the Agenda enforces those locks visually and functionally — no accidental moves or resizes. Restricted team members also get a clean experience when opening sessions, and anyone landing on a no-access page can immediately see which account they are using and sign out to switch.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "All three fixes are default-on bug fixes; nothing to enable."
+        },
+        "when_to_bring_up": "When a customer reports that a restricted role could still drag sessions on the agenda, sees a red error toast opening a session drawer, or is confused about which account they are signed in with on a no-access page.",
+        "who_should_get_it": "Any customer using field-level permissions on session date fields, or with team members on restricted roles who open session drawers.",
+        "staff_path": "Program → Sessions → Agenda (drag a session as a restricted role); Program → Sessions → any session drawer (as a role with only sessions read/update)",
+        "gotchas": "The agenda banner explaining the date lock only appears while field permissions are loading or when dates are locked — customers may ask why they suddenly cannot drag. Reassure them it is intentional enforcement of their own field permission settings.",
+        "talk_track": "If you have locked Starts At or Ends At for certain roles, the Agenda now actually enforces that lock — those roles will see a banner and cannot move or resize sessions. We also cleaned up a noisy error toast that appeared for restricted roles opening session drawers, and made the no-access page more helpful by showing which account is signed in.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The Agenda guide should add a note explaining that roles with Starts At or Ends At locked via field permissions cannot drag, resize, drop, or range-select sessions, and that a banner is shown to explain the restriction.",
+          "why_use_it": "When you lock **Starts At** or **Ends At** for a role, the Agenda now prevents that role from moving or resizing sessions on the calendar — previously the drag-and-drop actions went through even though the fields were locked. If a team member opens a session and their role does not include Session Settings read access, the drawer now loads cleanly instead of showing an error toast. Finally, if someone lands on a no-access page because they are signed in with the wrong account, the page now tells them exactly which email is signed in and lets them sign out in one click so they can switch to the correct account.",
+          "at": "2026-10-10T22:22:41.426Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#958"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "site-builder-html-sanitization",
+      "title": "Sites builder and live Site now sanitize HTML to block injected scripts",
+      "summary": "HTML entered in Sites builder fields — such as FAQ answers, welcome text, privacy notices, rich-text blocks, and program descriptions — is now sanitized before it renders in both the live preview and the published Site. Scripts and event handlers are stripped; safe tags (images, links, allowed iframes), right-to-left text, and custom CSS are preserved.",
+      "article": "/site/site-builder",
+      "related": [
+        "/awards/setting-up-your-sessionboard-site",
+        "/site/program-site"
+      ],
+      "kind": "fixed",
+      "module": "Portals",
+      "features": [
+        "new_portals"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Sites → Site builder (preview and published Site)"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Organizers who allow contributors to enter rich HTML in Sites fields — FAQ answers, welcome text, custom pages, program descriptions — can be confident that injected scripts or event handlers will not execute for visitors on the live Site or in the builder preview.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "This is a security fix applied automatically to all Sites. No customer action or enablement required."
+        },
+        "when_to_bring_up": "If a customer reports that a script or interactive element they added to a Sites field stopped working — explain that scripts and event handlers are now blocked by design, and that safe HTML (images, links, iframes from allowed hosts, CSS) still renders.",
+        "who_should_get_it": "All customers using the Sites builder, especially those with multiple contributors entering HTML.",
+        "staff_path": "Sites → Site builder → any HTML-accepting field",
+        "gotchas": "Custom header HTML loses scripts and event handlers; custom CSS is kept. Iframes from non-allowed hosts will be stripped. RTL text (dir attribute) is preserved.",
+        "talk_track": "Sessionboard now automatically removes scripts and event handlers from HTML fields in Sites, so visitor browsers are protected even if someone pastes in unsafe markup. Safe content like images, links, iframes from approved hosts, and CSS all continue to work.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The Site builder guide should add a note explaining which HTML tags and attributes are permitted in rich-text and custom HTML fields, and that scripts and inline event handlers are automatically removed.",
+          "why_use_it": "When multiple team members or external contributors can type HTML into Sites builder fields, there is a risk that malicious or accidental script tags could run in visitors' browsers. Sessionboard now applies a consistent allow-list to every HTML field — in the builder preview as soon as content arrives, and on every published page — so only safe tags and attributes reach the browser. Images, protocol-relative links, sandboxed iframes, custom CSS, and right-to-left text all continue to work as expected. No backfill is needed: existing published content is cleaned on render.",
+          "at": "2026-10-10T22:23:44.341Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-org-portal#184"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "contracts-provider-neutral-copy-early-access-rename",
+      "title": "Contracts Early Access tile and module copy are now provider-neutral",
+      "summary": "The **Early Access** tile previously labelled **Contracts / Docusign** is now labelled **Contracts**, with updated description, benefits, and tags that describe built-in templates and hosted e-signature — Docusign is presented as one optional provider. Labels throughout the **Contracts** module (the banner, empty state, **Add Contract** dialog, and directory header) now say \"send for e-signature\" rather than \"via Docusign\". A new **Sessionboard** source badge appears on contracts created natively.",
+      "article": "/get-started/early-access",
+      "related": [
+        "/speaker-crm/contracts",
+        "/apps/docusign-integration"
+      ],
+      "kind": "improved",
+      "module": "Settings",
+      "features": [
+        "contracts"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "self_serve",
+        "path": "Get started → Early Access → Preview → Contracts"
+      },
+      "where": {
+        "scope": "org",
+        "path": "Early Access → Contracts tile; Contacts → Contracts tab; Contracts directory"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who don't use Docusign — or who want to use Sessionboard's own e-signature — now see Contracts described in terms of what it does (send agreements for e-signature) rather than which third-party tool powers it, making the feature easier to evaluate and adopt.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Copy-only change; no feature flag or setting changed. Existing Docusign-connected customers see no functional difference — Docusign-specific screens are unchanged."
+        },
+        "when_to_bring_up": "When a prospect asks whether Contracts requires Docusign, or when introducing Contracts to a customer who doesn't have a Docusign account.",
+        "who_should_get_it": "Any customer currently on or evaluating the Contracts Early Access feature.",
+        "staff_path": "Early Access → Contracts tile (org level)",
+        "gotchas": "Docusign-specific UI (Send via Docusign tab, connection empty states, Open in Docusign, OrgSettings Docusign card) is intentionally unchanged. The native Sessionboard e-sign tab is not yet shipped.",
+        "talk_track": "Contracts is no longer a Docusign-only feature — it describes the e-signature workflow itself, with Docusign as one provider option. This makes it easier to position to customers who haven't committed to Docusign.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The Early Access guide and the Contracts guide should note that Docusign is one optional provider and that a native Sessionboard e-signature option is coming, so readers understand the tile rename and the new Sessionboard source badge.",
+          "why_use_it": "Contracts lets you send agreements to speakers, sponsors, and other contacts and collect their e-signatures without leaving Sessionboard. The module now describes itself around the workflow — building from templates and collecting signatures — rather than assuming you have a Docusign account. If you do connect Docusign, those provider-specific screens still appear; if you don't, the module still makes sense and you can use Sessionboard's own signing flow when it becomes available.",
+          "at": "2026-10-10T22:24:45.800Z",
+          "permissions_to_confirm": [
+            "org.contracts: create, read, update"
+          ]
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#957"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "contracts-native-template-engine",
+      "title": "Create, import, and preview native e-sign contract templates",
+      "summary": "The new native Contracts template engine lets organizers build e-sign templates directly in Sessionboard — no Docusign account required. Draft a template from scratch or import a **.docx** file, publish it when it passes validation, and use **Preview as** to render a watermarked PDF populated with a real contact's, exhibitor's, or sponsor's data before sending.",
+      "article": "/speaker-crm/contracts",
+      "related": [
+        "/apps/docusign-integration",
+        "/speaker-crm/docusign-template-variables"
+      ],
+      "kind": "new",
+      "module": "CRM",
+      "features": [
+        "contracts"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "self_serve",
+        "path": "Get started → Early Access → Preview → Contracts"
+      },
+      "where": {
+        "scope": "org",
+        "path": "Organization → Contracts → Templates"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Event teams that want to send speaker or sponsor agreements without a Docusign subscription can now author templates natively, import existing Word documents, and proof-read a fully rendered PDF against a real contact record before the contract goes out.",
+      "internal": {
+        "cs_action": {
+          "kind": "must_enable",
+          "note": "The entire native Contracts module is behind the 'Contracts' Early Access flag. Customers must opt in via Get started → Early Access → Preview → Contracts, or a CSM can enable it at the org level."
+        },
+        "when_to_bring_up": "When a customer asks about e-sign without Docusign, or when an existing Docusign customer wants to manage templates natively.",
+        "who_should_get_it": "Any customer who sends speaker, sponsor, or exhibitor agreements and wants a built-in alternative to Docusign.",
+        "staff_path": "Org settings → Early Access → Contracts",
+        "gotchas": "Send / sign / finalize / void / resend and the admin Templates UI are not yet shipped (SB-9809+, SB-9815+). Enabling the flag gives access to template authoring only — no end-to-end signing flow yet. Do not promise a full signing workflow in this release.",
+        "talk_track": "Sessionboard now has its own contract template engine. You can draft agreements, import Word docs, and preview them against real contact data — all without leaving the platform. Signing and sending are coming in the next release.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The /speaker-crm/contracts guide covers Docusign-based contracts only; it should add a section on creating and managing native templates, the .docx import flow, the publish validation rules, and the Preview as feature.",
+          "why_use_it": "You can now build contract templates entirely inside Sessionboard, using a closed template syntax (`{{variable}}`, conditional blocks, and signer placeholders) that produces a predictable PDF every time. If you already have agreements in Word, import the **.docx** file directly rather than rebuilding from scratch. Before sending to anyone, use **Preview as** to generate a watermarked PDF populated with a real contact's, exhibitor's, or sponsor's data — including a list of any variables that could not be resolved — so you can catch gaps before signers ever see the document. Templates must pass a publish check (which flags missing signer blocks and other problems) before they appear in the Send dialog, keeping drafts out of live workflows.",
+          "at": "2026-10-10T22:51:39.113Z",
+          "permissions_to_confirm": [
+            "org.contracts: create, read, update, delete"
+          ]
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4439"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "native-esign-send-sign-finalize-reminders",
+      "title": "Send, sign, and finalize contracts without DocuSign using Sessionboard's built-in e-sign",
+      "summary": "Contracts can now be sent, signed, and finalized entirely within Sessionboard using a native e-sign provider — no DocuSign account required. Signers receive an email with a secure link, complete their fields and draw or type a signature, and a **signing certificate** is appended to the final PDF. Automatic reminders re-send the link to anyone who hasn't signed past the configured cadence, and a **decline** option lets a signer reject the contract and notify all parties.",
+      "article": "/speaker-crm/contracts",
+      "related": [
+        "/apps/docusign-integration",
+        "/participants/sign-a-contract",
+        "/speaker-crm/pipeline"
+      ],
+      "kind": "new",
+      "module": "CRM",
+      "features": [
+        "contracts"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "support",
+        "path": "Ask your Customer Success Manager to enable native e-sign; then Contracts → Send → provider: Native"
+      },
+      "where": {
+        "scope": "org",
+        "path": "Speaker CRM → Contracts → Send"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "speaker"
+      ],
+      "use_case": "Organizations that don't have a DocuSign subscription can now collect legally-evidenced signatures on speaker contracts directly in Sessionboard. Signers get a branded email, sign in their browser, and the completed PDF with a certificate of signing is stored automatically.",
+      "internal": {
+        "cs_action": {
+          "kind": "must_enable",
+          "note": "The backend is live but the send UI (SB-9814) and the /sign/:token web page (SB-9817) are in separate PRs not yet merged. Enable only when the full UI stack is confirmed deployed. Set ENABLE_CONTRACTING_NATIVE_REMINDERS=true on the jobs worker and ensure APPV2_URL points at web-ui-v2."
+        },
+        "when_to_bring_up": "When a prospect or customer asks whether they need DocuSign to use Contracts, or when a customer on the Contracts beta wants a simpler signing flow.",
+        "who_should_get_it": "Contracts beta customers who do not have a DocuSign account, or who want an all-in-one workflow without a third-party integration.",
+        "staff_path": "Speaker CRM → Contracts → Send (provider field)",
+        "gotchas": "PDF-mode templates are not yet supported — native send will return a clear error if attempted. The signing UI page (web-ui-v2 /sign/:token) and the portal 'Sign now' copy are in separate PRs (SB-9817, SB-9818); do not surface this to customers until those ship. DocuSign customers are completely unaffected — the default provider remains DocuSign.",
+        "talk_track": "Sessionboard now runs the whole contract signing flow natively — no DocuSign licence needed. Signers get a branded email, sign in their browser, and you get a tamper-evident PDF with a full audit certificate. Reminders go out automatically, and the pipeline stage advances on completion, just like with DocuSign.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should add a section covering the native e-sign provider: how to choose it at send time, the signer experience (email link → draw/type signature → submit), the signing certificate appended to the final PDF, reminder cadence configuration, and the decline flow.",
+          "why_use_it": "If your team doesn't use DocuSign — or you want to keep the entire contracting workflow inside Sessionboard — the native e-sign provider handles the full envelope lifecycle for you. You send a contract from a published template, each signer receives a secure, time-limited link by email, and they draw or type their signature directly in the browser. Once every party has signed, Sessionboard generates a final PDF with an appended signing certificate that records each signer's method, IP address, consent version, and the SHA-256 of the original document. Automatic reminders re-send the link to anyone who hasn't acted, and the pipeline stage advances on completion just as it does with DocuSign.",
+          "at": "2026-10-10T23:08:53.903Z",
+          "permissions_to_confirm": [
+            "org.contracts: create, read, update"
+          ]
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4442"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "first-round-delete-error-message",
+      "title": "Clearer error when trying to delete the first evaluation or awards round",
+      "summary": "Attempting to delete the first round of an evaluation plan or awards program now shows a specific message: \"The first round cannot be deleted, because submissions in a deleted round move back to the round before it.\" Previously, the same generic default-round message appeared, which gave advice that did not apply and could not resolve the block.",
+      "article": "/evaluations/setting-up-round-based-evaluations#managing-your-evaluation-plans",
+      "related": [
+        "/awards/managing-submissions-reviewers-rounds"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "sessions",
+        "awards"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Program → Evaluation → [plan] → Rounds; Awards → [program] → Rounds"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "When an organizer tries to delete the first round and hits an error, they now get a message that explains exactly why it cannot be removed — so they stop looking for a workaround that does not exist.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "No action needed. The fix ships automatically and corrects a misleading error message."
+        },
+        "when_to_bring_up": "When a customer reports being confused by the 'mark another round as default' error while trying to delete their first evaluation or awards round.",
+        "who_should_get_it": "Any customer running multi-round evaluations on Sessions or Awards.",
+        "staff_path": "Program → Evaluation → [plan] → Rounds; Awards → [program] → Rounds",
+        "gotchas": "The first round remains undeletable by design — this fix only improves the explanation, not the behaviour.",
+        "talk_track": "The first round can never be deleted because there is nowhere for its submissions to go. The error message now says exactly that, so customers won't waste time trying to change the default round.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that the first round (by sort order) cannot be deleted and explain why — submissions in a deleted round move back to the preceding round, so no preceding round means deletion is blocked regardless of which round is marked as default.",
+          "why_use_it": "If you try to delete the first round of an evaluation plan or awards program, Sessionboard now tells you precisely why it is blocked: submissions in a deleted round move back to the round before it, and there is no round before the first one. The previous message told you to mark another round as default first — advice that did not resolve the block. With the corrected message you can immediately understand the constraint and restructure your rounds accordingly instead of chasing a dead end.",
+          "at": "2026-10-10T23:33:37.227Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4444"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "community-product-updates-email-subscription",
+      "title": "Subscribe to Sessionboard product updates by email",
+      "summary": "Organizers can now opt in to a **Product Updates** email digest directly from **What's New** or **Account Settings** — confirmed instantly using their login address. Anyone can also subscribe from the public release-notes page (`learn.sessionboard.com/help/release-notes`) via a double opt-in flow. Each digest groups new release notes by module with thumbnails and links; every email includes a one-click **Unsubscribe** link.",
+      "article": "/help/community",
+      "related": [
+        "/communications/automated-emails"
+      ],
+      "kind": "new",
+      "module": "Platform",
+      "features": [
+        "community"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "setting",
+        "path": "What's New → Subscribe to product updates  OR  Account Settings → Product Updates"
+      },
+      "where": {
+        "scope": "org",
+        "path": "What's New (top-right bell / Community) → Product Updates card; Account Settings → Product Updates"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who want to stay current on new Sessionboard capabilities without logging in every day can subscribe once and receive a digest email whenever new release notes go live — grouped by module so they can scan what's relevant to their workflow.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "The digest cron (COMMUNITY_PRODUCT_UPDATES_DIGEST_CRON) is intentionally left unset until the docs subscribe form is live. No emails will go out until the cron is configured in Doppler (prod-us only). Coordinate with the docs Worker deploy and web-ui-v2 PR before enabling."
+        },
+        "when_to_bring_up": "When a customer asks how to stay informed about new features without checking the product daily, or when onboarding new admins who want to track platform changes.",
+        "who_should_get_it": "All organizer admins; particularly useful for customers who are not daily active users but want to track platform improvements relevant to their event type.",
+        "staff_path": "Community → What's New (in-product); learn.sessionboard.com/help/release-notes (public)",
+        "gotchas": "The digest is US-region only and will not fire until COMMUNITY_PRODUCT_UPDATES_DIGEST_CRON is set in Doppler. Notes already live at deploy time are backfilled with public_emailed_at = now() so the first run only mails genuinely new notes. Public subscribe routes are protected by a shared secret (X-Internal-Service: docs) and are only callable by the docs Worker — they are not open to arbitrary callers.",
+        "talk_track": "You can now subscribe to a product-update digest email right from What's New — one click and your login address is confirmed. If you share the public release-notes page with your team, they can subscribe there too with a quick confirmation email. Every digest is grouped by module so you can jump straight to what matters for your program.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The /help/community guide should add a section explaining the Product Updates email subscription — how to subscribe from What's New or Account Settings, what the digest contains, and how to unsubscribe.",
+          "why_use_it": "Keeping up with a fast-moving platform is easier when updates come to you. Once you subscribe, you receive a digest email each time new release notes are published, with notes grouped by module, a kind label (new / improved / fixed), a thumbnail, and direct links to the full release note and its how-to guide — all pointing to the public release-notes page, not requiring a login. You can subscribe in one click from inside the product using your existing login address, or sign up from the public release-notes page with a confirmation email. Every digest includes a one-click unsubscribe link so you stay in control.",
+          "at": "2026-10-10T23:37:07.437Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4446"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "history-api-siem-link-log-export-token-state",
+      "title": "Org History API tab links to the SIEM guide, and audit log export token state is clearer for restricted members",
+      "summary": "The **API** tab in org **History** now includes a link to the Help Center article on exporting audit logs to a SIEM. On the **Create Token** dialog, members who lack the **Manage Users** permission see the **Audit log export** option as disabled with an explanatory reason, rather than having it hidden entirely; editing an existing log-export token also remains locked for those members.",
+      "article": "/integrations/siem-log-export",
+      "related": [
+        "/integrations/api-tokens",
+        "/communications/email-sms-history#audit"
+      ],
+      "kind": "improved",
+      "module": "Settings",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Organization → History → API"
+      },
+      "permissions": [
+        "org.settings.manage_users"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Admins setting up a SIEM integration can jump straight to the setup guide from the History API tab. Team members without Manage Users rights now see a clear explanation of why audit log export is unavailable to them, rather than a mysteriously absent option.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Ships on by default; no configuration needed."
+        },
+        "when_to_bring_up": "When a customer asks why a team member cannot create a log-export token, or when helping a customer set up a SIEM integration from the History API tab.",
+        "who_should_get_it": "Any org using API tokens for audit log export or running a SIEM integration.",
+        "staff_path": "Organization → History → API → Create Token",
+        "gotchas": "The SIEM Help Center link appears on org History only, not event History. The disabled state (with reason) is shown only to members lacking Manage Users; members with the permission see the option enabled as before.",
+        "talk_track": "Team members who don't manage users will now see a clear reason why audit log export is locked, and anyone setting up a SIEM can follow the in-product link straight to the setup guide.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The SIEM log-export guide should note that the Manage Users permission is required to create or edit a log-export token, and that members without it will see the option disabled with an explanation.",
+          "why_use_it": "When you open the **API** tab in org History, a direct link to the SIEM log-export guide is now shown so you can set up or share the integration steps without leaving the page. If a team member tries to create an API token but does not hold the **Manage Users** permission, the **Audit log export** option is now visible but disabled with a reason, so they understand the limitation instead of wondering why the option is missing. The same lock applies when editing an existing log-export token, keeping the permission boundary consistent. This reduces confusion for multi-admin teams where only certain members manage security integrations.",
+          "at": "2026-10-10T23:42:54.619Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#961"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "interest-form-plan-filters-and-votes-per-voter-fix",
+      "title": "Interest Form evaluation plans gain submission filters, and clearing Votes per voter now saves correctly",
+      "summary": "Two fixes to Interest Form evaluation plans: (1) The **Assignments** step now shows a **By submission filters** card — using the same filters builder as event evaluations, plus a **Status** field — so you can target which submissions get assigned to each round. (2) Clearing the **Votes per voter** field now correctly removes the limit (previously the value was silently ignored and the old limit stayed in place).",
+      "article": "/speaker-crm/interest-form-evaluation-plans",
+      "related": [
+        "/evaluations/setting-up-round-based-evaluations",
+        "/speaker-crm/speaker-crm-interest-forms"
+      ],
+      "kind": "fixed",
+      "module": "CRM",
+      "features": [
+        "sessions_v2"
+      ],
+      "availability": "add_on",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "CRM → Interest Forms → [form] → Evaluation Plans → [plan] → Assignments step"
+      },
+      "permissions": [
+        "org.interest_forms.read",
+        "org.interest_forms.update"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Program teams running Interest Form evaluations can now filter which submissions are assigned in each round by status or other criteria, and can fully remove a per-voter vote cap without it silently reverting to the previous value.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Both changes are default-on bug fixes; no enablement needed."
+        },
+        "when_to_bring_up": "When a customer using Interest Form evaluation plans asks how to scope assignments by submission status, or reports that removing a Votes per voter limit has no effect.",
+        "who_should_get_it": "Customers using Sessions 2.0 with Interest Form evaluation plans and multi-round scoring.",
+        "staff_path": "CRM → Interest Forms → [form] → Evaluation Plans → [plan] → Assignments step",
+        "gotchas": "The Votes per voter fix requires the companion API PR (sessionboard-web-api) to also be deployed; confirm both are live before telling customers the fix is in.",
+        "talk_track": "You can now filter which submissions appear in each assignment round directly from the Assignments step — same filter builder you know from event evaluations. And if you clear the Votes per voter field, it actually clears now.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should document the new By submission filters card on the Assignments step, including the Status field option and how it interacts with round configuration.",
+          "why_use_it": "When you run a multi-round evaluation on Interest Form submissions, you often want each round to see only a specific slice of submissions — for example, only those with a particular status. The new **By submission filters** card on the **Assignments** step lets you apply the same filter logic you already use in event evaluations, so reviewers only see the submissions relevant to their round. Separately, if you previously set a **Votes per voter** limit and later decided to remove it, the limit was silently kept because the cleared value was dropped before saving; that is now fixed so clearing the field reliably removes the cap.",
+          "at": "2026-10-10T23:44:36.408Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#966"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "interest-form-eval-plan-qa-sweep-w4",
+      "title": "Interest Form evaluation plans: anonymization, file visibility, bulk assignment, public-vote validation, and eligible-voter access fixed",
+      "summary": "Six correctness fixes for org-level Interest Form evaluation plans and public voting. Anonymized reviews now strip submitter name, email, and phone from answers and field definitions. The round's **Include Uploaded Files** setting controls whether evaluators see file answers. **Bulk assignment** supports up to 10 filter rows and the live submission count matches those filters. Public-vote ballots now return a 422 error instead of saving a blank score when a required question is left unanswered. The **Eligible Voters** list and upload for Awards and Interest Form plans can load and be edited before the round is made public.",
+      "article": "/speaker-crm/interest-form-evaluation-plans",
+      "related": [
+        "/awards/managing-submissions-reviewers-rounds",
+        "/evaluations/setting-up-round-based-evaluations"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "awards",
+        "sessions_v2"
+      ],
+      "availability": "add_on",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Organization → Interest Forms → [form] → Evaluation Plans → [plan] → Rounds"
+      },
+      "permissions": [
+        "org.interest_forms.read",
+        "org.interest_forms.update",
+        "org.awards.read",
+        "org.awards.update"
+      ],
+      "audience": [
+        "organizer",
+        "reviewer"
+      ],
+      "use_case": "Program teams running blind reviews of Interest Form submissions can now trust that anonymization actually hides submitter identity, file visibility follows the round setting, bulk assignment counts are accurate, and public voters can't accidentally submit a blank required score.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "All fixes are default-on corrections to existing behaviour; nothing needs to be enabled."
+        },
+        "when_to_bring_up": "When a customer reports that anonymized Interest Form reviews are leaking submitter details, file answers aren't respecting the round setting, bulk assignment counts look wrong, or public votes are being saved without a score.",
+        "who_should_get_it": "Any customer using org-level Interest Form evaluation plans or Awards public voting.",
+        "staff_path": "Organization → Interest Forms → [form] → Evaluation Plans; Awards → [program] → Rounds → Public Vote → Eligible Voters",
+        "gotchas": "Eligible Voters GET/PUT/export no longer require the round to be public — admins can now build the allowlist before going live. Ballot reset and submission add/remove still require a public round.",
+        "talk_track": "These are six targeted correctness fixes in the W4 QA sweep for org-level evaluation plans. No new features to demo — just reliability improvements customers running blind reviews and public votes will notice immediately.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should document the anonymization fields stripped for Interest Form reviews (including speaker_* fields), the round-level Include Uploaded Files setting and its fallback to the plan setting, the bulk-assignment filter rows and live count, and the pre-public Eligible Voters allowlist workflow.",
+          "why_use_it": "When you run a blind review of Interest Form submissions, you need confidence that evaluators cannot identify who submitted — these fixes ensure submitter name, email, and phone are fully stripped from every answer, field definition, and submission detail view. The **Include Uploaded Files** toggle on a round now correctly governs whether evaluators see file answers, matching the behaviour of event-level evaluation plans. Bulk assignment with filter rows now shows an accurate live count so you know exactly how many submissions will be assigned before you confirm. Finally, public voters who skip a required scoring question now see a clear error rather than having an empty score silently recorded, protecting the integrity of your results.",
+          "at": "2026-10-10T23:47:00.122Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4451"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
     }
   ]
 }

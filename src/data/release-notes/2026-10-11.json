@@ -1,0 +1,1815 @@
+{
+  "date": "2026-10-11",
+  "entries": [
+    {
+      "id": "site-sign-in-i18n-and-form-link-redirect",
+      "title": "Site sign-in page now fully translated and login-gated form links redirect correctly after sign-in",
+      "summary": "The portal **Sign In** page is now fully translated in English, German, Spanish, and French — about 55 previously untranslated strings, including server banner messages, now appear in the visitor's language. Separately, clicking a login-gated form link while signed out now correctly starts the sign-in flow and lands the visitor on the form after they authenticate via magic link, even when opened in a new tab.",
+      "article": "/settings/portal-login-methods",
+      "related": [
+        "/awards/setting-up-your-sessionboard-site",
+        "/site/site-builder"
+      ],
+      "kind": "fixed",
+      "module": "Portals",
+      "features": [
+        "new_portals",
+        "languages"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Site → Sign In page"
+      },
+      "permissions": [],
+      "audience": [
+        "participant",
+        "speaker"
+      ],
+      "use_case": "Events with international attendees no longer show a partially English sign-in page. Speakers or participants who click a form link before signing in are taken directly to that form after authenticating, rather than landing on the portal home.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Both fixes are default-on. No configuration needed."
+        },
+        "when_to_bring_up": "When a customer reports that their non-English speakers see English text on the sign-in page, or that participants end up on the portal home instead of the intended form after signing in.",
+        "who_should_get_it": "Any customer using a multilingual site or sharing direct form links with unauthenticated visitors.",
+        "staff_path": null,
+        "gotchas": "The LCP performance improvement (SB-9574, ~30% reduction) is a side-effect of sharing one site-info request between auth and the landing page; it does not yet reach the mobile Lighthouse target of 80 — that requires server-rendered HTML and is a separate decision.",
+        "talk_track": "Your international attendees will now see a fully translated sign-in page, and anyone clicking a form link before logging in will land exactly where they expect after authenticating.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The portal-login-methods guide should note that the sign-in page is available in English, German, Spanish, and French, and that direct links to login-gated forms preserve the destination after magic-link authentication.",
+          "why_use_it": "When you run a multilingual event, every touchpoint — including the sign-in screen — should appear in the visitor's language. Previously, about 55 strings on the portal sign-in page were missing translations, so German, Spanish, and French visitors saw English text mixed in. Now the full sign-in experience, including any server banner messages, is translated. Additionally, if a visitor clicks a direct link to a login-gated form before they are signed in, they are now taken straight to that form after completing magic-link authentication, even if they opened the link in a new tab — so no one loses their place in the flow.",
+          "at": "2026-10-11T06:10:38.556Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-org-portal#188"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "awards-coi-round-settings-and-evaluator-exclusion",
+      "title": "Conflict-of-interest settings now save correctly and exclude conflicted evaluators from assignment",
+      "summary": "Saving an awards round now correctly persists **Conflict of Interest** settings — including **COI Enforcement** and **Require Disclosure** — without returning an error. Evaluators who have declared a conflict in a matching category are automatically excluded from reviewer assignment for those submissions.",
+      "article": "/awards/managing-submissions-reviewers-rounds#assigning-reviewers",
+      "related": [
+        "/contacts/disclosures",
+        "/awards/call-for-reviewers"
+      ],
+      "kind": "fixed",
+      "module": "Awards",
+      "features": [
+        "awards",
+        "credits_disclosure"
+      ],
+      "availability": "add_on",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Awards → program → Rounds → round → Settings"
+      },
+      "permissions": [
+        "org.awards.update",
+        "org.disclosures.update"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Awards programs that require conflict-of-interest declarations can now reliably save COI enforcement rules on each round, and the system will automatically skip conflicted evaluators when assigning reviewers to category-matched submissions.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "The org-level round settings page was silently returning 400 on every save since the Disclosures Phase 5 UI deploy (web-ui-v2 #962, 2026-10-10). This API fix must ship before the next UI deploy. Customers who saved round settings during that window may have lost COI configuration changes without knowing it — Sentry did not surface 400s."
+        },
+        "when_to_bring_up": "When a customer reports that COI or disclosure settings on an awards round are not sticking, or that conflicted evaluators are still appearing in assignment.",
+        "who_should_get_it": "Any customer running an awards program with conflict-of-interest or disclosure requirements.",
+        "staff_path": "Awards → program → Rounds → round → Settings",
+        "gotchas": "The 400 error was silent (not reported to Sentry). Customers who saved round settings between the Disclosures Phase 5 UI deploy and this API fix may have lost COI configuration silently. Proactively check with customers who use COI enforcement.",
+        "talk_track": "COI settings on awards rounds now save reliably, and the system automatically keeps conflicted evaluators out of assignment — no manual filtering needed.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should document the COI Enforcement and Require Disclosure fields on the round settings page, and explain how a declared conflict automatically excludes an evaluator from category-matched assignment.",
+          "why_use_it": "When running a rigorous awards program, you need to ensure that evaluators with a declared conflict of interest are never assigned to review submissions in their conflicting category. Previously, saving COI settings on a round returned an error, so those rules could not be applied. Now the settings save correctly, and any evaluator who has declared a conflict is automatically excluded from assignment for matching submissions — keeping your review process fair and auditable without manual workarounds.",
+          "at": "2026-10-11T06:06:20.478Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4465"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "team-lead-stale-approval-card-cleared",
+      "title": "Team Lead clears a stale approval card when the approval is no longer pending",
+      "summary": "When the server reports that an approval request is no longer pending, the Team Lead chat now removes the approval card and displays the resolved message in its place, instead of leaving a card whose **Approve** button does nothing.",
+      "article": "/agents/team-lead",
+      "kind": "fixed",
+      "module": "Agents",
+      "features": [
+        "coordinators"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Team Lead chat panel → approval card"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who return to a Team Lead conversation after an approval has already been handled elsewhere will no longer see a broken Approve button — the chat reflects the current state automatically.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer reports that the Approve button in Team Lead does nothing, or that old approval cards linger after an approval has been handled.",
+        "who_should_get_it": "Any customer using Team Lead with approval workflows, especially those running subagent checkpoints.",
+        "staff_path": "Team Lead chat panel → approval card",
+        "gotchas": "The companion fix (subagent checkpoints overwriting the main conversation's pending approval) is in sessionboard-agents #125 — both PRs should be deployed together for the full fix.",
+        "talk_track": "Team Lead now automatically clears approval cards that are no longer actionable, so organizers always see an accurate picture of what still needs their attention.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that approval cards are automatically dismissed when the server reports the approval is no longer pending, and explain how subagent checkpoints interact with the main conversation's approval state.",
+          "why_use_it": "When a Team Lead approval is resolved outside the current chat window — for example by a subagent checkpoint or another team member — the approval card used to remain visible with an Approve button that had no effect. Now the card is replaced by the resolved message as soon as the server confirms the approval is no longer pending, so the conversation always reflects the true state of the workflow. This prevents confusion and accidental double-action on approvals that have already been handled.",
+          "at": "2026-10-11T06:02:08.582Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#977"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "qa-w10-awards-automations-community-fixes",
+      "title": "Awards COI settings, automation step summaries, team-member recipient names, and training search fixed",
+      "summary": "Several QA fixes across Awards, Automations, and Learning: **Round Settings** now shows conflict-of-interest (COI) enforcement options to all organizers (not just staff preview); the reviewer-assign shortfall warning now reads correctly instead of showing blank capacity text; the automation builder's step list shows each saved action's real summary instead of a hard-coded \"Send email · Not set\"; the **Team members** picker in **Send email** actions loads event-team members before you search; saved team-member recipients show their names after a page reload; and the training video library search box keeps your typed text correctly.",
+      "article": "/automations/overview",
+      "related": [
+        "/awards/managing-submissions-reviewers-rounds",
+        "/events/event-dashboard"
+      ],
+      "kind": "fixed",
+      "module": "Automations",
+      "features": [
+        "automations",
+        "awards"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Automations → automation builder → step list; Awards → program → Rounds → Round Settings; Event Dashboard → Training"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers building automations can now see accurate summaries of each saved email step at a glance, pick team members from a pre-populated list, and trust that recipient names persist after a reload — reducing confusion when reviewing or editing complex automation workflows. Awards admins can now configure COI enforcement on round settings without needing a staff preview flag.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "All fixes are default-on. The Awards COI controls are now visible to all organizers; no flag to flip. Requires the companion web-api PR #4465 to be deployed first — a UI-only deploy causes the team-member picker to fall back to mock data."
+        },
+        "when_to_bring_up": "When a customer reports that their automation step list shows 'Send email · Not set' for every step, that team-member recipients lose their names on reload, or that they cannot find COI settings in Awards round configuration.",
+        "who_should_get_it": "Any customer using Automations with email steps targeting team members, or running Awards programs with COI enforcement.",
+        "staff_path": null,
+        "gotchas": "Deploy the web-api PR (#4465) before or alongside this UI release. A UI-first deploy makes the team-member picker fall back to mock team members.",
+        "talk_track": "These are polish fixes — the automation builder now shows you exactly what each step does, and Awards round COI settings are fully accessible to all admins.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The Automations guide should add a note explaining that the step list displays each action's canvas-card summary, and that the Team members picker pre-loads event-team members before a search.",
+          "why_use_it": "When you build an automation with multiple email steps, the step list now shows you the real summary of each saved action — the same text shown on the canvas card — so you can tell at a glance what each step does without opening it. The **Team members** picker pre-loads your event team before you type anything, and saved recipients show their actual names after you reload the page, so you are never left guessing who \"Team member #42\" is. In Awards, the **Round Settings** page now lets every organizer choose a COI enforcement option (such as \"exclude\"), and the shortfall warning when assigning reviewers reads as a complete sentence with the correct capacity number.",
+          "at": "2026-10-11T06:01:11.415Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#978"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "email-domain-ux-improvements",
+      "title": "Sending-domain setup gets inline typo detection, a searchable form picker, and a Cancel Setup button",
+      "summary": "Three improvements to email-domain and site configuration: (1) The **sending domain** field now detects common misspellings (e.g. `.cmo` instead of `.com`) inline and suggests the correct domain before setup begins. (2) A **Cancel Setup** button — with a confirmation step — lets you abandon a pending sending-domain setup without contacting support. (3) The Site builder's **Open a form** picker is now searchable and shows each form's event name, so it stays usable when you have hundreds of forms. Additionally, the **Event Domains** tab now shows which organization-level sender a domain inherits.",
+      "article": "/settings/domains",
+      "related": [
+        "/site/site-builder",
+        "/communications/email-campaigns",
+        "/faq/custom-domains-and-login-links"
+      ],
+      "kind": "improved",
+      "module": "Settings",
+      "features": [
+        "custom_sending_domain",
+        "site_domains"
+      ],
+      "availability": "on_request",
+      "enable": {
+        "how": "support",
+        "path": "Ask your Customer Success Manager to enable Email Domain; then Settings → Domains"
+      },
+      "where": {
+        "scope": "org",
+        "path": "Settings → Domains; Site builder → block settings → Open a form"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers setting up a custom sending domain catch typos before DNS records are created, and can cancel a pending setup themselves if they entered the wrong domain — no support ticket needed. Site builders with large form libraries can search by name or event instead of scrolling.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "All three changes are default-on within the existing Email Domain and Site Domains features. No new flags to flip."
+        },
+        "when_to_bring_up": "When a customer is setting up or troubleshooting a custom sending domain, or when they ask how to undo a pending domain setup.",
+        "who_should_get_it": "Any customer using the custom sending domain add-on or building sites with form links.",
+        "staff_path": "Settings → Domains (org level)",
+        "gotchas": "The Event Domains inherited-sender display requires a matching web-api change (SB-9597) to show data; the UI renders harmlessly without it until the API ships.",
+        "talk_track": "The domain setup flow now catches typos before DNS records are touched, and you can cancel a pending setup yourself — no need to reach out to support.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should add a section covering the inline domain-typo warning, the Cancel Setup confirmation flow, and the inherited organization sender shown on the Event Domains tab.",
+          "why_use_it": "Entering a misspelled domain and waiting for DNS propagation wastes hours. The inline typo check flags the error the moment you type it and suggests the correct spelling, so you fix it before any records are created. If a setup is already in progress and needs to be scrapped, the new **Cancel Setup** button lets you do it yourself with a single confirmation click. For site builders managing many events, the searchable **Open a form** picker means you can find the right form in seconds rather than scrolling through an unsorted list.",
+          "at": "2026-10-11T05:41:23.176Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#973"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "rooms-widget-capacity-and-scroll-fixes",
+      "title": "Rooms widget hides zero capacity and scrolls correctly on narrow screens",
+      "summary": "Two display fixes for the embedded **Rooms** widget: rooms with a capacity of 0 no longer show a \"Capacity 0\" label — the line is hidden entirely. On narrow viewports, the day tabs and room columns now scroll inside the widget instead of pushing the page wider.",
+      "article": "/sessions/embeds#embed-outputs",
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "sessions"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Sessions → Embeds → Rooms widget (published embed on your website)"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Organizers who publish a Rooms widget on their event website no longer see a meaningless \"Capacity 0\" label on rooms without a set capacity, and attendees browsing on a phone or narrow browser window can scroll through days and rooms without the page layout breaking.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Both fixes are automatic for all published Rooms embeds. No action needed."
+        },
+        "when_to_bring_up": "When a customer reports that their Rooms embed shows 'Capacity 0' on rooms, or that the embed breaks their page layout on mobile.",
+        "who_should_get_it": "Any customer using the Rooms embed widget on their event website.",
+        "staff_path": null,
+        "gotchas": "Rooms with capacity explicitly set to 0 will now show no capacity line at all — this is intentional. If a customer wants to display '0', they should set a non-zero capacity or leave the field blank and note the change.",
+        "talk_track": "The Rooms widget now looks polished on every screen size and won't show a confusing 'Capacity 0' label — no changes needed on your end.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The Embeds guide should note that the Rooms widget suppresses the capacity line when capacity is 0, and that the widget scrolls internally on narrow viewports rather than expanding the page.",
+          "why_use_it": "When you embed the Rooms widget on your event website, rooms that have no capacity set previously displayed a distracting \"Capacity 0\" line. That label is now suppressed, keeping the widget clean and professional. On mobile or narrow browser windows, the day tabs and room columns previously caused the entire page to expand horizontally; they now scroll within the widget boundary, so your site layout stays intact for every attendee.",
+          "at": "2026-10-11T05:22:51.820Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-embeds#108"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "bulk-edit-background-polling-and-ux-fixes",
+      "title": "Bulk edit no longer shows a false failure after 60 seconds",
+      "summary": "When a **Bulk Edit** job takes longer than 60 seconds, the overlay now releases and a \"still processing\" toast appears instead of an error. Polling continues silently in the background for up to 15 minutes and refreshes the grid when the job finishes. Tree-type custom fields now save and display correctly in the session grid. The **API Tokens** page tells customers to contact their CSM or support when AI is disabled, rather than showing a broken staff-only link. The SSO email-conflict error page now shows a clear, translated explanation instead of a generic configuration error. Missing translation strings across the product are restored in English, French, Spanish, and German.",
+      "article": "/settings/bulk-edit-fields",
+      "related": [
+        "/integrations/api-tokens",
+        "/integrations/sso",
+        "/concepts/custom-field-type-reference"
+      ],
+      "kind": "fixed",
+      "module": "Settings",
+      "features": [
+        "sessions",
+        "sso"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Sessions → grid → Bulk Edit; Organization Settings → API Tokens; SSO login page"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers running bulk edits on large session sets no longer see a misleading failure toast after 60 seconds — the job keeps running in the background and the grid refreshes automatically when it completes. Tree fields, SSO error messages, and several UI labels that were blank or showing raw keys are also corrected.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "All fixes are default-on; no configuration required."
+        },
+        "when_to_bring_up": "When a customer reports that bulk edit appears to fail on large session sets, that tree fields are saving as plain text, that the API Tokens AI-disabled banner shows a broken link, or that SSO login shows a confusing error on email conflict.",
+        "who_should_get_it": "Any customer using bulk edit on large session lists, tree custom fields, SSO with email-conflict scenarios, or API Tokens with AI disabled.",
+        "staff_path": null,
+        "gotchas": "fr/es/de translation strings for the new locale keys are machine-authored and have not had native-speaker review yet (SB-9870 follow-up). The same 60-attempt polling cap exists in bulk delete and src/lib/jobPolling.ts and is not yet fixed (SB-9860 follow-up).",
+        "talk_track": "Bulk edit on big session lists used to show a false failure after a minute — it now tells you the job is still running and updates the grid when it finishes. We also fixed tree fields saving incorrectly, a confusing SSO error screen, and several missing UI labels.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The bulk-edit guide should note that large jobs run in the background after 60 seconds and that the grid refreshes automatically on completion.",
+          "why_use_it": "When you bulk-edit a large number of sessions, the job can take more than a minute. Previously the overlay would close with what looked like an error, leaving you unsure whether the changes were saved. Now the overlay releases after 60 seconds with a clear \"still processing\" message, polling continues quietly for up to 15 minutes, and the grid refreshes automatically once the job is done — so you can keep working without worrying about the outcome. Tree-type custom fields also now save and render correctly in the session grid, and the SSO email-conflict screen shows a plain-language explanation in your language instead of a cryptic configuration error.",
+          "at": "2026-10-11T05:08:55.736Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#976"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "contact-support-via-team-lead-handoff",
+      "title": "Contact support now routes through Team Lead, with a live-chat handoff when needed",
+      "summary": "**Header → Help → Contact support** (renamed from **Message Support**) now opens the Team Lead panel, which tries to resolve the issue first. When Team Lead determines a human agent is needed, it opens a HubSpot live-chat thread automatically and shows a **Chat with Support** card to reopen it. The HubSpot widget loads only on org and event admin pages; it no longer appears in Account Settings or on the account home page.",
+      "article": "/faq/who-can-i-contact-for-additional-assistance",
+      "kind": "improved",
+      "module": "Agents",
+      "features": [
+        "coordinators"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Header → Help → Contact support"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "reviewer"
+      ],
+      "use_case": "Organizers who need help can now get an immediate answer from Team Lead without waiting for a human agent; if Team Lead can't resolve it, the live-chat thread opens automatically so they reach the support team in one flow.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "A HubSpot setting change is required: turn off the SEVA AI agent on the Support chatflow so it routes straight to the Help Desk inbox. Without this, the handoff may still hit the retired AI agent."
+        },
+        "when_to_bring_up": "When a customer asks how to reach support, or reports that the old Message Support button is missing from Account Settings or the account home page.",
+        "who_should_get_it": "All customers — the change is default-on for every org and event admin page.",
+        "staff_path": "Header → Help → Contact support (on any /org/:id or /event/:id page)",
+        "gotchas": "The HubSpot widget no longer loads on Account Settings or the account home page, so customers who bookmarked those pages to reach chat will need to navigate to an org or event page first. Upsell buttons for Exhibitors Pro, Sponsors Pro, and Groups Pro now go through Team Lead instead of opening HubSpot directly.",
+        "talk_track": "Team Lead now handles your first line of support — it answers common questions instantly and escalates to a live agent automatically when needed, so you spend less time waiting.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should document the new Team Lead → live-chat handoff flow, explain that the HubSpot widget is only available on org and event admin pages, and note that the entry point is now labelled Contact support (not Message Support).",
+          "why_use_it": "When you click **Contact support**, Team Lead asks what's wrong and tries to resolve it on the spot using its knowledge of your event. If it can't, it hands off to a live support agent by opening a HubSpot chat thread automatically — you don't have to find a separate chat widget. A **Chat with Support** card stays in the conversation so you can reopen the thread at any time. This replaces the previous direct-to-chat button, giving you faster answers for common questions while still connecting you to a human when you need one.",
+          "at": "2026-10-11T05:07:51.164Z"
+        }
+      },
+      "related": [
+        "/agents/team-lead"
+      ],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#975"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "advocacy-video-render-restored",
+      "title": "Advocacy video and image rendering restored after Oct 6 outage",
+      "summary": "All Advocacy video and image renders that were failing since Oct 6 now complete successfully. Speakers who tried to download a generated video will see a short, readable error message instead of a raw stack trace if a render does fail in future.",
+      "article": "/marketing/advocacy",
+      "related": [
+        "/marketing/clips",
+        "/marketing/slides",
+        "/marketing/media-library"
+      ],
+      "kind": "fixed",
+      "module": "Marketing",
+      "features": [
+        "marketing_advocacy"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Marketing → Advocacy"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "speaker"
+      ],
+      "use_case": "Any organizer or speaker who tried to generate or download an Advocacy video or image between Oct 6 and Oct 11 was silently failing; renders now complete and downloads work again.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Any customer who attempted an Advocacy video or image render between Oct 6 and Oct 11 will have failed renders. Staff should re-trigger those renders after deploy is confirmed healthy. Check that new Amplify_Template_Renders rows reach 'completed' before proactively reaching out."
+        },
+        "when_to_bring_up": "When a customer reports that their Advocacy videos or images never generated, or when following up on any support tickets opened between Oct 6–11.",
+        "who_should_get_it": "Any customer using Advocacy video or image generation — particularly those who reported failures or noticed missing renders in that window.",
+        "staff_path": "Amplify_Template_Renders (internal DB table) — confirm rows reach 'completed' status post-deploy.",
+        "gotchas": "A thumbnail backfill script must be re-run for one specific video template (ID: 2a0dfd0a-55aa-4569-bd41-6d4f534bb509) — dry run first with --template-id flag, then apply. Customers will not see this gap unless they use that template.",
+        "talk_track": "A renderer dependency update on Sept 30 caused all video and image generation in Advocacy to fail starting Oct 6. The fix is deployed and renders are completing again. If you had any failed renders in that window, we can re-trigger them for you.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The Advocacy guide should note that video and image generation depends on a render service and describe what a speaker or organizer should do if a render fails (e.g., retry or contact support).",
+          "why_use_it": "Between Oct 6 and Oct 11, every Advocacy video and image render failed silently due to an incompatibility between a renderer update and the system image it ran on. That incompatibility is now resolved, so all new renders complete as expected. If a render does fail in future, you will see a short, plain-language message rather than a technical error trace, making it easier to know what to do next.",
+          "at": "2026-10-11T04:23:37.187Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4462"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "sender-domain-typo-detection-and-cancel",
+      "title": "Sender domain setup catches common misspellings and lets you cancel a pending setup",
+      "summary": "When adding a custom sending domain, Sessionboard now detects common misspellings (e.g. `gmial.com`, `sessionboard.con`) and shows a message naming the likely correct domain. A new **Cancel setup** action lets you remove a pending domain setup before it is verified; verified setups cannot be cancelled. The **Domains** tab on an event also now shows the organization-level sender that the event inherits, and legacy senders display **In use** instead of **Not set up**.",
+      "article": "/communications/add-on-custom-email-domain",
+      "related": [
+        "/settings/domains"
+      ],
+      "kind": "improved",
+      "module": "Communications",
+      "features": [
+        "custom_sending_domain"
+      ],
+      "availability": "on_request",
+      "enable": {
+        "how": "support",
+        "path": "Ask your Customer Success Manager to enable Email Domain; then Settings → Domains"
+      },
+      "where": {
+        "scope": "both",
+        "path": "Settings → Domains"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who mistype their sending domain during setup now get an immediate, specific correction hint rather than discovering the error after DNS propagation. Those who started a setup with the wrong domain can cancel it and start fresh without contacting support.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "All three improvements are automatic once the custom sending domain feature is enabled for the org."
+        },
+        "when_to_bring_up": "When a customer is setting up or troubleshooting a custom sending domain, or when they ask how to undo a pending domain setup.",
+        "who_should_get_it": "Any customer using or evaluating the custom email domain add-on.",
+        "staff_path": "Settings → Domains",
+        "gotchas": "Typo detection only flags known misspellings; real look-alike domains (e.g. aon.com) still pass. The cancel endpoint returns 403 if the domain is already verified — customers must contact support to remove a verified domain.",
+        "talk_track": "If you mistype your sending domain, Sessionboard now tells you what it should be right away. And if you need to start over, you can cancel a pending setup yourself from the Domains tab.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The guide should document the typo-detection behaviour, the new Cancel setup action for pending domains, and the inherited-sender display on the event Domains tab.",
+          "why_use_it": "Typos in a sending domain (like `gmial.com` instead of `gmail.com`) can waste hours waiting for DNS records that will never authenticate. Sessionboard now catches the most common misspellings at entry time and tells you what the domain should be, so you can correct it before publishing any DNS records. If you have already started a setup and need to change the domain, the new cancel action removes the pending setup immediately — no support ticket required. The event-level Domains tab also now shows which organization sender the event inherits, so your team always knows which address outbound mail will come from.",
+          "at": "2026-10-11T04:21:12.777Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4461"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "session-participant-acceptance-invite-sent-at",
+      "title": "Public API now returns when a participant's acceptance invitation was sent",
+      "summary": "The session participant object in the public API now includes `acceptance_invite_sent_at`, showing the timestamp when the acceptance invitation was last sent, or `null` if no invitation has been sent yet. This lets integrations track invitation delivery without a separate lookup.",
+      "article": "/speakers/speaker-acceptance",
+      "kind": "improved",
+      "module": "Program",
+      "features": [
+        "speaker_acceptance"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Public API → session participants endpoint"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Teams using the public API to sync participant data into external systems can now see exactly when an acceptance invitation was sent — or confirm that none has been sent yet — without building a separate tracking mechanism.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "This is a public API change only; no UI change. Customers using the API will see the new field automatically."
+        },
+        "when_to_bring_up": "When a customer using the public API asks how to track whether acceptance invitations have been sent to session participants.",
+        "who_should_get_it": "Customers who pull session participant data via the public API and manage acceptance workflows in external tools.",
+        "staff_path": null,
+        "gotchas": "Field is null when no invitation has ever been sent — integrations should handle null gracefully.",
+        "talk_track": "If you're syncing participant data to an external CRM or automation tool, you can now see the acceptance invite timestamp directly in the API response — no extra lookups needed.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The speaker-acceptance guide should add a section noting which fields are available on the public API participant object, including `acceptance_invite_sent_at` and its null state.",
+          "why_use_it": "When you manage speaker acceptance at scale, knowing whether an invitation has been sent — and when — is essential for follow-up workflows. The `acceptance_invite_sent_at` field on each session participant tells you the exact timestamp of the last invitation, or returns `null` if the participant has never been invited. You can use this in your integration or automation to trigger reminders, flag uninvited participants, or audit your outreach without logging into Sessionboard.",
+          "at": "2026-10-11T04:20:14.794Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-public-api#174"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "advocacy-campaign-card-thumbnail-refresh-on-save",
+      "title": "Advocacy campaign card thumbnail refreshes when you save a card design",
+      "summary": "Saving a card design inside **Edit campaign** now re-renders the Advocacy template thumbnail immediately, the same way it does at campaign creation via Quick Launch. The Portal Home card no longer shows a blank or stale image after a design change.",
+      "article": "/marketing/advocacy",
+      "kind": "fixed",
+      "module": "Marketing",
+      "features": [
+        "marketing_advocacy"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Marketing → Advocacy → campaign → Edit campaign → Card design"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who update a campaign's card design mid-campaign will see the Portal Home thumbnail reflect the new design right away, without needing to recreate the campaign.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Fix is automatic; no action needed. Depends on the companion API fix in SB-9621."
+        },
+        "when_to_bring_up": "When a customer reports that their Advocacy campaign card looks blank or outdated on Portal Home after they edited the card design.",
+        "who_should_get_it": "Any customer using Advocacy campaigns who edits card designs after initial launch.",
+        "staff_path": "Marketing → Advocacy → campaign → Edit campaign → Card design",
+        "gotchas": "The thumbnail render also depends on the web-api fix (SB-9621); both must be deployed for the fix to take effect.",
+        "talk_track": "If you've ever tweaked your campaign card design and then seen a blank thumbnail on Portal Home, that's now fixed — the card updates the moment you save.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The guide should note that saving a card design in Edit campaign immediately refreshes the Portal Home thumbnail.",
+          "why_use_it": "When you update the card design of a live Advocacy campaign, the thumbnail shown on Portal Home should match what sharers actually see. Previously, editing the design in **Edit campaign** left the thumbnail blank or showing the old design until the campaign was recreated. Now the thumbnail re-renders as soon as you save, so your Portal Home always shows an accurate preview of the current card.",
+          "at": "2026-10-11T03:01:26.685Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#974"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "qa-sweep-w6-acceptance-contacts-portals-translations",
+      "title": "Six fixes: acceptance invitations, field-rule warnings, duplicate merge, contact removal, file-drop uploads, and bulk language updates",
+      "summary": "Six admin-UI corrections shipped together: **Acceptance Invitations** now shows a human-readable deadline, an **Awaiting response** tab, an \"already responded\" count in the send summary, and correct singular/plural rule-card text. When a **Field Rule** cannot be applied on session save, the profile and side panel show \"Saved, but a field rule was not applied\" with the reason instead of a plain \"Saved\". **Merge Duplicates** pre-checks only the contact being viewed and contacts sharing the same email, not an unrelated top-3 list. The **Remove** dialog for contacts now lists which sponsor or exhibitor access the contact will lose. Files dropped onto a **File Request** task's drag-and-drop zone now upload correctly with the same type, size, and safety checks as the file picker. **Bulk Update** for language values now offers every stored session text field—including custom fields—not just the columns visible in the grid.",
+      "article": "/speakers/speaker-acceptance",
+      "related": [
+        "/contacts/merge-duplicates",
+        "/contacts/add-delete-a-contact",
+        "/portals/collect-documents",
+        "/settings/language-translation-variant",
+        "/settings/field-rules"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "speaker_acceptance",
+        "field_rules",
+        "languages"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Sessions → participant record → Acceptance Invitations; Sessions → session profile / side panel (field-rule warning); Contacts → Merge Duplicates; Contacts → contact profile → Remove; Portals → File Request task (drag-and-drop zone); Sessions → Bulk Update → Language values"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers running acceptance workflows, deduplication, sponsor/exhibitor contact management, portal file collection, and multilingual session data entry all get more accurate feedback and fewer silent errors in a single release.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "All six fixes are default-on corrections to existing behaviour; nothing needs to be enabled."
+        },
+        "when_to_bring_up": "When a customer reports confusion about acceptance invitation counts, silent field-rule saves, unexpected merge candidates, missing sponsor-access warnings on contact removal, failed file drops in portals, or missing custom fields in bulk language update.",
+        "who_should_get_it": "Any customer using participant acceptance, field rules, contact deduplication, sponsor/exhibitor contacts, portal file requests, or language variants.",
+        "staff_path": null,
+        "gotchas": "The Merge Duplicates pre-selection change (SB-9670) means the pre-checked set will look different to customers who were used to the old top-3-by-score behaviour; reassure them the new logic is more accurate.",
+        "talk_track": "We fixed six rough edges in the admin UI that were causing silent failures or confusing feedback—acceptance invitation counts are now accurate, field-rule failures are explained, duplicate merges start with the right contacts pre-checked, removing a contact warns about sponsor access, file drops in portals work reliably, and bulk language updates reach all custom fields.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The speaker-acceptance guide should document the Awaiting response tab, the already-responded count in the send summary, and the human-readable deadline format; the field-rules guide should note the \"Saved, but a field rule was not applied\" warning and where it appears; the merge-duplicates guide should clarify the email-match pre-selection logic; the add-delete-a-contact guide should mention the sponsor/exhibitor access warning in the Remove dialog; the collect-documents guide should confirm drag-and-drop upload works with the same validation as the file picker; and the language-translation-variant guide should state that Bulk Update covers all stored text fields including custom fields.",
+          "why_use_it": "These fixes close six gaps where the UI either showed misleading information or silently failed. You can now trust that the acceptance send summary reflects who has already responded, that a field-rule failure is surfaced with a clear reason rather than a false \"Saved\", that the merge pre-selection targets only genuinely related contacts, that removing a contact warns you about sponsor or exhibitor access loss, that speakers can drop files onto a file-request task just as reliably as using the file picker, and that bulk-updating translated text reaches every custom field—not just the ones currently visible in the grid.",
+          "at": "2026-10-11T03:00:33.695Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#972"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "qa-sweep-w6-acceptance-contacts-portals-agenda-media-translations",
+      "title": "Multiple fixes: acceptance reminders, invite deadlines, agenda calendar, media transcripts, and more",
+      "summary": "A batch of fixes across Participant Acceptance, contacts, portals, agenda, media, and language variants. Key changes: acceptance **reminder emails** now fire on the same day an invite is sent (not 24 hours later); **Send** and **Resend** are blocked once an Accept-by date has passed; the **agenda calendar** no longer rejects card-display fields with non-UUID IDs (e.g. Chairperson columns), so sessions appear correctly; a session now shows the **transcript** and **audio** from a recording linked via **Add media**; **Edit Language Variants** lists any language with a saved value even when its per-language toggle is off; the send-results report correctly labels contacts who already answered as \"already answered\" rather than \"blocked\"; and removing a contact from an event now records the sponsor/exhibitor access they lose in the audit log.",
+      "article": "/speakers/speaker-acceptance",
+      "related": [
+        "/sessions/agenda",
+        "/marketing/media-library",
+        "/settings/language-translation-variant",
+        "/contacts/merge-duplicates",
+        "/portals/portals-101"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "speaker_acceptance",
+        "languages",
+        "media"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Sessions → Participant Acceptance; Sessions → Agenda; Marketing → Media; Settings → Language Variants"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "speaker"
+      ],
+      "use_case": "Organizers running acceptance campaigns no longer miss the first reminder window when invites go out late in the day, and the system prevents accidental sends after a deadline has passed. Agenda and media views that were silently broken now display their content correctly.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "All fixes are default-on. No configuration required. Staff running the SB-9644 stale-row cleanup SQL should do so on the writer after deploy (US only; 13 rows identified on QA events)."
+        },
+        "when_to_bring_up": "When a customer reports missing acceptance reminders, greyed-out Send buttons, a blank agenda calendar, missing transcripts on sessions, or language-variant fields not showing saved values.",
+        "who_should_get_it": "Any customer using Participant Acceptance, the agenda calendar with role columns, Media recordings linked to sessions, or Language Variants.",
+        "staff_path": null,
+        "gotchas": "SB-9644 requires a one-time ops SQL cleanup (13 stale rows in US, 0 in EU) to remove phantom Speaker/Chairperson/Moderator copy-table rows on existing events. Josh runs this post-deploy. ME was unreachable at dry-run time.",
+        "talk_track": "A handful of quiet bugs that were causing reminders to fire late, sessions to vanish from the agenda, and transcripts not to appear on sessions are all resolved in this release — no action needed on your end.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The speaker-acceptance guide should note that reminders are held only until the end of the send day (in the event timezone), and that Send/Resend are disabled after the Accept-by date until the deadline is extended.",
+          "why_use_it": "When you send a participant invitation late in the afternoon, the first reminder used to be held for a full 24 hours — meaning it often fired the next day or was skipped entirely. Reminders now go out within the same calendar day in your event's timezone, so every invitee gets a timely nudge. Once an Accept-by deadline has passed, **Send** and **Resend** are disabled until you extend the deadline, preventing confusing late invitations. On the agenda calendar, sessions were disappearing when card-display fields like Chairperson (whose IDs are not UUIDs) were selected — that is now fixed. A recording linked to a session via **Add media** now correctly surfaces its transcript and audio on the session record.",
+          "at": "2026-10-11T02:49:08.551Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4460"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "contracts-org-settings-sidebar",
+      "title": "Configure org-wide e-signature defaults from a new Contracts Settings panel",
+      "summary": "A **Settings** button in the Contracts directory header opens a **ContractsSettingsSidebar** panel where admins can set org-wide defaults: **Default way to send** (Sessionboard e-sign or Docusign), **Signing link expiry** (1–365 days), **Automatic reminder cadence** (1–30 days), **Organization countersigner**, **E-signature consent text**, and **Auto-advance pipeline stage**. Each control shows the platform default alongside the current saved value, and a link to Docusign connection settings is included. The panel is read-only for users without the update-integrations permission.",
+      "article": "/speaker-crm/contracts#send-and-track-contracts",
+      "kind": "new",
+      "module": "CRM",
+      "features": [
+        "contracts"
+      ],
+      "availability": "preview",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Speaker CRM → Contracts → Settings (header button)"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Admins who send contracts at scale can set a single countersigner, expiry window, and reminder cadence once at the org level instead of configuring each contract individually — ensuring every contract goes out consistently.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "The panel is available to any org with the Contracts preview feature; no additional enablement step is needed."
+        },
+        "when_to_bring_up": "When a customer asks how to standardize their contract workflow — countersigner, reminder cadence, or expiry — across their whole team.",
+        "who_should_get_it": "Any customer actively using Contracts (preview) who sends contracts to multiple speakers or sponsors.",
+        "staff_path": "Speaker CRM → Contracts → Settings button in the directory header",
+        "gotchas": "The panel is read-only for users who lack the canUpdateIntegrations permission; remind customers to check team roles if they can't save changes.",
+        "talk_track": "Instead of each sender picking their own expiry and reminder settings, you can lock in org-wide defaults once and every contract will follow them automatically.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should add a section documenting the org-wide Contracts Settings panel — covering each configurable field (default send method, signing link expiry, reminder cadence, countersigner, consent text, auto-advance stage) and how the default-vs-current display works.",
+          "why_use_it": "When your team sends contracts to dozens of speakers or sponsors, inconsistent expiry dates and missing reminders lead to stalled signatures and manual follow-up. The org-wide settings panel lets you define your preferred e-sign provider, how long signing links stay active, how often signers are nudged, who countersigns on behalf of your organization, and what consent language appears — all in one place. Every new contract inherits these defaults automatically, so individual senders don't have to remember the right values. You can still see the platform default next to each setting so it's clear what changes when you override it.",
+          "at": "2026-10-11T01:53:42.198Z"
+        }
+      },
+      "related": [
+        "/apps/docusign-integration"
+      ],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#971"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "contracts-native-esign-send-and-signer-progress",
+      "title": "Send contracts for e-signature directly in Sessionboard, with per-signer progress tracking",
+      "summary": "The **Add Contract** dialog now has a **Send with Sessionboard** tab that lets you pick a published e-sign template, build a signer roster (resolved from the record or entered manually), choose sequential or parallel signing, and customise the email subject and message before sending. In-flight contracts on the **Contracts** tab show per-signer status dots, a \"1 of 2 signed · waiting on …\" summary, and an expandable **Details** panel with ordered signers, timestamps, decline reasons, reminder counts, template name/version, signing mode, void reason, and a recent activity timeline. **Resend reminder** and **Void** (with an optional reason) are now available for both Sessionboard and Docusign contracts.",
+      "article": "/speaker-crm/contracts",
+      "related": [
+        "/apps/docusign-integration",
+        "/participants/sign-a-contract"
+      ],
+      "kind": "new",
+      "module": "CRM",
+      "features": [
+        "contracts"
+      ],
+      "availability": "preview",
+      "enable": {
+        "how": "self_serve",
+        "path": "Get started → Early Access → Preview → Contracts"
+      },
+      "where": {
+        "scope": "org",
+        "path": "CRM → Contacts (or Accounts) → record → Contracts tab → Add Contract"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Teams that want built-in e-signature without a Docusign subscription can now send contracts directly from Sessionboard, define who signs and in what order, and watch each signer's progress without leaving the platform.",
+      "internal": {
+        "cs_action": {
+          "kind": "must_enable",
+          "note": "Customer must turn on the Contracts preview via Early Access. Native e-sign templates must also be published before the Send with Sessionboard tab shows any options."
+        },
+        "when_to_bring_up": "When a customer asks about e-signing contracts without Docusign, or when they want more visibility into who has signed and who is still outstanding.",
+        "who_should_get_it": "Any customer using the Contracts preview who manages speaker, sponsor, or exhibitor agreements and wants built-in e-signature.",
+        "staff_path": "Org → Settings → Early Access → Contracts (Preview)",
+        "gotchas": "Without the companion API change (web-api #4457) the Send with Sessionboard tab shows 'no templates'; the feature degrades gracefully but customers need both sides deployed. Void reason is stored on the audit row and shown in the Details expander — remind customers to fill it in for compliance records.",
+        "talk_track": "You no longer need a Docusign account to collect signatures. Build your template once in Sessionboard, send it to one or many signers in the order you choose, and track every step from the Contracts tab — including who declined and why.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should add a section covering the Send with Sessionboard tab: selecting a native template, building the signer roster, choosing sequential vs parallel signing, and reading the per-signer Details expander on in-flight contracts.",
+          "why_use_it": "If your organisation does not use Docusign, or you want a simpler signing flow for speaker and sponsor agreements, you can now send contracts for e-signature entirely within Sessionboard. Choose a published template, confirm or fill in each signer's name and email, set whether signers go one at a time or all at once, and send — all from the contact or account record. Once sent, the Contracts tab shows you exactly where each signer stands, when they signed, and why they declined, so you never have to chase status updates by email.",
+          "at": "2026-10-11T01:42:16.221Z",
+          "permissions_to_confirm": [
+            "org.contracts:create",
+            "org.contracts:read",
+            "org.contracts:update"
+          ]
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#970"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "contracts-native-details-signers-roster",
+      "title": "Contracts list and detail now show native e-sign details and signer status; Send dialog previews who will sign",
+      "summary": "The **Contracts** tab now surfaces native Sessionboard e-sign metadata and an ordered **Signers** list — including each signer's role, name, email, status, and timestamps — directly on the contract list and detail views. Before opening the **Send** dialog, a new preview call resolves who will sign a given template for a given subject, flagging any unresolved roles as editable and surfacing the same validation messages the send action would return.",
+      "article": "/speaker-crm/contracts",
+      "kind": "improved",
+      "module": "CRM",
+      "features": [
+        "contracts"
+      ],
+      "availability": "preview",
+      "enable": {
+        "how": "self_serve",
+        "path": "Get started → Early Access → Preview → Contracts"
+      },
+      "where": {
+        "scope": "org",
+        "path": "CRM → Contracts"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers using Sessionboard's native e-sign can see exactly who has signed, viewed, or declined a contract — and catch missing signer information before hitting Send — without leaving the Contracts tab.",
+      "related": [
+        "/apps/docusign-integration",
+        "/speaker-crm/pipeline"
+      ],
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "This is API-side work consumed by the companion web-ui-v2 PR; no separate enablement step beyond the Contracts preview flag."
+        },
+        "when_to_bring_up": "When a customer on the Contracts preview asks how to track who has signed or wants to know why Send is rejecting their template.",
+        "who_should_get_it": "Any customer using the native Sessionboard e-sign feature (Contracts preview).",
+        "staff_path": "CRM → Contracts",
+        "gotchas": "Native details and signers only appear for Sessionboard native e-sign contracts; DocuSign and manually-uploaded contracts show null for native details. The companion web-ui-v2 PR must also be deployed for the UI to reflect these changes.",
+        "talk_track": "You can now see every signer's status right on the Contracts tab, and the Send dialog will tell you upfront if any signer information is missing so you can fix it before the contract goes out.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The guide should add a section covering the native Sessionboard e-sign signer roster on the contract list and detail views, and explain the signer preview shown in the Send dialog (editable roles, validation messages).",
+          "why_use_it": "When you manage contracts natively in Sessionboard, you need to know at a glance whether each required signer has acted and whether the contract is ready to go out. The updated Contracts list and detail view now show each signer's name, role, current status, and key timestamps (viewed, signed, declined) so you can track progress without opening a separate tool. Before you send, the signer preview resolves who will sign a template for a specific contact or pipeline entry and immediately flags any roles that still need a name or email address — giving you a chance to fix problems before the send action rejects them.",
+          "at": "2026-10-11T01:24:27.309Z",
+          "permissions_to_confirm": [
+            "org.contracts: read"
+          ]
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4457"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "payment-reminder-banner-7-day",
+      "title": "A friendly payment reminder banner appears 7 days before an invoice is due",
+      "summary": "A light blue **Payment reminder** banner now appears for every org user starting 7 days before an invoice's due date. It shows the due date, a countdown (\"due in 3 days\", \"due tomorrow\", \"due today\"), and a **View invoice** link for users with billing access. The banner can be dismissed for 24 hours and is tracked separately from the past-due banner, so dismissing the reminder never hides the escalation banners that appear after the due date.",
+      "article": "/get-started/overview",
+      "kind": "new",
+      "module": "Settings",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Organization — top-of-page banner (visible on all org pages)"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Org admins and their team get a heads-up before an invoice goes past due, giving them time to arrange payment without triggering the escalating warning banners that follow the due date.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Enabled automatically for all orgs with an upcoming invoice due date. No configuration required."
+        },
+        "when_to_bring_up": "When a customer asks why they are seeing a blue banner at the top of their org, or when following up on overdue invoices.",
+        "who_should_get_it": "All customers — the banner is shown to every org user whenever an invoice is within 7 days of its due date.",
+        "staff_path": "The staff Payment due card describes the new 7-day timing window.",
+        "gotchas": "Dismissal is stored per-banner type: snoozing the reminder does not suppress the past-due escalation banner that appears the day after the due date. Users without the View Billing Details permission see the billing contact email instead of the View invoice link.",
+        "talk_track": "Starting 7 days out, your whole team sees a friendly heads-up so you can pay before any escalation kicks in — and dismissing it for a day won't hide the more urgent banners if the invoice goes past due.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "No existing guide covers the payment reminder banner or the billing escalation banner sequence; a new section in a Plans & Billing guide should document the 7-day reminder, the countdown text variants, the dismiss/snooze behaviour, and how it relates to the post-due escalation banners.",
+          "why_use_it": "When an invoice is approaching its due date, every member of the organization sees a clear, non-intrusive reminder so nothing slips through the cracks. The banner counts down the days and links directly to **Plans & Billing** for anyone with billing access, or to the billing contact for everyone else. It can be snoozed for 24 hours without affecting the separate past-due escalation banners (blue → yellow → orange → red) that appear after the due date. This gives your team a 7-day window to act before any escalation begins.",
+          "at": "2026-10-11T01:19:37.978Z",
+          "permissions_to_confirm": [
+            "org.settings:view_billing_details"
+          ]
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#969"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "cfp-draft-resume-correct-step",
+      "title": "Resuming a CFP draft opens at the first incomplete step",
+      "summary": "When a submitter returns to a saved CFP draft, the form now opens on the first step they have not yet completed — **Session**, **Participants**, or whichever comes first — instead of always landing on **Your Information**. The **Review** step also flags every incomplete card so nothing is missed before submitting.",
+      "article": "/sessions/draft-submissions",
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "sessions"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Submission form → Resume draft"
+      },
+      "permissions": [],
+      "audience": [
+        "speaker",
+        "participant"
+      ],
+      "use_case": "Submitters who save a partial CFP draft and return later are taken straight to the step that needs attention, reducing confusion and abandoned submissions.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer reports that submitters are confused about where to continue after saving a draft.",
+        "who_should_get_it": "All customers using CFP submission forms with draft saving enabled.",
+        "staff_path": null,
+        "gotchas": null,
+        "talk_track": "Submitters who save drafts now land on the right step automatically, and the Review page will call out anything still missing.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that resuming a draft opens the first incomplete step and that the Review step flags all incomplete cards.",
+          "why_use_it": "When you save a CFP draft and come back later, you no longer have to click through every step to find where you left off. The form opens directly on the first incomplete step, and the Review page highlights every card that still needs information before you can submit. This makes it easier to finish a submission across multiple sessions without losing your place.",
+          "at": "2026-10-11T01:18:03.264Z"
+        }
+      },
+      "related": [
+        "/participants/save-a-submission-as-a-draft",
+        "/sessions/submission-forms"
+      ],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#967"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "billing-upcoming-payment-reminder-banner",
+      "title": "A friendly payment reminder banner appears 7 days before an invoice is due",
+      "summary": "A new **upcoming payment** banner now appears in the 7 days leading up to an invoice due date, giving organizers advance notice before the past-due escalation begins. The reminder can be dismissed and shows how many days remain until the due date. The stricter past-due banner still appears the day after the due date, unchanged.",
+      "article": "/get-started/overview",
+      "kind": "new",
+      "module": "Settings",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Organization billing banner (top of screen)"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who are approaching a payment deadline now see a clear, non-alarming reminder with days remaining, so they can act before the account enters a past-due state.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Rolls out automatically; no configuration needed. The past-due escalation path is unchanged."
+        },
+        "when_to_bring_up": "When a customer asks why they are seeing a new banner before their invoice is due, or when discussing billing communication improvements.",
+        "who_should_get_it": "All customers with active invoices approaching their due date.",
+        "staff_path": null,
+        "gotchas": "The banner is dismissible, so a customer may not see it again after dismissing even if the due date has not passed. The past-due banner still fires the day after the due date regardless of dismissal.",
+        "talk_track": "You now get a heads-up 7 days before an invoice is due so you can pay before the account shows past-due — and you can dismiss it once you've seen it.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "No existing guide covers the billing banner or invoice due-date notifications for organizers; a short section on billing reminders and the past-due escalation path should be added to a billing or account-settings guide.",
+          "why_use_it": "When an invoice is coming due, you now see a dismissible reminder banner up to 7 days in advance, including how many days remain. This gives you time to arrange payment before the stricter past-due notice appears. The reminder uses a calm, informational tone — it is not the escalated past-due message — so you can address it without urgency. The past-due banner continues to appear the day after the due date, exactly as before.",
+          "at": "2026-10-11T01:03:44.697Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4456"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "interest-form-portal-fixes-w5",
+      "title": "Interest form portal: correct confirmation copy, Open form for signed-in visitors, and more speaker question types",
+      "summary": "Three fixes to interest forms on the org portal Site: (1) The confirmation page for a **Speakers Only** interest form now correctly says \"Speaker Proposal\" (in English, German, Spanish, and French) and no longer flashes the wrong wording while loading. (2) An **Open form** button on a public Site page now starts a new submission immediately for a visitor who is already signed in, instead of redirecting them to sign-in. (3) Date, time, date-time, currency, and radio speaker questions now render correctly on the portal form.",
+      "article": "/speaker-crm/speaker-crm-interest-forms",
+      "related": [
+        "/site/site-builder",
+        "/site/program-site"
+      ],
+      "kind": "fixed",
+      "module": "CRM",
+      "features": [
+        "applications"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Organization → Sites → [Site] → Interest form confirmation page; public Site page with an Open form button"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "speaker"
+      ],
+      "use_case": "Organizers running a Speakers Only interest form no longer have to explain to confused speakers why the confirmation page said \"Session Proposal\" instead of \"Speaker Proposal.\" Signed-in visitors can now click Open form and go straight to submitting, and all common speaker question types appear correctly on the form.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "All three fixes are default-on; nothing to enable."
+        },
+        "when_to_bring_up": "When a customer reports that their Speakers Only confirmation page shows wrong copy, that signed-in visitors are being bounced to sign-in when clicking Open form, or that certain speaker question types are missing from their interest form.",
+        "who_should_get_it": "Any customer using interest forms on a Site, especially those with Speakers Only forms or multilingual audiences.",
+        "staff_path": "Organization → Sites → [Site] → Interest form",
+        "gotchas": "Localization fix covers en, de, es, fr only; other locales are unchanged.",
+        "talk_track": "These are polish fixes that make the interest form experience feel complete and professional — the right label on confirmation, no friction for signed-in visitors, and all question types rendering as expected.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note which speaker question field types are supported on the portal interest form (date, time, date-time, currency, radio) and clarify the Open form behaviour for signed-in vs. signed-out visitors.",
+          "why_use_it": "When you publish a Speakers Only interest form on your Site, the confirmation page now correctly labels the submission as a \"Speaker Proposal\" in English, German, Spanish, and French — removing a confusing mismatch that could undermine trust at the finish line. Visitors who are already signed in and click **Open form** on a public Site page are taken directly into a new submission, saving them an unnecessary detour through the sign-in screen. Speaker questions using date, time, date-time, currency, and radio field types now appear and behave correctly on the portal form, so you can collect the full range of information you need without workarounds.",
+          "at": "2026-10-11T00:55:55.013Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-org-portal#187"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "primary-presenter-star-build-pool-filters",
+      "title": "Primary presenter star and sidebar filters now work correctly in the reviewer portal",
+      "summary": "The **primary presenter** star now appears on the participant list inside a parent session's evaluation block, so reviewers can immediately see which speaker is the lead presenter. In **Build sessions** mode, sidebar filters now correctly apply to the **Your assigned abstracts** pool, so the list updates when filters are changed.",
+      "article": "/evaluations/how-to-evaluate-sessions#building-sessions-from-your-abstracts",
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "sessions"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Program → Evaluation → [plan] → reviewer portal → session block / Build sessions"
+      },
+      "permissions": [
+        "event.evaluation_plans.read_assigned_evaluations"
+      ],
+      "audience": [
+        "reviewer"
+      ],
+      "use_case": "Reviewers who need to identify the lead presenter at a glance no longer have to open the full submission. Reviewers using Build sessions mode can now filter their assigned abstract pool and see accurate, filtered results immediately.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Both fixes are default-on bug fixes; nothing to enable."
+        },
+        "when_to_bring_up": "When a reviewer reports that the primary presenter star is missing on a parent session, or that sidebar filters in Build sessions mode don't seem to update the abstract list.",
+        "who_should_get_it": "Any customer running round-based evaluations with parent sessions or using the Build sessions workflow.",
+        "staff_path": "Program → Evaluation → [plan] → reviewer portal",
+        "gotchas": "The fix requires companion PRs in sessionboard-web-api and sessionboard-web-ui-v2 to be fully deployed.",
+        "talk_track": "Two small but noticeable reviewer-portal fixes shipped together: the primary presenter star now shows on parent sessions, and Build sessions filters actually filter the assigned abstract pool.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The guide should document the primary presenter star indicator in the parent-session participant list and explain how sidebar filters apply to the assigned abstracts pool in Build sessions mode.",
+          "why_use_it": "When evaluating a parent session with multiple participants, you can now see the primary presenter star directly in the participant list without opening the full submission detail. In Build sessions mode, the sidebar filters you apply to **Your assigned abstracts** now take effect immediately, so you can narrow a large abstract pool by track, format, or any other filter and work through only the submissions that match — no stale results from a previous filter state.",
+          "at": "2026-10-11T00:54:54.189Z"
+        }
+      },
+      "related": [
+        "/evaluations/setting-up-round-based-evaluations",
+        "/concepts/participant-roles"
+      ],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-org-portal#185"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "hide-event-dates-in-emails",
+      "title": "Hide event dates from automated emails with a single setting",
+      "summary": "A new **Hide dates in emails** toggle in event details suppresses the `{{event.date}}` and `{{event_date}}` merge tags across all automated and system-generated emails for that event. When the setting is on, those tags render as blank instead of the event's date range.",
+      "article": "/events/event-details",
+      "related": [
+        "/communications/automated-emails",
+        "/communications/email-campaigns"
+      ],
+      "kind": "new",
+      "module": "Communications",
+      "features": [
+        "sessions"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "setting",
+        "path": "Event → Settings → Details → Hide dates in emails"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event → Settings → Details"
+      },
+      "permissions": [
+        "event.settings.update"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Useful for events whose dates aren't finalised yet, or multi-day conferences where the date range in emails would confuse recipients — turn the setting on and the date simply won't appear in any outgoing email.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Default off; organizers enable it themselves in event details."
+        },
+        "when_to_bring_up": "When a customer asks how to stop event dates appearing in emails before dates are confirmed, or when they report that the date in emails is wrong.",
+        "who_should_get_it": "Any organizer running an event whose dates are not yet public or are subject to change.",
+        "staff_path": "Event → Settings → Details → Hide dates in emails",
+        "gotchas": "Only suppresses the {{event.date}} / {{event_date}} merge tags; any date text typed directly into an email template is unaffected.",
+        "talk_track": "If your event dates aren't locked in yet, flip this toggle and the date simply won't show up in any email we send — no need to edit every template.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The event-details guide should document the new Hide dates in emails toggle and explain which merge tags it affects.",
+          "why_use_it": "When event dates are still being confirmed, or when the date range shown in emails would be misleading (for example, a rolling programme or a multi-city tour), you can turn on **Hide dates in emails** in event details. Once enabled, the `{{event.date}}` and `{{event_date}}` merge tags return blank in every automated and campaign email for that event, so recipients never see an incorrect or placeholder date. The setting can be toggled off again as soon as the dates are ready to share.",
+          "at": "2026-10-11T00:51:52.086Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4453"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "portal-speaker-feedback-flags-no-403",
+      "title": "Portal pages no longer show \"Request failed\" errors for events without Speaker Feedback",
+      "summary": "Admins and speakers viewing author or submitter portals on events that do not have **Speaker Feedback** enabled were seeing red **\"Request failed\"** error banners on every portal page. The portal config now correctly exposes whether Speaker Feedback is active, so the feedback-flags request is only made when the feature is on; and the flags endpoint itself now returns an empty \"disabled\" response instead of a 403 for orgs without the feature, clearing errors for any browser tabs already open.",
+      "article": "/portals/portals-101",
+      "kind": "fixed",
+      "module": "Portals",
+      "features": [
+        "speaker_feedback"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Portals → any speaker or submitter portal"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "speaker",
+        "participant"
+      ],
+      "use_case": "Any event team whose portal users were seeing red \"Request failed\" banners on every portal page will have those errors cleared automatically — no action needed.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Fix is automatic and default-on. No customer action required. The 403 errors on portal pages should be fully resolved after this deploy."
+        },
+        "when_to_bring_up": "When a customer reports red 'Request failed' banners appearing on every portal page, especially on author or submitter portals — confirm they are on a build after this fix.",
+        "who_should_get_it": "All customers; the bug affected every org without the Speaker Feedback feature row, which was effectively every org in production.",
+        "staff_path": null,
+        "gotchas": "The per-session feedback/get endpoint still returns 403 if Speaker Feedback is off — that is intentional. Only the flags endpoint was changed to return a graceful empty payload.",
+        "talk_track": "A recent update caused portal pages to show error banners for events without Speaker Feedback. This fix removes those errors automatically — no settings change or reload needed.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that Speaker Feedback must be enabled on the org for the feedback-flags functionality to be active; without it, the portal silently skips the request.",
+          "why_use_it": "Before this fix, every portal page for events without the Speaker Feedback feature triggered a 403 error from the feedback-flags API call, causing a red \"Request failed\" toast to appear on every page load for admins and speakers alike. The portal config now checks whether Speaker Feedback is enabled before making that request, so the error never fires. For browser tabs already open when this fix deployed, the flags endpoint now returns a safe empty response instead of a 403, clearing the toasts without requiring a page reload.",
+          "at": "2026-10-11T00:50:04.793Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4454"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "public-voting-ineligible-header-ballot-count-tab",
+      "title": "Public voting portal now shows round details to ineligible voters and syncs ballot counts to the active tab",
+      "summary": "Signed-in voters who are not on the eligible list now see the voting round's plan name and instructions instead of a blank screen. The **ballot result count** also updates correctly when switching between the **All**, **Voted**, and **Not voted** tabs.",
+      "article": "/site/program-site#public-voting",
+      "related": [
+        "/evaluations/how-to-evaluate-sessions#public-voting"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "sessions"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Program Site → Public Voting portal"
+      },
+      "permissions": [],
+      "audience": [
+        "participant",
+        "organizer"
+      ],
+      "use_case": "When a signed-in attendee visits a public voting round they are not eligible for, they now see the round name and instructions rather than a blank or broken page. Organizers reviewing ballot progress also get accurate counts no matter which tab they are viewing.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Both fixes are default-on; no configuration required."
+        },
+        "when_to_bring_up": "When a customer reports that ineligible voters see a blank voting page, or that ballot counts look wrong when filtering by voted/not voted.",
+        "who_should_get_it": "Any customer running a public voting round with an eligibility list.",
+        "staff_path": null,
+        "gotchas": "The ineligible-voter header is fetched anonymously, so only publicly visible round metadata (plan name, instructions) is shown — no submission details are exposed.",
+        "talk_track": "Voters who aren't on your eligible list will now land on a proper page that explains the round, rather than a confusing blank screen. And when you're checking participation, the ballot count always matches whichever tab you're on.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The public voting section of the Program Site guide should note that ineligible signed-in visitors see the round name and instructions, and explain how the All / Voted / Not voted tabs affect the displayed ballot count.",
+          "why_use_it": "Public voting rounds sometimes restrict eligibility to a specific list of voters. Previously, signed-in users who were not on that list saw no context at all — no round name, no instructions — leaving them confused about what the page was for. Now the portal fetches the round's public header anonymously after a 403, so ineligible visitors still see the plan name and instructions. Separately, the ballot result count was not updating when switching between the **All**, **Voted**, and **Not voted** tabs, making it hard to track participation at a glance; that count now follows the active tab correctly.",
+          "at": "2026-10-11T00:36:33.580Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-org-portal#186"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "community-whats-new-redesign-email-optin-nav-dot",
+      "title": "Community: red-dot nav alert, redesigned What's New feed with media lightbox, and release-note email opt-in",
+      "summary": "A red dot now appears on the **Community** sidebar link whenever new product updates are available; clicking it takes you straight to **What's New**, which now groups entries by day, shows media thumbnails that open a full **Media Lightbox** (keyboard-navigable, with a live item counter), and includes a **Release notes by email** toggle — also available in **Account settings** — so you can receive new release notes by email.",
+      "article": "/help/community",
+      "related": [
+        "/get-started/sidebar"
+      ],
+      "kind": "improved",
+      "module": "Platform",
+      "features": [
+        "community"
+      ],
+      "availability": "limited_release",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Community → What's New; Account settings → Release notes by email"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "reviewer"
+      ],
+      "use_case": "Organizers who want to stay current with Sessionboard releases can subscribe to email delivery of release notes and get a visual cue in the sidebar the moment new updates are posted — no need to remember to check manually.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "All changes are default-on for accounts that already have Community enabled (limited_release). No manual enablement step required."
+        },
+        "when_to_bring_up": "When a customer asks how to keep up with new Sessionboard features, or when onboarding a new admin who wants release notes delivered automatically.",
+        "who_should_get_it": "Any customer with Community access — typically power-user admins and program managers who want to stay current with the platform.",
+        "staff_path": "Community → What's New; Account settings",
+        "gotchas": "Community is a limited_release feature; customers without it will not see any of these changes. The email subscription is a simple on/off toggle with no double opt-in since signed-in users are already verified.",
+        "talk_track": "You will now see a red dot on Community in the sidebar whenever we ship something new. Click it to go straight to What's New, browse screenshots and videos in the lightbox, and flip the email toggle once to get every future release note delivered to your inbox.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should document the red-dot nav indicator, the day-grouped What's New layout, the Media Lightbox (keyboard controls, item counter), and the Release notes by email toggle in both What's New and Account settings.",
+          "why_use_it": "When Sessionboard ships something new, you now see a red dot on the **Community** sidebar link so you never miss an update. Opening **What's New** clears the dot and shows entries grouped by day, each with a type pill, module label, and any related screenshots or videos you can browse in a full-screen lightbox without leaving the page. Turn on **Release notes by email** once — in **What's New** or in **Account settings** — and each new release note arrives in your inbox automatically, so your whole team can stay informed even when they are not logged in.",
+          "at": "2026-10-11T00:32:15.933Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#964"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "billing-notices-card",
+      "title": "Invoice reminder history is now visible in Plans & Billing",
+      "summary": "A new **Billing notices** card under **Invoices** in **Plans & Billing** shows every invoice reminder Sessionboard has sent: when it was sent, which invoice it referenced, every recipient, who triggered it (a named person or \"Automatic reminder · before due date / past due\"), the balance at the time, and the SendGrid delivery status (**Delivered**, **Opened**, **Bounced**, etc.). Open invoice rows also display a \"Reminder sent \\<date\\>\" label. Staff can see the same list per event under **Settings → Billing & Usage**.",
+      "article": "/settings/domains",
+      "kind": "new",
+      "module": "Settings",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Organization → Plans & Billing → Invoices → Billing notices"
+      },
+      "permissions": [
+        "org.settings.view_billing_details"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers with billing access can confirm exactly when reminder emails were sent for an outstanding invoice, who received them, and whether they were delivered — useful when following up on overdue payments or resolving disputes about whether a notice was received.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Visible by default to anyone with View Billing Details. No enablement needed. Staff can also view per-event notices under Event → Settings → Billing & Usage."
+        },
+        "when_to_bring_up": "When a customer disputes receiving an invoice reminder, or asks for an audit trail of billing communications.",
+        "who_should_get_it": "Any customer who manages invoices or has had payment disputes.",
+        "staff_path": "Event → Settings → Billing & Usage (lists that event's notices under the usage meters)",
+        "gotchas": "Requires web-api PR #4449 to be deployed first; until then the card shows 'could not be loaded'.",
+        "talk_track": "You can now show customers exactly when each reminder was sent and whether it landed in the inbox — no more 'I never got that email' disputes.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "No existing guide covers Plans & Billing or invoice reminder history; a new guide (or a section in a billing guide) should document the Billing notices card, its columns, and the delivery status values.",
+          "why_use_it": "When a payment is overdue, you need proof that reminders were actually sent and received. The **Billing notices** card gives you a timestamped, per-recipient record of every invoice reminder — including automatic pre-due and past-due notices — along with the delivery status from the email provider. You can see at a glance whether a reminder bounced or was opened, so you know whether to resend, update an email address, or escalate. The \"Reminder sent \\<date\\>\" label on each open invoice row lets you check reminder history without leaving the invoice list.",
+          "at": "2026-10-11T00:30:56.955Z"
+        }
+      },
+      "related": [],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#963"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "evaluation-plans-qa-wave3-fixes",
+      "title": "Eight evaluation-plan display and behaviour fixes for round-based reviews",
+      "summary": "A batch of fixes for round-based evaluation plans: points-mode plans now show scores as **N pts** (not \"%\") in the monitor sidebar, average line, and print view; reopening a plan no longer shifts the round's review end date; a failed re-preview clears stale recommendations and disables **Apply to N**; rows outside the chosen round cannot be selected for **Apply recommendations** and select-all skips them (a tooltip explains why); the preview footer pluralises submissions and assignments correctly in English, German, Spanish, and French; later-round Impact Preview uses the server's round-pool count with updated confirm-dialog wording; the **Rounds** tab warns which deleted submissions a move skipped; and breadcrumb links (**Programs › program › Rounds**) now route through the Assign tab's unsaved-changes dialog.",
+      "article": "/evaluations/setting-up-round-based-evaluations",
+      "related": [
+        "/evaluations/evaluation-plans",
+        "/evaluations/evaluation-summary"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "sessions_v2"
+      ],
+      "availability": "add_on",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Program → Evaluation → Evaluation Plans → plan → Rounds / Submissions / Monitor"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Program chairs running multi-round point-scored reviews will see accurate score units, correct date handling when reopening a plan, and reliable recommendation workflows — reducing the chance of acting on stale or misleading data during selection.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "All fixes are default-on for any customer using Sessions 2.0 round-based evaluation plans. No configuration needed."
+        },
+        "when_to_bring_up": "When a customer reports score display showing '%' instead of points, unexpected date changes after reopening a plan, or confusion about why Apply Recommendations is greyed out.",
+        "who_should_get_it": "Any customer using Sessions 2.0 (add-on) with multi-round evaluation plans.",
+        "staff_path": "Program → Evaluation → Evaluation Plans → plan",
+        "gotchas": "Companion API and org-portal PRs are part of this release; all three must be deployed together for full effect.",
+        "talk_track": "These are polish fixes for the round-based evaluation workflow — scores display correctly as points, dates are stable when you reopen a plan, and the Apply Recommendations flow is more reliable.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should add a section covering points-mode score display in the monitor and print view, the behaviour of reopening a plan (date preservation), and the out-of-round row restriction in Apply Recommendations.",
+          "why_use_it": "When you run a multi-round evaluation with a points scorecard, scores should read as points — not percentages — everywhere you look: the monitor sidebar, the average line, and the printed report. These fixes also make reopening a plan safe (the end date stays where you set it), keep the Apply Recommendations workflow honest (a failed preview clears old results so you can't accidentally apply them), and prevent you from selecting out-of-round submissions by mistake. The Rounds tab now tells you exactly which deleted submissions were skipped when you move a round, and navigating away via breadcrumbs prompts you to save unsaved assignment changes first.",
+          "at": "2026-10-11T00:14:35.637Z",
+          "permissions_to_confirm": [
+            "event.evaluation_plans:read",
+            "event.evaluation_plans:update"
+          ]
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#965"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    }
+  ]
+}
