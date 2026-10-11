@@ -1,0 +1,92 @@
+---
+/**
+ * The dialog behind "Get updates" in the top bar (SocialIcons.astro).
+ * Mounted once per page from Footer.astro — Starlight renders SocialIcons
+ * twice (header and the mobile menu), so the dialog cannot live there
+ * without duplicate ids. Native <dialog>: Escape, focus containment and the
+ * backdrop come from the browser; the form is the same ReleaseNotesSubscribe
+ * instance as the release-notes page and the home card.
+ */
+import ReleaseNotesSubscribe from './ReleaseNotesSubscribe.astro';
+---
+
+<dialog id="sb-updates-dialog" class="sb-updates-dialog" data-sb-updates-dialog aria-labelledby="sb-sub-header-title">
+  <div class="sb-updates-panel">
+    <button class="sb-updates-close" type="button" data-sb-updates-close aria-label="Close">
+      <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 6 6 18M6 6l12 12"></path>
+      </svg>
+    </button>
+    <ReleaseNotesSubscribe id="sb-sub-header" variant="modal" headingLevel="h1" />
+  </div>
+</dialog>
+
+<script>
+  const dialog = document.querySelector<HTMLDialogElement>('[data-sb-updates-dialog]');
+  const openers = document.querySelectorAll<HTMLButtonElement>('[data-sb-updates-open]');
+  if (dialog && typeof dialog.showModal === 'function') {
+    openers.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        dialog.showModal();
+        dialog.querySelector<HTMLInputElement>('input[name="email"]')?.focus();
+      });
+    });
+    dialog.querySelector('[data-sb-updates-close]')?.addEventListener('click', () => dialog.close());
+    // The panel is the dialog's only child, so a click that lands on the
+    // dialog element itself is a click on the backdrop.
+    dialog.addEventListener('click', (event) => {
+      if (event.target === dialog) dialog.close();
+    });
+  } else {
+    // No <dialog> support: send them to the card on the release notes page.
+    openers.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        window.location.href = '/help/release-notes#subscribe';
+      });
+    });
+  }
+</script>
+
+<style>
+  .sb-updates-dialog {
+    /* Starlight's global reset pins <dialog> to the top-left; recentre it. */
+    position: fixed;
+    inset: 0;
+    margin: auto;
+    width: min(34rem, calc(100vw - 2rem));
+    padding: 0;
+    border: 1px solid var(--sl-color-hairline);
+    border-radius: 1rem;
+    background: var(--sl-color-bg);
+    color: var(--sl-color-text);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.28);
+  }
+  .sb-updates-dialog::backdrop {
+    background: rgba(10, 14, 30, 0.55);
+    backdrop-filter: blur(2px);
+  }
+  .sb-updates-panel {
+    position: relative;
+    padding: 1.75rem 1.75rem 1.5rem;
+  }
+  .sb-updates-close {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    display: inline-flex;
+    padding: 0.4rem;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--sl-color-gray-3);
+    cursor: pointer;
+  }
+  .sb-updates-close:hover {
+    color: var(--sl-color-white);
+    background: var(--sl-color-gray-6);
+  }
+  .sb-updates-close:focus-visible {
+    outline: 2px solid var(--sl-color-accent);
+    outline-offset: 2px;
+  }
+</style>

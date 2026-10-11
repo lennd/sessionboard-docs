@@ -1,6 +1,11 @@
 ---
 /**
- * "Get release notes by email" — the public opt-in on /help/release-notes.
+ * "Get release notes by email" — the public opt-in. Three placements, one
+ * component: the card on /help/release-notes, the card under the home-page
+ * hero, and the dialog behind "Get updates" in the top bar (SocialIcons.astro).
+ * Several instances can share a page (the release-notes page has the card
+ * and the header dialog), so every id is derived from `id` and the script
+ * initialises each instance it finds.
  *
  * Posts to the Worker (/help/release-notes/subscribe), which relays to
  * sessionboard-web-api. Double opt-in: the visitor gets a confirmation email
@@ -14,7 +19,9 @@
  * it); `t0` is when the card rendered, so a submit a few hundred ms later is
  * a script; and an *invisible* Turnstile widget supplies a token when it
  * loads. If the widget is blocked or slow the form still submits without a
- * token — the API's throttles and the double opt-in are the backstop.
+ * token — the API's throttles and the double opt-in are the backstop. The
+ * Turnstile script itself is injected once, on the first focus of any
+ * instance, so readers who never touch a form never fetch it.
  *
  * The Turnstile widget is "Help Center release-notes opt-in" in the
  * Sessionboard Cloudflare account, bound to learn.sessionboard.com, mode
@@ -23,32 +30,50 @@
  */
 import { SUBSCRIBE_PATH } from '../lib/product-updates-proxy.mjs';
 
+interface Props {
+  /** Unique per instance on a page; prefixes every element id. */
+  id?: string;
+  /** `card` is the two-column panel; `modal` stacks for the header dialog. */
+  variant?: 'card' | 'modal';
+  /** Heading level — h2 inside page content, h1 inside the dialog. */
+  headingLevel?: 'h1' | 'h2';
+  /** On the release-notes page the lede says "here"; elsewhere it links there. */
+  onReleaseNotes?: boolean;
+}
+
+const {
+  id = 'sb-sub',
+  variant = 'card',
+  headingLevel = 'h2',
+  onReleaseNotes = false,
+} = Astro.props;
+
+const Heading = headingLevel;
 const TURNSTILE_SITE_KEY = '0x4AAAAAAFTeCPKTQumIpeOI';
 /** How long to wait for a Turnstile token before submitting without one. */
 const TURNSTILE_WAIT_MS = 2500;
 ---
 
-<script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
-
 <section
   class="sb-sub"
-  id="subscribe"
-  aria-labelledby="sb-sub-title"
+  id={id === 'sb-sub' ? 'subscribe' : undefined}
+  aria-labelledby={`${id}-title`}
   data-sb-subscribe
+  data-variant={variant}
   data-turnstile-site-key={TURNSTILE_SITE_KEY}
   data-turnstile-wait-ms={TURNSTILE_WAIT_MS}
 >
   <div class="sb-sub-copy">
-    <h2 id="sb-sub-title" class="sb-sub-title">Get release notes by email</h2>
+    <Heading id={`${id}-title`} class="sb-sub-title">Get release notes by email</Heading>
     <p class="sb-sub-lede">
-      A short digest on the days something new goes live — each change with a link to its note here. No marketing, and one click to stop.
+      A short digest on the days something new goes live — each change with a link to its note {onReleaseNotes ? 'here' : <a href="/help/release-notes">in the release notes</a>}. No marketing, and one click to stop.
     </p>
   </div>
   <form class="sb-sub-form" method="post" action={SUBSCRIBE_PATH} data-sb-subscribe-form novalidate>
-    <label class="sb-sub-label" for="sb-sub-email">Work email</label>
+    <label class="sb-sub-label" for={`${id}-email`}>Work email</label>
     <div class="sb-sub-row">
       <input
-        id="sb-sub-email"
+        id={`${id}-email`}
         class="sb-sub-input"
         type="email"
         name="email"
@@ -57,14 +82,14 @@ const TURNSTILE_WAIT_MS = 2500;
         required
         maxlength="320"
         placeholder="you@organization.org"
-        aria-describedby="sb-sub-hint"
+        aria-describedby={`${id}-hint`}
       />
       <button class="sb-sub-button" type="submit">Subscribe</button>
     </div>
-    <p id="sb-sub-hint" class="sb-sub-hint">We’ll send one email to confirm it’s you. Already use Sessionboard? You can also turn this on under <strong>Community → What’s new</strong>.</p>
+    <p id={`${id}-hint`} class="sb-sub-hint">We’ll send one email to confirm it’s you. Already use Sessionboard? You can also turn this on under <strong>Community → What’s new</strong>.</p>
     <div class="sb-sub-hp" aria-hidden="true">
-      <label for="sb-sub-website">Website</label>
-      <input id="sb-sub-website" type="text" name="website" tabindex="-1" autocomplete="off" />
+      <label for={`${id}-website`}>Website</label>
+      <input id={`${id}-website`} type="text" name="website" tabindex="-1" autocomplete="off" />
     </div>
     <input type="hidden" name="t0" value="" data-sb-subscribe-t0 />
     <div class="sb-sub-turnstile" data-sb-subscribe-turnstile aria-hidden="true"></div>
@@ -73,9 +98,34 @@ const TURNSTILE_WAIT_MS = 2500;
 </section>
 
 <script>
-  const root = document.querySelector<HTMLElement>('[data-sb-subscribe]');
-  const form = root?.querySelector<HTMLFormElement>('[data-sb-subscribe-form]');
-  const status = root?.querySelector<HTMLElement>('[data-sb-subscribe-status]');
+  type Turnstile = {
+    render: (el: Element, opts: Record<string, unknown>) => string;
+    execute: (id: string) => void;
+    reset: (id: string) => void;
+  };
+  const turnstile = () => (window as unknown as { turnstile?: Turnstile }).turnstile;
+  const TURNSTILE_SRC = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+  let turnstileLoad: Promise<Turnstile | undefined> | null = null;
+  /** Inject api.js once per page; resolves when `window.turnstile` exists (or on error). */
+  const loadTurnstile = (): Promise<Turnstile | undefined> => {
+    if (turnstile()) return Promise.resolve(turnstile());
+    if (turnstileLoad) return turnstileLoad;
+    turnstileLoad = new Promise((resolve) => {
+      const existing = document.querySelector<HTMLScriptElement>(`script[src^="${TURNSTILE_SRC}"]`);
+      const script = existing ?? document.createElement('script');
+      const done = () => resolve(turnstile());
+      script.addEventListener('load', done, { once: true });
+      script.addEventListener('error', () => resolve(undefined), { once: true });
+      if (!existing) {
+        script.src = TURNSTILE_SRC;
+        script.async = true;
+        script.defer = true;
+        document.head.appendChild(script);
+      }
+    });
+    return turnstileLoad;
+  };
+
   const MESSAGES: Record<string, string> = {
     check_email: 'Check your inbox — we sent a link to confirm your subscription. It’s good for 24 hours.',
     email_required: 'Enter your email address to subscribe.',
@@ -84,7 +134,13 @@ const TURNSTILE_WAIT_MS = 2500;
     unavailable: 'Email sign-up isn’t open yet — we’re switching it on shortly. Check back soon, or turn it on under Community → What’s new in Sessionboard.',
     error: 'Something went wrong on our side. Try again in a few minutes.',
   };
-  if (root && form && status) {
+
+  function init(root: HTMLElement) {
+    if (root.dataset.sbSubscribeReady) return;
+    root.dataset.sbSubscribeReady = '1';
+    const form = root.querySelector<HTMLFormElement>('[data-sb-subscribe-form]');
+    const status = root.querySelector<HTMLElement>('[data-sb-subscribe-status]');
+    if (!form || !status) return;
     const input = form.querySelector<HTMLInputElement>('input[name="email"]');
     const button = form.querySelector<HTMLButtonElement>('button[type="submit"]');
     const t0 = form.querySelector<HTMLInputElement>('[data-sb-subscribe-t0]');
@@ -93,17 +149,11 @@ const TURNSTILE_WAIT_MS = 2500;
     // Invisible Turnstile. Rendered lazily on first focus so the script is
     // not fetched for readers who never touch the form; resolves to '' when
     // the widget is blocked, errors, or takes longer than TURNSTILE_WAIT_MS.
-    type Turnstile = {
-      render: (el: Element, opts: Record<string, unknown>) => string;
-      execute: (id: string) => void;
-      reset: (id: string) => void;
-    };
     const siteKey = root.dataset.turnstileSiteKey ?? '';
     const waitMs = Number(root.dataset.turnstileWaitMs) || 2500;
     const slot = form.querySelector<HTMLElement>('[data-sb-subscribe-turnstile]');
     let widgetId: string | null = null;
     let pending: ((token: string) => void) | null = null;
-    const turnstile = () => (window as unknown as { turnstile?: Turnstile }).turnstile;
     const mountTurnstile = () => {
       const ts = turnstile();
       if (widgetId !== null || !ts || !slot || !siteKey) return;
@@ -120,28 +170,30 @@ const TURNSTILE_WAIT_MS = 2500;
         widgetId = null;
       }
     };
-    input?.addEventListener('focus', mountTurnstile, { once: true });
+    input?.addEventListener('focus', () => loadTurnstile().then(mountTurnstile), { once: true });
     const turnstileToken = (): Promise<string> =>
       new Promise((resolve) => {
-        mountTurnstile();
-        const ts = turnstile();
-        if (widgetId === null || !ts) return resolve('');
-        const timer = window.setTimeout(() => {
-          pending = null;
-          resolve('');
-        }, waitMs);
-        pending = (token) => {
+        let settled = false;
+        const finish = (token: string) => {
+          if (settled) return;
+          settled = true;
           window.clearTimeout(timer);
           pending = null;
           resolve(token);
         };
-        try {
-          ts.execute(widgetId);
-        } catch {
-          window.clearTimeout(timer);
-          pending = null;
-          resolve('');
-        }
+        // One budget covers script load + challenge; past it we submit without a token.
+        const timer = window.setTimeout(() => finish(''), waitMs);
+        loadTurnstile().then((ts) => {
+          mountTurnstile();
+          if (settled) return;
+          if (widgetId === null || !ts) return finish('');
+          pending = finish;
+          try {
+            ts.execute(widgetId);
+          } catch {
+            finish('');
+          }
+        });
       });
     const show = (key: string, ok: boolean) => {
       status.textContent = MESSAGES[key] ?? MESSAGES.error;
@@ -189,6 +241,8 @@ const TURNSTILE_WAIT_MS = 2500;
       }
     });
   }
+
+  document.querySelectorAll<HTMLElement>('[data-sb-subscribe]').forEach(init);
 </script>
 
 <style>
@@ -203,15 +257,33 @@ const TURNSTILE_WAIT_MS = 2500;
     border-radius: 0.9rem;
     background: var(--sl-color-accent-low);
   }
-  :global(.sl-markdown-content) .sb-sub-title {
+  .sb-sub[data-variant='modal'] {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+  :global(.sl-markdown-content) .sb-sub-title,
+  .sb-sub-title {
     margin: 0;
     font-size: var(--sl-text-lg);
     line-height: 1.3;
+    color: var(--sl-color-white);
+  }
+  .sb-sub[data-variant='modal'] .sb-sub-title {
+    font-size: var(--sl-text-xl);
   }
   .sb-sub-lede {
     margin: 0.35rem 0 0;
     font-size: var(--sl-text-sm);
     color: var(--sl-color-gray-2);
+  }
+  .sb-sub-lede a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
   }
   .sb-sub-form {
     display: flex;
