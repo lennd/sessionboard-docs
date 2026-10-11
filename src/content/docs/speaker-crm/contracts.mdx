@@ -2,17 +2,17 @@
 title: "Send and track contracts"
 sidebar:
   label: "Contracts"
-description: "Send Docusign templates pre-filled with contact, session, and event data from any contact, account, group, or pipeline record, upload contracts signed elsewhere, and track every signature in one place."
+description: "Send speaker, sponsor, and exhibitor agreements for e-signature with Sessionboard e-sign or Docusign, pre-filled from the record, upload contracts signed elsewhere, and track every signer in one place."
 features: ["contracts"]
-reviewed: "2026-09-30"
+reviewed: "2026-10-11"
 ---
 
 import { Note, Tip, Warning, Steps, Step, Walkthrough } from '@compat';
 
-Contracts lets your team send speaker, sponsor, and exhibitor agreements through Docusign without leaving the record they are working on. Sessionboard pre-fills the Docusign template from the contact, account, session, event, and organization data it already holds, shows you every value before it goes out, and then tracks the signature automatically. Agreements signed outside Sessionboard can be uploaded so the record is complete.
+Contracts lets your team send speaker, sponsor, and exhibitor agreements for e-signature without leaving the record they are working on. You can send with **Sessionboard e-sign** — your own templates, ordered signers, and a hosted signing page, with no external account — or through **Docusign** from each administrator's connected account. Either way, Sessionboard pre-fills the agreement from the contact, account, session, event, and organization data it already holds and tracks every signature for you. Agreements signed outside Sessionboard can be uploaded so the record is complete.
 
 <Note>
-Contracts is an Early Access **Beta**: ask for it with **Request access** from **Preview** at the bottom of the organization sidebar (see [Early Access](/get-started/early-access)) or contact [support@sessionboard.com](mailto:support@sessionboard.com), and your customer success manager turns it on for your organization. Then [connect Docusign](/apps/docusign-integration) if you send through Docusign. Sending via Docusign requires a Docusign connection; uploading an existing contract does not.
+Contracts is an Early Access **Beta**: ask for it with **Request access** from **Preview** at the bottom of the organization sidebar (see [Early Access](/get-started/early-access)) or contact [support@sessionboard.com](mailto:support@sessionboard.com), and your customer success manager turns it on for your organization. During the Beta your customer success manager also sets up your Sessionboard e-sign templates with you. Sending via Docusign additionally requires a [Docusign connection](/apps/docusign-integration); uploading an existing contract does not.
 </Note>
 
 ## Why use it
@@ -20,6 +20,8 @@ Contracts is an Early Access **Beta**: ask for it with **Request access** from *
 Agreements live on the same record as the speaker, sponsor or exhibitor they belong to. The template is filled from data Sessionboard already holds, so nobody retypes names, sessions or fees, and the signature status is tracked for you instead of chased through email.
 
 ## Watch it end to end
+
+The walkthrough below shows the Docusign flow; sending with Sessionboard e-sign follows the same path from the record, with the steps in [Send with Sessionboard e-sign](#send-with-sessionboard-e-sign).
 
 <Walkthrough src="/media/walkthroughs/contracts-docusign-demo.mp4" title="Connect Docusign, send a pre-filled speaker agreement, sign it, and track the result" />
 
@@ -42,22 +44,59 @@ Status comes back through Docusign Connect envelope-level event notifications, v
 
 ## Where contracts live
 
-Each contract belongs to a **contact** or an **account**, and is tied to an **event**. You can open the **Contracts** tab from:
+Each contract belongs to a **contact** or an **account**, and can be tied to an **event**. You can open the **Contracts** section from:
 
-- A contact's profile in **CRM > Contacts**
+- A contact's profile in **CRM > Contacts** (on the **CRM** tab)
 - An account's profile
 - A group (sponsor or exhibitor) profile
 - A prospect's card in the **Pipeline**
 
-**CRM > Contracts** lists every contract across your organization.
+**CRM > Contracts** lists every contract across your organization, and its **Settings** button holds the org-wide e-sign defaults described in [Contract settings](#contract-settings).
 
 ![The Contracts tab on a pipeline entry showing one signed contract and one awaiting signature](/images/kb/contracts-tab-pipeline-entry.png)
+
+## Send with Sessionboard e-sign
+
+Sessionboard e-sign sends your own agreement template, collects each signature on a hosted signing page, and files the completed PDF on the record. Nothing is needed outside Sessionboard.
+
+<Steps>
+<Step title="Open the Contracts section and click Add Contract">
+Open the record, find **Contracts**, then click **Add Contract**. Under **Who is this contract with?**, the record is pre-selected; switch between **Contact** and **Account** if you need to.
+</Step>
+<Step title="Choose the Send with Sessionboard tab">
+The dialog opens on the tab set as your organization's [default way to send](#contract-settings). Pick a **Template**. Only published templates for this kind of record are listed — contact templates on a contact, account templates on an account or group.
+</Step>
+<Step title="Pick the event (optional)">
+Choose the **Event** the agreement is for to use that event's branding on the emails and signing page and to fill event and session variables such as `event.name` and `session.title`. Leave it at **Organization scope** for agreements that are not tied to one event.
+</Step>
+<Step title="Check the signers">
+**Signers** lists every role in the template in signing order. Rows marked **From record** are filled from the contact or account and from your [organization countersigner](#contract-settings); rows marked **Entered when sending** need a **Name** and **Email** from you. The sender's own role, when the template has one, is filled from your account. You cannot send until every required signer has a name and a valid email, and two signers cannot share an address.
+</Step>
+<Step title="Write the email (optional)">
+The **Email subject** and **Email message** start from the template's defaults and can use the same variables as the document. Each signer receives this message with their personal signing link.
+</Step>
+<Step title="Click Send for signature">
+The contract appears on the record as **Needs signature** with the **Sessionboard** source. In a template that signs **in order**, only the first signer is emailed; each following signer gets their link when the previous one finishes. In a template that signs **all at once**, everyone is emailed immediately.
+</Step>
+</Steps>
+
+![Send with Sessionboard tab with a published Speaker Agreement template selected, Organization scope, an ordered signer list with one signer from the record and one entered when sending, and the email subject and message](/images/kb/contracts-add-contract-send-with-sessionboard.png)
+
+<Tip>
+Variables in the template and the email — `contact.full_name`, `event.name`, `session.title`, `account.custom.po_number` and so on — are the same ids as [Docusign template variables](/speaker-crm/docusign-template-variables). A variable with no value on the record is left blank in the sent document, so fill in the contact or account profile — and pick the event, for event and session variables — before you send.
+</Tip>
+
+### What the signer sees
+
+Each signer's email opens a signing page branded for the event or organization. It shows the agreement as a PDF with its document fingerprint, the fields for that signer's role (initials, dates, text), a **Draw** or **Type** signature pad, and the [e-signature consent text](#contract-settings) they must agree to. The signer clicks **Sign document**, or **Decline to sign** with an optional reason. A signer who opens their link before their turn sees who the contract is waiting on and is emailed when it is ready. Signing links expire after the [signing link expiry](#contract-settings) you set, and an expired link is renewed with the next reminder.
+
+When the last signer finishes, Sessionboard stamps every signature into the PDF, appends a signing certificate — who signed, when, from where, and the document fingerprint — stores the result on the record as **Signed**, and emails each signer a copy. If [auto-advance](#contract-settings) is set, the linked pipeline entry moves to the chosen stage. Participants can read the signer's side in [Sign a contract](/participants/sign-a-contract).
 
 ## Send a contract via Docusign
 
 <Steps>
-<Step title="Open the Contracts tab and click Add Contract">
-Open the record, click the **Contracts** tab, then **Add Contract**. Under **Who is this contract with?**, the record is pre-selected; switch between **Contact** and **Account** if you need to.
+<Step title="Open the Contracts section and click Add Contract">
+Open the record, find **Contracts**, then **Add Contract**. Under **Who is this contract with?**, the record is pre-selected; switch between **Contact** and **Account** if you need to.
 </Step>
 <Step title="Choose the Send via Docusign tab">
 Pick a **Template** from your connected Docusign account and the **Event** the agreement is for. The **Signer name** and **Signer email** fill from the contact; change them if someone else should sign.
@@ -88,42 +127,70 @@ For agreements signed on paper or through another tool, choose the **Upload exis
 3. Enter the **Signed date**. Optionally add an **Effective date**, **Expiry date**, and **Notes**.
 4. Save. The contract appears with the **Uploaded** source and the **Signed** status, and the PDF is available to download.
 
+## Track who has signed
+
+A contract sent with Sessionboard e-sign shows its signer progress on the row — for example **0 of 2 signed · waiting on Jessica Tucker** — next to its status. Click the arrow at the end of the row to expand **Details**:
+
+- **Signers**, in signing order, each with their role and status — **Waiting**, **Invited**, **Viewed**, **Signed**, or **Declined** — plus when they were invited, viewed or signed, the decline reason if they gave one, and how many reminders they have received.
+- The **template** name and version the contract was sent from, and whether it signs in order or all at once.
+- The **void reason**, when the contract was voided.
+- **Recent activity**: created, sent, signer invited, viewed, signed, reminders sent, completed, declined, or voided, each with a timestamp.
+
+![A contract row showing Needs signature, the Sessionboard source badge and "0 of 2 signed · waiting on Jessica Tucker", expanded to list the two signers with their statuses, the template version, and the recent activity](/images/kb/contracts-row-signer-progress-details.png)
+
 ## Contract statuses
 
 | Status | Meaning |
 | --- | --- |
-| **Needs signature** | Sent through Docusign and waiting on the signer. |
-| **Signed** | Completed. The signed PDF is stored on the record. |
-| **Declined** | The signer declined to sign in Docusign. |
-| **Voided** | Cancelled before signature. |
+| **Needs signature** | Sent and waiting on one or more signers. |
+| **Signed** | Every signer has signed. The signed PDF is stored on the record. |
+| **Declined** | A signer declined — on the Sessionboard signing page or in Docusign. No further signatures are collected. |
+| **Voided** | Cancelled before completion. |
 | **Draft** | Created but not yet sent. |
 
-Each contract also shows its source: **Docusign** for contracts sent from Sessionboard, **Uploaded** for PDFs you added, and **Imported** for envelopes brought in from your Docusign account by Sessionboard.
+Each contract also shows its source: **Sessionboard** for contracts sent with Sessionboard e-sign, **Docusign** for envelopes sent from Sessionboard through Docusign, **Uploaded** for PDFs you added, and **Imported** for envelopes brought in from your Docusign account by Sessionboard.
 
-Status updates arrive from Docusign automatically. When a signer finishes, the contract flips to **Signed** within moments, and if [auto-advance](/apps/docusign-integration#auto-advance-the-pipeline) is set, the linked pipeline entry moves to the chosen stage.
+Status updates are immediate for Sessionboard e-sign and arrive from Docusign automatically within moments. When a contract completes, if [auto-advance](#contract-settings) is set, the linked pipeline entry moves to the chosen stage.
 
 ## Manage a contract
 
 Click the **⋮** menu on a contract:
 
-- **Open in Docusign** opens the envelope in your Docusign account.
+- **Open in Docusign** opens the envelope in your Docusign account (Docusign contracts only).
 - **Download PDF** downloads the signed document. Signed contracts also show a download button on the row.
-- **Resend reminder** re-sends the Docusign notification to a signer who has not signed yet.
-- **Void** cancels a contract that is still awaiting signature. Confirm **Void contract?** to proceed.
+- **Resend reminder** re-sends the signing link to whoever the contract is currently waiting on, or the Docusign notification for a Docusign contract. Sessionboard e-sign also sends [automatic reminders](#contract-settings) on the cadence you set.
+- **Void** cancels a contract that is still awaiting signature. Add a **Reason** if you want it recorded — it shows in the contract's [details](#track-who-has-signed) — and confirm **Void contract?** to proceed. Signers who already have a link are told the contract was withdrawn.
 - **Delete** removes the contract record from Sessionboard.
 
 <Warning>
-Voiding cancels the envelope in Docusign and cannot be undone. Deleting removes the record from Sessionboard but does not change the envelope in Docusign.
+Voiding cannot be undone: it invalidates every outstanding signing link, or cancels the envelope in Docusign. Deleting removes the record from Sessionboard but does not change an envelope in Docusign.
 </Warning>
+
+## Contract settings
+
+Open **CRM > Contracts** and click **Settings** to set the defaults every Sessionboard e-sign contract follows. Blank fields use the built-in default, which is shown beside each one.
+
+| Setting | What it does | Default |
+| --- | --- | --- |
+| **Default way to send** | Which tab **Add Contract** opens on: **Send with Sessionboard** or **Send via Docusign**. Both stay available. | Sessionboard |
+| **Signing link expiry** | Days a signing link stays valid after it is sent. Expired links are renewed with the next reminder. | 30 days |
+| **Automatic reminders** | How often a signer who has not signed is reminded by email. You can also resend by hand from any contract. | Every 3 days |
+| **Organization countersigner** | The team member who signs any template role set to **Organization countersigner**. When unset, the administrator who sends the contract signs instead. | Whoever sends |
+| **E-signature consent text** | The consent wording shown above the signature on the signing page. Changes apply to contracts sent from then on. | Built-in wording |
+| **Auto-advance on contract completion** | The [Pipeline](/speaker-crm/pipeline) stage the linked entry moves to when every signer has signed. Shared with the [Docusign panel](/apps/docusign-integration#auto-advance-the-pipeline). | Off |
+
+![The Contract settings panel with Default way to send, Signing link expiry, Automatic reminders and Organization countersigner, each showing its default and current value](/images/kb/contracts-settings-sidebar.png)
+
+Changing these settings uses the organization's manage-app-connections permission — the same one that connects Docusign. Team members without it can open the panel and read the current values.
 
 ## Let signers sign from their portal
 
-Signers always receive the Docusign email and can sign from it. You can also let them sign from their Sessionboard portal:
+Signers always receive an email and can sign from it. For Docusign agreements you can also let them sign from their Sessionboard portal:
 
 1. In your Program Site settings, open **Logged-In Experience**.
 2. Under **Portal widgets > Sidebar**, turn on **My Contracts**. It is off by default.
 
-Signed-in participants then see **My Contracts** in their portal sidebar, with **Sign Now** on anything awaiting their signature and **Download Signed PDF** on completed agreements. See [Sign a contract from your portal](/participants/sign-a-contract).
+Signed-in participants then see **My Contracts** in their portal sidebar, with **Sign Now** on Docusign agreements awaiting their signature and **Download Signed PDF** on completed agreements. Agreements sent with Sessionboard e-sign are signed from the link in the email. See [Sign a contract from your portal](/participants/sign-a-contract).
 
 ## Permissions
 
@@ -131,13 +198,13 @@ Contracts has its own organization permissions, assigned per role in **Organizat
 
 | Permission | Allows |
 | --- | --- |
-| Can view contracts | See the Contracts tab and **CRM > Contracts**. |
-| Can create contracts (send via DocuSign or upload) | Send via Docusign and upload existing PDFs. |
+| Can view contracts | See the Contracts section and **CRM > Contracts**. |
+| Can create contracts (send via DocuSign or upload) | Send with Sessionboard e-sign or Docusign, and upload existing PDFs. |
 | Can edit contract metadata, assignments, and resend | Edit details and resend reminders. |
 | Can delete or void contracts | Void and delete. |
 
-Connecting or disconnecting Docusign uses the organization's manage-app-connections permission.
+Connecting or disconnecting Docusign and changing [Contract settings](#contract-settings) use the organization's manage-app-connections permission.
 
 ## Still having issues?
 
-Email [support@sessionboard.com](mailto:support@sessionboard.com) with the record name, the template you used, and a screenshot of the **Review & edit fields** step or the error message.
+Email [support@sessionboard.com](mailto:support@sessionboard.com) with the record name, the template you used, and a screenshot of the **Signers** list, the **Review & edit fields** step, or the error message.

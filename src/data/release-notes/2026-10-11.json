@@ -1537,53 +1537,49 @@
     },
     {
       "id": "contracts-org-settings-sidebar",
-      "title": "Configure org-wide e-signature defaults from a new Contracts Settings panel",
-      "summary": "A **Settings** button in the Contracts directory header opens a **ContractsSettingsSidebar** panel where admins can set org-wide defaults: **Default way to send** (Sessionboard e-sign or Docusign), **Signing link expiry** (1–365 days), **Automatic reminder cadence** (1–30 days), **Organization countersigner**, **E-signature consent text**, and **Auto-advance pipeline stage**. Each control shows the platform default alongside the current saved value, and a link to Docusign connection settings is included. The panel is read-only for users without the update-integrations permission.",
-      "article": "/speaker-crm/contracts#send-and-track-contracts",
+      "title": "Set org-wide e-signature defaults from Contract settings",
+      "summary": "A **Settings** button on **CRM > Contracts** opens **Contract settings**: the **Default way to send** (which tab Add Contract opens on), **Signing link expiry** (1–365 days), **Automatic reminders** cadence (1–30 days), the **Organization countersigner** who signs countersigner roles, the **E-signature consent text** shown on the signing page, and the **Auto-advance on contract completion** stage shared with Docusign. Each control shows the built-in default beside the current value; blank means use the default.",
+      "article": "/speaker-crm/contracts#contract-settings",
       "kind": "new",
       "module": "CRM",
       "features": [
         "contracts"
       ],
-      "availability": "preview",
+      "availability": "beta",
       "enable": {
-        "how": "default_on",
-        "path": null
+        "how": "support",
+        "path": "Preview (bottom of the organization sidebar) → Contracts → Request access; your customer success manager turns it on"
       },
       "where": {
         "scope": "org",
-        "path": "Speaker CRM → Contracts → Settings (header button)"
+        "path": "CRM → Contracts → Settings"
       },
-      "permissions": [],
+      "permissions": [
+        "org.settings.manage_app_connections"
+      ],
       "audience": [
         "organizer"
       ],
       "use_case": "Admins who send contracts at scale can set a single countersigner, expiry window, and reminder cadence once at the org level instead of configuring each contract individually — ensuring every contract goes out consistently.",
       "internal": {
         "cs_action": {
-          "kind": "none",
-          "note": "The panel is available to any org with the Contracts preview feature; no additional enablement step is needed."
+          "kind": "review_before_customers_see",
+          "note": "Walk the customer through the countersigner and consent text before their first send — the defaults work, but a named countersigner and their own consent wording are usually wanted."
         },
         "when_to_bring_up": "When a customer asks how to standardize their contract workflow — countersigner, reminder cadence, or expiry — across their whole team.",
         "who_should_get_it": "Any customer actively using Contracts (preview) who sends contracts to multiple speakers or sponsors.",
-        "staff_path": "Speaker CRM → Contracts → Settings button in the directory header",
-        "gotchas": "The panel is read-only for users who lack the canUpdateIntegrations permission; remind customers to check team roles if they can't save changes.",
-        "talk_track": "Instead of each sender picking their own expiry and reminder settings, you can lock in org-wide defaults once and every contract will follow them automatically.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The guide should add a section documenting the org-wide Contracts Settings panel — covering each configurable field (default send method, signing link expiry, reminder cadence, countersigner, consent text, auto-advance stage) and how the default-vs-current display works.",
-          "why_use_it": "When your team sends contracts to dozens of speakers or sponsors, inconsistent expiry dates and missing reminders lead to stalled signatures and manual follow-up. The org-wide settings panel lets you define your preferred e-sign provider, how long signing links stay active, how often signers are nudged, who countersigns on behalf of your organization, and what consent language appears — all in one place. Every new contract inherits these defaults automatically, so individual senders don't have to remember the right values. You can still see the platform default next to each setting so it's clear what changes when you override it.",
-          "at": "2026-10-11T01:53:42.198Z"
-        }
+        "staff_path": "CRM → Contracts → Settings",
+        "gotchas": "Read-only without the manage-app-connections permission. Consent text changes apply to contracts sent from then on; contracts already out keep the wording they were sent with.",
+        "talk_track": "Instead of each sender picking their own expiry and reminder settings, you can lock in org-wide defaults once and every contract will follow them automatically."
       },
       "related": [
-        "/apps/docusign-integration"
+        "/speaker-crm/contracts#send-with-sessionboard-e-sign",
+        "/apps/docusign-integration#auto-advance-the-pipeline"
       ],
       "shipped": {
         "prs": [
-          "lennd/sessionboard-web-ui-v2#971"
+          "lennd/sessionboard-web-ui-v2#971",
+          "lennd/sessionboard-web-api#4459"
         ],
         "docs_only": false,
         "pending": null,
@@ -1600,126 +1596,53 @@
     },
     {
       "id": "contracts-native-esign-send-and-signer-progress",
-      "title": "Send contracts for e-signature directly in Sessionboard, with per-signer progress tracking",
-      "summary": "The **Add Contract** dialog now has a **Send with Sessionboard** tab that lets you pick a published e-sign template, build a signer roster (resolved from the record or entered manually), choose sequential or parallel signing, and customise the email subject and message before sending. In-flight contracts on the **Contracts** tab show per-signer status dots, a \"1 of 2 signed · waiting on …\" summary, and an expandable **Details** panel with ordered signers, timestamps, decline reasons, reminder counts, template name/version, signing mode, void reason, and a recent activity timeline. **Resend reminder** and **Void** (with an optional reason) are now available for both Sessionboard and Docusign contracts.",
-      "article": "/speaker-crm/contracts",
+      "title": "Send contracts for e-signature with Sessionboard e-sign — no Docusign account needed",
+      "summary": "**Add Contract** now has a **Send with Sessionboard** tab: pick a published template, check the ordered **Signers** list (filled from the record, your organization countersigner, or typed in when a role calls for it), optionally pick the event for branding and variables, and **Send for signature**. Each signer gets an email with a personal link to a branded signing page where they review the PDF, fill their fields, draw or type a signature, agree to the e-signature consent, and sign or decline; templates can sign in order or all at once. When the last signer finishes, Sessionboard stamps the signatures, appends a signing certificate, stores the PDF on the record as **Signed**, emails every signer a copy, and can auto-advance the pipeline entry. Contract rows show signer progress (**0 of 2 signed · waiting on …**) with an expandable **Details** panel — signers with statuses and timestamps, decline reason, reminder count, template version, void reason, recent activity — and **Resend reminder** and **Void** (with an optional reason) work for Sessionboard and Docusign contracts alike. Signers who have not signed are reminded automatically on the org's cadence.",
+      "article": "/speaker-crm/contracts#send-with-sessionboard-e-sign",
       "related": [
-        "/apps/docusign-integration",
-        "/participants/sign-a-contract"
+        "/speaker-crm/contracts#track-who-has-signed",
+        "/participants/sign-a-contract",
+        "/speaker-crm/contracts#contract-settings",
+        "/apps/docusign-integration"
       ],
       "kind": "new",
       "module": "CRM",
       "features": [
         "contracts"
       ],
-      "availability": "preview",
+      "availability": "beta",
       "enable": {
-        "how": "self_serve",
-        "path": "Get started → Early Access → Preview → Contracts"
+        "how": "support",
+        "path": "Preview (bottom of the organization sidebar) → Contracts → Request access; your customer success manager turns it on"
       },
       "where": {
         "scope": "org",
-        "path": "CRM → Contacts (or Accounts) → record → Contracts tab → Add Contract"
+        "path": "CRM → Contacts (or Accounts / Groups / Pipeline) → record → Contracts → Add Contract → Send with Sessionboard"
       },
       "permissions": [],
       "audience": [
-        "organizer"
+        "organizer",
+        "speaker"
       ],
-      "use_case": "Teams that want built-in e-signature without a Docusign subscription can now send contracts directly from Sessionboard, define who signs and in what order, and watch each signer's progress without leaving the platform.",
+      "use_case": "Teams that send speaker, sponsor or exhibitor agreements can now collect signatures without a Docusign subscription: the agreement is filled from the record, each signer signs in their browser, and the completed PDF with its signing certificate lands on the record automatically.",
       "internal": {
         "cs_action": {
           "kind": "must_enable",
-          "note": "Customer must turn on the Contracts preview via Early Access. Native e-sign templates must also be published before the Send with Sessionboard tab shows any options."
+          "note": "Contracts is a Beta hand-raise: the customer clicks Request access under Preview, CS enables it on the org. During the Beta CS also creates the customer's e-sign templates (the Templates page is SB-9815; until it ships, templates are created through the templates API with the customer's agreement text) — the Send with Sessionboard tab shows \"No published templates\" until one exists."
         },
-        "when_to_bring_up": "When a customer asks about e-signing contracts without Docusign, or when they want more visibility into who has signed and who is still outstanding.",
-        "who_should_get_it": "Any customer using the Contracts preview who manages speaker, sponsor, or exhibitor agreements and wants built-in e-signature.",
-        "staff_path": "Org → Settings → Early Access → Contracts (Preview)",
-        "gotchas": "Without the companion API change (web-api #4457) the Send with Sessionboard tab shows 'no templates'; the feature degrades gracefully but customers need both sides deployed. Void reason is stored on the audit row and shown in the Details expander — remind customers to fill it in for compliance records.",
-        "talk_track": "You no longer need a Docusign account to collect signatures. Build your template once in Sessionboard, send it to one or many signers in the order you choose, and track every step from the Contracts tab — including who declined and why.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The guide should add a section covering the Send with Sessionboard tab: selecting a native template, building the signer roster, choosing sequential vs parallel signing, and reading the per-signer Details expander on in-flight contracts.",
-          "why_use_it": "If your organisation does not use Docusign, or you want a simpler signing flow for speaker and sponsor agreements, you can now send contracts for e-signature entirely within Sessionboard. Choose a published template, confirm or fill in each signer's name and email, set whether signers go one at a time or all at once, and send — all from the contact or account record. Once sent, the Contracts tab shows you exactly where each signer stands, when they signed, and why they declined, so you never have to chase status updates by email.",
-          "at": "2026-10-11T01:42:16.221Z",
-          "permissions_to_confirm": [
-            "org.contracts:create",
-            "org.contracts:read",
-            "org.contracts:update"
-          ]
-        }
+        "when_to_bring_up": "When a customer asks whether Contracts needs Docusign, is paying for Docusign only for speaker agreements, or wants to see who has and has not signed without opening another tool.",
+        "who_should_get_it": "Contracts Beta customers without a Docusign account, and Docusign customers who want ordered multi-signer agreements tracked on the record.",
+        "staff_path": "Org → Early Access → Contracts (Beta); templates via POST /contracting/organization/:orgId/templates/native until SB-9815",
+        "gotchas": "Document-mode templates only — PDF-mode (upload a finished PDF and place fields) is Phase 2 (SB-9821/9822). The participant portal's Sign Now still opens Docusign only; Sessionboard e-sign signers sign from the emailed link until SB-9818. Admin screens are English-only (SB-9854); the signing page is localized. Reminders run on the jobs worker (ENABLE_CONTRACTING_NATIVE_REMINDERS is set in prod).",
+        "talk_track": "Write the agreement once as a Sessionboard template, send it from the speaker's record, and the speaker, your countersigner and anyone else sign in order from a branded page — no Docusign seat, and you can see exactly who is holding things up."
       },
       "shipped": {
         "prs": [
-          "lennd/sessionboard-web-ui-v2#970"
-        ],
-        "docs_only": false,
-        "pending": null,
-        "live": {
-          "us": "2026-10-11",
-          "eu": "2026-10-11",
-          "me": "2026-10-11"
-        },
-        "announced_at": null,
-        "emailed_at": null
-      },
-      "ideas": [],
-      "media": []
-    },
-    {
-      "id": "contracts-native-details-signers-roster",
-      "title": "Contracts list and detail now show native e-sign details and signer status; Send dialog previews who will sign",
-      "summary": "The **Contracts** tab now surfaces native Sessionboard e-sign metadata and an ordered **Signers** list — including each signer's role, name, email, status, and timestamps — directly on the contract list and detail views. Before opening the **Send** dialog, a new preview call resolves who will sign a given template for a given subject, flagging any unresolved roles as editable and surfacing the same validation messages the send action would return.",
-      "article": "/speaker-crm/contracts",
-      "kind": "improved",
-      "module": "CRM",
-      "features": [
-        "contracts"
-      ],
-      "availability": "preview",
-      "enable": {
-        "how": "self_serve",
-        "path": "Get started → Early Access → Preview → Contracts"
-      },
-      "where": {
-        "scope": "org",
-        "path": "CRM → Contracts"
-      },
-      "permissions": [],
-      "audience": [
-        "organizer"
-      ],
-      "use_case": "Organizers using Sessionboard's native e-sign can see exactly who has signed, viewed, or declined a contract — and catch missing signer information before hitting Send — without leaving the Contracts tab.",
-      "related": [
-        "/apps/docusign-integration",
-        "/speaker-crm/pipeline"
-      ],
-      "internal": {
-        "cs_action": {
-          "kind": "none",
-          "note": "This is API-side work consumed by the companion web-ui-v2 PR; no separate enablement step beyond the Contracts preview flag."
-        },
-        "when_to_bring_up": "When a customer on the Contracts preview asks how to track who has signed or wants to know why Send is rejecting their template.",
-        "who_should_get_it": "Any customer using the native Sessionboard e-sign feature (Contracts preview).",
-        "staff_path": "CRM → Contracts",
-        "gotchas": "Native details and signers only appear for Sessionboard native e-sign contracts; DocuSign and manually-uploaded contracts show null for native details. The companion web-ui-v2 PR must also be deployed for the UI to reflect these changes.",
-        "talk_track": "You can now see every signer's status right on the Contracts tab, and the Send dialog will tell you upfront if any signer information is missing so you can fix it before the contract goes out.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "medium",
-          "docs_gap": "The guide should add a section covering the native Sessionboard e-sign signer roster on the contract list and detail views, and explain the signer preview shown in the Send dialog (editable roles, validation messages).",
-          "why_use_it": "When you manage contracts natively in Sessionboard, you need to know at a glance whether each required signer has acted and whether the contract is ready to go out. The updated Contracts list and detail view now show each signer's name, role, current status, and key timestamps (viewed, signed, declined) so you can track progress without opening a separate tool. Before you send, the signer preview resolves who will sign a template for a specific contact or pipeline entry and immediately flags any roles that still need a name or email address — giving you a chance to fix problems before the send action rejects them.",
-          "at": "2026-10-11T01:24:27.309Z",
-          "permissions_to_confirm": [
-            "org.contracts: read"
-          ]
-        }
-      },
-      "shipped": {
-        "prs": [
-          "lennd/sessionboard-web-api#4457"
+          "lennd/sessionboard-web-ui-v2#970",
+          "lennd/sessionboard-web-api#4457",
+          "lennd/sessionboard-web-ui-v2#959",
+          "lennd/sessionboard-web-api#4442",
+          "lennd/sessionboard-web-api#4439"
         ],
         "docs_only": false,
         "pending": null,
@@ -2375,7 +2298,7 @@
       "id": "disclosures-contracts-beta-hand-raise",
       "title": "Disclosures and Contracts now require a CSM to enable — self-serve toggle removed",
       "summary": "**Disclosures** and **Contracts** have moved from **Preview** (self-serve toggle) to **Beta** (hand-raise) in **Early Access**. Organizers can click **Request access** to express interest, but a Customer Success Manager must enable either feature before it appears in the product.",
-      "article": "/get-started/early-access#request-a-beta",
+      "article": "/get-started/early-access#where-to-find-it",
       "related": [
         "/contacts/disclosures",
         "/speaker-crm/contracts",
