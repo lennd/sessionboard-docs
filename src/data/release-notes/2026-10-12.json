@@ -1,0 +1,649 @@
+{
+  "date": "2026-10-12",
+  "entries": [
+    {
+      "id": "portal-country-field-save-corruption-fix",
+      "title": "Country fields and dropdowns no longer corrupted when saving a contact profile in the Speaker Portal",
+      "summary": "Saving any field in the **Speaker Portal** participant flyover previously overwrote the contact's **Country** (and custom country fields such as **Affiliation country**) with the literal text `[object Object]`, and silently cleared every single-select dropdown on the record (e.g. **Gender identity**, **Title**, **Preferred language**). The save now sends only the fields that actually changed, and country values are correctly stored as their numeric country code.",
+      "article": "/contacts/contact-profile",
+      "related": [
+        "/portals/portals-101",
+        "/faq/common-speaker-portal-issues-and-how-to-fix-them"
+      ],
+      "kind": "fixed",
+      "module": "Portals",
+      "features": [
+        "new_portals"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Speakers → a contact → participant flyover → edit profile fields"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Any organizer who edits a speaker's contact details through the Speaker Portal participant flyover can now trust that saving a phone number or bio will not silently destroy the contact's country or wipe their dropdown selections.",
+      "internal": {
+        "cs_action": {
+          "kind": "reach_out",
+          "note": "90 US contact records currently store '[object Object]' in their Country or Affiliation country field. 84 of those have a recoverable last-good code in field-value history. Affected orgs include Mozilla Foundation (66 records), ICS Events (5), ASCCC (4), NCAN (3), Independent Sector (3), and others. A data restore is possible but has not been run — confirm with engineering (Josh) before telling customers their data is fixed."
+        },
+        "when_to_bring_up": "A customer reports that a speaker's country is blank or shows garbled text, or that dropdowns like Gender identity or Preferred language were unexpectedly cleared after a portal save.",
+        "who_should_get_it": "All customers who use the Speaker Portal participant flyover to edit contact profiles, especially those with country or affiliation-country fields.",
+        "staff_path": "Speakers → a contact row → open participant flyover → edit any field → Save",
+        "gotchas": "The fix stops new corruption from today's deploy onward. Existing corrupted rows (90 in US, 0 in EU) are NOT automatically restored. The last valid country code is recoverable from history for 84 of the 90 records — a manual backfill is needed. Reach out to the affected orgs proactively.",
+        "talk_track": "A bug in the Speaker Portal's save logic was converting country fields to '[object Object]' and clearing single-select dropdowns whenever any field was saved. The fix ensures only changed fields are submitted and that country values are correctly serialized. Corrupted records from before the fix will need a separate data restore.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The contact profile guide should note that country fields edited through the Speaker Portal participant flyover are stored as numeric ISO codes, and explain what to do if a country field shows unexpected text (contact Sessionboard Support for a data restore).",
+          "why_use_it": "null",
+          "at": "2026-10-12T20:52:06.861Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#992"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "notify-audience-preview-chip",
+      "title": "See exactly who will be notified before sending a message, invite, or evaluation alert",
+      "summary": "A **\"This will notify N people\"** chip now appears next to every send, notify, and invite action across messaging, evaluations, awards, library imports, email campaigns, and portals — admins only. Clicking the chip opens a popover that lists recipients grouped by **Team** and **Speakers** (with name, email, role, and delivery channel icons for email, in-app, and Slack), plus a collapsed **Not notified** section that explains why each person was skipped (e.g. turned the alert off, org policy, no delivery channel).",
+      "article": "/communications/notifications",
+      "related": [
+        "/evaluations/setting-up-round-based-evaluations",
+        "/awards/managing-submissions-reviewers-rounds",
+        "/communications/email-campaigns",
+        "/portals/portals-101"
+      ],
+      "kind": "new",
+      "module": "Communications",
+      "features": [
+        "notifications"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Any send / notify / invite action — Messaging threads, Evaluation plan notify dialogs, Awards reviewer invite, Library Import invite switch, Email Campaigns schedule step, Portals weekly digest card"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Before clicking Send or Notify, an organizer can confirm the exact recipient count and see who is excluded and why — preventing surprise over-notifications or missed recipients without any extra steps.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer asks why certain people did or did not receive a notification, or wants to audit notification reach before a big send.",
+        "who_should_get_it": "All admin users — the chip is visible to admins only and is on by default across all surfaces.",
+        "staff_path": "Messaging → any thread → chip next to the send button; Sessions → Evaluation Plans → Notify Evaluators dialog; Awards → Reviewers → Add Reviewer or Add from Pool; Library Import → invite switch; Email Campaigns → Schedule step; Portals → Weekly Digest card.",
+        "gotchas": "The chip requires the companion API PR (feature/notify-audience-preview) to be deployed; until then it shows a muted 'Recipients unavailable' state and never blocks the action. The chip is intentionally hidden from speaker-portal views — speakers never see recipient counts.",
+        "talk_track": "Before you hit Send, the chip tells you exactly how many people will be notified and why anyone is being skipped — so there are no surprises after the fact.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should document the new recipient-preview chip: where it appears, how to read the Team / Speakers grouping, what each skip reason means, and how the chip degrades gracefully when recipient data is unavailable.",
+          "why_use_it": "Notifications reach many people across different channels — email, in-app alerts, and Slack — and individual preferences, org policies, and delivery settings all affect who actually receives a message. The recipient preview chip lets you verify the real fan-out before committing to a send, and the popover breaks down every person who will be skipped and the specific reason, so you can fix a configuration issue or simply proceed with confidence.",
+          "at": "2026-10-12T20:40:10.486Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#991"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "notification-recipient-preview",
+      "title": "See exactly who will be notified before sending — \"This will notify N people\"",
+      "summary": "Before triggering a notification fan-out, the admin UI now shows **\"This will notify N people\"** with a click-through list of each recipient, their role, delivery channels, and cadence. People who will be skipped appear in a **Not notified** list with the reason (e.g. preference off, org policy off, already assigned). The preview is available on messaging thread notifications, evaluation-plan opens and assignments, team-member library imports, and awards reviewer invitations.",
+      "article": "/communications/notifications",
+      "related": [
+        "/evaluations/evaluation-plans",
+        "/evaluations/setting-up-round-based-evaluations",
+        "/awards/managing-submissions-reviewers-rounds",
+        "/event-team/invite-manage-event-team-members"
+      ],
+      "kind": "new",
+      "module": "Communications",
+      "features": [
+        "notifications"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Messaging → Threads → notify action; Sessions → Evaluation Plans → open / assign; Team → Library import; Awards → Reviewers → invite"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "An organizer about to open an evaluation plan or send a thread notification can confirm the exact recipient count and see who will be skipped and why — preventing surprise over-notification or missed recipients before any email is sent.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer asks why certain people did or did not receive a notification, or expresses concern about over-notifying evaluators or speakers.",
+        "who_should_get_it": "Any organizer who sends evaluation-plan notifications, messaging thread notifications, awards reviewer invitations, or team-member imports.",
+        "staff_path": "Messaging → Threads → notify; Sessions → Evaluation Plans → open or bulk-assign; Awards → Reviewers → invite or bulk-invite; Team → Library import",
+        "gotchas": "The preview runs the same code path as the real send, so it reflects Early Access gates and per-user preferences at the moment of preview — if a user changes their preferences between preview and send, the actual recipient list may differ slightly. The bulk-assignments endpoint requires the caller to pass includeAudience: true to get the audience in the dry-run response (opt-in, not always-on).",
+        "talk_track": "Before you hit send, you can now see a live count and list of exactly who will be notified — and who won't, and why — so there are no surprises.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should add a section explaining the recipient preview UI: where it appears, what the notified/not-notified lists show, and what each exclusion reason means.",
+          "why_use_it": "Notifications and messaging keep your team, speakers, and reviewers informed at every stage of the event. The recipient preview lets you verify the audience for any notification action — seeing each person's name, role, delivery channel, and cadence — so you send with confidence and avoid unwanted surprises. People excluded by their own preferences, an org policy, or other rules appear in a separate list with a plain-language reason, giving you a clear picture of who will and will not hear from you.",
+          "at": "2026-10-12T20:38:34.424Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4480"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "library-import-role-safety",
+      "title": "Copying team members from another event no longer auto-assigns Admin — source roles are kept by default",
+      "summary": "When using **Add ▸ Copy from other events** to import event team members, the role picker now defaults to **\"Keep each person's role from their source event\"** instead of auto-selecting the first available role (which was Admin User). The import button stays disabled until a role is explicitly chosen. Opening the sheet from the **Evaluators** page pre-selects the Evaluator role. Closing or cancelling the sheet and re-opening it preserves the preset rather than resetting to blank. When Admin User or Admin Lite is chosen and any selected person's email domain is outside the organisation's known domains, a confirmation dialog lists those addresses before the import runs.",
+      "article": "/event-team/invite-manage-event-team-members",
+      "related": [
+        "/event-team/bulk-apply-permissions-across-events"
+      ],
+      "kind": "fixed",
+      "module": "Event team",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event Team → Add ▸ Copy from other events"
+      },
+      "permissions": [
+        "event.users.create"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Prevents accidental over-permissioning when copying evaluators, volunteers, or other team members from a past event — their original roles carry over automatically, and anyone who would receive admin access from an outside domain must be explicitly confirmed before the import runs.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "This is a security fix for an incident where 13 external volunteers were granted Admin User access for a week. Confirm the API PR lennd/sessionboard-web-api#4479 is also deployed before this UI change goes live — the sheet sends roleId 'source' by default and the API must understand it."
+        },
+        "when_to_bring_up": "Any time a customer asks about copying team members between events, or if they report unexpected admin access after an import.",
+        "who_should_get_it": "All customers who use Copy from other events for event team management, especially those with large reviewer or evaluator pools.",
+        "staff_path": "Event Team → Add ▸ Copy from other events → role picker",
+        "gotchas": "The API PR (lennd/sessionboard-web-api#4479) must be merged and deployed first; without it, sending roleId 'source' will fail. If a copied person held a custom role that does not exist on the destination event, they are skipped rather than given a fallback role — inform customers who use custom roles.",
+        "talk_track": "We fixed a gap where the role picker in the team-import sheet would silently default to Admin User. Now it defaults to preserving each person's source role, requires an explicit choice before importing, and shows a confirmation step if any outside-domain person would receive admin access.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should document the \"Keep each person's role from their source event\" default option, the external-domain admin confirmation dialog, and the behaviour when a copied person's custom role does not exist on the destination event.",
+          "why_use_it": "Copying team members from a previous event saves time when the same reviewers, evaluators, or staff work across multiple events. The import sheet lets you bring over a batch of people at once, carry their existing roles forward, and control exactly what access each person receives before anyone is added.",
+          "at": "2026-10-12T20:25:16.392Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#990"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "library-import-source-role-audit",
+      "title": "Copy team members from another event and keep each person's original role",
+      "summary": "When using **Copy from other events** to import event team members, you can now choose **Source role** so each person carries over the permission role they held on the source event — instead of one role being applied to the whole batch. Custom roles are matched by name; anyone whose role cannot be matched is skipped and listed in the import summary rather than silently assigned a default role. Every membership granted or changed is now recorded in **History** with the actor, the role assigned, and (for role changes) the previous role.",
+      "article": "/event-team/invite-manage-event-team-members",
+      "related": [
+        "/event-team/bulk-apply-permissions-across-events",
+        "/communications/email-sms-history"
+      ],
+      "kind": "fixed",
+      "module": "Event team",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event team → Copy from other events"
+      },
+      "permissions": [
+        "event.settings.manage_users"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who copy evaluators, reviewers, or volunteers from a past event can now preserve each person's original role rather than accidentally granting everyone the same (potentially elevated) role. The audit trail gives security-conscious teams a clear record of every access change made during an import.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "A prior bug caused imported team members to receive the first is_event_default role (Admin User) instead of their source role. Any customer who used Copy from other events for event_team_members before this fix should have their team membership audited. The WQA incident (event 6547, 2026-10-05) is the known case — 13 external volunteers held Admin User for a week."
+        },
+        "when_to_bring_up": "A customer asks about copying team members across events, reports unexpected admin access, or asks how to audit who was granted access via an import.",
+        "who_should_get_it": "All customers who use Copy from other events for team members, especially those with external reviewers or evaluators.",
+        "staff_path": "Event team → Copy from other events → select event_team_members asset type",
+        "gotchas": "Custom roles are matched by name only — if the destination event does not have a role with the exact same name, those people are skipped and appear in summary.skipped[] with code 'no_role'. No fallback role is assigned. The org-library variant (org_team_members) is not affected and still requires an explicit role choice.",
+        "talk_track": "Previously, importing team members from another event could silently assign everyone the same default role — often Admin User — regardless of what role they held on the source event. Now you can choose 'Source role' to carry each person's role over faithfully, and every grant is logged in History so you have a full audit trail.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should document the 'Source role' option in the Copy from other events workflow, explain how custom roles are matched by name, and describe the skipped-person summary that appears when no matching role is found.",
+          "why_use_it": "null",
+          "at": "2026-10-12T20:18:03.137Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4479"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "evaluator-thread-isolation-email-body-render",
+      "title": "Evaluators no longer receive organizer-thread messages, notes, or @mentions meant only for the event team",
+      "summary": "A bug caused evaluators (reviewers) to be included in **organizer** thread notifications, note fan-outs, and @mention lookups — meaning they received speaker ↔ organizer message exchanges and internal admin notes they should never have seen. Evaluators are now excluded from all organizer-thread notifications, note audiences, and mentionable-user lists; they remain reachable on **reviewer** threads as expected. Separately, the **Messages** tab **EMAIL** card, the contact **Communications** feed, and **Event → History → Sent Emails** were displaying raw `{{logoAlt}}` / `{{#buttonText}}` template tags instead of rendered email bodies; stored emails now display correctly.",
+      "article": "/communications/notifications#messages",
+      "related": [
+        "/communications/email-sms-history",
+        "/faq/will-evaluators-have-the-same-access-to-my-event-that-i-do-as-an-admin"
+      ],
+      "kind": "fixed",
+      "module": "Communications",
+      "features": [
+        "notifications"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Sessions → a session → Messages tab; Contacts → a contact → Communications; Event → History → Sent Emails"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "reviewer"
+      ],
+      "use_case": "Organizers who use the messaging thread to coordinate privately with their team no longer risk leaking that conversation to evaluators. Reviewers assigned to reviewer threads are unaffected and still receive the notifications they need.",
+      "internal": {
+        "cs_action": {
+          "kind": "reach_out",
+          "note": "577 evaluator notifications were sent incorrectly across 14 events and 10 orgs in the last 30 days (US). ~25k stored email rows displayed raw template tags in the Messages tab, Communications feed, and Sent Emails overlay — these now render correctly on load. Consider proactively notifying affected orgs about the evaluator notification leak."
+        },
+        "when_to_bring_up": "A customer reports that reviewers/evaluators received messages or notes intended only for the organizer team, or that email bodies in the Messages tab show raw template tags like {{logoAlt}}.",
+        "who_should_get_it": "All events using evaluator roles alongside organizer messaging threads or internal notes.",
+        "staff_path": "Sessions → a session → Messages tab (EMAIL card); Contacts → a contact → Communications; Event → History → Sent Emails",
+        "gotchas": "Evaluators who also hold an org-staff seat (has_org_access = true) are still treated as team members on organizer threads. An evaluator who is a speaker participant on a thread still receives the portal copy of that thread. Custom roles cloned from the Evaluator role cannot be distinguished from custom admin roles by the system — only the two standard evaluator role IDs are excluded; orgs with heavily customised role structures should be reviewed manually. The ~25k historical email rows with raw tags will now render correctly on display but the stored body is not retroactively rewritten — the fix is applied at render time.",
+        "talk_track": "We fixed a privacy issue where evaluators were accidentally included in organizer-only message threads and internal notes. Going forward, evaluators only see reviewer-thread messages they are supposed to see. We also fixed a display bug where email bodies in the Messages tab and Sent Emails history showed raw template placeholders instead of the actual email content.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The notifications guide should clarify which thread audiences (organizers vs. reviewers) evaluators are included in, and note that evaluators are excluded from organizer-thread notifications, note fan-outs, and @mention lookups.",
+          "why_use_it": "null",
+          "at": "2026-10-12T20:12:08.090Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4478"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "sites-evaluator-notification-parity",
+      "title": "Reviewers on Sites can manage their notification preferences and email cadence",
+      "summary": "Evaluators who access programs through a Sessionboard Site (org portal) now have the same notification controls as speaker-portal users. From their **Profile → Notifications** page on the Site, they can toggle individual notification types on or off — including **Awards Review Invitation** (locked on, because it carries the magic link) and **Awards Reviewer Deadline Reminder** — and choose between **Immediate** and **Daily** email delivery. Notification emails sent to reviewers now include a **Manage notification preferences** footer link that lands on the Site's profile page; the link is omitted when the org has no Site. Reviewer on/off preferences are honored even for orgs that have not enabled the Notifications early-access flag.",
+      "article": "/communications/notifications",
+      "related": [
+        "/awards/awards-notifications-email-templates",
+        "/awards/managing-submissions-reviewers-rounds",
+        "/awards/setting-up-your-sessionboard-site"
+      ],
+      "kind": "improved",
+      "module": "Awards",
+      "features": [
+        "notifications",
+        "awards"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Site → Profile → Notifications"
+      },
+      "permissions": [],
+      "audience": [
+        "reviewer"
+      ],
+      "use_case": "When an awards program has many reviewers, some will want daily digest emails rather than an immediate ping per assignment. Reviewers can now set that preference themselves from the Site they already use, without contacting the organizer — and organizers no longer need to worry that a reviewer silenced the invitation email that gives them portal access.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Rolls out automatically; no flag required for the on/off toggle. Daily-digest deferral for reviewers still requires the org-level Notifications early-access flag."
+        },
+        "when_to_bring_up": "When a customer asks how reviewers can manage their own notification preferences, or when reviewers complain about email volume during an awards cycle.",
+        "who_should_get_it": "Any org running awards or evaluation plans through a Sessionboard Site.",
+        "staff_path": "Site → Profile → Notifications (log in as a reviewer to see it)",
+        "gotchas": "The Awards Review Invitation preference is locked enabled and cannot be disabled — a PUT that tries to disable it returns a 400. Daily-digest deferral for reviewer emails still requires the org's Notifications early-access flag; without it, toggling cadence to daily would silently lose the email. Seeded default email templates for legacy reviewer Activities (plan open, review reminder, reminder summary, awards invitation/deadline) do not yet include the {{#managePreferencesUrl}} footer block — a follow-up seed is planned.",
+        "talk_track": "Reviewers on your Site can now open their profile, go to Notifications, and choose which emails they get and how often — just like speakers do in the speaker portal. The one exception is the invitation email, which stays on so they never lose their way back in.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should add a section explaining how evaluators/reviewers access and manage notification preferences from the Site profile page, including the locked awards invitation type and the email cadence (immediate vs. daily) option.",
+          "why_use_it": "Sessionboard lets reviewers and evaluators control how and when they hear about their assignments directly from the Site portal, without involving an admin. They can turn individual notification types on or off and choose between immediate and daily-digest delivery, so their inbox stays manageable across a long review cycle. The awards invitation notification is always on, ensuring reviewers never lose access to their magic link. Preferences set here flow through the same delivery pipeline that governs all other Sessionboard notifications.",
+          "at": "2026-10-12T20:10:33.990Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4477"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "evaluator-notifications-default-off",
+      "title": "Review Submitted and Evaluator Abstained notifications now default to off",
+      "summary": "The **Review Submitted** and **Evaluator Abstained** notification types now default to off for all event admins. Admins who had already turned either type on keep receiving it; admins who want to opt in can do so from their notification preferences. **Evaluator Assigned** and **Due Reminder** are unchanged and still default to on.",
+      "article": "/communications/notifications#choose-how-you-are-notified",
+      "kind": "fixed",
+      "module": "Communications",
+      "features": [
+        "notifications"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Notification preferences → Evaluations"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "reviewer"
+      ],
+      "use_case": "Events with many evaluators were flooding every admin's inbox and notification centre with a separate alert for each review submitted or abstention. Defaulting these two types to off stops the noise while letting admins who want the alerts turn them back on individually.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Any admin who was relying on Review Submitted or Evaluator Abstained emails will no longer receive them unless they opt back in. Proactively flag this to customers running active evaluation cycles."
+        },
+        "when_to_bring_up": "When a customer reports missing evaluator notifications after this release, or when onboarding a customer with a large reviewer pool.",
+        "who_should_get_it": "All customers using evaluation plans with multiple admins.",
+        "staff_path": "Notification preferences → Evaluations → Review Submitted / Evaluator Abstained",
+        "gotchas": "Admins who had already explicitly turned either type ON before this change keep receiving it — only those who had never touched the setting are affected. Org-level policy (Off / Required) still overrides individual preferences.",
+        "talk_track": "Before this fix, a single evaluator abstention could generate dozens of emails to every admin on the event. These two alert types now default to off so admins only get them if they choose to. Anyone who wants them back can turn them on in their notification preferences in under a minute.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note which evaluator notification types default to off (Review Submitted, Evaluator Abstained) versus on (Evaluator Assigned, Due Reminder), and explain how an admin opts back in.",
+          "why_use_it": "Sessionboard's notification preferences let each team member choose which activity triggers an in-app alert or email, and at what frequency. Org-wide policies can enforce a floor (Required) or ceiling (Off) so that high-volume events do not overwhelm inboxes, while individual admins retain control over the types that matter to their role.",
+          "at": "2026-10-12T20:06:06.034Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4475"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "taxonomy-contact-topics-usage-counts",
+      "title": "Taxonomy page shows how many sessions and contacts each topic covers",
+      "summary": "Each topic card on **Settings → Library → Taxonomy** now shows **Used N times** with a tooltip breaking the count into sessions and contacts. The **Runs** tab gains **Sessions** and **Contacts** columns so you can see exactly what each extraction run processed, and the live progress banner reports contacts read alongside sessions.",
+      "article": "/speaker-crm/crm-advanced-search",
+      "related": [
+        "/speaker-crm/overview"
+      ],
+      "kind": "improved",
+      "module": "CMS",
+      "features": [
+        "generate_topics",
+        "advanced_search"
+      ],
+      "availability": "limited_release",
+      "enable": {
+        "how": "support",
+        "path": "Ask your Customer Success Manager to enable Generate Topics; then Settings → Library → Taxonomy"
+      },
+      "where": {
+        "scope": "org",
+        "path": "Settings → Library → Taxonomy"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "An organizer running topic extraction can now see at a glance which topics are most widely used across both sessions and speaker profiles, and can verify that a completed run processed the expected number of contacts — without exporting data or asking engineering.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer asks how to tell which topics are most represented in their program, or wants to verify that a topic extraction run covered their contacts.",
+        "who_should_get_it": "Orgs with generate_contact_topics enabled (requires Advanced Search / Generate Topics limited release).",
+        "staff_path": "Settings → Library → Taxonomy → Topics tab (card tooltip) and Runs tab (Sessions + Contacts columns).",
+        "gotchas": "Contact counts only appear after a run that includes contact mining (generate_contact_topics flag on the org). Older runs show '—' in the new columns.",
+        "talk_track": "After a run you can hover any topic card to see exactly how many sessions and contacts it came from, and the Runs tab lets you audit each extraction in detail.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The article index has no guide for the Taxonomy / Generate Topics page; the closest article is Advanced Search. A dedicated guide should document the Taxonomy page, topic cards, extraction runs, and the generate_contact_topics flag.",
+          "why_use_it": "Generate Topics mines your session abstracts and speaker bios to surface a consistent taxonomy of topics across your program. Use it to power Advanced Search facets, segment your speaker CRM by expertise, and understand which subjects your content covers most deeply.",
+          "at": "2026-10-12T18:59:58.565Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#929"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "contact-topic-mining",
+      "title": "Contacts get AI-generated topics on the Taxonomy page",
+      "summary": "When the **Generate Contact Topics** feature is enabled for an organization, the taxonomy pipeline now mines topics from each contact's bio and company profile in addition to sessions. Mined topics appear on the **Taxonomy** page with a **contact_count** alongside the existing session count, and runs show **contacts_processed** and **contacts_skipped** in the run summary. Organizers can curate a contact's topics the same way they curate session topics via **Taxonomy → Contacts → [contact] → Topics**.",
+      "article": "/speaker-crm/crm-advanced-search",
+      "related": [
+        "/speaker-crm/overview",
+        "/speaker-crm/crm"
+      ],
+      "kind": "new",
+      "module": "CRM",
+      "features": [
+        "generate_topics"
+      ],
+      "availability": "limited_release",
+      "enable": {
+        "how": "csm",
+        "path": "Ask your Customer Success Manager to enable Generate Contact Topics for your organization; then Settings → Taxonomy"
+      },
+      "where": {
+        "scope": "org",
+        "path": "Taxonomy → Topics (contact_count column) and Taxonomy → Runs (contacts_processed / contacts_skipped)"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Event teams that already use AI-generated session topics can now extend the same taxonomy to their speaker and contact database — surfacing each person's areas of expertise from their bio and company profile — making it easier to match speakers to sessions, build segments, and power advanced search.",
+      "internal": {
+        "cs_action": {
+          "kind": "must_enable",
+          "note": "The feature is opt-in per org via the generate_contact_topics property. CS must set this flag before any contact extraction runs. A per-run cap of 500 contacts is enforced; large orgs will process contacts across multiple nightly runs."
+        },
+        "when_to_bring_up": "When a customer already uses Generate Topics for sessions and asks how to find speakers by expertise or wants to enrich their CRM with topic tags.",
+        "who_should_get_it": "Orgs already on the Generate Topics (generate_topics) limited release that have a meaningful contact database with bio or company text.",
+        "staff_path": "Engineering → Taxonomy (org-level) to see run summaries including contacts_processed and contacts_skipped.",
+        "gotchas": "Contacts with fewer than 80 characters of profile text are skipped without an LLM call. A contact is only re-mined when its record changes after its last output (watermark). The first run for a large org spreads over several nights due to the 500-contact cap. A security follow-up (prompt data delimiter for customer-editable bios) is tracked as a known risk — the feature flag can be turned off per org as a rollback. Contact topics from session-derived graph views (dbt / CMS Search) are separate and not yet unified.",
+        "talk_track": "Your contacts now get the same AI topic tags as your sessions. Once we turn it on, each nightly run will read up to 500 bios and company profiles and tag them with topics from your existing vocabulary — so you can search for 'AI ethics experts' and get both sessions and speakers in one place.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The article index has no guide covering the Taxonomy / Generate Topics surface; the closest is the Advanced Search guide. A dedicated guide (or a section in the Speaker CRM overview) should document how to enable contact topic mining, read the Taxonomy page's contact counts, curate a contact's topics, and understand the nightly run cap and watermark behaviour.",
+          "why_use_it": "Generate Topics uses AI to read session abstracts and contact profiles and tag them with a consistent set of topics drawn from your organization's vocabulary. Having the same taxonomy applied to both sessions and contacts lets you find the right speaker for a topic gap, build segments of experts in a given area, and keep your program and your CRM speaking the same language — without manually tagging thousands of records.",
+          "at": "2026-10-12T18:58:19.142Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4399"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    }
+  ]
+}

@@ -2744,6 +2744,270 @@
         "gotchas": "With “select all matching” across several pages, chips for sessions not on the loaded page still show the short id.",
         "talk_track": null
       }
+    },
+    {
+      "id": "contracts-native-details-signers-roster",
+      "title": "Contracts list and detail now show native e-sign details and signer status; Send dialog previews who will sign",
+      "summary": "The **Contracts** tab now surfaces native Sessionboard e-sign metadata and an ordered **Signers** list — including each signer's role, name, email, status, and timestamps — directly on the contract list and detail views. Before opening the **Send** dialog, a new preview call resolves who will sign a given template for a given subject, flagging any unresolved roles as editable and surfacing the same validation messages the send action would return.",
+      "article": "/speaker-crm/contracts",
+      "kind": "improved",
+      "module": "CRM",
+      "features": [
+        "contracts"
+      ],
+      "availability": "preview",
+      "enable": {
+        "how": "self_serve",
+        "path": "Get started → Early Access → Preview → Contracts"
+      },
+      "where": {
+        "scope": "org",
+        "path": "CRM → Contracts"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers using Sessionboard's native e-sign can see exactly who has signed, viewed, or declined a contract — and catch missing signer information before hitting Send — without leaving the Contracts tab.",
+      "related": [
+        "/apps/docusign-integration",
+        "/speaker-crm/pipeline"
+      ],
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "This is API-side work consumed by the companion web-ui-v2 PR; no separate enablement step beyond the Contracts preview flag."
+        },
+        "when_to_bring_up": "When a customer on the Contracts preview asks how to track who has signed or wants to know why Send is rejecting their template.",
+        "who_should_get_it": "Any customer using the native Sessionboard e-sign feature (Contracts preview).",
+        "staff_path": "CRM → Contracts",
+        "gotchas": "Native details and signers only appear for Sessionboard native e-sign contracts; DocuSign and manually-uploaded contracts show null for native details. The companion web-ui-v2 PR must also be deployed for the UI to reflect these changes.",
+        "talk_track": "You can now see every signer's status right on the Contracts tab, and the Send dialog will tell you upfront if any signer information is missing so you can fix it before the contract goes out.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The guide should add a section covering the native Sessionboard e-sign signer roster on the contract list and detail views, and explain the signer preview shown in the Send dialog (editable roles, validation messages).",
+          "why_use_it": "When you manage contracts natively in Sessionboard, you need to know at a glance whether each required signer has acted and whether the contract is ready to go out. The updated Contracts list and detail view now show each signer's name, role, current status, and key timestamps (viewed, signed, declined) so you can track progress without opening a separate tool. Before you send, the signer preview resolves who will sign a template for a specific contact or pipeline entry and immediately flags any roles that still need a name or email address — giving you a chance to fix problems before the send action rejects them.",
+          "at": "2026-10-11T01:24:27.309Z",
+          "permissions_to_confirm": [
+            "org.contracts: read"
+          ]
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4457"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "marketing-site-session-detail-page",
+      "title": "Marketing Site now has a public session detail page",
+      "summary": "Each session on a Marketing Site's **Agenda** page now has its own public URL. The page shows session details, speakers (with links to their Site profiles where available), recordings, clips, and the published recap. The page respects embargo settings — while an embargo is active, the description, recap, and embargoed media are withheld. The session URL is picked up by Grip's Summary URL, the Public API, and the Site's sitemap automatically; when an event has multiple Sites, the earliest-published eligible Site owns the canonical URL.",
+      "article": "/site/site-builder",
+      "related": [
+        "/site/content-galleries",
+        "/marketing/recaps",
+        "/marketing/clips"
+      ],
+      "kind": "new",
+      "module": "CMS",
+      "features": [
+        "marketing",
+        "content_galleries"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Site → Agenda → a session"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Organizers who publish a Marketing Site can now send attendees or prospects a direct link to any session — complete with speakers, recordings, clips, and the recap — without building a separate landing page. The page is automatically indexed in the sitemap and picked up by integrations like Grip.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "The org-portal page must be deployed before web-api, then web-ui-v2, then the Cloudflare og-meta Worker — in that order per environment. Deploying out of order causes the new session URLs to 404 temporarily. Confirm all four deploys are complete before pointing customers to session URLs."
+        },
+        "when_to_bring_up": "When a customer asks how to share individual session pages publicly, or when they use Grip and want session URLs to appear in Grip's Summary.",
+        "who_should_get_it": "Customers on the Marketing beta who have a published Site with an Agenda page.",
+        "staff_path": "Site → Agenda → a session (public URL)",
+        "gotchas": "The session page only appears if the Site's Agenda page is enabled AND the Site's filters publish that session. Embargo (SB-9784) withholds description, recap, and embargoed media while active. A gallery gate also withholds the recap. When an event has multiple Sites, only the earliest-published eligible Site lists the session in its sitemap — the session is never listed twice.",
+        "talk_track": "Your Marketing Site now gives every session its own page — speakers, recordings, clips, and recap all in one URL you can share anywhere. Embargo controls mean you can publish the page early and reveal content on your schedule.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The site-builder guide should add a section explaining session detail pages: how they are enabled (Agenda page must be on), what content appears, how embargo and gallery gates affect visibility, and how the canonical URL is determined when multiple Sites exist.",
+          "why_use_it": "A Marketing Site session detail page gives every accepted session its own shareable, public URL on your event site. Visitors see the full session picture — description, speakers, recordings, clips, and recap — in one place. Embargo controls let you publish the page structure early while keeping sensitive content hidden until you are ready. The canonical URL flows automatically into the sitemap, the Public API, and connected integrations so you never have to manage links by hand.",
+          "at": "2026-10-11T18:29:27.998Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4472"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "clip-export-plain-branded",
+      "title": "Export a clip as plain or branded directly from the editor",
+      "summary": "In the video editor's **Renders** section, each finished clip now has an **Export ▾** menu with two options. **Plain** downloads the clip immediately with no additional render. **Branded (brand kit)** triggers a branded render, shows progress, then offers a **Download branded** button when ready. If the event has no brand kit, a note explains that default colors were used and links to set one up. Aspect ratio (16:9, 9:16, square) is detected automatically so the exported frame matches the cut.",
+      "article": "/marketing/clips#the-clips-library",
+      "related": [
+        "/marketing/brand-kits"
+      ],
+      "kind": "new",
+      "module": "Marketing",
+      "features": [
+        "marketing_clips",
+        "marketing_brand"
+      ],
+      "availability": "limited_release",
+      "enable": {
+        "how": "self_serve",
+        "path": "Get started → Early Access → Preview → Marketing (Clips)"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Marketing → Media → Clips → a clip → editor → Renders → Export ▾"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "An organizer who has finished editing a clip can download it immediately as-is, or apply the event's brand kit colors and download a polished branded version — all without leaving the editor. This removes the need to post-process clips in a separate tool before sharing.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer asks how to download a finished clip or how to apply their brand to exported video.",
+        "who_should_get_it": "Customers using the Clips limited-release feature who want to distribute polished video content.",
+        "staff_path": "Marketing → Media → Clips → open a clip in the editor → Renders → Export ▾",
+        "gotchas": "The branded render depends on the web-api W14 PR being deployed first; deploy web-api before web-ui. If the event has no brand kit configured, the branded export uses default colors and shows a note with a link to set one up. Audio-only clips and clips longer than 10 minutes are rejected by the API with a readable error.",
+        "talk_track": "You can now export any finished clip straight from the editor — grab a plain copy instantly, or let Sessionboard apply your brand kit and download a fully branded version ready to post.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The Clips guide should document the Export ▾ menu in the Renders section, covering the Plain and Branded (brand kit) options, the progress-polling flow, the no-brand-kit fallback note, and how aspect ratio is detected for the export frame.",
+          "why_use_it": "Clips lets you cut highlight moments from session recordings and share them across social channels and content galleries. You can trim, caption, and export clips in multiple aspect ratios to match each platform. Branded exports apply your event's color palette automatically, so every clip looks consistent without extra design work.",
+          "at": "2026-10-11T18:45:37.500Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#986"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "site-session-detail-page",
+      "title": "Session detail pages on published Marketing Sites",
+      "summary": "Each session on a published Marketing Site now has its own page, linked from agenda rows on the landing page. The page shows the session description, speakers (linked to their Site profile when one exists), recordings, clips, and the published recap. Pages include SEO head tags (title, description, canonical, Event JSON-LD) so search engines can index individual sessions. A session that is unpublished, filtered out, or not yet live shows a \"not found\" state instead.",
+      "article": "/site/program-site",
+      "related": [
+        "/site/site-builder",
+        "/marketing/recaps",
+        "/marketing/clips"
+      ],
+      "kind": "new",
+      "module": "CMS",
+      "features": [
+        "sessions"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Sites → [your site] → Agenda → a session row"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Attendees browsing the public agenda can click into any session to read the full description, see who is speaking, and watch recordings or clips — without leaving the Site. Organizers get SEO-indexed session pages automatically, with no extra configuration.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Deploy order matters: org-portal must go live before web-api (lennd/sessionboard-web-api#4472), then web-ui-v2, then the og-meta Worker. The API starts emitting session page URLs as soon as it deploys, so the page must be live first."
+        },
+        "when_to_bring_up": "A customer asks how attendees can learn more about individual sessions from the public site, or asks about SEO for their program.",
+        "who_should_get_it": "Any customer using the Marketing Site (Program Site) with an agenda published.",
+        "staff_path": "Sites → [site] → published agenda → click a session row",
+        "gotchas": "The page shows 'not found' if the Agenda block is off, the site's filters exclude the session, or the web-api hasn't been deployed yet. Confirm the full deploy chain is complete before pointing customers to session URLs.",
+        "talk_track": "Your published agenda now links to a dedicated page for every session — speakers, recordings, clips, and the recap — all indexed by search engines automatically.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The Program Site guide should document the new session detail page route, what it displays, how SEO tags are generated, and the \"not found\" conditions.",
+          "why_use_it": "The Program Site gives every event a public-facing home for its agenda, speakers, and content. Individual session pages let attendees and prospects explore the depth of your program before registering, and give search engines a canonical URL for each session so your content surfaces in organic search results.",
+          "at": "2026-10-11T19:03:40.133Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-org-portal#190"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
     }
   ]
 }
