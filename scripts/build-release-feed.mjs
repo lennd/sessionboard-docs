@@ -6,6 +6,13 @@
  * reads `ideas`, `live`, `live_at` and `url`) and Team Lead's "since you were
  * last here" read.
  *
+ * `live` means "customers may see this": in production in US and EU AND not
+ * gated behind Early Access (`isPublic`). A gated entry ships with
+ * `live: false`, `in_production: true` and `gated: "<reason>"`, so What's New,
+ * the Roadmap's Shipped column and the customer email digest never surface a
+ * preview / beta / limited-release feature. Staff surfaces that need to know
+ * what is deployed read `in_production`.
+ *
  * Served behind the same bearer token as help-index.json (worker.js
  * INTERNAL_PREFIX). Raw `internal.*` is stripped; what the hub shows per item
  * is the `enablement` block — the same seven line items as the entry's
@@ -28,6 +35,7 @@ import {
   articleTitle,
   enableHowLabel,
   isLive,
+  isPublic,
   loadReleaseNotes,
   publicEntry,
   readSite,
@@ -74,8 +82,10 @@ const entries = allEntries(releases).map((raw) => {
     enable_label: enableHowLabel(e.enable?.how, { staff: true }) ?? null,
     article_title: e.article ? articleTitle(e.article) : null,
     article_url: e.article ? `${base}${e.article}` : null,
-    live: isLive(raw),
-    live_at: isLive(raw) ? (raw.shipped?.docs_only ? raw.date : [raw.shipped.live.us, raw.shipped.live.eu].sort().at(-1)) : null,
+    live: isPublic(raw),
+    live_at: isPublic(raw) ? (raw.shipped?.docs_only ? raw.date : [raw.shipped.live.us, raw.shipped.live.eu].sort().at(-1)) : null,
+    in_production: isLive(raw),
+    gated: raw.gated || null,
     url: `${base}/help/release-notes#${raw.id}`,
     ideas: raw.ideas || [],
     enablement: enablementFacts(raw, { base, site }),
@@ -88,9 +98,10 @@ const feed = {
   builtAt: new Date().toISOString(),
   entryCount: entries.length,
   liveCount: entries.filter((e) => e.live).length,
+  gatedCount: entries.filter((e) => e.gated).length,
   entries,
 };
 
 mkdirSync(join(DIST, '_internal'), { recursive: true });
 writeFileSync(OUT, JSON.stringify(feed));
-console.log(`Wrote ${relative(ROOT, OUT)}\n  ${feed.entryCount} entries (${feed.liveCount} live)`);
+console.log(`Wrote ${relative(ROOT, OUT)}\n  ${feed.entryCount} entries (${feed.liveCount} live, ${feed.gatedCount} gated — kept out of What's New)`);

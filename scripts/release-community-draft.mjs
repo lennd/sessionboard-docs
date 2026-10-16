@@ -25,7 +25,7 @@
  * web-api change is an internal API-key path on that router — see AGENTS.md.
  */
 
-import { allEntries, formatDate, isLive, loadReleaseNotes, readSite } from '../src/lib/release-notes.mjs';
+import { allEntries, formatDate, isPublic, loadReleaseNotes, readSite } from '../src/lib/release-notes.mjs';
 import { draftFor as buildDraft, labelFor } from '../src/lib/community-draft.mjs';
 
 const PUSH = process.argv.includes('--push');
@@ -44,7 +44,7 @@ if (problems.length) {
   process.exit(1);
 }
 
-const candidates = allEntries(releases).filter((e) => isLive(e) && (!SINCE || e.date >= SINCE));
+const candidates = allEntries(releases).filter((e) => isPublic(e) && (!SINCE || e.date >= SINCE));
 
 if (candidates.length === 0) {
   console.log('Nothing live to draft.');

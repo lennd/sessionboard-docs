@@ -81,7 +81,8 @@ export function enablementFacts(entry, { base = null, site = readSite() } = {}) 
       videos,
     },
     gotchas: i.gotchas || null,
-    links: { enablement: `${host}${prefix}/releases/${entry.id}`, release: `${host}/help/release-notes#${entry.id}` },
+    // Gated (Early Access) entries are not on the public page, so there is no release link to hand a customer.
+    links: { enablement: `${host}${prefix}/releases/${entry.id}`, release: entry.gated ? null : `${host}/help/release-notes#${entry.id}` },
   };
 }
 

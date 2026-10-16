@@ -10,9 +10,10 @@
  * Every entry answers the questions CS gets asked — what module, who gets it,
  * how it is turned on, where it lives, why a customer would want it — and
  * carries a `shipped` block that says whether it is actually in production.
- * Public surfaces render only live entries; the internal section shows staged
- * ones too, marked as such, so nobody goes looking in the product for a thing
- * that is only on main.
+ * Public surfaces render only PUBLIC entries — live in both regions AND not
+ * gated behind Early Access (`isPublic`); the internal section shows staged
+ * and gated ones too, marked as such, so nobody goes looking in the product
+ * for a thing that is only on main or only on for a handful of orgs.
  *
  * `internal.*` never reaches a public surface: `publicEntry()` is the only
  * shape the public page, the feed and the digest are given.
@@ -80,6 +81,17 @@ export const AVAILABILITY = {
   limited_release: { label: 'Limited release', short: 'Enabled for named customers by their Customer Success Manager' },
   enterprise: { label: 'Enterprise', short: 'Enterprise plans' },
 };
+
+/**
+ * Availability keys that mean "not GA": the two Early Access stages and the
+ * named-customer limited releases (admin category `early_access` / `alpha`).
+ * Entries in these states never reach a public surface — the Help Center
+ * release-notes page, the feed's `live` flag (so not What's New, the Roadmap's
+ * Shipped column or the customer email digest), or Community drafts — until
+ * the feature graduates (Josh, 2026-10-15). Add-ons, on-request and enterprise
+ * features are GA products behind a commercial or CS toggle, and stay public.
+ */
+export const GATED_AVAILABILITY = new Set(['preview', 'beta', 'limited_release']);
 
 /** How the customer turns it on. */
 export const ENABLE_HOW = {
@@ -218,6 +230,22 @@ export function featureLifecycle(slug, contract) {
 export function mergedInto(slug, contract) {
   const fa = contract.featureAvailability?.[slug];
   return Object.values(fa?.scopes || {}).map((s) => s.mergedInto).find(Boolean) || null;
+}
+
+/**
+ * Why an entry must stay off public surfaces, or null when it may be shown.
+ * Two ways in: the entry's own `availability` (written or derived), or any
+ * tagged feature the product contract still has in an Early Access stage —
+ * so an entry that was hand-labelled `everyone` cannot leak a beta feature,
+ * and a GA-module fix that touches a gated feature errs on the quiet side.
+ */
+export function gateReason(entry, contract) {
+  if (GATED_AVAILABILITY.has(entry.availability)) return `availability:${entry.availability}`;
+  for (const f of entry.features || []) {
+    const derived = deriveAvailability(f, contract);
+    if (GATED_AVAILABILITY.has(derived)) return `feature:${f} (${derived})`;
+  }
+  return null;
 }
 
 export function deriveEnableHow(availability) {
@@ -373,6 +401,9 @@ export function validateEntry(entry, date, contract, { file = '' } = {}) {
     ...(entry.shipped || {}),
   };
   entry.shipped.live = { us: null, eu: null, me: null, ...(entry.shipped.live || {}) };
+  // Derived, never written by hand: the reason this entry is kept off public
+  // surfaces (Early Access), or null. `isPublic()` reads it.
+  entry.gated = gateReason(entry, contract);
 
   if (strict) {
     if (!entry.kind) at('kind is required');
@@ -452,10 +483,27 @@ export function isLive(entry) {
   return !!(live.us && live.eu);
 }
 
-/** Entries whose article is live — the only ones public surfaces may show. */
-export function liveReleases(releases) {
+/** Kept off public surfaces because the feature is still in Early Access (see GATED_AVAILABILITY). */
+export function isGated(entry) {
+  return !!entry.gated;
+}
+
+/**
+ * May be shown to customers: in production for every customer AND not gated.
+ * This — not `isLive` — is the predicate for every public surface: the Help
+ * Center release-notes page, the feed's `live` flag that drives What's New,
+ * the Roadmap's Shipped column and the customer email digest, and Community
+ * drafts. `isLive` alone is for staff surfaces that need to know what is
+ * deployed.
+ */
+export function isPublic(entry) {
+  return isLive(entry) && !isGated(entry);
+}
+
+/** Releases reduced to the entries public surfaces may show. */
+export function publicReleases(releases) {
   return releases
-    .map((r) => ({ date: r.date, entries: r.entries.filter(isLive) }))
+    .map((r) => ({ date: r.date, entries: r.entries.filter(isPublic) }))
     .filter((r) => r.entries.length > 0);
 }
 

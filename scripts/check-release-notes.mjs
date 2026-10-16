@@ -10,7 +10,7 @@
  *   node scripts/check-release-notes.mjs
  */
 
-import { loadReleaseNotes, allEntries, isLive } from '../src/lib/release-notes.mjs';
+import { loadReleaseNotes, allEntries, isGated, isLive, isPublic } from '../src/lib/release-notes.mjs';
 
 const { releases, problems } = loadReleaseNotes();
 
@@ -23,4 +23,8 @@ if (problems.length) {
 
 const entries = allEntries(releases);
 const live = entries.filter(isLive).length;
-console.log(`✓ ${entries.length} release entries across ${releases.length} dates (${live} live, ${entries.length - live} staged).`);
+const gated = entries.filter(isGated).length;
+const pub = entries.filter(isPublic).length;
+console.log(
+  `✓ ${entries.length} release entries across ${releases.length} dates (${live} live, ${entries.length - live} staged; ${gated} gated behind Early Access → ${pub} public).`,
+);
