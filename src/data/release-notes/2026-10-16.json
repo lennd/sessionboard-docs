@@ -61,6 +61,268 @@
       },
       "ideas": [],
       "media": []
+    },
+    {
+      "id": "required-fields-add-contact-form",
+      "title": "Mark contact fields as required on the event Add Contact form",
+      "summary": "In **Settings → Record Settings → Layouts → Contact Fields**, the **Show/Hide Fields** sidebar now shows a **Required** checkbox on each selected field. Tick it to block **Create Contact** until the field is filled. First Name, Last Name and Email are always required; formula, calculated, lookup, reference, event-days and read-only fields cannot be marked required. The **Add Contact** sidebar enforces these rules client-side and server-side, and shows inline \"X is required\" errors on each failing field.",
+      "article": "/contacts/add-delete-a-contact#add-a-contact",
+      "related": [
+        "/events/event-details",
+        "/concepts/sessionboard-standard-fields"
+      ],
+      "kind": "new",
+      "module": "CRM",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "setting",
+        "path": "Event → Settings → Record Settings → Layouts → Contact Fields → Show/Hide Fields"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event → Settings → Record Settings → Layouts → Contact Fields → Show/Hide Fields (configure); Event → Contacts → Add Contact (enforced)"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Teams that need consistent data at contact creation — such as a department, phone number, or role — can now block the form from saving until those fields are filled, reducing cleanup work after the event.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer complains about incomplete contact records created by their team, or asks whether they can enforce data quality at the point of contact creation.",
+        "who_should_get_it": "Any customer whose team manually adds contacts during an event and needs consistent field data from the start.",
+        "staff_path": "Event → Settings → Record Settings → Layouts → Contact Fields → Show/Hide Fields",
+        "gotchas": "Required fields only apply to the Add Contact sidebar in the event context — not to imports, submission forms, or portal forms. Formula, calculated, lookup, reference, event-days, and read-only fields cannot be marked required. Removing a field from the layout automatically clears its required flag. A required checkbox field must be ticked (not just present); a number field answered 0 now correctly passes validation.",
+        "talk_track": "You can now enforce that your team fills in specific fields — like department or phone — before a contact can be created, so your data is clean from day one without any post-event cleanup.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The existing FAQ in /contacts/add-delete-a-contact states that only First Name, Last Name and Email can be required; it needs to be updated to explain how to open Record Settings → Layouts → Contact Fields → Show/Hide Fields and tick Required on additional fields, per the PR's Help Center follow-up instructions.",
+          "why_use_it": "The Add Contact form is the first place a contact's data enters an event, and gaps created at that moment are hard to chase down later. Marking fields required ensures every contact record starts with the information your team depends on — whether that is a job title, company, or custom field — before the record is saved. First Name, Last Name and Email are always required; you choose which additional fields to enforce. This applies only to the event's Add Contact sidebar, so import, submission, and portal form rules stay independent.",
+          "at": "2026-10-16T04:48:15.731Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#998"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "brella-custom-field-key-mapping",
+      "title": "Brella integration: map custom fields by key and fix spurious error toasts",
+      "summary": "When setting up a Brella sync, the field mapping editor now shows a **Brella custom field** key input for fields that have no listing endpoint. Enter a key to add a `custom_fields.<key>` mapping row; duplicate keys are rejected, and saved rows display as **Custom field · &lt;key&gt;**. A \"Something went wrong\" toast that appeared on every connector settings panel (caused by a failed event-detail fetch Brella does not support) no longer appears.",
+      "article": "/apps/brella-integration",
+      "related": [
+        "/integrations/overview",
+        "/integrations/integration-readiness"
+      ],
+      "kind": "improved",
+      "module": "Apps",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Apps → Brella → Field mappings"
+      },
+      "permissions": [
+        "event.settings.manage_app_connections"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Event teams using Brella for networking can now map Sessionboard fields to Brella custom fields by entering the field key directly, without needing a separate listing endpoint. The spurious error toast that appeared when opening any connector's settings panel is also gone, reducing confusion during setup.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer using Brella reports that custom fields are not syncing, or that they see a 'Something went wrong' toast when opening the Brella connector settings.",
+        "who_should_get_it": "Any event team with an active Brella integration that needs to map custom fields.",
+        "staff_path": "Apps → Brella → Field mappings",
+        "gotchas": "The key input requires the exact Brella custom field key; the engine sends it as custom_fields_attributes. Duplicate keys are blocked in the UI. This fix requires both the UI PR (#997) and the companion API PR (#4500) to be deployed together — either fix alone stops the toast, but custom field mapping needs both.",
+        "talk_track": "You can now map any Brella custom field by typing its key directly in the mapping editor — no need for Brella to expose a field listing endpoint. And the error toast that used to appear when you opened the connector settings is gone.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The Brella integration guide should add a section explaining how to map custom fields using the key input, including what key format to use (custom_fields.<key>), how duplicate keys are handled, and how saved rows appear in the mapping editor.",
+          "why_use_it": "The Brella integration lets you push session and speaker data from Sessionboard into Brella so attendees see up-to-date content in the networking app. Field mappings give you control over exactly which Sessionboard fields flow into Brella, including custom fields your Brella event uses that are not exposed through a standard catalog endpoint.",
+          "at": "2026-10-16T01:43:35.415Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#997"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "gatherings-mcp-api-routes",
+      "title": "AI assistants can now configure gatherings, author event pages and emails, manage brand kits, and send invites via the public API",
+      "summary": "Connected AI assistants (Claude, ChatGPT, Cursor, Copilot) can now configure a gathering or webinar, draft and propose-publish its event page, draft system emails, read brand kit settings, and send attendee invites — all headlessly through scoped API tokens. Five new OAuth scopes are available for event-scoped tokens: **write:event_configuration**, **write:attendee_invites**, **write:event_pages**, **write:system_notifications**, and **read:brand_kits**. Tokens scoped to specific events are enforced at the gateway and return `EVENT_NOT_ALLOWED` for any other event in the org.",
+      "article": "/integrations/connect-ai-assistants",
+      "related": [
+        "/integrations/api-tokens",
+        "/agents/overview",
+        "/marketing/brand-kits"
+      ],
+      "kind": "new",
+      "module": "Agents",
+      "features": [
+        "webinars",
+        "coordinators"
+      ],
+      "availability": "limited_release",
+      "enable": {
+        "how": "csm",
+        "path": "Ask your Customer Success Manager to enable Webinars and MCP access; then Settings → API Tokens → create an event-scoped token with enable_mcp and the desired scopes"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Settings → API Tokens (event-scoped token with event_ids and enable_mcp)"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Teams running gatherings or webinars can let an AI assistant handle the repetitive setup work — configuring event details, drafting the event page, preparing system emails, and sending invites — without giving the assistant broad access to the rest of the organization's events.",
+      "internal": {
+        "cs_action": {
+          "kind": "must_enable",
+          "note": "Requires the Webinars/Gatherings feature flag and enable_mcp on the org. Event-scoped tokens with the new scopes must be generated by the organizer. The public-api gateway is the sole enforcement point for event_ids allowlisting — web-api does not re-check it on proxied routes."
+        },
+        "when_to_bring_up": "A customer asks about automating webinar setup, using Claude or ChatGPT with Sessionboard, or reducing manual configuration work for recurring gatherings.",
+        "who_should_get_it": "Organizations on the Webinars limited-release who already use or want to use an AI assistant (Claude, ChatGPT, Cursor, Copilot) to manage event configuration headlessly.",
+        "staff_path": "Settings → API Tokens; token must have event_ids=[eventId] and enable_mcp=true plus the relevant new scopes.",
+        "gotchas": "Accept/reject flows for emails stay in-app — there is no token route for them. The feature depends on web-api feature/gatherings being deployed. A scoped token 403s on any event not in its allow-list, including GET /v1/events (which only lists allowed events).",
+        "talk_track": "With a scoped API token and your AI assistant connected, you can ask it to configure your next webinar, draft the event page, and queue up invite emails — all without touching the Sessionboard UI. The token is locked to the specific events you choose, so nothing else in your org is exposed.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The connect-ai-assistants guide should document the new event-scoped token setup (event_ids, enable_mcp), the five new OAuth scopes (write:event_configuration, write:attendee_invites, write:event_pages, write:system_notifications, read:brand_kits), and what an AI assistant can do with each scope for gatherings/webinars — including the event page draft/propose-publish flow and the in-app-only accept/reject limitation for system emails.",
+          "why_use_it": "Connecting an AI assistant to Sessionboard lets your team configure events, author content, and manage communications through natural-language conversation instead of navigating menus. Use it when you want to spin up a gathering quickly, iterate on event page copy, or batch-send invites — all from the AI tool your team already uses. Event-scoped tokens keep the assistant's access limited to the specific events you choose, so you stay in control of what it can touch.",
+          "at": "2026-10-16T00:06:53.601Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-public-api#180"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "gatherings-webinars-event-shell",
+      "title": "Gatherings and Webinars: new event types, five-tab shell, attendee module, page builder, email designer, and AI authoring",
+      "summary": "Two new event kinds — **Gathering** and **Webinar** — are now available alongside Conference and Awards when creating an event. Each opens a five-tab shell (**Overview · People · Program · Pages · After**) with a gear for settings. The **People** tab is an Attendees module with a table, drawer, filters, column picker, CSV export, and a registration-form builder (**Attendee Fields**). **Pages** adds a full event page builder on the Sites canvas with a template gallery, device and colour-scheme preview, and a **Make it with AI** tile that connects Claude, ChatGPT, Cursor, or any MCP client via a one-time event-scoped key; the builder reloads live as the AI writes and shows a grouped diff with per-change undo. **Emails** lists all gathering/webinar system emails with a GrapesJS/MJML designer, template library, merge tags (including `{{registrant.answers.*}}`), version history, **Cc / Bcc / From** envelope, and an AI-draft proposal bar. While an AI agent is active, a pulsing viewport border and a bottom island narrate each step with **Pause writes**, **Review changes**, and dismiss; an **AgentAttribution** line records the last change. **Settings → Sending** lets organizers pick a verified domain, from-name, and reply-to. HubSpot CRM connect (OAuth or private token) and a marketing-event sync card are added under **Apps**.",
+      "article": "/events/event-details",
+      "related": [
+        "/site/site-builder",
+        "/integrations/connect-ai-assistants",
+        "/communications/email-campaigns",
+        "/integrations/overview",
+        "/settings/domains"
+      ],
+      "kind": "new",
+      "module": "Program",
+      "features": [
+        "webinars",
+        "marketing_brand",
+        "coordinators"
+      ],
+      "availability": "limited_release",
+      "enable": {
+        "how": "csm",
+        "path": "Ask your Customer Success Manager to enable Gatherings and Webinars; then Programs → Gatherings or Programs → Webinars"
+      },
+      "where": {
+        "scope": "both",
+        "path": "Programs → Gatherings / Webinars; event shell → Overview · People · Program · Pages · After · Settings (gear)"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Teams running webinars or smaller in-person gatherings can now manage registration, attendee data, a branded event page, and all outbound emails in one place — without needing a full conference setup. The AI authoring panel lets a single organizer draft the event page and emails with Claude or ChatGPT, review every proposed change, and publish when ready.",
+      "internal": {
+        "cs_action": {
+          "kind": "must_enable",
+          "note": "Gatherings and Webinars are limited_release; org-level enablement required. The canvas probe defaults to localhost:8091 in dev — confirm VITE_ORG_PORTAL_APP_URL is set to sites.sessionboard.com in production before customer demos."
+        },
+        "when_to_bring_up": "A customer asks about running webinars, virtual events, or smaller gatherings without the overhead of a full conference setup, or asks about AI-assisted content creation for event pages and emails.",
+        "who_should_get_it": "Organizations that run webinars, virtual summits, or intimate in-person gatherings and want registration, attendee management, a public event page, and email in one workflow.",
+        "staff_path": "Programs → Gatherings / Webinars in the org sidebar; event shell tabs: Overview · People · Program · Pages · After; gear → Settings → Sending; Apps → HubSpot.",
+        "gotchas": "Canvas probe defaults to localhost:8091 in dev — VITE_ORG_PORTAL_APP_URL must be set correctly in production. AI authoring requires a one-time event-scoped MCP key generated inside the Pages tab. HubSpot sync card is new; confirm OAuth credentials are configured before showing to customers.",
+        "talk_track": "With Gatherings and Webinars, your team gets a dedicated workspace — registration form, attendee table, branded event page, and all system emails — purpose-built for smaller events. Connect Claude or ChatGPT once and let it draft the page and emails while you review and approve every change before anything goes live.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The article index has no dedicated guide for Gatherings or Webinars event types; a new guide should cover creating a Gathering or Webinar, the five-tab shell, the Attendees module and registration-form builder, the Pages/Sites canvas with template gallery and AI authoring panel (Make it with AI, MCP key, live reload, diff review), the Emails designer (GrapesJS/MJML, merge tags, version history, Cc/Bcc/From, AI draft proposals), Settings → Sending (domain, from-name, reply-to), and the Agent Presence indicators (pulse border, island, AgentAttribution).",
+          "why_use_it": "Gatherings and Webinars give organizers a purpose-built workspace for smaller or virtual events: collect registrations with a custom form, manage attendees in a structured table, build a public event page from a template gallery, and send branded emails — all from a single five-tab shell. The AI authoring panel connects your preferred AI assistant directly to the event so it can draft copy, propose page layouts, and write emails while you stay in control of every change.",
+          "at": "2026-10-16T00:04:55.926Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#995"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
     }
   ]
 }

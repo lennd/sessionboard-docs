@@ -172,6 +172,275 @@
       },
       "ideas": [],
       "media": []
+    },
+    {
+      "id": "followup-form-submitted-by-fix",
+      "title": "Follow-up form submissions now credit the person who submitted, not who opened the draft",
+      "summary": "The **Submitted By** column in the follow-up form submissions list, the submission summary PDF, and the record activity feed now show the person who actually clicked submit — not the team member who first opened the draft on that record. Historical submissions are being backfilled to correct existing misattributions.",
+      "article": "/portals/create-assign-forms",
+      "related": [
+        "/sessions/draft-submissions",
+        "/contacts/contact-profile"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Portals → [Portal] → Forms → Submissions list (Submitted By column); submission summary PDF; contact activity feed"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Events where a coordinator or admin opens a follow-up form on behalf of a speaker before the speaker fills it in themselves will now correctly attribute the submission to the speaker — preventing false audit trails and eliminating confusion about who provided the data.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "A backfill script will correct ~4,362 US rows and ~304 EU rows where the wrong user was recorded as submitter. The ME region backfill must be run separately after a dry-run. Until the backfill completes, some historical submissions may still show the draft opener. Reach out to Sessionboard Support if a customer reports a specific misattribution that the backfill did not resolve."
+        },
+        "when_to_bring_up": "A customer reports that a team member appears as the submitter of a follow-up form they did not fill in, or raises a concern about data integrity / suspected account compromise on submission records.",
+        "who_should_get_it": "Any customer using follow-up (portal) forms where admins or coordinators open drafts on behalf of speakers or contacts before those contacts submit the form themselves.",
+        "staff_path": "Event → Portals → [Portal] → Forms → Submissions list → Submitted By column; also visible in the submission summary PDF and the contact activity feed.",
+        "gotchas": "Rows submitted before this deploy have submitted_by_user_id = NULL and fall back to created_by_user_id until the backfill runs. The backfill is a one-off raw SQL operation (~30 s on US prod) and does not touch updated_at. The ME region replica was unreachable during dry-run; confirm counts before running on the ME writer.",
+        "talk_track": "Previously, if an admin opened a follow-up form draft for a speaker and the speaker later filled it in, the admin's name appeared as the submitter everywhere — in the submissions list, the PDF summary, and the activity feed. That is now fixed: the person who clicks Submit is recorded as the submitter.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The portal forms guide should document that follow-up form submissions track a distinct \"submitted by\" user separate from who created the draft, and explain how the Submitted By column and submission summary PDF reflect the actual submitter.",
+          "why_use_it": "null",
+          "at": "2026-10-15T23:59:18.918Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4484"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "gatherings-webinars-event-kinds",
+      "title": "Gatherings and Webinars: new event kinds with registration, attendee management, email, CRM sync, and AI authoring",
+      "summary": "Two new event kinds — **Gathering** and **Webinar** — are now available alongside the existing conference format. Each starts as a draft and publishes through a dedicated event page. A five-tab **Overview** shows stage, action items, role panels, and a webinar provider slot (Zoom or Goldcast). **Registrations** supports public sign-up, waitlists with auto-promotion, invite codes, reminders, and check-in links. An **Attendees** module stores registration answers in custom layouts without touching Contact records; answers are available as `{{registrant.answers.*}}` merge tags. All 12 gathering/webinar system emails render through the designed-template path with Cc/Bcc and a configurable **From** address gated on a verified sending domain (**Settings → Sending**). HubSpot marketing-event sync writes registrations and attendance back to the CRM on a nightly schedule. An AI authoring flow (\"**Make it with AI**\") lets Claude draft event-page blocks and email copy; every proposal requires human acceptance before going live.",
+      "article": "/get-started/overview",
+      "related": [
+        "/marketing/attendee-view",
+        "/communications/automated-emails",
+        "/settings/domains",
+        "/integrations/overview",
+        "/agents/overview"
+      ],
+      "kind": "new",
+      "module": "Program",
+      "features": [
+        "attend",
+        "webinars",
+        "marketing_advocacy",
+        "crm",
+        "custom_sending_domain",
+        "coordinators"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "csm",
+        "path": "Ask your Customer Success Manager to enable Gatherings and Webinars; then Programs → Gatherings or Programs → Webinars"
+      },
+      "where": {
+        "scope": "both",
+        "path": "Programs → Gatherings / Webinars; Event → Overview / Registrations / Attendees / Settings → Sending"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Organizations running smaller, focused events — dinners, roadshow stops, chapter meetings, labs, or virtual webinars — can now manage the full registration lifecycle, attendee data, branded emails, and CRM writeback inside Sessionboard without standing up a separate registration tool.",
+      "internal": {
+        "cs_action": {
+          "kind": "must_enable",
+          "note": "Gatherings and Webinars are behind org-level enablement; the feature is in beta and starts as a draft until the event page is published. HubSpot CRM sync requires HUBSPOT_APP_CLIENT_ID/SECRET env vars and the CRM add-on. Webinar providers (Zoom, Goldcast) require connector setup in Apps."
+        },
+        "when_to_bring_up": "A customer asks about running smaller events, roadshow stops, chapter meetings, virtual webinars, or needs registration and CRM writeback without a separate tool.",
+        "who_should_get_it": "Organizations running field events, roadshows, chapter programs, or virtual webinars that want registration, attendee data, and HubSpot sync inside Sessionboard.",
+        "staff_path": "Programs → Gatherings / Webinars; Event → Overview / Registrations / Attendees / Settings → Sending",
+        "gotchas": "Events start as drafts until the event page is published. The verified sending domain gate means off-domain From addresses are server-rejected — customers must complete domain verification before customizing the sender. AI authoring proposals never go live without human acceptance. Value-types 1.13.0 must be published and bumped before the FALLBACK_* constants in lib/attendees/module-constants.js can be dropped.",
+        "talk_track": "Gatherings and Webinars let your team run the full registration lifecycle — sign-up page, waitlist, check-in, branded emails, and HubSpot writeback — inside the same platform you use for your main conference, so attendee data and CRM records stay in sync automatically.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "No existing guide covers Gatherings or Webinars as event kinds; a new guide should document creating a Gathering or Webinar event, the five-tab Overview, the registration flow (public sign-up, waitlist, invite codes, check-in), the Attendees module and custom layouts, the Sending Identity settings, webinar provider connection (Zoom/Goldcast), HubSpot marketing-event sync, and the AI authoring (\"Make it with AI\") flow for pages and emails.",
+          "why_use_it": "Gatherings and Webinars give you a purpose-built event kind for smaller or virtual events where registration, attendee tracking, and follow-up matter as much as the program itself. Use it when you need a public sign-up page, waitlist management, check-in links, and automatic CRM writeback — all connected to the sessions, speakers, and contacts you already manage in Sessionboard. The Attendees module keeps registration answers separate from your Contact records so your CRM stays clean. AI-assisted page and email authoring lets your team produce polished event pages and confirmation emails quickly, with every AI proposal requiring human approval before it goes live.",
+          "at": "2026-10-15T23:53:57.022Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4494"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "recon-live-crawl-progress",
+      "title": "Speaker Prospects crawl status updates live and shows a toast when a crawl finishes or fails",
+      "summary": "The external event detail page now reflects crawl progress in real time via websockets. While a crawl is running, a **Running** badge appears, the **Run now** button is disabled and reads **Running…**, and the status line shows **Running now…**. When the crawl ends, a toast notification confirms whether it finished successfully or failed. Speaker photos that cannot load now fall back to a placeholder instead of showing a broken image icon.",
+      "article": "/speaker-crm/pipeline",
+      "related": [
+        "/speaker-crm/overview",
+        "/speaker-crm/crm-advanced-search"
+      ],
+      "kind": "fixed",
+      "module": "CRM",
+      "features": [
+        "speaker_prospects"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Speaker CRM → Prospects → External Event → Run now"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers running a speaker crawl no longer need to refresh the page to know when it finishes — the status updates live and a toast confirms success or failure, so they can act on new prospects immediately.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer mentions they were unsure whether a crawl had finished or had to keep refreshing the Prospects page.",
+        "who_should_get_it": "Any org with Speaker Prospects (beta) enabled that uses the external event crawl feature.",
+        "staff_path": "Speaker CRM → Prospects → External Event → Run now",
+        "gotchas": "A 30-second fallback poll remains active while a crawl is running in case the websocket connection drops.",
+        "talk_track": "Crawl runs now update in real time — you'll see a Running badge and get a toast the moment it finishes or fails, so you know exactly when new prospects are ready to review.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The Pipeline guide (or a dedicated Prospects guide) should document the external event crawl workflow, including the live status badge, the toast notification on completion or failure, and the photo fallback behaviour.",
+          "why_use_it": "null",
+          "at": "2026-10-15T13:05:22.675Z",
+          "permissions_to_confirm": [
+            "org.prospects: read"
+          ]
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#989"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "recon-speaker-profiles-sessionize-websocket-status",
+      "title": "Recon: speaker profiles preserved across re-crawls, Sessionize events supported, and live crawl status in the UI",
+      "summary": "When **Recon** crawls an external event, speakers now retain their **Title**, **Company**, **Bio**, **Photo**, **LinkedIn**, and **X** profile fields — including across re-crawls where the source omits a field. Events that embed a **Sessionize** agenda (such as Ekoparty) are extracted directly from the embed rather than falling back to the LLM, and JSON-LD ItemList agendas (such as Nerdearla) are also read. The crawl status (**Running** / finished / failed) now updates in real time without polling, pushed to the UI over websockets as soon as the job starts or completes.",
+      "article": "/speaker-crm/pipeline",
+      "related": [
+        "/speaker-crm/crm-advanced-search",
+        "/speaker-crm/overview"
+      ],
+      "kind": "improved",
+      "module": "CRM",
+      "features": [
+        "speaker_prospects"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Speaker CRM → Prospects → External Events → Crawl"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Teams sourcing speakers from external conferences can now crawl Sessionize-powered events and see richer speaker profiles — with title, company, bio, headshot, and social links — without losing data when they re-crawl. The live status badge removes the need to manually refresh to know when a crawl has finished.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Improvements are automatic for all orgs with Speaker Prospects (beta) enabled. No action required."
+        },
+        "when_to_bring_up": "A customer mentions that Recon was losing speaker bio or photo data after re-crawls, or that they couldn't crawl Sessionize-based events like Ekoparty.",
+        "who_should_get_it": "Any org using Speaker Prospects (beta) that crawls external events for speaker sourcing.",
+        "staff_path": "Speaker CRM → Prospects → External Events",
+        "gotchas": "The 'missing never overwrites stored' rule means a field a source stops publishing will not be cleared on re-crawl — this is intentional for this iteration. Corrected values still overwrite. Profile link validation rejects share buttons and links pointing to another person.",
+        "talk_track": "Recon now keeps the full speaker profile — title, company, bio, headshot, LinkedIn, X — even when you re-crawl and the source doesn't repeat every field. It also handles Sessionize-embedded agendas natively, and you'll see a live Running badge the moment a crawl kicks off so you're not left guessing.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The Speaker Prospects / Recon guide should document the crawl status websocket behaviour (Running / finished / failed badges), the Sessionize extraction strategy, the profile fields preserved per speaker (title, company, bio, photo, LinkedIn, X), and the re-crawl rule that a missing source value never overwrites a stored one.",
+          "why_use_it": "Speaker Prospects lets you discover and track potential speakers by crawling external event websites, pulling in session and speaker data so you can build a pipeline without manual research. Use it when you want to identify speakers from conferences in your space, compare their profiles, and move the best candidates into your CRM — all without leaving Sessionboard.",
+          "at": "2026-10-15T13:03:49.112Z",
+          "permissions_to_confirm": [
+            "org.prospects: create, read, update"
+          ]
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4476"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
     }
   ]
 }
