@@ -1,6 +1,6 @@
 ---
 title: "Brella"
-description: "Push speakers and content timeslots from Sessionboard to a Brella event, and unpublish them when they leave the accepted set."
+description: "Push speakers and content timeslots from Sessionboard to a Brella event, and take speakers off Brella sessions when they leave the accepted set."
 ---
 
 import { Note, Tip, Warning, Steps, Step } from '@compat';
@@ -12,7 +12,7 @@ Brella is an event networking and content platform. Connect Sessionboard to Brel
 The API token and organization ID are saved on the connection. Each Sessionboard event maps to one Brella event. Sessionboard updates the same speaker or timeslot on the next sync instead of creating a duplicate.
 
 <Tip>
-Before you start, have your Brella API access token, organization ID, and Brella event ID. Confirm the Brella event timezone matches **Settings > Event Details**. Accept the sessions you want in Brella first. Every person you want pushed needs a first name, last name, and email.
+Before you start, have your Brella API access token, organization ID, and Brella event ID. Confirm the Brella event timezone matches **Settings > Event Details**, and that session times fall inside the Brella event dates. Accept the sessions you want in Brella first. Every person you want pushed needs a first name, last name, and email in Sessionboard.
 </Tip>
 
 ## Connect Brella
@@ -38,12 +38,12 @@ Brella is set up at the **organization**. Open it from **Settings > Integrations
   <Step title="Check timezones and settings">
     Confirm the Brella event timezone matches the Sessionboard event. On **Event Settings**, turn on **Enable Continuous Sync** if you want Sessionboard to push this event to Brella about every 30 minutes. Leave it off to sync only when you click **Sync**. Continuous sync still requires at least one accepted session that has not ended.
 
-    Leave **Unpublish in Brella when un-accepted** on unless you want un-accepted records to stay published.
+    Leave **Remove speakers from Brella sessions when un-accepted** on unless you want people to stay on a Brella session after they leave the accepted set.
 
     **Session roles to sync** defaults to every role on accepted sessions. Uncheck chairs, co-authors, or any custom role that should not become a Brella speaker. Click **Save event settings**.
   </Step>
   <Step title="Map fields">
-    Use **Map Speaker Fields** and **Map Session Fields** to choose which Sessionboard fields write to Brella for that mapping. First name, last name, and email are required for speakers. Title, start, and end are required for timeslots. You cannot save until those are mapped.
+    Use **Map Speaker Fields** and **Map Session Fields** to choose which Sessionboard fields write to Brella for that mapping. First name and last name are required for speakers. Title, start, and end are required for timeslots. You cannot save until those are mapped.
   </Step>
 </Steps>
 
@@ -53,25 +53,31 @@ Credentials are encrypted and are not shown again after you save. Leave a secret
 
 ## What syncs
 
-Only **accepted** sessions and the people on those sessions sync. Every session role becomes a Brella speaker — speaker, moderator, chairperson, and any custom role.
+Only **accepted** sessions and the people on those sessions sync. Every session role you selected becomes a Brella speaker. On the timeslot, moderators are added as **Moderator**, chairpersons as **Chairman**, and everyone else as **Speaker**.
 
 If the event has **speaker acceptance** on, a speaker is not pushed until they have accepted. Other roles are not gated by acceptance.
 
-A person needs a first name, last name, and email. Anyone missing those is skipped and is not unpublished in Brella.
+A person needs a first name, last name, and email in Sessionboard. Anyone missing those is skipped. Brella speakers have no email field, so the email is not sent.
 
 | Sessionboard | Brella |
 | --- | --- |
-| Person on an accepted session | Speaker (name, email, company, role, headshot) |
-| Accepted session | Content timeslot (title, description, start, end) |
-| Person assigned to a session | Speaker attached to that timeslot |
+| Person on an accepted session | Speaker (name, company, job title, bio, headshot) |
+| Accepted session | Content timeslot (title, description, start, end, track, location) |
+| Person assigned to a session | Speaker attached to that timeslot, with their role |
 
-When a session or participant leaves the accepted set, Sessionboard unpublishes the matching Brella record unless you turned **Unpublish in Brella when un-accepted** off. Meetings and RSVPs on that record stay intact because the record is hidden, not removed.
+Sessionboard finds the Brella speaker it created before by the Sessionboard ID. A speaker you added in Brella yourself is reused only when exactly one Brella speaker has the same first and last name and is not already linked to Sessionboard; otherwise Sessionboard creates a new speaker.
+
+When a session or participant leaves the accepted set, Sessionboard takes the speaker off that Brella timeslot, unless you turned **Remove speakers from Brella sessions when un-accepted** off. Brella cannot hide a speaker or a timeslot, so both stay in Brella. The sync log lists them, and you can delete them in Brella if they should not show.
+
+Brella refuses a timeslot whose start or end is outside the Brella event dates. That session shows as an error in the sync log with Brella's message, and the rest of the sync carries on.
 
 ## Field mappings
 
-**Map Speaker Fields** and **Map Session Fields** apply only to the event mapping you have selected. Defaults cover name, email, company, role, headshot, title, description, and times.
+**Map Speaker Fields** and **Map Session Fields** apply only to the event mapping you have selected. Defaults cover name, company, job title, bio, headshot, title, description, times, track, and location. Add rows for other Brella fields, such as honorific or session tags.
 
-Brella needs a first name, last name, and email to create a speaker, and a title, start, and end to create a timeslot. Those rows stay on the mapping and cannot be removed.
+Brella needs a first name and last name to create a speaker, and a title, start, and end to create a timeslot. Those rows stay on the mapping and cannot be removed.
+
+To fill a Brella custom field, type its key under **Brella custom field** below the speaker or session rows and click **Add**, then pick the Sessionboard field. Use the key exactly as it is set up in Brella.
 
 ## Run a sync
 
@@ -79,7 +85,7 @@ If **Enable Continuous Sync** is on for that mapping, Sessionboard runs a full s
 
 To push immediately, click **Sync** on **Map Events**, or use **Sync to Brella** from Agenda, Sessions, or Speakers. **Check drift** on the connection compares Sessionboard to Brella without writing.
 
-**Sync** on **Map Events**, or **Sync to Brella** from Agenda Options with nothing selected, is a full sync — the same accepted set as a scheduled run, including unpublish when **Unpublish in Brella when un-accepted** is on. If you select rows on Sessions or Speakers and click **Sync to Brella**, only those records update. Sessionboard will not unpublish the rest of the event.
+**Sync** on **Map Events**, or **Sync to Brella** from Agenda Options with nothing selected, is a full sync — the same accepted set as a scheduled run, including removing un-accepted speakers from sessions when **Remove speakers from Brella sessions when un-accepted** is on. If you select rows on Sessions or Speakers and click **Sync to Brella**, only those records update. Sessionboard will not remove anyone else from their sessions.
 
 ## Add or remove a mapping
 
