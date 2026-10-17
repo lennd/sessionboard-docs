@@ -1,0 +1,202 @@
+{
+  "date": "2026-10-17",
+  "entries": [
+    {
+      "id": "attend-app-sso-sign-in",
+      "title": "Sign in to the Attend app with SSO (OIDC or SAML)",
+      "summary": "Organizers can now add **SSO** as a sign-in method for the Attend mobile app alongside magic link. In **Attend App Settings**, choose an OIDC or SAML identity provider already linked to the organization; attendees who are registered for the event can then authenticate through that IdP. The app receives a short-lived, single-use code — no token is ever placed in a URL — and the resulting session follows the same three-refresh SSO rule as admin SSO sessions.",
+      "article": "/integrations/sso",
+      "related": [
+        "/settings/portal-login-methods",
+        "/get-started/early-access"
+      ],
+      "kind": "new",
+      "module": "Settings",
+      "features": [
+        "attend",
+        "sso"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "setting",
+        "path": "Event → Settings → Attend App Settings → Sign-in Methods → SSO → select Identity Provider"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event → Settings → Attend App Settings → Sign-in Methods"
+      },
+      "permissions": [
+        "event.settings.update"
+      ],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "An enterprise event requires all attendees to authenticate through the company's corporate IdP before accessing the Attend app. Enabling SSO as the sign-in method means attendees use their existing corporate credentials — no separate magic link needed — and access is automatically revoked when their IdP account is deactivated.",
+      "internal": {
+        "cs_action": {
+          "kind": "must_enable",
+          "note": "The org must already have an OIDC or SAML IdP configured under SSO settings. The web-ui relay's SSO_ALLOWED_REDIRECT_ORIGINS env var must include https://attend.sessionboard.com — confirm with engineering before enabling for a customer."
+        },
+        "when_to_bring_up": "When a customer using Attend also has SSO enforced for their org and wants attendees to sign in with corporate credentials.",
+        "who_should_get_it": "Enterprise customers with an existing OIDC or SAML IdP linked to their Sessionboard org who are also using the Attend app (beta).",
+        "staff_path": "Event → Settings → Attend App Settings → Sign-in Methods → SSO",
+        "gotchas": "WorkOS, HubSpot, and OAuth2-password IdPs are not supported. A SAML assertion that fails passport validation (bad signature, domain rejection) currently lands on the admin SSO error page rather than returning the attendee to the app. IdP single logout does not end attendee sessions — sessions expire after three token refreshes. Both the web-api PR #4513 and the companion web-ui relay PR must be deployed together; until both are live, attend SSO redirects to the admin SSO error page.",
+        "talk_track": "If your organization already uses SSO for Sessionboard admins, you can extend that same IdP to your Attend app attendees — they tap 'Sign in with SSO', authenticate through your corporate identity provider, and land straight in the app. No magic links, no separate passwords.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The SSO guide covers admin/organizer SSO setup but does not mention configuring SSO as an Attend mobile app sign-in method; it should add a section explaining how to select an IdP in Attend App Settings and the attendee sign-in flow.",
+          "why_use_it": "The Attend mobile app gives registered attendees a personalized event experience on their phone. Offering SSO as a sign-in method lets organizations enforce their existing identity policies — single sign-on, MFA, and automatic deprovisioning — without asking attendees to manage a separate credential. It works with any OIDC or SAML provider already connected to the organization, so setup is a single setting change rather than a new integration.",
+          "at": "2026-10-17T18:01:30.867Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4513"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "confirm-send-cc-per-recipient-count",
+      "title": "Confirm Send dialog accurately shows per-contact CC addresses as a count, not a combined list",
+      "summary": "When sending an email to multiple contacts with **Include additional contacts of recipients (CC)** enabled, the **Confirm Send** dialog now separates shared CC addresses (shown on the **CC:** line) from per-contact additional contacts (shown as \"Additional contacts: N people CC'd on their own contact's email\"). Previously, every recipient's additional contacts were merged into a single CC list, making a bulk send appear to CC everyone on every email.",
+      "article": "/contacts/additional-contacts",
+      "related": [
+        "/communications/create-send-emails"
+      ],
+      "kind": "fixed",
+      "module": "Communications",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Contacts → select contacts → Send Email → Confirm Send → CC"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "An organizer sending a bulk email to 100 speakers with their assistants CC'd can now confirm at a glance that each assistant is only CC'd on their own speaker's email — the Confirm Send dialog no longer shows all 100 assistants as if they were all CC'd on every message.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer reports that the Confirm Send dialog looks wrong when doing a bulk email with additional contacts CC'd — it appears to CC everyone on every email.",
+        "who_should_get_it": "Any customer using the 'Include additional contacts of recipients (CC)' option on bulk contact emails.",
+        "staff_path": "Contacts → select multiple contacts → Send Email → Confirm Send",
+        "gotchas": "This was a display-only bug; actual email delivery was always correct. The fix only affects what the Confirm Send dialog shows. Single-recipient sends are unaffected and still show the full CC list as before.",
+        "talk_track": "The Confirm Send dialog now correctly distinguishes between addresses CC'd on every email and per-contact additional contacts shown as a count, so you can trust what you see before hitting send.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that when sending to multiple contacts, per-contact additional contacts appear as a count in Confirm Send rather than a combined CC list.",
+          "why_use_it": "null",
+          "at": "2026-10-17T17:01:06.505Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1005"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "attend-app-per-event-attendee-sign-in",
+      "title": "Attend app: per-event attendee sign-in with magic link",
+      "summary": "Confirmed attendees can now sign in to the Sessionboard Attend mobile app using a magic link sent to their registered email address. A 6-digit code in the same email lets them sign in from a different device. Admins enable the feature per event and choose which auth methods to allow via the **Attend App Settings** API endpoint (`PUT /attend/event/:eventId/app/settings`). No event is affected until an admin explicitly turns it on. The org-portal refresh-token scope bug — where a portal refresh token could be mistaken for an admin token — is also fixed.",
+      "article": "/marketing/attendee-view",
+      "related": [
+        "/settings/portal-login-methods",
+        "/participants/access-portal"
+      ],
+      "kind": "new",
+      "module": "Apps",
+      "features": [
+        "attend"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "support",
+        "path": "Ask your Customer Success Manager to enable Attend app sign-in for your event; then PUT /attend/event/:eventId/app/settings with { \"enabled\": true, \"authMethods\": [\"magic_link\"] }"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Attend mobile app → event sign-in screen"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Event teams running the Attend mobile app can let confirmed attendees sign in to their event without needing a separate credential — the attendee enters their registered email, receives a magic link and 6-digit code, and is in within seconds. Only people already on the attendee list can sign in, so access stays controlled.",
+      "internal": {
+        "cs_action": {
+          "kind": "must_enable",
+          "note": "No event is affected by default. An admin must PUT /attend/event/:eventId/app/settings with enabled:true before any attendee can sign in. There is no UI for this yet — it is API-only."
+        },
+        "when_to_bring_up": "When a customer is piloting or asking about the Attend mobile app and wants attendees to be able to sign in.",
+        "who_should_get_it": "Customers actively using or evaluating the Attend mobile app (beta).",
+        "staff_path": "PUT /attend/event/:eventId/app/settings — API only, no admin UI yet.",
+        "gotchas": "Sign-in is limited to contacts with an Attendees row in confirmed or checked_in status. Unknown email addresses receive a 200 with no email (silent fail) to prevent enumeration. Five wrong code attempts revoke all live links for that registration. At most 5 magic links per registration per 15 minutes. The ATTEND_APP_LINK_BASE_URL env var defaults to https://attend.sessionboard.com. The org-portal refresh-token scope fix is a security correction bundled in this PR — no customer action needed.",
+        "talk_track": "Attendees open the Attend app, find their event, enter their registration email, and tap the link in the email — or type the 6-digit code if they're reading it on a laptop. Only people already on your attendee list can get in, and each token is locked to that one event.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The /marketing/attendee-view guide does not cover the Attend mobile app sign-in flow, magic-link authentication for attendees, or the per-event app settings endpoint. It should add a section explaining how to enable attendee sign-in, how the magic-link and code flow works, and the security limits (attempt caps, token expiry).",
+          "why_use_it": "The Attend app gives attendees a mobile experience tied to the event they are registered for. Magic-link sign-in means attendees never create a password — they authenticate with the email address they registered under, and a time-limited link or short code gets them in. Access is scoped strictly to the event the attendee is registered for, so one attendee cannot reach another event's data.",
+          "at": "2026-10-17T16:59:24.331Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4508"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    }
+  ]
+}
