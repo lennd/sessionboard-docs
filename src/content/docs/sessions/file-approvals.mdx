@@ -1,0 +1,220 @@
+---
+title: "Approve session files"
+sidebar:
+  label: "File approvals"
+description: "Hold session files for review and release them on time: build a multi-step approval workflow, route each file to the right reviewers, set a release time (an embargo) for a date and time or for each session's start, hold one file longer, and keep a history of every decision."
+features: ["approvals"]
+reviewed: "2026-10-18"
+---
+
+import { Note, Tip, Warning, Steps, Step, IfFeature } from '@compat';
+
+<IfFeature id="approvals">
+
+Approvals controls when a session file leaves Sessionboard. It does two things, and you can use either one or both:
+
+- **Approval.** A new session file, or a new version of one, starts as **Pending**. It goes only to the reviewers you choose, one step after another, and is released once the last step approves it.
+- **Release time.** Files are held back until a date and time you set, or until each file's session starts, even after they are approved. Use it for press embargoes, abstracts that can't be public before they are presented, or sponsor content that launches at a set moment.
+
+A file goes out only when **both** are satisfied: it is approved (or doesn't need approval), **and** its release time has passed. Until then it is not sent to integrations, embeds, galleries, the Public API or the attendee app. Every decision and every change to a release time is kept in the history.
+
+<Note>
+Approvals is an Early Access **Beta**. Request it per event from [Early Access](/get-started/early-access) and our team will switch it on for you. Once it is on, **Publish → Approvals** appears in the event sidebar and **Program → Settings → Files** gains the approval setting.
+</Note>
+
+![The feature spotlight at the top of the Approvals page, with a training video card and cards for Build the workflow, Route files to the right reviewers, and Review, approve, deny, each with a Learn more link](/images/kb/file-approvals-spotlight.png)
+
+The spotlight at the top of **Publish → Approvals** links to each section of this article. Use **Minimize** to collapse it.
+
+## Why use it
+
+Decks and posters often need a sign-off before they go anywhere public: a track chair checks the content, compliance checks a sponsored session, the AV team checks the format. And some files must not be public before a set moment, however ready they are: research under a press embargo, a keynote announcement, results presented at a late-breaking session. Approvals puts the sign-off and the release time on the file itself, instead of an email thread and a calendar reminder. Reviewers get an email and an in-app notification when a file is waiting on them, everyone can see who still needs to review and when each file goes out, and nothing leaves Sessionboard early by accident.
+
+## What is held, and where
+
+| | Approval | Release time |
+| --- | --- | --- |
+| **Which files** | New files and new versions uploaded after you turn approval on, that the workflow applies to | **Every** session file the workflow applies to, including files uploaded before approvals was turned on |
+| **Holding slides** | Not held | Never held |
+| **Applies when Require approval is off** | No | **Yes** — the release time holds on its own |
+
+While a file is held:
+
+- It is **not sent** to integrations, embeds, poster and content galleries, the Public API or the attendee app.
+- **The Public API** still lists the file, with `url` set to `null`, `approval_status` set to `pending`, `denied` or `embargoed`, and `embargo_until` set to its release time (`null` while it waits for its session to be scheduled). Anything built on the API can show that a file exists without being able to publish it.
+- **Admins still see it** on the session, on **Program → Submissions → Files**, and on **Publish → Approvals**, and can open and download it.
+- **The speaker who uploaded it** still sees it in the portal, with its approval status.
+
+When a new version of an approved file is waiting for review, the approved version keeps being used. A release time holds every version of a file the same way.
+
+## Set up the workflow
+
+![The Require approval for session files setting on Program Settings → Files, switched on, showing the release time and an Edit approval workflow button](/images/kb/file-approvals-setting.png)
+
+<Steps>
+
+<Step title="Turn on approval for session files">
+
+Go to **Program → Settings → Files** and switch on **Require approval for session files**. The first time, this opens the workflow builder. Afterwards, use **Edit approval workflow** here, or **Edit workflow** on the **Workflows** tab of **Publish → Approvals**.
+
+![The Session files workflow card on the Workflows tab, switched on, with 2 steps, 2 files in review now, a release time of held until Tue, Nov 10, 2026, 9 AM PST, 232 files held by the release time now, and an Edit workflow button](/images/kb/file-approvals-workflow-card.png)
+
+</Step>
+
+<Step title="Choose which files the workflow applies to">
+
+**Applies to** is every session file by default. **Limit to some files** narrows it with conditions, for example only files in the Poster upload slot, or only files on sessions in the Late-breaking track. The same conditions decide which files need approval and which files the release time holds.
+
+![The top of the workflow builder, showing the Require approval switch, and Applies to set to Every new session file with a Limit to some files button](/images/kb/file-approvals-builder-top.png)
+
+</Step>
+
+<Step title="Add steps">
+
+Steps run one after another. Reviewers inside a step work in parallel. For each step:
+
+| Setting | What it does |
+| --- | --- |
+| **Only run this step when…** | Optional conditions. A step whose conditions don't match the file is skipped and recorded in the history. |
+| **Who reviews** | People or roles from your event team, with optional **Route to** rules (see below). |
+| **Approval needed from** | **Any one** reviewer, **Everyone**, or **At least N**. |
+| **Due within (hours)** | How long reviewers have for this step. |
+
+![A workflow step named Track review with no step condition, a Route to rule that sends files whose File type is Poster to Tara Ferguson under the label Posters, Otherwise route to Josh Parolin, Approval needed from Any one, Due within 48 hours](/images/kb/file-approvals-steps.png)
+
+</Step>
+
+<Step title="Set a release time (optional)">
+
+Leave **Release time** on **As soon as approved** for no embargo, or hold files until a set time. See [Hold files until a release time](#hold-files-until-a-release-time).
+
+</Step>
+
+<Step title="Set new versions and reminders">
+
+**On a new version, restart from** decides whether a replaced file goes back to **The first step** or **The step it was on**. **Automatic reminders** nudges reviewers who haven't decided every so many hours, up to the number of times you set. Leave it empty for no automatic reminders.
+
+</Step>
+
+<Step title="Test the routing, then save">
+
+Pick an existing file in the test panel to see which steps would run for it and who would review each one, then **Save workflow**.
+
+</Step>
+
+</Steps>
+
+Reviewers must be active members of the event team, so everyone you assign can open the review. Saving changes while files are mid-review doesn't re-route them: the new steps and reviewers apply from their next step.
+
+## Route files to the right reviewers
+
+A **Route to** rule sends matching files to different reviewers, for example the Retail track to its chair, or posters to the poster committee. Rules are checked in order and the first matching rule wins. Files that match no rule go to the step's **Otherwise route to** reviewers. A route can have a label, such as *Posters*, that reviewers see on the file.
+
+Conditions, for steps, routes and **Applies to**, can check the file's **File type**, **Upload slot**, **File format** (PDF, Office document, image, video, audio), and **Uploaded by** (speaker or participant, event team, or API / integration), and the session's **Track**, **Format**, **Level** and **Sponsor tier**.
+
+Use the test panel before you save: it shows, for a real file, which steps run and who reviews each one.
+
+## Hold files until a release time
+
+**Release time** in the workflow builder holds files back until a set time, even after they are approved. Choose one:
+
+- **As soon as approved** — no embargo. Files go out once the last step approves them.
+- **At a date and time** — every file waits for one release time, for example a press embargo.
+- **When each file's session starts** — each file waits for its own session, with an optional offset.
+
+![The Release time section set to At a date and time of Nov 10, 2026 at 9 AM in America/Los Angeles, the event time zone, previewed as 12 PM EST in the viewer's time and 5 PM UTC, a note that the release time holds every session file the workflow applies to, and the release time change history](/images/kb/file-approvals-release-time.png)
+
+<Warning>
+**A file an integration has already received can't be recalled.** Set the release time before files start syncing. Once a file has been sent, a later release time stops it being sent again but cannot remove it from the other system.
+</Warning>
+
+### Release at a date and time
+
+Pick a **Date**, a **Time** and a **Time zone**. The time zone defaults to the event's time zone, and you can search for any other. The preview underneath shows the exact release moment three ways: in the zone you chose, in your own time zone, and in UTC. Check it before you save, especially when the embargo was given to you in another zone.
+
+Daylight saving time is handled for you:
+
+- **A time that doesn't exist** — inside the hour the clocks skip in spring — can't be saved. Choose a time outside it.
+- **A time that happens twice** — inside the hour the clocks repeat in autumn — releases at the **later** of the two, so files are never released early. The preview says so.
+
+The release time can't be in the past when you set it. Once it passes, files are released and the release time stays on the workflow as a record.
+
+### Release when each session starts
+
+Each file waits for its own session's scheduled start, moved by an offset of up to 7 days **before** or **after** it, in minutes, hours or days. For example, *1 hour before each file's session starts* lets attendees open the deck in the app just ahead of the talk.
+
+![The When each file's session starts options set to 1 hours before the session starts, with the summary 1 hour before each file's session starts and a note that rescheduling a session moves its release](/images/kb/file-approvals-release-session-start.png)
+
+- **Rescheduling a session moves its release.** The release time is always read from the session's current start.
+- **Files on a session with no start time stay held** until the session is scheduled. This is the opposite of a [content gallery's](/site/content-galleries) own embargo, where items without a start time are never embargoed: here, an unscheduled session never releases a file by accident.
+
+### Hold one file longer
+
+A single file can be held past the workflow's release time, for example one abstract under a journal embargo that lifts two days after the session. Open the file from **Publish → Approvals**, and in **Release** choose **Hold this file longer**. Pick the date, time and time zone (the event's zone by default) and **Hold file**.
+
+![The Release panel in the review drawer, showing the file is held until Thu, Nov 12, 2026, 9 AM PST, the workflow release is Tue, Nov 10, 2026, 9 AM PST, and the extra hold was set by Josh Parolin, with Remove extra hold and Change extra hold](/images/kb/file-approvals-release-panel.png)
+
+- **An extra hold can only make the release later, never sooner.** A time earlier than the workflow's release is refused.
+- **It holds every version of the file**, including versions uploaded afterwards.
+- **Reviewers of the file can add or extend an extra hold.** Only admins who manage session files can move one earlier or **Remove extra hold**, because either change releases the file sooner.
+- Each extra hold, change and removal is recorded in the file's history, with who made it and the old and new times.
+
+![The Hold this file longer form with the date Nov 13, 2026, the time 9 AM and the time zone America/Los Angeles (GMT minus 8), the event time zone, with Cancel and Hold file](/images/kb/file-approvals-hold-longer.png)
+
+### Changes that release files sooner
+
+Changing the release time to an earlier one, switching to **As soon as approved**, switching mode, or narrowing **Applies to** while a release time is on can release held files at once. Before saving such a change, Sessionboard tells you how many files are held right now and asks you to confirm with **Save and release**. **Keep editing** goes back without saving.
+
+![The Release held files sooner? confirmation, saying 232 files are held by the release time right now, any file this change releases goes out as soon as you save and can't be recalled, and 2 files are mid-review, with Keep editing and Save and release](/images/kb/file-approvals-release-sooner.png)
+
+Every change to the workflow's release time is listed under **Release time changes** in the builder, newest first, with who changed it, when, and the old and new values. The builder also shows how many files the release time holds right now.
+
+### When the release time passes
+
+Within a minute of a file's release time, Sessionboard releases it and tells your integrations, embeds and galleries that it is available. Each integration picks it up on its next sync, so allow for that sync interval when the timing matters. A file that is still pending or denied stays held after its release time passes, until it is approved.
+
+## Review files
+
+**Publish → Approvals** lists every file in the workflow, with tabs for **Waiting on me** and **All approvals**, and a status filter for **Pending**, **Approved** and **Denied**. Each row shows the session with its room and time, the current step, the avatars of the reviewers it is still waiting on, and, in **Release**, when a held file goes out.
+
+![The All approvals tab, listing six files on the Expo Opens & Morning Break session with their step, reviewers, Pending, Denied or Approved status, and a Release column showing Embargoed until Nov 10 or Nov 12, 2026, 9 AM PST](/images/kb/file-approvals-queue.png)
+
+**Review** opens the file with a preview (**Full screen** for decks and posters), its release time, the steps it has passed and the ones still to come, who has decided at each step, and its full history.
+
+- **Approve** completes your part of the step. When the step's rule is met, the next step starts. After the last step, the file is approved, and released if its release time has passed.
+- **Deny** asks for changes. A note is required, and it is sent to the person who uploaded the file. The remaining reviewers don't need to act.
+- **Remind** emails the reviewers who haven't decided yet. Each reviewer can be reminded once every 4 hours.
+
+Select several rows to approve, deny or remind in bulk. Files you can't decide are skipped. Event team members whose role is limited to some sessions see only the files on those sessions, plus any file they have been asked to review.
+
+### Override a decision
+
+Admins who can edit session files can **Override** from the review: **Approve now** skips any remaining steps, **Deny now** sends the file back with a note, and **Revert to pending** restarts the workflow. Overrides are recorded in the history as overrides. **Approve now** does not lift a release time: an approved file still waits for it.
+
+## On the Files list
+
+**Program → Submissions → Files** shows each file's approval status and, for a held file, when it is released. Filter by **Waiting on me**, **Pending**, **Approved**, **Denied** or **Embargoed**: the Embargoed tab lists every file the release time is holding right now, approved or not. The list also shows the session's room and time and who last changed the file. The session's **Files** tab shows the approval status on each file.
+
+![The Embargoed tab of the Files list with 232 files, where each row shows its status, such as Denied or Pending · Track review, above a badge reading Embargoed until Nov 10, 2026, 9 AM PST](/images/kb/file-approvals-files-list.png)
+
+## What speakers see
+
+In the portal, speakers see **Pending review**, **Approved** or **Changes requested** on each file they uploaded, never the steps, the reviewers or the release time. When a file is denied they see your note, with **Upload new version** to send it back for review. The new version starts the workflow again from the step you chose.
+
+## Notifications
+
+| When | Who | How |
+| --- | --- | --- |
+| A step starts, or a reviewer is added | Each reviewer on that step | Email and in-app |
+| A reminder is sent, by hand or automatically | Reviewers who haven't decided | Email and in-app |
+| The last step approves the file | The person who uploaded it | Email and in-app |
+| A reviewer denies the file | The person who uploaded it | Email and in-app, with the note |
+
+The emails are listed under System Notifications, in the Files & Exports category, where you can edit their wording. No email is sent when a release time passes.
+
+## Turning it off
+
+- **Switching off Require approval for session files** stops holding new files for review. Files that are mid-review keep their status until someone decides them. **A release time keeps holding files.** To lift it, set **Release time** to **As soon as approved**.
+- **If the Approvals Beta is switched off for the event**, files are no longer held for review, but **a release time still holds files** so that nothing under an embargo is released by accident. Set **Release time** to **As soon as approved** before you ask for the Beta to be switched off, or contact Support to lift it afterwards.
+
+</IfFeature>
