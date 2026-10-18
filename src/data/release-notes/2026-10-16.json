@@ -380,6 +380,140 @@
       },
       "ideas": [],
       "media": []
+    },
+    {
+      "id": "gatherings-public-event-page",
+      "title": "Public event page for Gatherings and Webinars at /e/&lt;slug&gt;",
+      "summary": "Gatherings and Webinars now have a public-facing event page served at **/e/&lt;slug&gt;** (or the root path on a custom domain). The page includes an **Event Hero**, **Key Facts**, **Hosts**, **In the Room**, and a **Register** block that handles open registration, waitlist, sold-out, invite-only, request-a-seat, and duplicate-registration states — including Turnstile bot protection when configured. Organizers can preview draft pages in the site builder before publishing.",
+      "article": "/site/site-builder",
+      "related": [
+        "/site/publishing-surfaces",
+        "/site/program-site"
+      ],
+      "kind": "new",
+      "module": "CMS",
+      "features": [
+        "attend",
+        "webinars"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "csm",
+        "path": "Ask your Customer Success Manager to enable Gatherings or Webinars; then Sites → Site builder → Event Page"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Sites → Site builder → Event Page (public URL: /e/<slug> or custom domain root)"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "An organizer running a Gathering or Webinar can share a branded public URL that lets anyone register directly — handling open spots, waitlists, and invite-only flows — without needing a separate landing-page tool. Attendees land on a single page that shows event details, hosts, and a registration form in one place.",
+      "internal": {
+        "cs_action": {
+          "kind": "must_enable",
+          "note": "Gatherings/Webinars initiative is gated; coordinate with the product team before enabling for customers."
+        },
+        "when_to_bring_up": "A customer running virtual events or webinars asks how to give attendees a public registration page without a third-party tool.",
+        "who_should_get_it": "Customers using the Gatherings or Webinars feature who need a public-facing registration experience.",
+        "staff_path": "Sites → Site builder → Event Page blocks (EventHero, KeyFacts, InTheRoom, Hosts, RegisterBlock)",
+        "gotchas": "Attendee custom fields on the registration form are not yet supported in this release — a follow-up PR adds the fields[] upgrade. Builder preview requires ?builderPreview=1&preview=<token> query params. Turnstile bot protection only activates when a site key is configured.",
+        "talk_track": "Instead of sending attendees to a generic registration tool, give them a branded event page at your own domain — it shows the event details, the speaker lineup, and a registration form that automatically switches to a waitlist or request-a-seat flow if you hit capacity.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The site-builder guide should add a section covering the Event Page site type, its available blocks (Event Hero, Key Facts, In the Room, Hosts, Register), the /e/<slug> URL structure, custom domain mounting, and the supported registration states (open, waitlist, sold out, invite-only, duplicate).",
+          "why_use_it": "The public event page gives every Gathering or Webinar a dedicated, branded URL where prospective attendees can learn about the event and register in one step. It adapts automatically to the event's registration state — open, waitlisted, sold out, or invite-only — so organizers do not need to manage separate landing pages or swap out links as capacity changes. Custom domains mount the page at the root, making it easy to share a clean URL in emails and social posts.",
+          "at": "2026-10-16T14:13:05.370Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-org-portal#197"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "upload-slot-reminder-recipient-preview",
+      "title": "See who upload-slot reminders will reach before saving",
+      "summary": "The upload-slot sidebar now shows a live **Who this reaches** panel — the number of sessions, people, and the scheduled next-reminder time — before you save. An amber warning appears when any owing sessions are pending, in the decline queue, or declined. On save, if a reminder fires within 24 hours to at least one person, a confirmation dialog states the recipient count, the send time, and the number of unaccepted sessions, letting you **Go back** or **Save anyway**. Saving is also blocked when **Only some sessions** is on but no complete filter row exists, preventing accidental event-wide sends.",
+      "article": "/sessions/enable-upload-download-content",
+      "related": [
+        "/sessions/program-settings",
+        "/portals/collect-documents"
+      ],
+      "kind": "improved",
+      "module": "Program",
+      "features": [
+        "sessions"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Sessions → Program Settings → Files → upload slot → slot sidebar → Who this reaches panel"
+      },
+      "permissions": [
+        "event.session_settings.update"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "A program manager setting up file-upload reminders can confirm exactly how many speakers and sessions will receive the next reminder — and whether any are still pending or declined — before committing the change, avoiding accidental mass sends to speakers who haven't been accepted yet.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer has accidentally sent file-upload reminders to pending or declined speakers, or is nervous about configuring slot reminders for a large event.",
+        "who_should_get_it": "Any customer using upload-slot reminders with session-status filtering, especially those with mixed-status speaker pools.",
+        "staff_path": "Sessions → Program Settings → Files → select an upload slot → open the slot sidebar → Reminders section",
+        "gotchas": "Saving is now blocked when 'Only some sessions' is enabled but no complete filter row is present — previously incomplete rows were silently dropped and the reminder went event-wide. Customers who relied on that behaviour will need to add at least one complete filter row before saving. The pre-save confirmation dialog only appears when a reminder fires within 24 hours; a failed preview call never blocks saving.",
+        "talk_track": "Before you save a reminder, Sessionboard now shows you exactly who it reaches and when — including a warning if any of those sessions haven't been accepted yet. If a send is less than 24 hours away, you'll see a confirmation with the exact count so nothing goes out by surprise.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should document the Who this reaches panel, the amber warning for non-accepted sessions, the imminent-send confirmation dialog, and the requirement for at least one complete filter row when Only some sessions is enabled.",
+          "why_use_it": "Upload-slot reminders automatically prompt speakers to submit required files by a deadline. The recipient preview lets you verify the audience and timing of every reminder before it goes out, so you can catch misconfigured filters or unintended sends to non-accepted speakers before they happen rather than after.",
+          "at": "2026-10-16T18:50:45.724Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1002"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
     }
   ]
 }
