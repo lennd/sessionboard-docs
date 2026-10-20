@@ -7,6 +7,7 @@ import {
   isValidEmail,
   normalizeEmail,
   submittedTooFast,
+  MAX_CLOCK_SKEW_MS,
   MIN_FILL_MS,
   SUBSCRIBE_PATH,
   CONFIRM_PATH,
@@ -34,6 +35,12 @@ const run = (path, init = {}, env = ENV, fetchImpl = fakeFetch(200, { ok: true, 
   return productUpdatesResponse(request, url, env, fetchImpl);
 };
 
+/** What the subscribe script sends for a person: t0 at render, t1 at submit, 8 s apart. */
+function human() {
+  const t1 = Date.now();
+  return { t0: String(t1 - 8000), t1: String(t1) };
+}
+
 const location = (res) => new URL(res.headers.get('Location'));
 
 test('recognises exactly its three paths', () => {
@@ -51,7 +58,7 @@ test('subscribe relays the address with the shared secret and the visitor IP, JS
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'CF-Connecting-IP': '203.0.113.9', 'User-Agent': 'UA' },
-      body: JSON.stringify({ email: 'a@b.co', website: '' }),
+      body: JSON.stringify({ email: 'a@b.co', website: '', ...human() }),
     },
     ENV,
     fetchImpl,
@@ -97,7 +104,7 @@ test('503 from a missing secret surfaces as "unavailable" and never calls the AP
   const fetchImpl = fakeFetch(202, {});
   const res = await run(
     SUBSCRIBE_PATH,
-    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'a@b.co' }) },
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'a@b.co', ...human() }) },
     { PRODUCT_UPDATES_API_URL: 'https://api.example.com' },
     fetchImpl,
   );
@@ -114,7 +121,7 @@ const postJson = (payload, headers = {}) => ({
 
 test('the address is trimmed and lowercased before it is relayed', async () => {
   const fetchImpl = fakeFetch(202, { ok: true, message: 'check_email' });
-  const res = await run(SUBSCRIBE_PATH, postJson({ email: '  Josh.Parolin@Example.COM ' }), ENV, fetchImpl);
+  const res = await run(SUBSCRIBE_PATH, postJson({ email: '  Josh.Parolin@Example.COM ', ...human() }), ENV, fetchImpl);
   assert.equal(res.status, 200);
   assert.equal(fetchImpl.calls[0].body.email, 'josh.parolin@example.com');
   assert.equal(normalizeEmail('  A@B.Co\n'), 'a@b.co');
@@ -123,7 +130,7 @@ test('the address is trimmed and lowercased before it is relayed', async () => {
 test('a malformed address is answered "invalid" without an API call', async () => {
   for (const email of ['not an email', 'a@b', '@b.co', 'a@<b>.co', `${'x'.repeat(320)}@b.co`]) {
     const fetchImpl = fakeFetch(202, {});
-    const res = await run(SUBSCRIBE_PATH, postJson({ email }), ENV, fetchImpl);
+    const res = await run(SUBSCRIBE_PATH, postJson({ email, ...human() }), ENV, fetchImpl);
     assert.equal(res.status, 400, email);
     assert.deepEqual(await res.json(), { ok: false, result: 'invalid' });
     assert.equal(fetchImpl.calls.length, 0, email);
@@ -143,11 +150,33 @@ test('honeypot and too-fast submissions get the normal "check your inbox" and ar
   assert.equal(resFast.status, 200);
   assert.equal(fast.calls.length, 0);
 
-  // A person: t0 well before the submit — relayed. No t0 (the no-JS form) — relayed.
+  // SB-9966 — the script always sends t0, so a JSON submit without one, with
+  // t0 = t1 (instant), or with t0 after t1 is a bot: thanked, never relayed.
+  const now = Date.now();
+  for (const body of [
+    { email: 'missing@example.com' },
+    { email: 'instant@example.com', t0: String(now), t1: String(now) },
+    { email: 'future@example.com', t0: String(now + 60_000), t1: String(now) },
+  ]) {
+    const botFetch = fakeFetch(202, {});
+    const r = await run(SUBSCRIBE_PATH, postJson(body), ENV, botFetch);
+    assert.equal(r.status, 200, body.email);
+    assert.deepEqual(await r.json(), { ok: true, result: 'check_email' });
+    assert.equal(botFetch.calls.length, 0, body.email);
+  }
+
+  // A person: t0 well before t1 — relayed, even when their clock runs an hour
+  // ahead of the Worker's. No t0 on the no-JS form post — relayed.
   const human = fakeFetch(202, { ok: true, message: 'check_email' });
-  await run(SUBSCRIBE_PATH, postJson({ email: 'human@example.com', t0: String(Date.now() - 8000) }), ENV, human);
-  await run(SUBSCRIBE_PATH, postJson({ email: 'nojs@example.com' }), ENV, human);
-  assert.equal(human.calls.length, 2);
+  await run(SUBSCRIBE_PATH, postJson({ email: 'human@example.com', t0: String(now - 8000), t1: String(now) }), ENV, human);
+  await run(SUBSCRIBE_PATH, postJson({ email: 'ahead@example.com', t0: String(now + 3_600_000), t1: String(now + 3_608_000) }), ENV, human);
+  await run(
+    SUBSCRIBE_PATH,
+    { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'email=nojs%40example.com' },
+    ENV,
+    human
+  );
+  assert.equal(human.calls.length, 3);
   assert.equal('website' in human.calls[0].body && human.calls[0].body.website, '');
 });
 
@@ -157,8 +186,17 @@ test('submittedTooFast trusts only a plausible t0', () => {
   assert.equal(submittedTooFast(String(now - MIN_FILL_MS), now), false);
   assert.equal(submittedTooFast('', now), false);
   assert.equal(submittedTooFast('garbage', now), false);
-  assert.equal(submittedTooFast(String(now + 5000), now), false); // clock ahead of ours
+  assert.equal(submittedTooFast(String(now + 5000), now), false); // clock a little ahead of ours, no t1
+  assert.equal(submittedTooFast(String(now + MAX_CLOCK_SKEW_MS + 1), now), true); // t0 too far in the future
   assert.equal(submittedTooFast(String(now - 2 * 24 * 60 * 60 * 1000), now), false); // stale tab
+  // SB-9966 — t1 from the same clock makes the fill time skew-proof.
+  assert.equal(submittedTooFast(String(now + 3_600_000), now, { t1: String(now + 3_600_000 + 100) }), true);
+  assert.equal(submittedTooFast(String(now + 3_600_000), now, { t1: String(now + 3_600_000 + 5000) }), false);
+  assert.equal(submittedTooFast(String(now), now, { t1: String(now - 10) }), true); // t0 after t1
+  // requireT0: the JSON submit always carries t0.
+  assert.equal(submittedTooFast('', now, { requireT0: true }), true);
+  assert.equal(submittedTooFast(undefined, now, { requireT0: true }), true);
+  assert.equal(submittedTooFast(undefined, now), false);
 });
 
 test('the edge rate limiter answers 429 / slow_down per visitor IP and is skipped when unbound', async () => {
@@ -167,7 +205,7 @@ test('the edge rate limiter answers 429 / slow_down per visitor IP and is skippe
   const fetchImpl = fakeFetch(202, {});
   const res = await run(
     SUBSCRIBE_PATH,
-    postJson({ email: 'a@b.co' }, { 'CF-Connecting-IP': '203.0.113.9' }),
+    postJson({ email: 'a@b.co', ...human() }, { 'CF-Connecting-IP': '203.0.113.9' }),
     { ...ENV, SUBSCRIBE_RATE_LIMITER: limiter },
     fetchImpl,
   );
@@ -186,13 +224,13 @@ test('the edge rate limiter answers 429 / slow_down per visitor IP and is skippe
   assert.equal(location(form).searchParams.get('result'), 'slow_down');
 
   const allowed = fakeFetch(202, { ok: true, message: 'check_email' });
-  const ok = await run(SUBSCRIBE_PATH, postJson({ email: 'a@b.co' }), { ...ENV, SUBSCRIBE_RATE_LIMITER: { limit: async () => ({ success: true }) } }, allowed);
+  const ok = await run(SUBSCRIBE_PATH, postJson({ email: 'a@b.co', ...human() }), { ...ENV, SUBSCRIBE_RATE_LIMITER: { limit: async () => ({ success: true }) } }, allowed);
   assert.equal(ok.status, 200);
   assert.equal(allowed.calls.length, 1);
 });
 
 test('an API that does not have the route yet (404) reads as "unavailable", not an error', async () => {
-  const res = await run(SUBSCRIBE_PATH, postJson({ email: 'a@b.co' }), ENV, fakeFetch(404, { error: 'not found' }));
+  const res = await run(SUBSCRIBE_PATH, postJson({ email: 'a@b.co', ...human() }), ENV, fakeFetch(404, { error: 'not found' }));
   assert.equal(res.status, 503);
   assert.deepEqual(await res.json(), { ok: false, result: 'unavailable' });
 });
@@ -200,7 +238,7 @@ test('an API that does not have the route yet (404) reads as "unavailable", not 
 test('an unreachable API is reported as an error, not thrown', async () => {
   const res = await run(
     SUBSCRIBE_PATH,
-    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'a@b.co' }) },
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'a@b.co', ...human() }) },
     ENV,
     async () => {
       throw new Error('ECONNRESET');

@@ -53,21 +53,39 @@ const EMAIL_MAX = 320;
 export const MIN_FILL_MS = 1500;
 /** `t0` older than this is ignored (a tab left open, a clock skew) rather than trusted. */
 const MAX_T0_AGE_MS = 24 * 60 * 60 * 1000;
+/** A `t0` further ahead of the Worker's clock than this did not come from a real clock. */
+export const MAX_CLOCK_SKEW_MS = 5 * 60 * 1000;
 
 export const normalizeEmail = (value) => String(value ?? '').trim().toLowerCase();
 export const isValidEmail = (email) => EMAIL_RE.test(email) && email.length <= EMAIL_MAX;
 
 /**
- * True when `t0` (ms since epoch, set by the form's script when the card
- * rendered) says the submit came too fast for a person. Missing or
- * nonsensical values do not count against the visitor: the no-JS form has no
- * t0 at all.
+ * True when the submit came too fast for a person.
+ *
+ * `t0` (ms since epoch) is set by the form's script when the card renders and
+ * `t1` when it submits, both from the visitor's clock, so `t1 - t0` is a fill
+ * time no clock skew can distort (SB-9966: a visitor clock ahead of the
+ * Worker's turned `now - t0` negative and waved instant submits through).
+ *
+ * - `requireT0`: the JSON submit always comes from the script, which always
+ *   sends `t0`; a JSON submit without one is a bot. The no-JS form post has
+ *   no `t0` and is not penalised.
+ * - With `t1`, a `t0` after `t1` is impossible for a real form: a bot.
+ * - Without `t1` (an older cached script), elapsed is `now - t0`; a `t0`
+ *   in the future by more than MAX_CLOCK_SKEW_MS is a bot, within it the
+ *   fill time cannot be measured and the visitor gets the benefit.
+ * - A `t0` older than MAX_T0_AGE_MS is a tab left open: not counted.
  */
-export const submittedTooFast = (t0, now = Date.now()) => {
+export const submittedTooFast = (t0, now = Date.now(), { t1, requireT0 = false } = {}) => {
   const start = Number(t0);
-  if (!Number.isFinite(start) || start <= 0) return false;
-  const elapsed = now - start;
-  if (elapsed < 0 || elapsed > MAX_T0_AGE_MS) return false;
+  if (t0 === undefined || t0 === null || String(t0).trim() === '' || !Number.isFinite(start) || start <= 0) {
+    return Boolean(requireT0);
+  }
+  const end = Number(t1);
+  const hasEnd = t1 !== undefined && t1 !== null && String(t1).trim() !== '' && Number.isFinite(end) && end > 0;
+  const elapsed = (hasEnd ? end : now) - start;
+  if (elapsed > MAX_T0_AGE_MS) return false;
+  if (elapsed < 0) return hasEnd || -elapsed > MAX_CLOCK_SKEW_MS;
   return elapsed < MIN_FILL_MS;
 };
 
@@ -190,7 +208,7 @@ export async function productUpdatesResponse(request, url, env, fetchImpl = fetc
 
     // Honeypot filled or filled in faster than a person types: say thanks,
     // relay nothing. The address is never stored.
-    if (String(body.website ?? '').trim() || submittedTooFast(body.t0)) return answer(true, 'check_email', 200);
+    if (String(body.website ?? '').trim() || submittedTooFast(body.t0, Date.now(), { t1: body.t1, requireT0: asJson })) return answer(true, 'check_email', 200);
 
     const api = await callApi(
       env,
