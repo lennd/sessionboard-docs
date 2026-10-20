@@ -1,6 +1,6 @@
 # Personalization markers
 
-One article, three surfaces. A Help Center page is read on the public site, on the public site by someone who happens to be signed in, and inside the product in the Team Lead **Learn** panel. Markers are how one MDX file serves all three without forking the content.
+One article, three surfaces. A Help Center page is read on the public site, on the public site by someone who happens to be signed in, and inside the product in the Ask **Learn** panel. Markers are how one MDX file serves all three without forking the content.
 
 The split that makes this work:
 
@@ -63,7 +63,7 @@ A feature is about the **event** ("they have Sessions"); a permission is about t
 
 `id` is the API's permission constant as a lower-cased dotted path — `event.<module>.<action>` or `org.<module>.<action>`, from `permissions` in the product contract. The scope prefix is part of the id, because the same module exists at both levels with different ids. Space-separate to require several. Combine freely with the other markers: `<IfFeature id="sessions"><IfPermission id="event.sessions.update">…` collapses on whichever fails, entitlement gap named first.
 
-Where the reader is not known — the public site signed out, or Team Lead building an answer with no user attached — the block is **unknown** and stays visible. Only a resolved, empty permission list collapses it. Use this for the steps that are literally unavailable to a role (a button that is not rendered), not for "you probably won't need this": over-gating hides a paragraph from a reader who would have asked an admin anyway.
+Where the reader is not known — the public site signed out, or Ask building an answer with no user attached — the block is **unknown** and stays visible. Only a resolved, empty permission list collapses it. Use this for the steps that are literally unavailable to a role (a button that is not rendered), not for "you probably won't need this": over-gating hides a paragraph from a reader who would have asked an admin anyway.
 
 ### Add-on callout
 
@@ -95,7 +95,7 @@ audience: ["organizer"]
 jtbd: "get speakers to confirm before the deadline"
 ```
 
-`features` drives the "does this apply to you" banner in the reader **and** drops the article from Team Lead retrieval for events without the feature — so Team Lead never walks someone through a module they cannot open. `audience` keeps admin questions from returning speaker-portal steps. `jtbd` is the job in the reader's words; retrieval matches intent against it far better than against a title.
+`features` drives the "does this apply to you" banner in the reader **and** drops the article from Ask retrieval for events without the feature — so Ask never walks someone through a module they cannot open. `audience` keeps admin questions from returning speaker-portal steps. `jtbd` is the job in the reader's words; retrieval matches intent against it far better than against a title.
 
 `features` is the one with teeth, so it is deliberately under-applied. A **missing** tag means the article shows to everyone, which is where the corpus started. A **wrong** tag tells a paying customer the product cannot do something it can. `npm run taxonomy:tag` only tags folders that map 1:1 to a gated product area for exactly this reason.
 
@@ -120,7 +120,7 @@ npm run markers:sync       # re-vendor the hydrator + fixtures into web-ui-v2
 
 Run `contract:pull` when a marker you know is correct is rejected — a feature renamed in `sessionboard-web-api` shows up here as an unknown slug. Commit the result; the contract is checked in so the build needs no network and no sibling checkout.
 
-The same contract (`lib/help-docs/hydration-context.js` in web-api) ships to the in-product reader with every article, alongside the reader's own event features, settings and — when the request carries a signed-in user — the permission ids they hold on the event and on the org. Team Lead's agent-side projection (`lib/help-docs/to-markdown.js`) evaluates the same three vocabularies before an article reaches the model, so an agent never walks a customer through a step their role cannot perform.
+The same contract (`lib/help-docs/hydration-context.js` in web-api) ships to the in-product reader with every article, alongside the reader's own event features, settings and — when the request carries a signed-in user — the permission ids they hold on the event and on the org. Ask's agent-side projection (`lib/help-docs/to-markdown.js`) evaluates the same three vocabularies before an article reaches the model, so an agent never walks a customer through a step their role cannot perform.
 
 ## Adding to the spec
 
