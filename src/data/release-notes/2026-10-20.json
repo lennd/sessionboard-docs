@@ -1,0 +1,2340 @@
+{
+  "date": "2026-10-20",
+  "entries": [
+    {
+      "id": "qa-sweep-w3d-multi-fix",
+      "title": "Five fixes: contract dialog copy, signing page accessibility, History filters, disclosure on create, and portal country list",
+      "summary": "This release corrects five user-visible issues across the platform. The **Add Contract** dialog subtitle now names Docusign only on the Docusign tab, not on the Sessionboard or Upload tabs. The contract signing page (`/sign/`) now respects the signer's OS dark/light preference, meets WCAG 2.1 AA colour-contrast on the **Sign** button, exposes a **Skip to main content** keyboard shortcut, and honours the `?lng=` parameter for language. The org **History** filter bar restores the **SSO provider**, **Webhook**, and **Security setting** subject types and the **two_factor.reset**, **two_factor.enforcement.enabled**, and **two_factor.enforcement.disabled** action labels. The evaluation-plan wizard now correctly sends the **Require Disclosure** toggle value on first save, so plans created with the switch on retain that setting. The speaker portal **Country** picker (Profile and session flyover) now respects the org's hidden/renamed country list, matching the behaviour of the public CFP form; a contact whose stored country has since been hidden still sees their saved value.",
+      "article": "/speaker-crm/contracts#contract-settings",
+      "related": [
+        "/communications/email-sms-history",
+        "/evaluations/setting-up-round-based-evaluations",
+        "/contacts/disclosures",
+        "/portals/portals-101"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "contracts",
+        "credits_disclosure",
+        "sessions_v2"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Contracts → Settings; /sign/:token; Organization → History; Sessions → Evaluation Plans → [plan] → Overview; Speaker Portal → Profile → Country"
+      },
+      "permissions": [
+        "org.contracts.read",
+        "org.history.read",
+        "org.disclosures.read"
+      ],
+      "audience": [
+        "organizer",
+        "speaker"
+      ],
+      "use_case": "Organizers who use Docusign alongside Sessionboard e-sign will see clearer dialog copy. Signers on mobile or in dark mode get a properly accessible signing experience. Compliance teams relying on the Require Disclosure toggle can trust it is saved on plan creation. Portal country pickers now honour the org's configured country list.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer reports that the Require Disclosure switch is not sticking on new evaluation plans, or that the signing page looks wrong in dark mode, or that History filters are missing Webhook/SSO/Security entries.",
+        "who_should_get_it": "All customers — these are bug fixes with no feature gate.",
+        "staff_path": "Contracts → Add Contract dialog; /sign/:token; Org → History → Filter; Sessions → Evaluation Plans wizard step 1; Speaker Portal → Profile → Country",
+        "gotchas": "The History filter rows for Webhook, SSO provider, and Security setting only appear after web-api #4597 is deployed and those actions have been recorded. The Contracts permission label rename also requires web-api #4597.",
+        "talk_track": "We fixed five small but impactful issues: the contract dialog no longer says Docusign on every tab, the signing page is now accessible in dark mode and by keyboard, History filters show all expected subject types, the Require Disclosure toggle is saved correctly when you first create an evaluation plan, and the speaker portal country picker respects your org's country configuration.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The contracts guide should note that the Add Contract dialog subtitle is tab-specific (Sessionboard, Docusign, Upload), and the signing-page accessibility guide should mention dark-mode support and keyboard navigation including the Skip to main content link.",
+          "why_use_it": "null",
+          "at": "2026-10-20T08:16:47.316Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1076"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "feature:contracts (beta)"
+    },
+    {
+      "id": "awards-entrant-ask-assistant",
+      "title": "Awards entrants can ask an AI assistant about their entries on the Sites portal",
+      "summary": "Awards entrants signed in to a Sessionboard Site can now use the **Ask** assistant to get answers about their own submissions. The assistant shows entry status, open programs with deadlines and fees, form instructions, and outstanding invoices — and surfaces direct links to **Resume Draft**, **Start Entry**, and **Open Checkout** so entrants can act without leaving the conversation. Judges, scores, rankings, shortlists, and other entrants' data are never surfaced. Entrants can also hand off to a program manager directly from the chat thread.",
+      "article": "/awards/setting-up-your-sessionboard-site",
+      "related": [
+        "/awards/getting-started",
+        "/awards/awards-pricing-payments-invoices"
+      ],
+      "kind": "new",
+      "module": "Awards",
+      "features": [
+        "awards"
+      ],
+      "availability": "add_on",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Sites portal → Ask"
+      },
+      "permissions": [],
+      "audience": [
+        "participant"
+      ],
+      "use_case": "Awards entrants often email program managers to ask about their submission status, upcoming deadlines, or unpaid invoices. The Ask assistant answers those questions instantly and links directly to the right step — resuming a draft, starting a new entry, or completing payment — reducing support load on the awards team.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "The assistant is on by default for any entrant on a Site with linked awards programs. Confirm the org has the Awards add-on and that the Site is published before promoting this to customers."
+        },
+        "when_to_bring_up": "When a customer running awards asks how to reduce entrant support emails or improve the submission experience on their Site portal.",
+        "who_should_get_it": "Customers using the Awards add-on with a published Sessionboard Site and an active entrant portal.",
+        "staff_path": "Org → Sites → [site] → Portal → Ask",
+        "gotchas": "The assistant is org-level (event_id is null), so it works even when the Site is not tied to a specific event. Handoff threads go to Program Managers via org-level messaging; the org-wide inbox only shows event-less threads to super users today, so managers reach entrant threads via the notification link. The assistant never surfaces scores, judge names, round progression, winner status, or any other entrant's data — if a customer asks why scores aren't visible, that is by design.",
+        "talk_track": "Entrants can now open Ask on your awards Site and instantly see their submission status, what programs are still open, any unpaid invoices, and get a direct link to pick up where they left off — no email to your team required.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The Setting up your Sessionboard site guide should add a section explaining the Ask assistant for entrants: what it answers, the actions it surfaces (Resume Draft, Start Entry, Open Checkout), what it deliberately withholds (scores, judge data, other entrants), and how the handoff-to-manager thread works.",
+          "why_use_it": "The Ask assistant on the Sites portal gives awards entrants a single place to check on everything related to their submissions: entry status, open programs, form instructions, and outstanding invoices. When an entrant needs to take action — resuming a draft, starting a new entry in a category, or completing a payment — the assistant links directly to the right page. If a question needs a human answer, the entrant can hand off to a program manager from the same conversation.",
+          "at": "2026-10-20T06:45:34.226Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4617"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "daily-digest-real-content",
+      "title": "Daily-digest emails now show real notification details instead of placeholder text",
+      "summary": "Three notification types that were writing generic catalog copy into daily-digest emails now show meaningful content. A document-request comment line reads **\"[Name] commented on '[request]'\"** with the comment text and collapses multiple comments into one line ending **(N comments)**. A CFP close-reminder line reads **\"Finish your submission for [event]\"** with the form name and close date. An evaluation-reminder line reads **\"[Plan]: N reviews left\"** with progress and deadline. All three lines link to the relevant page. Separately, admin digest emails that previously showed **\"Sessionboard (via Sessionboard)\"** as the sender name now show **\"Sessionboard\"**.",
+      "article": "/communications/notifications",
+      "related": [
+        "/portals/collect-documents",
+        "/evaluations/evaluation-plans",
+        "/sessions/submission-forms"
+      ],
+      "kind": "fixed",
+      "module": "Communications",
+      "features": [
+        "notifications"
+      ],
+      "availability": "preview",
+      "enable": {
+        "how": "self_serve",
+        "path": "Get started → Early Access → Preview → Notifications & Messaging"
+      },
+      "where": {
+        "scope": "both",
+        "path": "Notification bell → Digest email (Daily cadence)"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "reviewer",
+        "speaker",
+        "participant"
+      ],
+      "use_case": "Organizers and participants who receive daily digest emails were seeing rows of identical placeholder text with no links, making the digest useless for acting on outstanding reviews, document comments, or CFP deadlines. The fix ensures every digest row names the specific record and links directly to it.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Fix is automatic on deploy; rows queued before the deploy will still send with the old generic copy."
+        },
+        "when_to_bring_up": "A customer reports that their daily digest shows repeated identical rows with no links, or that admin digest emails say 'Sessionboard (via Sessionboard)' in the From name.",
+        "who_should_get_it": "Any customer using Notifications Early Access with recipients on a Daily email cadence, especially those with active CFPs, evaluation plans, or document requests.",
+        "staff_path": null,
+        "gotchas": "Digest rows that were already queued before this deploy will still send with the old placeholder text. Only newly queued rows get the real content. The fix covers three legacy activity types: new-record-message (document request comment), cfp-close-at-reminder, and evaluation-reminder-summary. Other notification types were already correct.",
+        "talk_track": "Your daily digest now shows exactly what needs attention — which document got a comment and who left it, which CFP form is closing and when, and how many reviews are still outstanding in each plan — with a direct link to take action from each row.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The Notifications and messaging guide should note that daily-digest rows for document-request comments, CFP close reminders, and evaluation reminders include the specific record name, a short excerpt or status, and a direct link — and that multiple comments on the same request are collapsed into a single row.",
+          "why_use_it": "null",
+          "at": "2026-10-20T06:27:40.432Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4592"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:preview"
+    },
+    {
+      "id": "qa-sweep-w4e-multi-fix",
+      "title": "13 fixes across forms, fields, portals, contacts and sessions",
+      "summary": "This release resolves 13 bugs across the platform: contact profile inline saves now reflect the server response immediately without a reload; clearing **Help Text** in **Customize Question** now saves correctly; the **Add Field** library panel no longer flips to a blank state or gets stuck after saving; **Maximum Length** inputs above 50,000 now show an inline validation error instead of silently capping the value; the portal participant panel now displays country names, dropdown labels and file names instead of raw IDs or `[object Object]`; the **Add Contact** form now respects a saved field order; the session title character counter now counts Unicode characters (not UTF-16 units) so emoji count correctly; the session **Files** tab now accepts drag-and-drop uploads; the submission form **Leave site?** guard no longer fires on a brand-new, untouched step; and number and formula fields in the **Automations** builder now offer numeric comparison operators (Is, Is not, greater/less than).",
+      "article": "/sessions/enable-upload-download-content",
+      "related": [
+        "/contacts/add-delete-a-contact",
+        "/portals/portals-101",
+        "/automations/overview",
+        "/sessions/submission-forms",
+        "/faq/add-a-field-character-capactiy"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "sessions",
+        "automations"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Sessions → [session] → Files; Contacts → [contact]; Portals → [portal] → Participants; Automations → [automation] → Filters; Settings → Fields"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "speaker",
+        "participant"
+      ],
+      "use_case": "Organizers who ran into stale data after inline edits, garbled values in participant panels, or a stuck field library panel can now work through those surfaces without workarounds. The drag-and-drop file upload and numeric automation filters are net-new capabilities that reduce manual steps for both organizers and speakers.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer reports stale contact data after inline saves, garbled participant panel values, a stuck Add Field panel, a wrong character count on session titles, or missing drag-and-drop on the Files tab.",
+        "who_should_get_it": "All customers — these are bug fixes that are on by default. The numeric automation filter operators benefit customers using Automations with number or formula fields.",
+        "staff_path": "Sessions → [session] → Files tab; Contacts → [contact profile]; Portals → [portal] → Participants panel; Automations → [automation] → enrollment filters; Settings → Fields → Library",
+        "gotchas": "Numeric comparison operators in Automations are opt-in only for the Automations enrollment filter builder. Email campaigns, attendee queries, awards, org-portal and other filter surfaces are NOT updated and still show only text operators for number fields.",
+        "talk_track": "We shipped a batch of quality fixes: inline contact edits now show the saved value right away, the participant panel in portals shows real country names and option labels, drag-and-drop works on the session Files tab, and the Automations builder now lets you filter on number fields with greater-than and less-than comparisons.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The session Files guide should note that files can be dragged and dropped directly onto the upload zone, including type and size validation and the one-revision-at-cap limit. The Automations overview should document that number and formula fields support numeric comparison operators (Is, Is not, greater than, less than, and their or-equal variants) in enrollment filters.",
+          "why_use_it": "null",
+          "at": "2026-10-20T06:25:52.160Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1074"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "evaluator-assistant-sites-portal",
+      "title": "Reviewers and judges can use the AI assistant on the Sites portal to navigate their assignments",
+      "summary": "The **Ask** AI assistant on the Sites portal now supports the evaluator/judge audience. Reviewers can ask about their assigned submissions, view rubric criteria and guidelines, jump to the next unfinished assignment, and declare a conflict of interest — all without the assistant ever surfacing scores, recommendations, or blind-review author details. The assistant refuses to suggest, predict, or discuss scores and points reviewers to the rubric instead.",
+      "article": "/site/program-site#what-each-user-sees",
+      "related": [
+        "/evaluations/how-to-evaluate-sessions",
+        "/evaluations/setting-up-round-based-evaluations",
+        "/awards/managing-submissions-reviewers-rounds",
+        "/integrations/connect-ai-assistants"
+      ],
+      "kind": "new",
+      "module": "Portals",
+      "features": [
+        "attend",
+        "sessions_v2",
+        "awards"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Sites portal → Ask (AI assistant)"
+      },
+      "permissions": [],
+      "audience": [
+        "reviewer"
+      ],
+      "use_case": "Events with large reviewer pools — awards programs, EP 2.0 evaluations, and org interest form rounds — can now let judges use the Ask assistant to quickly find their next unfinished submission, check rubric criteria, or declare a conflict, reducing back-and-forth with the event team during a review cycle.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "The evaluator assistant is off by default (virtual profile, same as participant). Confirm with the customer that their Sites portal has Ask enabled and that reviewers are assigned to rounds before promoting this capability."
+        },
+        "when_to_bring_up": "When a customer running awards, EP 2.0, or org interest form evaluations asks how to reduce reviewer support tickets or help judges find their next assignment faster.",
+        "who_should_get_it": "Customers using the Sites portal with active reviewer audiences across awards programs, Sessions 2.0 evaluation plans, or org interest form rounds.",
+        "staff_path": "Sites portal → Ask assistant (evaluator audience auto-detected when isMergedPortalReviewer is true)",
+        "gotchas": "Scores are stripped at every layer — the assistant will not show a reviewer their own score or anyone else's, by design. Org Interest Form rounds do not support conflict declaration or reviewer messages handoff; the assistant tells the reviewer this instead of linking. Closed rounds are hidden; upcoming rounds show only name, window, and progress — no submission content.",
+        "talk_track": "Reviewers signed into your Sites portal can now ask the AI assistant things like 'What do I still need to review?' or 'What are the rubric criteria for this round?' and get straight to their next assignment — without you having to field those questions.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The Program Site guide's \"What each user sees\" section should document the evaluator/reviewer audience in Ask: what questions it answers (assignments, rubric, next submission, conflict declaration), what it deliberately withholds (scores, recommendations, blind-review author details), and how the handoff to a submission's review page works.",
+          "why_use_it": "The Ask assistant on the Sites portal gives reviewers and judges a conversational way to navigate their evaluation workload. They can ask which submissions still need a score, read rubric criteria and guidelines, jump directly to the next open assignment, or flag a conflict of interest — all from a single chat interface. The assistant respects blind-review settings and never reveals scores, recommendations, or hidden author details, so organizers can offer it without compromising review integrity.",
+          "at": "2026-10-20T06:08:32.366Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4614"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "exhibitor-sponsor-ask-event-portal",
+      "title": "Exhibitors and sponsors can use Ask, the AI assistant, in the event portal",
+      "summary": "Exhibitor and sponsor portal users on the event portal now have access to **Ask**, the AI assistant. Ask can answer questions about their showroom, products, open tasks, lead counts, and placement stats. The **Ask** panel also surfaces quick actions to open the showroom editor or leads export, and supports handoff to the organizer's messaging thread via **Messages** when org and account messaging are enabled. Voice and conversation history are included. The feature is **off by default** for both audiences and must be enabled per event.",
+      "article": "/attend/ask",
+      "related": [
+        "/sponsors-exhibitors/adding-exhibitor-groups-contacts",
+        "/sponsors-exhibitors/sponsors",
+        "/portals/portals-101"
+      ],
+      "kind": "new",
+      "module": "Portals",
+      "features": [
+        "exhibitors",
+        "sponsors",
+        "attend"
+      ],
+      "availability": "on_request",
+      "enable": {
+        "how": "csm",
+        "path": "Ask your Customer Success Manager to enable the exhibitor or sponsor Ask profile; then the Ask panel appears in the event portal for those account types"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event portal → Ask panel (exhibitor or sponsor accounts)"
+      },
+      "permissions": [],
+      "audience": [
+        "participant"
+      ],
+      "use_case": "Exhibitors and sponsors often have questions about their showroom setup, task checklist, or lead activity while working inside the event portal. Ask gives them an always-available AI assistant that answers from their own account data and can hand off to the organizer team when they need human help.",
+      "internal": {
+        "cs_action": {
+          "kind": "must_enable",
+          "note": "The exhibitor and sponsor Ask profiles are off by default. A staff member must enable the virtual profile for each audience on the event before the launcher appears in the portal."
+        },
+        "when_to_bring_up": "When an exhibitor- or sponsor-heavy event asks how to reduce inbound support questions from partners during the event, or when a customer wants to give exhibitors self-serve access to their lead and showroom data.",
+        "who_should_get_it": "Customers using the event portal with exhibitor or sponsor accounts who want to reduce organizer support burden and give partners a self-serve AI assistant.",
+        "staff_path": "Event portal → exhibitor or sponsor account → Ask panel (after profile is enabled)",
+        "gotchas": "The portal client (launcher and panel UI) is a follow-up PR — this PR ships the API routes only. The /showroom and /leads/export pages the actions point to do not yet exist in the event portal. Handoff to organizer messaging is unavailable if org messaging or the account's portal messaging is turned off. A user not on any partner team gets a 404 and the launcher hides automatically.",
+        "talk_track": "Your exhibitors and sponsors can now open Ask in their event portal and get instant answers about their showroom, tasks, and lead activity — and if they need a person, they can hand off directly to your team through Messages, all without leaving the portal.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The /attend/ask guide covers the attendee app's Ask feature; a new guide (or a Portals section) should document Ask for exhibitor and sponsor event-portal users, including how to enable the profile, what data Ask draws from, the handoff-to-organizer flow, and the voice and history capabilities.",
+          "why_use_it": "Ask is an AI assistant built into the event portal that answers questions using the data specific to the signed-in account — showroom details, products, open tasks, lead counts, and placement stats. Exhibitors and sponsors get instant, contextual answers without emailing the organizer team, and can escalate to a human via the portal's Messages thread when needed. Voice input and conversation history make it accessible across different working styles. Organizers control which account types see Ask and can turn it on independently for exhibitors and sponsors.",
+          "at": "2026-10-20T06:01:34.822Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4613"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "feature:attend (beta)"
+    },
+    {
+      "id": "qa-sweep-w4d-posters-marketing",
+      "title": "Poster Builder, Clips, Dispatch and kiosk mode receive multiple fixes",
+      "summary": "Nine bugs are resolved across Poster Gallery, Marketing Clips, Dispatch and the kiosk: **Poster Builder** chart fields now preserve typed commas and spaces; the **Create poster drafts…** / **Draft with AI…** buttons open a confirmation dialog that pre-checks accepted abstracts and lists other eligible sessions; the kiosk idle-reset countdown is now visible for the last 10 seconds and any touch cancels it; a pending upload on a slot that already has a poster now reads \"Replaces the current poster. The earlier one stays in version history.\" in both the admin **Files** tab and the speaker portal; the **Solid** background swatch in the Creator console and Designer now shows the card's actual theme background colour; speaker name labels in SpeakerGrid and Marquee clips now scale so the longest word fits the tile; the **Clip Download** button is disabled with a hint while the export is still rendering; a **Delete** action is now available on the clip page and the media profile **…** menu, moving the item to **Media › Library › Trash**; and the Dispatch wizard validates the **Destination link** field inline, requiring a valid http(s) URL for tracked share dispatches.",
+      "article": "/marketing/poster-gallery",
+      "related": [
+        "/marketing/clips",
+        "/marketing/dispatch",
+        "/marketing/media-library"
+      ],
+      "kind": "fixed",
+      "module": "Marketing",
+      "features": [
+        "poster_gallery",
+        "marketing_clips",
+        "marketing_dispatch",
+        "marketing_create",
+        "marketing_media"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Marketing → Posters / Clips / Dispatch / Media"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "speaker"
+      ],
+      "use_case": "Teams building poster galleries, generating marketing clips, or sending dispatches were hitting a cluster of small but disruptive bugs — garbled chart data, invisible countdown timers, confusing upload labels, and a dispatch wizard that silently accepted empty destination links. All nine issues are now resolved so these workflows run as intended.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer reports any of: chart data being stripped in the Poster Builder, the kiosk resetting without warning, confusing poster-replacement messaging, wrong background colour in the Creator console, clipped speaker names in video, a download button that appears active while rendering, no way to delete a clip, or a dispatch sending with an empty destination link.",
+        "who_should_get_it": "Any customer using Poster Gallery (beta), Marketing Clips (limited release), Dispatch (limited release), or the Creator console.",
+        "staff_path": "Marketing → Posters / Clips / Dispatch / Media",
+        "gotchas": "SB-9903 changes the draft-posters flow: the dialog now pre-checks sessions flagged as abstracts but keeps non-abstract sessions selectable — reassure customers that this is intentional for galleries scoped to a Poster format where few sessions carry the abstract flag. SB-9960 Delete moves clips to Trash (restorable in Media › Library › Trash), not permanent deletion.",
+        "talk_track": "This sweep closes nine small bugs across Posters, Clips and Dispatch that were causing data loss or confusing UI states — chart fields now keep what you type, the kiosk warns you before it resets, poster replacement is clearly labelled, and you can now delete clips directly from the clip page or the media profile menu.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The poster-gallery guide should document the new Generate Drafts confirmation dialog (pre-selection logic, abstract vs. non-abstract sessions). The clips guide should document the Delete action and the Trash restore path. The dispatch guide should document inline Destination link validation.",
+          "why_use_it": "null",
+          "at": "2026-10-20T05:34:38.832Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1072"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "disclosures-qa-sweep-w4c",
+      "title": "Disclosures: seven reliability fixes across requests, forms, embeds and the master switch",
+      "summary": "Seven bugs in the Disclosures workflow are resolved: turning the **Disclosures** master switch off now silences the obligations badge on Contacts; whitespace-only mitigation notes are rejected; blank or whitespace form names are rejected with a clear error; submitting a disclosure now closes every other open request for that contact (staff Record, CFP inline, portal, magic link); the speakers embed and gallery widgets now include the disclosure opt-in slot alongside the agenda embed; a form snapshot is saved at send time so editing the live form after sending does not change the link already delivered to the contact; and a malformed token in a public disclosure link now returns a clean 404 instead of a regex error.",
+      "article": "/contacts/disclosures",
+      "related": [
+        "/sessions/embeds",
+        "/portals/complete-a-disclosure"
+      ],
+      "kind": "fixed",
+      "module": "CRM",
+      "features": [
+        "credits_disclosure"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Contacts → [contact] → Disclosures; Embeds → speakers.json"
+      },
+      "permissions": [
+        "org.disclosures.read",
+        "org.disclosures.update"
+      ],
+      "audience": [
+        "organizer",
+        "speaker"
+      ],
+      "use_case": "Organizers running CME or accredited events rely on Disclosures being accurate and consistent. These fixes ensure the badge, open requests, form versions, and embed data all reflect the true state of each contact's disclosure without manual cleanup.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Seven distinct fixes ship together. Verify on a live event: (1) toggle Disclosures off → Contacts badge goes quiet; (2) Record action clears the open request; (3) send a request, edit the form, open the link — recipient sees the sent version; (4) speakers.json shows disclosure slot when show_in_embeds is on."
+        },
+        "when_to_bring_up": "A customer reports stale badges, duplicate open requests, or speakers seeing an updated form they were not supposed to see.",
+        "who_should_get_it": "Any customer using the Disclosures beta, especially those running accredited or CME events.",
+        "staff_path": "Org → Contacts → [contact] → Disclosures tab; Event → Embeds → speakers.json",
+        "gotchas": "The form-snapshot migration (20261021130000) adds a JSONB column; existing requests without a snapshot fall back to the live form — only newly sent requests capture a snapshot. Amounts are never exposed in the embed slot, only entity and nature.",
+        "talk_track": "Disclosures now locks in the exact form version you sent, so editing your form later won't confuse speakers who already received a link. And when a speaker submits, every other open request for them closes automatically — no more chasing duplicates.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The guide should add a note that the form version is frozen at send time (form snapshot), that submitting one request closes all other pending requests for the same contact, and that the speakers embed now includes the disclosure opt-in slot when show_in_embeds is enabled.",
+          "why_use_it": "Disclosures lets you collect, track and manage conflict-of-interest declarations from speakers and other participants directly inside Sessionboard. You can send requests, set automatic reminders, record mitigations, and export the results for your accreditor — all linked to the contact record so nothing falls through the cracks.",
+          "at": "2026-10-20T05:31:56.418Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4603"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "ask-question-topic-insights",
+      "title": "Ask surfaces trending question topics and content gaps from attendee questions",
+      "summary": "Sessionboard now clusters attendee questions submitted to the **Ask** AI assistant into topics, runs nightly, and surfaces them via a topics API. Organizers can view topic clusters (label, asker count, question count, unanswered rate, handoff count) for 7- or 30-day windows, update a topic's **status** (open, pinned, dismissed, etc.), and see aggregated topic demand rolled into **Content Gaps** in Pathways. All question text is redacted of PII before embedding or labelling; clusters with fewer than 3 distinct askers are never surfaced.",
+      "article": "/attend/ask",
+      "related": [
+        "/pathways/overview"
+      ],
+      "kind": "new",
+      "module": "Agents",
+      "features": [
+        "attend",
+        "pathways",
+        "signals"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Attend → Ask → Topics"
+      },
+      "permissions": [
+        "event.settings.update"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Events with an active Ask assistant accumulate hundreds of attendee questions; organizers can now see which topics are asked most, spot unanswered or escalated clusters, and feed that demand signal directly into Pathways Content Gaps — without reading individual questions or exposing any attendee PII.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "The topics API and nightly clustering job are new infrastructure; confirm the cron is running and topics are appearing before pointing customers at the feature. The UI surface (Topics tab) may not yet be wired in the front-end — verify with engineering."
+        },
+        "when_to_bring_up": "When a customer using Ask asks how to understand what attendees are struggling to find answers to, or when a Pathways customer wants demand signals beyond manual tagging.",
+        "who_should_get_it": "Customers with Attend (Ask enabled) and/or Pathways who run events with meaningful attendee question volume (ideally 50+ questions so clusters form).",
+        "staff_path": "Attend → Ask → Topics (event scope)",
+        "gotchas": "Clusters require at least 3 distinct askers — small or low-traffic events may see no topics at all. Dismissed topics persist across nightly runs; pinned and doc_added topics are also preserved. The Pathways Content Gaps 'asked_assistant' signal is an aggregate asker count, never per-person. Front-end routes may not yet be shipped; this PR is API-only.",
+        "talk_track": "Every question your attendees type into Ask is now grouped into topics overnight. You can see which subjects came up most, which ones went unanswered, and dismiss noise — and those same topic signals flow straight into your Pathways Content Gaps view so you know what to commission next.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The Ask guide should add a section explaining the Topics feature: how clusters form, the 3-asker minimum, the 7- and 30-day windows, available statuses (open, pinned, dismissed, doc_added), and how the demand signal appears in Pathways Content Gaps.",
+          "why_use_it": "Ask collects every question attendees type during an event, but reading them one by one is impractical at scale. The topic-insight feature groups semantically similar questions into clusters, labels each cluster automatically, and tells you how many distinct attendees asked about it, how many questions went unanswered, and how many were handed off to staff. Use it to identify content your program is missing, prioritise pinned answers, and carry demand signals into your Pathways content planning — all without exposing individual attendee data.",
+          "at": "2026-10-20T05:15:37.943Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4607"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "scout-intelligence-topic-comparison",
+      "title": "Compare an external event's topics with your own event in Scout",
+      "summary": "The **Intelligence** tab on a scouted external event now shows a full topic comparison against one of your live events. Pick an event with the **Compare with** picker, then switch between **Summary**, **Focus & convergence**, and **All topics** views to see shared topics on a butterfly chart, AI-matched **Affinity matches** you can **Unify** or **Dismiss**, ranked **Opportunities** (topics only the external event covers), and **Differentials** (topics only your event covers). The **Agenda** tab gains a **Topics** column showing the pipeline's tags on each external session.",
+      "article": "/speaker-crm/pipeline",
+      "related": [
+        "/speaker-crm/overview",
+        "/speaker-crm/crm-advanced-search"
+      ],
+      "kind": "new",
+      "module": "CRM",
+      "features": [
+        "speaker_prospects"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Scout → External Events → [event] → Intelligence"
+      },
+      "permissions": [
+        "org.scout.pipeline_view",
+        "org.prospects.read"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Program teams scouting competitor or peer events can instantly see which topics the external event covers that their own program is missing, which topics both events share, and where embedding-similarity matches suggest two differently-named topics are really the same subject — helping them decide whether to open a new track, fill a content gap, or unify taxonomy before importing sessions.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Depends on API PR lennd/sessionboard-web-api#4547 being deployed; the Intelligence tab 404s on the comparison and shows no Agenda topic chips until that API is live. Confirm API deployment before surfacing this to customers."
+        },
+        "when_to_bring_up": "When a customer using Scout asks how to benchmark their program against a competitor event or wants to identify content gaps before finalising their track list.",
+        "who_should_get_it": "Customers with the Speaker Prospects (Scout) feature who have crawled external events with the taxonomy pipeline run.",
+        "staff_path": "Scout → External Events → [crawled event] → Intelligence tab",
+        "gotchas": "Affinity thresholds (medium ≥ 20 % of topic union shared, high ≥ 45 %) are tunable constants; Unify is reversible only through the taxonomy review (split); Dismiss shares the Taxonomy_Review_Dismissals table with the review queue so a dismissed pair also leaves that queue. The Runs table still shows 0 sessions for external_session runs until a follow-up API field ships.",
+        "talk_track": "Open any crawled external event, go to Intelligence, pick one of your events, and you'll see exactly which topics overlap, which ones they have that you don't, and where our AI thinks two differently-named topics are really the same thing — you can unify them with one click so your taxonomy stays clean.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "No existing guide covers Scout's Intelligence tab or the topic comparison workflow; a new guide (or a section in the Speaker Prospects guide) should document the Compare with picker, the Summary / Focus & convergence / All topics toggle, the butterfly chart, Affinity matches with Unify and Dismiss actions, and the Agenda Topics column.",
+          "why_use_it": "Scout's Intelligence tab lets you measure content overlap between any crawled external event and one of your own events without manually cross-referencing agendas. The topic comparison surfaces shared coverage, unique opportunities, and AI-detected synonyms so you can make informed decisions about your program's direction. Use it when evaluating a peer conference, benchmarking your track mix, or deciding which external sessions are worth pursuing.",
+          "at": "2026-10-20T04:58:25.906Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1054"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "portal-ask-assistant",
+      "title": "Ask AI assistant available in the Sites portal",
+      "summary": "A floating **Ask** button now appears in the bottom-right corner of the logged-in Sites portal for participants, speakers, evaluators, judges, and awards entrants. Tapping it opens a sliding panel where users can ask questions and receive streaming answers with citation cards, action cards that navigate directly to tasks and forms, thumbs-up/down feedback, and optional voice input. Users with more than one role see an audience switcher so answers are scoped to the right context. The button is hidden until the backend feature is enabled and does not appear in the Site builder preview.",
+      "article": "/attend/ask",
+      "related": [
+        "/awards/setting-up-your-sessionboard-site",
+        "/site/site-builder",
+        "/portals/portals-101"
+      ],
+      "kind": "new",
+      "module": "Portals",
+      "features": [
+        "new_portals"
+      ],
+      "availability": "on_request",
+      "enable": {
+        "how": "support",
+        "path": "Ask your Customer Success Manager to enable Ask for your Site; then the button appears automatically in the bottom-right corner of the signed-in portal."
+      },
+      "where": {
+        "scope": "org",
+        "path": "Sites portal → Ask button (bottom-right)"
+      },
+      "permissions": [],
+      "audience": [
+        "speaker",
+        "reviewer",
+        "participant"
+      ],
+      "use_case": "Speakers, reviewers, and awards entrants often have questions mid-portal — about outstanding tasks, submission requirements, or what to do next — that currently require emailing the organizer. Ask lets them get instant, context-aware answers without leaving the portal, reducing support load for the event team.",
+      "internal": {
+        "cs_action": {
+          "kind": "must_enable",
+          "note": "The launcher renders nothing until the backend WP13 endpoint is deployed and returns available:true. Do not promise GA availability — this is gated on a backend release."
+        },
+        "when_to_bring_up": "When a customer asks how to reduce inbound speaker or entrant support questions, or when they are setting up a Sites portal and want self-serve help for attendees.",
+        "who_should_get_it": "Customers using the Sites portal (awards programs, CFP portals) with high volumes of participant questions or limited event-team bandwidth.",
+        "staff_path": "Sites portal (signed-in view) → Ask button bottom-right",
+        "gotchas": "Nothing is visible until the web-api WP13 backend ships and the endpoint returns available:true. Voice input (mic) only appears in Chrome with on-device speech installed; Firefox and Safari hide the mic. The Deepgram relay is not yet wired in the portal — voice falls back to Web Speech only.",
+        "talk_track": "Speakers and entrants can now ask questions directly inside their portal and get streaming answers with links to their tasks and forms — no email to the event team required. Users with multiple roles see a switcher so the assistant always answers in the right context.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The /attend/ask article covers the Attend mobile app's Ask feature; a new guide is needed for the Sites portal Ask assistant covering the floating launcher, streaming panel, citation and action cards, audience switcher, voice mode, feedback, and the \"Ask the organizer\" handoff.",
+          "why_use_it": "Ask is an AI assistant built into the Sites portal that answers questions from participants, speakers, evaluators, and awards entrants in the context of their specific role and event. It surfaces task cards, citation cards, and direct navigation links so users can act on answers without hunting through the portal. Users with multiple roles can switch audience context so answers stay relevant. Voice input is available on supported browsers and devices.",
+          "at": "2026-10-20T04:56:32.494Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-org-portal#204"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "ask-stop-answer",
+      "title": "Stop a streaming Ask answer mid-response",
+      "summary": "While Team Lead is typing an answer in the Ask panel, a **Stop** button replaces **Send** in the composer. Clicking it halts the response immediately. In voice mode, tapping **Interrupt** or speaking over the assistant (VAD barge-in) also stops the current answer. Answers that were stopped show a small **Stopped** label on the message bubble, and that label persists after a page reload.",
+      "article": "/agents/team-lead",
+      "related": [
+        "/attend/ask"
+      ],
+      "kind": "new",
+      "module": "Agents",
+      "features": [
+        "coordinators"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Ask panel → composer (typed mode) or voice mode controls"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "When Team Lead starts a long answer that isn't what you needed, you can stop it immediately rather than waiting for it to finish. This is especially useful in voice mode, where you can simply speak over the assistant to interrupt and redirect the conversation.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer mentions that Team Lead sometimes gives long or off-target answers and they have to wait for it to finish before asking again.",
+        "who_should_get_it": "Any organizer using the Ask / Team Lead panel, especially those using voice mode.",
+        "staff_path": "Ask panel → composer area while an answer is streaming",
+        "gotchas": "The 'Stopped' label on a bubble is set from the server event and survives reload; it is not a client-only indicator. The feature depends on agents backend PR #145 (team_lead.turn:cancel / team_lead.turn:cancelled) — confirm that backend is deployed before telling customers this is live.",
+        "talk_track": "If Team Lead starts answering and you realise it's not what you wanted, just hit Stop — or in voice mode, just start talking — and it cuts off immediately so you can ask again.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The Team Lead guide should document the Stop button in the Ask composer, the voice-mode interrupt/barge-in behaviour, and the \"Stopped\" label that appears on interrupted message bubbles.",
+          "why_use_it": "Team Lead's Ask panel lets you ask questions about your event and get answers drawn from your program data. Stopping a response mid-stream lets you redirect the conversation the moment you realise the answer is going in the wrong direction, saving time during fast-moving event prep. In voice mode, you can barge in naturally by speaking, just as you would in a real conversation.",
+          "at": "2026-10-20T04:31:37.489Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1071"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "ask-pinned-answers-persona-preview-voice",
+      "title": "Ask AI assistant gains pinned answers, a customisable persona, a builder preview, and organizer voice",
+      "summary": "Four new capabilities ship for the Ask AI assistant. **Pinned answers** let organizers author authoritative responses that are injected whenever a matching question is asked, with audience scoping and a visible citation card. A **persona** lets organizers set the assistant's display name, tone, and welcome message. **Builder preview** lets organizers test any attendee-facing Ask profile before it goes live, with its own daily spend cap. **Organizer voice** extends the voice ticket endpoint to event and org team members so they can use voice with the Team Lead assistant.",
+      "article": "/attend/ask",
+      "related": [
+        "/agents/team-lead"
+      ],
+      "kind": "new",
+      "module": "Agents",
+      "features": [
+        "attend"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "csm",
+        "path": "Ask your Customer Success Manager to enable Ask; then Event → Attend → Ask"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event → Attend → Ask → Pinned Answers / Profiles"
+      },
+      "permissions": [
+        "event.settings.update"
+      ],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Organizers who need the AI assistant to always give a specific, approved answer to common questions — such as venue directions, refund policy, or sponsor FAQs — can pin those answers so they surface reliably regardless of how the question is phrased. Teams can also preview exactly what an attendee will see before publishing, and use voice with Team Lead during event operations.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Four distinct capabilities ship together. Confirm with the customer which ones they want enabled and walk through the pinned-answer CRUD, persona limits (name ≤ 60 chars, avatar must be https), and the preview daily budget (default $5 per event per 24 h) before go-live."
+        },
+        "when_to_bring_up": "When a customer asks how to ensure the assistant gives consistent answers to known questions, wants to brand the assistant, or wants to test Ask before attendees use it.",
+        "who_should_get_it": "Customers already using Ask (Attend beta) who want editorial control over AI responses or are preparing for a live event.",
+        "staff_path": "Event → Attend → Ask → Pinned Answers; Event → Attend → Ask → Profiles",
+        "gotchas": "Organizer voice is region-gated: EU and Middle East regions return local_only and no ticket — TTS falls back to the browser voice only. The preview endpoint has a rolling 24-hour budget cap (ASSISTANT_PREVIEW_DAILY_BUDGET_USD, default $5 per event); hitting it returns a 429. Pinned-answer embeddings are written at save time; re-saving is needed if match phrases change. A persona name that reads like an instruction is silently dropped by the sanitiser.",
+        "talk_track": "You can now write pinned answers for your most common questions — the assistant will always surface them when someone asks something similar, and it will always show a citation card so attendees know the answer is organizer-approved. You can also give the assistant a name and tone that fits your event brand, then preview the full attendee experience before you go live.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The Ask guide should document pinned answers (CRUD, audience scoping, citation cards, phrase vs. embedding matching), the persona settings (name, tone, welcome, avatar constraints), the builder preview (how to access it, the daily budget cap, the virtual-attendee profile), and organizer voice (availability, region gate, how it differs from the attendee voice budget).",
+          "why_use_it": "Ask is the AI assistant embedded in the attendee app and the organizer Team Lead panel. It answers questions about the event program, speakers, and logistics by drawing on the event's content. Pinned answers, personas, and builder preview give organizers direct control over what the assistant says and how it presents itself, so the experience matches the event's brand and policies before attendees ever see it.",
+          "at": "2026-10-20T04:26:27.977Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4604"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "disclosures-ui-qa-sweep-w4c",
+      "title": "Disclosures: five UI fixes for the security widget, invalid links, Mitigations tab, contact sidebar errors, and column filter label",
+      "summary": "Five bugs in the Disclosures flow are resolved: (1) The Turnstile security widget on the public disclosure page now shows a **Retry** button when it fails to load instead of staying blank. (2) A truncated or malformed disclosure link now immediately shows \"This link isn't valid\" without making an unnecessary API call. (3) The **Mitigations** tab (and its `?tab=mitigations` URL) is hidden for organizations without Lessons & Credits, preventing a misleading empty success state. (4) The reuse-consent section in the contact **Disclosure** tab no longer triggers a \"Request failed\" toast for organizations without Lessons & Credits. (5) The disclosure column on the contacts grid is relabelled **Disclosure (this page)** with a hint explaining it filters only the rows currently loaded, not every contact.",
+      "article": "/contacts/disclosures",
+      "kind": "fixed",
+      "module": "CRM",
+      "features": [
+        "credits_disclosure"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Contacts → [contact] → Disclosure tab; Contacts grid → Disclosure (this page) column filter; /disclose/:token (public disclosure page)"
+      },
+      "permissions": [
+        "org.disclosures.read",
+        "org.disclosures.update"
+      ],
+      "audience": [
+        "organizer",
+        "speaker"
+      ],
+      "use_case": "Organizers running CME or accredited events can now trust that the disclosure flow surfaces clear errors instead of silent failures — speakers get a recoverable error on the security check, and admins no longer see spurious toasts or empty tabs when Lessons & Credits is not enabled.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer reports that the disclosure page appears blank, that a contact sidebar shows a 'Request failed' toast, or that the Mitigations tab is empty for an org without Lessons & Credits.",
+        "who_should_get_it": "Any customer using the Disclosures beta, especially those without Lessons & Credits enabled.",
+        "staff_path": "Org or Event → Contacts → [contact] → Disclosure tab; Event → Contacts grid → Disclosure column filter; /disclose/:token",
+        "gotchas": "The Disclosure column filter on the contacts grid is intentionally client-side only (server-side filtering is deferred). The new label 'Disclosure (this page)' and its hint make this limitation explicit — reassure customers this is by design for now.",
+        "talk_track": "We fixed five rough edges in the Disclosures flow: speakers now see a Retry button if the security check fails, bad links show a clear error immediately, and admins without Lessons & Credits no longer see empty tabs or error toasts. The contacts grid filter label now honestly says it only filters the loaded page.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The Disclosures guide should note that the column filter on the contacts grid applies only to the rows currently loaded on the page, not to all contacts, and that the Mitigations tab is only visible when Lessons & Credits is enabled.",
+          "why_use_it": "null",
+          "at": "2026-10-20T04:23:07.498Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1069"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "slides-qa-wave-4b",
+      "title": "Slides: multiple fixes to generate, attach, jobs, templates, and session file badges",
+      "summary": "A sweep of fixes across the Slides feature: double-clicking **Generate slides**, **Attach to sessions**, **Add to presentations**, or **Regenerate** no longer creates duplicate jobs. The **Jobs** tab now shows **Showing N of total** with a **Load more** button when there are more than the first page of results. The **All sessions** scope hint now reads \"Every session on the Sessions list. Drafts (unsubmitted submissions) are left out.\" Navigating back through the generate wizard no longer replaces picked session names with raw IDs. A deleted or invalid template no longer hangs on \"Loading template…\" — the designer shows \"This template no longer exists\" with a **Back to templates** link. After a successful **Attach**, the dialog no longer shows a false \"no finished sessions\" state. Password-protected PDFs now show the skip reason \"This PDF is password-protected. Remove the password and upload it again.\" **Add to presentations** now excludes title slides and merged copies from the count, and defaults to the job's template rather than the first available. The **Regenerate** toast now reports how many files could not be updated and names them. The session **Files** tab now shows **Merged copy** and **Out of date** badges on \"-with-title-slide\" copies, each with their own **Regenerate** button. Presentations & files checkboxes and pagination controls now have accessible labels for screen readers. **Bulk Create** in the Sessions list is no longer incorrectly disabled when only the Title column is visible.",
+      "article": "/marketing/slides",
+      "related": [
+        "/sessions/enable-upload-download-content"
+      ],
+      "kind": "fixed",
+      "module": "Marketing",
+      "features": [
+        "marketing_slides"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Marketing → Slides"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Events that generate title slides at scale were hitting silent failures — duplicate jobs, stale dialogs, missing badges on merged copies, and misleading success toasts. These fixes make the generate-attach-merge workflow reliable enough to use without manual verification after each step.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer reports duplicate slide jobs, stale attach dialogs, missing out-of-date badges on merged copies, or confusing regenerate toasts.",
+        "who_should_get_it": "Any customer actively using Slides to generate or merge title slides.",
+        "staff_path": "Event → Marketing → Slides → Jobs tab / session Files tab",
+        "gotchas": "The jobs paging (Load more) and the 4xx retry fix both require the companion API PR #4593 to be deployed; the UI changes are safe before that deploy but full behaviour requires both halves.",
+        "talk_track": "We fixed a batch of rough edges in Slides: double-clicking no longer fires duplicate jobs, the Jobs tab now pages through all results, merged copies show their own Out of date badge with a Regenerate button, and the Regenerate toast tells you exactly which files failed.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The Slides guide should document the new \"Showing N of total · Load more\" pagination on the Jobs tab, the \"This template no longer exists\" error state in the template designer, the per-copy Merged copy / Out of date badge on the session Files tab, and the updated \"All sessions\" scope description.",
+          "why_use_it": "Slides lets you generate branded title slides for every session and attach or merge them into speaker-uploaded presentations automatically. Use it to produce a consistent look across hundreds of sessions without touching each file by hand, and to keep merged copies up to date whenever session details change.",
+          "at": "2026-10-20T04:20:33.562Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1065"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "slides-title-slide-qa-sweep-w4b",
+      "title": "Multiple Slides and title-slide fixes: draft sessions excluded, broken headshots show initials, encrypted PDFs rejected, contrast improved, and more",
+      "summary": "A sweep of twelve bugs in the **Slides** title-slide feature. Key fixes: draft sessions are no longer included in **All sessions** generated slide runs; speaker headshots that cannot be fetched now show the speaker's initials disc instead of a blank circle; password-protected PDFs are rejected at merge time with a clear error instead of producing blank title pages; organizer-generated copies are no longer stacked as a second title slide when merging; text contrast on mid-tone brand colour bands now meets the 4.5:1 minimum; template names with special characters (e.g. `R&D`) are stored and displayed correctly; and the **Jobs** list supports paging so events with many runs can browse all of them.",
+      "article": "/marketing/slides",
+      "related": [],
+      "kind": "fixed",
+      "module": "Marketing",
+      "features": [
+        "marketing_slides"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Marketing → Slides"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Events that generate title slides for all sessions were silently including draft sessions that are hidden everywhere else in the product. Organizers can now trust that a full-event slide run matches exactly the sessions visible in the Sessions list, and that merged presentations will not stack duplicate title slides or produce blank pages from encrypted PDFs.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer reports that their generated slide deck included sessions they had not published yet, that a merged presentation had two title slides, that a speaker's headshot showed as a blank circle, or that a password-protected PDF caused a silent merge failure.",
+        "who_should_get_it": "Any customer actively using the Slides title-slide generation and merge feature.",
+        "staff_path": "Event → Marketing → Slides",
+        "gotchas": "One live template in US had an HTML-entity-encoded name (e.g. &amp;amp;). An optional SQL cleanup script is in the PR body — coordinate with engineering if a customer reports garbled template names. The jobs list now pages (offset/limit) so customers with many runs will see a total count and can navigate beyond the first 50.",
+        "talk_track": "We fixed a batch of edge cases in Slides: draft sessions stay out of generated runs, broken or untrusted headshot URLs fall back to the speaker's initials, encrypted PDFs are flagged instead of silently producing blank pages, and duplicate title slides no longer stack when you re-merge. Text on mid-tone brand colours also now meets accessibility contrast requirements.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The Slides guide should document: (1) that draft sessions are excluded from All Sessions runs; (2) that headshots falling back to initials when the image cannot be fetched; (3) that password-protected PDFs are rejected at merge time with an \"encrypted\" reason; (4) that the Jobs list is paginated; and (5) the 4.5:1 contrast requirement for brand colour bands.",
+          "why_use_it": "Slides lets you generate branded title slides for every session and merge them into uploaded speaker presentations automatically. It saves the production team hours of manual file work and keeps every deck on-brand without touching individual files. Use it when you need a consistent look across dozens or hundreds of session recordings or live-stream files.",
+          "at": "2026-10-20T04:18:48.543Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4593"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "ask-voice-local-only-eu-me",
+      "title": "Voice assistant mic is hidden when on-device speech recognition is unavailable in EU/ME or without a relay ticket",
+      "summary": "In EU and Middle East regions, and in any browser session without a valid voice relay ticket, the AI assistant no longer falls back to cloud-based Web Speech (Google). Instead, it requires on-device speech recognition. When the browser cannot provide it, the mic icon is replaced with a muted icon and the note **\"Voice needs on-device speech recognition in this browser.\"** Text-to-speech also switches to local voices only; if none are available for the language, the assistant responds in text only.",
+      "article": "/agents/team-lead#the-panels-tabs",
+      "kind": "fixed",
+      "module": "Agents",
+      "features": [
+        "coordinators"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Team Lead assistant panel → Voice tab"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizations operating under EU or Middle East data-residency requirements need assurance that voice input is never routed to unapproved third-party processors. This fix ensures audio stays on-device in those regions and surfaces a clear message when the browser cannot support it, so organizers know exactly why the mic is unavailable.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "EU and ME customers who were using voice in the assistant panel will now see the mic hidden or replaced with a muted icon if their browser lacks on-device speech recognition (e.g. Firefox, older Chrome, Safari). Chrome 119+ with on-device speech downloaded will work. Confirm with affected customers which browser they use."
+        },
+        "when_to_bring_up": "When an EU or ME customer reports that the voice mic has disappeared or shows a muted icon after a recent update.",
+        "who_should_get_it": "All customers in EU and Middle East regions using the Team Lead voice assistant, and any customer whose browser does not support on-device speech recognition.",
+        "staff_path": "Team Lead assistant panel → Voice tab (mic icon area)",
+        "gotchas": "Chrome requires the on-device speech recognition model to be downloaded; 'downloadable' state counts as unavailable. Firefox and Safari are always unavailable. US customers with a valid browser-provider relay ticket and local_only:false are unaffected.",
+        "talk_track": "To protect data privacy in your region, voice input now stays entirely on your device. If your browser supports on-device speech recognition (Chrome 119+ with the model downloaded), voice works as before. If not, you'll see a note explaining why the mic is hidden — switching to a supported browser resolves it.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The Team Lead guide should add a section explaining that voice input requires on-device speech recognition in EU/ME regions and when no relay ticket is present, list which browsers support it, and describe the muted-mic indicator and what it means.",
+          "why_use_it": "null",
+          "at": "2026-10-20T04:03:40.372Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1068"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "draft-session-fields-saved-correctly",
+      "title": "Draft submissions now save all session fields, not just the title",
+      "summary": "When a speaker saved a submission as a draft, only the **Title** was written to the draft session record — **Description**, other standard fields, and every custom field answer were silently dropped. All standard columns and custom field values are now saved on every draft save, so speakers can resume a draft and find their work intact.",
+      "article": "/participants/save-a-submission-as-a-draft",
+      "related": [
+        "/sessions/draft-submissions",
+        "/sessions/submission-forms"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "sessions"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Submission Form → Save as Draft"
+      },
+      "permissions": [],
+      "audience": [
+        "speaker",
+        "participant"
+      ],
+      "use_case": "Speakers who fill in a description, custom answers, and other fields before saving a draft no longer lose that work. They can return to the draft and pick up exactly where they left off.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Fix is automatic; no action needed. 3,417 US and 389 EU drafts were affected — those speakers will see their previously missing fields restored on next load."
+        },
+        "when_to_bring_up": "A speaker reports that their draft lost everything except the title, or an organizer notices draft sessions with only a title and no other content.",
+        "who_should_get_it": "Any customer whose speakers use the Save as Draft feature on submission forms.",
+        "staff_path": null,
+        "gotchas": "If a session Description was edited directly on the session record after the draft was saved, the newer session-record value wins over the snapshot on resume — this is intentional.",
+        "talk_track": "Speakers can now save a draft at any point and come back to find all their answers — title, description, and every custom field — exactly as they left them.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that all standard and custom fields are preserved in a draft, and clarify that if a session's Description is edited directly on the session record after a draft is saved, the session-record value takes precedence on resume.",
+          "why_use_it": "null",
+          "at": "2026-10-20T04:02:02.321Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4591"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "cfp-portal-country-list",
+      "title": "Country list overrides now apply to the public CFP form and reviewer portals",
+      "summary": "The org-level country list configuration — hidden countries and custom country names — is now respected on the public **Call for Papers** form and on reviewer portal sign-up flows. Previously, the overrides were stored but never sent to those surfaces, so submitters and reviewers always saw the full, unmodified country list.",
+      "article": "/site/program-site#programs-and-calls-for-proposals",
+      "related": [
+        "/portals/portals-101",
+        "/evaluations/call-for-reviewers"
+      ],
+      "kind": "fixed",
+      "module": "Portals",
+      "features": [
+        "sessions_v2",
+        "new_portals"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Settings → Country List (org level) — visible to submitters on the public CFP form and to reviewers on the portal"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "speaker",
+        "participant",
+        "reviewer"
+      ],
+      "use_case": "Organizations that restrict or rename countries for compliance or regional branding reasons can now be confident those settings are enforced everywhere a country field appears — including the public submission form and the reviewer portal — not just in the admin interface.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer reports that hidden or renamed countries still appear on their public CFP form or reviewer portal, or asks whether country list settings apply to public-facing forms.",
+        "who_should_get_it": "Any customer who has configured org-level country list overrides (hidden IDs or renames) and uses a public CFP or reviewer portal.",
+        "staff_path": "Org Settings → Country List",
+        "gotchas": "Orgs with no overrides receive an explicit empty object ({ hiddenIds: [], renames: {} }) rather than a missing key — no behaviour change for them. The UI side (web-ui-v2) must also read the new payload field for this to render correctly; confirm the paired UI PR is deployed.",
+        "talk_track": "If you've hidden or renamed countries in your org settings, those changes now show up on your public CFP form and reviewer portals automatically — no extra steps needed.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The program site and portals guides should note that org-level country list overrides (hidden countries and renames) are automatically applied to the public CFP form and reviewer portal country fields.",
+          "why_use_it": "The country list configuration lets you hide countries that are not relevant to your program and rename entries to match your organization's preferred terminology. These overrides apply consistently across every form and portal surface so submitters and reviewers always see the same curated list.",
+          "at": "2026-10-20T03:53:05.581Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4596"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "ask-voice-relay-and-server-tts",
+      "title": "Ask now supports voice input and spoken answers in the attendee app",
+      "summary": "Attendees can speak their questions to Ask using real-time speech-to-text powered by Deepgram Nova-3, and — when an organizer enables the opt-in setting — Ask can read answers aloud using OpenAI text-to-speech. Voice input is available in all 33 supported app languages; server-side text-to-speech is off by default and must be turned on per event via **Ask → Voice → Server TTS**.",
+      "article": "/attend/ask",
+      "related": [
+        "/attend/mobile-app",
+        "/attend/overview"
+      ],
+      "kind": "new",
+      "module": "Event team",
+      "features": [
+        "attend_app"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "setting",
+        "path": "Attend → Ask → Voice → Server TTS (for spoken answers; voice input is on when Ask is on)"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Attend app → Ask (attendee-facing); Event Settings → Attend → Ask → Voice (organizer-facing)"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Events with hands-free or accessibility-focused attendees benefit from letting people speak their questions rather than type them. Organizers who want a fully conversational experience can also enable server TTS so Ask reads answers aloud, reducing friction for attendees on the move.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Voice input is US-region only; EU and Middle East stacks fall back to the browser/device recognizer with no server TTS. Confirm the Cost_Events migration (20261020040000) has run on prod before enabling for any customer — the tts_chars unit type was silently dropped before the migration."
+        },
+        "when_to_bring_up": "When a customer using Attend Ask asks about accessibility, hands-free use, or a more conversational app experience.",
+        "who_should_get_it": "Customers already using Attend with Ask enabled, particularly those with large in-person audiences or accessibility requirements. US-hosted stacks only for full feature set.",
+        "staff_path": "Event → Attend → Ask → Voice",
+        "gotchas": "EU and ME stacks receive stt.provider: 'browser'/'device' and no server TTS — do not promise full voice to those customers. Server TTS is off by default and requires a TTS key to be configured. Each voice session is metered (Deepgram streaming minutes + OpenAI TTS chars) against the event's daily budget. Sessions are capped at 60 s per utterance and 300 s total. No audio is stored.",
+        "talk_track": "Attendees can now tap a mic icon in Ask, speak their question, and get an answer — no typing needed. If you want Ask to also read the answer aloud, we can turn on Server TTS for your event.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The Ask guide should add a Voice section covering: how to enable voice input, the Server TTS toggle and its prerequisites, supported languages and the browser/device fallback, per-session time limits, metering and daily budget behaviour, and the EU/ME regional restriction.",
+          "why_use_it": "Ask lets attendees get instant, AI-powered answers about the event — sessions, speakers, schedules and more — directly in the mobile app. With voice support, attendees speak their questions naturally in any of the 33 supported app languages and hear or read the response without breaking their stride. Organizers control whether answers are spoken aloud, keeping the experience appropriate for their event format.",
+          "at": "2026-10-20T03:42:55.523Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4599"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "campaign-emails-logo-wrapper",
+      "title": "Campaign emails now include the event logo",
+      "summary": "Campaign emails, test sends, automated sends, and workflow sends were delivered without the event logo when no email theme was set. All sends now wrap the email body in the same template used by **Send Email**, so the event logo (or org logo for org-scoped sends) appears consistently.",
+      "article": "/communications/email-campaigns",
+      "related": [
+        "/settings/email-themes",
+        "/communications/create-send-emails"
+      ],
+      "kind": "fixed",
+      "module": "Communications",
+      "features": [
+        "email_campaigns"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Communications → Email Campaigns"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Events that rely on campaigns to communicate with speakers and attendees expect branded emails. The logo now appears in every campaign send without requiring a theme to be configured.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer notices their campaign emails look unbranded or are missing the event logo.",
+        "who_should_get_it": "Any customer using email campaigns without a custom email theme set — particularly common for events that have not configured themes.",
+        "staff_path": "Event → Communications → Email Campaigns",
+        "gotchas": "This fix applies retroactively to all future sends; previously sent emails are not resent. Org-scoped sends use the org logo; event-scoped sends use the event logo.",
+        "talk_track": "Campaign emails now automatically include your event logo in the same branded wrapper as your other emails, even if you haven't set up a custom email theme.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The Email campaigns guide should note that the event logo is included in all sends by default, and clarify how org-scoped vs. event-scoped sends determine which logo is used.",
+          "why_use_it": "null",
+          "at": "2026-10-20T03:41:00.490Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4589"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "advocacy-attending-native-attend-source",
+      "title": "Advocacy attending widget now accepts native Attend registrations",
+      "summary": "The **advocacy-attending** embed widget previously rejected `source=\"attend\"` with a validation error and made no request, so native Attend registrants could not be looked up. The widget now accepts `source=\"attend\"` and resolves the attendee by UUID — matching the same logic the API uses — so a confirmed, opted-in native registration renders the advocacy card correctly.",
+      "article": "/marketing/advocacy",
+      "related": [
+        "/sessions/embeds"
+      ],
+      "kind": "fixed",
+      "module": "Marketing",
+      "features": [
+        "marketing_advocacy",
+        "embeds_v2",
+        "attend"
+      ],
+      "availability": "on_request",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Embed → widget-type=\"advocacy-attending\" with source=\"attend\""
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Organizations using native Attend for registration can now embed the advocacy-attending widget on their confirmation pages and pass `source=\"attend\"` with the attendee's UUID to surface the advocacy card — no workaround or alternative registration source required.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer using native Attend registration reports that the advocacy-attending embed shows a validation error instead of the advocacy card on their confirmation page.",
+        "who_should_get_it": "Customers using Advocacy campaigns alongside native Attend registration who embed the advocacy-attending widget on registration confirmation pages.",
+        "staff_path": null,
+        "gotchas": "The fix only applies when source=\"attend\" is paired with a valid v4 UUID as the attendee-id. Non-UUID attend IDs still trigger the email-required flow (no request is made). Other sources such as eventbrite are unaffected.",
+        "talk_track": "If you use Sessionboard's native Attend for registration, you can now pass source=\"attend\" and the attendee's UUID directly into the advocacy-attending embed and it will resolve the card without needing an email address.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The Advocacy campaigns guide should document the advocacy-attending embed widget attributes, including the supported source values (attend, cvent, eventbrite, etc.) and how the attendee-id format differs per source (UUID for attend/cvent vs. email-required for others).",
+          "why_use_it": "null",
+          "at": "2026-10-20T03:39:23.195Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-embeds#111"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "feature:attend (beta)"
+    },
+    {
+      "id": "contracts-esign-qa-wave4a",
+      "title": "Sessionboard e-sign: signed-copy download, sender message, inline PDF viewer, and a sweep of signing-flow fixes",
+      "summary": "A batch of fixes and additions to the Sessionboard native e-sign flow. Signers now receive a **Download signed copy** button in their completion email that streams the signed PDF via a secure, token-gated link. The sender's custom message (with merge variables resolved) appears on the signing page and in invite, your-turn, and reminder emails, using the custom subject line. An inline unsigned-PDF viewer is available on the `/sign/:token` page. Additional fixes: voiding a contract is blocked once it is completed, declined, or executed; submitting field values for another signer's fields returns a clear error; templates whose module does not match the subject (e.g. a Groups template sent to a contact) are refused at send time; duplicate template names return a 409 instead of a 500; typed-signature SVGs now scale to fit long names and emoji; uploaded PDFs are validated for the `%PDF-` header and date-range rules; and error messages for bad or expired signing tokens are now consistent 404s.",
+      "article": "/speaker-crm/contracts",
+      "related": [
+        "/participants/sign-a-contract"
+      ],
+      "kind": "improved",
+      "module": "CRM",
+      "features": [
+        "contracts"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "CRM → Contracts"
+      },
+      "permissions": [
+        "org.contracts.create",
+        "org.contracts.read",
+        "org.contracts.update"
+      ],
+      "audience": [
+        "organizer",
+        "speaker",
+        "participant"
+      ],
+      "use_case": "Organizers using Sessionboard e-sign can now trust that signers receive a working download link for their signed copy, see the sender's personalised message throughout the flow, and encounter clear, consistent errors if something goes wrong — reducing support requests around lost copies and confusing error pages.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Two database migrations ship with this PR (copy-token column + email template text update). Verify both have run on US and EU before directing customers to the new download-copy link or the inline viewer."
+        },
+        "when_to_bring_up": "When a customer asks why signers can't download their signed copy, or reports confusing error messages on the signing page, or asks about the sender message not appearing in emails.",
+        "who_should_get_it": "Any customer using Sessionboard native e-sign (Contracts beta).",
+        "staff_path": "CRM → Contracts → [contract] → Signers tab; completion email → Download signed copy",
+        "gotchas": "The inline unsigned-PDF viewer on /sign/:token requires the companion UI PR (sessionboard-web-ui-v2, same branch). The documents S3 bucket had no CORS, so the viewer was always broken before this fix — reassure customers this is now resolved. The copy-token is minted at finalize time, so contracts completed before this deploy will not have a download link in their old completion emails.",
+        "talk_track": "After a signer completes a contract, they now get a 'Download signed copy' button right in their completion email — no need to chase the organizer for a PDF. And the custom message you write when sending the contract now shows up on the signing page and in every email the signer receives, so the experience feels personal and on-brand.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should document: (1) the new Download signed copy link in completion emails and the /contracting/signed-copy/:token endpoint; (2) that the sender message and custom subject appear on the signing page and in invite/reminder emails with merge variables resolved; (3) the inline unsigned-PDF viewer on the signing page; (4) validation rules for manually uploaded PDFs (PDF header check, date-range constraints); and (5) which contract statuses allow voiding.",
+          "why_use_it": "Sessionboard's built-in e-sign lets you send, track, and collect legally binding signatures without leaving the platform or paying for a third-party tool. Signers complete agreements from their portal or a public signing link, and both parties receive a signed copy automatically. Use it whenever you need a fast, auditable signature on speaker agreements, sponsor contracts, or any other document tied to your event contacts.",
+          "at": "2026-10-20T03:37:52.269Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4590"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "organizer-ask-voice-mode",
+      "title": "Talk to Ask by voice in the organizer assistant panel",
+      "summary": "A **Talk with Ask** button (microphone icon) now appears in the **Ask** assistant panel for organizers. Tapping it opens **Voice Mode**: speak a question, see live captions as Ask transcribes, then hear the answer read back sentence by sentence. A single button handles the current phase — start talking, send now, or interrupt — and pressing **Escape** or the exit button returns to the typed chat. Animations respect the system Reduce Motion setting.",
+      "article": "/agents/team-lead#the-panels-tabs",
+      "related": [
+        "/agents/overview"
+      ],
+      "kind": "new",
+      "module": "Agents",
+      "features": [
+        "coordinators"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Ask panel → Talk with Ask (AudioLines icon)"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who are heads-down building an agenda or reviewing submissions can ask Ask a question out loud without switching context to type. Voice mode is especially useful when working on a laptop with hands occupied or when a quick spoken question is faster than typing.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Voice mode is default-on wherever the browser supports speech recognition. The Deepgram relay activates automatically when the backend returns a ticket; EU and ME stacks answer 'browser' so those regions always use Web Speech. Echo cancellation behaviour varies by OS — system TTS may bleed into the mic on some laptops. Barge-in cannot stop the agents service from finishing a turn for organizers (no cancel-turn event on Team Lead today)."
+        },
+        "when_to_bring_up": "When a customer asks about hands-free or faster ways to interact with Ask, or when they mention switching between the panel and their keyboard frequently.",
+        "who_should_get_it": "Any organizer using the Ask / Team Lead panel who would benefit from spoken interaction — particularly power users managing complex programs.",
+        "staff_path": "Ask panel → Talk with Ask button (AudioLines icon)",
+        "gotchas": "Barge-in stops playback and ignores the rest of the answer, but the backend agent still finishes the turn and spends tokens. Echo cancellation may not suppress system TTS on every OS. The mic button is hidden entirely when the browser cannot listen (record-a-clip mic remains). Slovenian and Arabic always use browser speech, not Deepgram.",
+        "talk_track": "You can now just speak your question to Ask — it transcribes what you say, sends it, and reads the answer back. If you want to jump in before it finishes, tap the button once and it stops and listens again.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The Team Lead guide should add a section documenting Voice Mode: how to enter it, what each button state means, barge-in behaviour, language and browser support, and the Reduce Motion fallback.",
+          "why_use_it": "Team Lead's Ask panel lets organizers get instant answers about their event — sessions, speakers, schedules, contacts — without leaving the page they are working on. Voice mode extends that to spoken conversation: ask a question, hear the answer, and follow up, all without touching the keyboard. The panel falls back to browser speech recognition automatically when the Deepgram relay is not available, so voice works across regions and plans.",
+          "at": "2026-10-20T03:31:47.375Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1067"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "clip-library-filters-and-thumbnails",
+      "title": "Filter the clip library by speaker, topic, aspect ratio and date — and see thumbnail previews",
+      "summary": "The clip library now supports four new filters: **Speaker**, **Topic**, **Aspect Ratio** (16:9, 9:16, 1:1), and **Created** date range. A **Facets** call populates the Speaker and Topic dropdowns automatically from the clips in scope. Every clip also shows a thumbnail poster frame so you can identify content at a glance. Clips now carry `session_id`, linking them to the session they came from.",
+      "article": "/marketing/clips",
+      "related": [
+        "/marketing/media-library",
+        "/marketing/what-is-sessionboard-marketing"
+      ],
+      "kind": "improved",
+      "module": "Marketing",
+      "features": [
+        "marketing_clips"
+      ],
+      "availability": "limited_release",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Marketing → Clips"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Teams producing many clips per event can now filter by speaker or topic to find the right asset quickly, and use aspect-ratio filtering to pull only portrait clips for social channels. Thumbnail previews let you confirm the right clip without opening it.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer has a large clip library and struggles to find specific assets for social or advocacy campaigns.",
+        "who_should_get_it": "Customers actively using Clips (limited_release) who produce high volumes of clips across many sessions or speakers.",
+        "staff_path": "Marketing → Clips",
+        "gotchas": "Topic filters draw from session taxonomy once clips carry session_id — the SB-9757 backfill script must run first for existing clips. Media_Topics is currently empty in US prod, so topics come from session taxonomy only after the backfill.",
+        "talk_track": "You can now filter your clip library by speaker, topic, aspect ratio or date — and each clip shows a thumbnail so you can spot the right one instantly.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The Clips guide should document the new filter bar (Speaker, Topic, Aspect Ratio, Created date range) and explain that thumbnail poster frames appear automatically for video clips.",
+          "why_use_it": "The Clips library is where every trimmed video, audiogram and captioned clip lives after export. Filters by speaker, topic, aspect ratio and date let you surface the exact assets you need for a campaign without scrolling through the full library. Thumbnail poster frames give you a visual preview of each clip so you can confirm content at a glance before downloading or sharing.",
+          "at": "2026-10-20T02:55:17.509Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4594"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:limited_release"
+    },
+    {
+      "id": "reviewer-portal-sentence-case",
+      "title": "Reviewer portal labels are now sentence case throughout",
+      "summary": "Labels in the reviewer portal that previously used Title Case — including **Overall progress**, **Review rounds**, and the **Interest form evaluation** badge — are now sentence case, matching the surrounding controls. The **Quick jump** panel, **Bulk scoring mode** bar, and the review round page title are also updated.",
+      "article": "/evaluations/how-to-evaluate-sessions",
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "sessions_v2"
+      ],
+      "availability": "add_on",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Reviewer portal → My Reviews"
+      },
+      "permissions": [],
+      "audience": [
+        "reviewer"
+      ],
+      "use_case": "Reviewers using an English-language profile will see consistent sentence-case labels throughout the My Reviews page, removing the visual inconsistency that made the interface feel unpolished.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "Only if a customer reports inconsistent capitalisation in the reviewer portal.",
+        "who_should_get_it": "All customers using Sessions 2.0 evaluation plans with English-language reviewer profiles.",
+        "staff_path": "Reviewer portal → My Reviews",
+        "gotchas": "Only English (en) locale strings were changed; de/es/fr translations are unchanged. Status names inside sentences (e.g. 'Saved as Reviewed') intentionally keep their capitals. 'My Reviews' itself is unchanged because it matches the portal nav and breadcrumb.",
+        "talk_track": "The reviewer portal now uses consistent sentence case for all short labels, so the interface looks polished and professional for your reviewers.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that all short labels in the reviewer portal (Overall progress, Review rounds, Interest form evaluation, Quick jump, Bulk scoring mode) use sentence case; status names inside sentences (e.g. \"Saved as Reviewed\") retain their capitals.",
+          "why_use_it": "null",
+          "at": "2026-10-20T02:48:35.774Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-org-portal#203"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "qa-w3a-evaluations-cfp-disclosures",
+      "title": "Six fixes across evaluations, CFP, and disclosures",
+      "summary": "This release corrects six issues across evaluations, the public CFP form, and the disclosures workflow: (1) A **\"Saved, but a field rule was not applied\"** warning toast now appears on the session profile and side panel when a field rule cannot be applied after saving. (2) The **Status** filter in the Interest Form evaluation plan wizard now shows **Pending / Accepted / Declined** values, and the assignment count updates correctly when filters are active on a non-default round. (3) Bulk-editing evaluator tags now shows a **\"Tags updated for N evaluators. M skipped\"** warning when some selections could not be tagged, rather than a generic error. (4) Evaluation plan labels throughout the UI are now sentence case (e.g. **\"Show scores from other evaluators\"**, **\"Plan options\"**, **\"Evaluator tags\"**). (5) Adding a participant who requires a mitigation decision now opens the **Record Mitigation** dialog inline so the organizer can choose **Recused** (or another decision), add notes, and complete the add in one step. (6) The public CFP phone field and country picker now respect the event's timezone and org-level country list overrides.",
+      "article": "/evaluations/setting-up-round-based-evaluations",
+      "related": [
+        "/evaluations/evaluation-plans",
+        "/contacts/disclosures",
+        "/speaker-crm/speaker-crm-interest-forms",
+        "/settings/field-rules"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "sessions_v2",
+        "field_rules",
+        "credits_disclosure"
+      ],
+      "availability": "add_on",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Sessions → Evaluation Plans; Sessions → [session] → Participants; Submissions → [CFP form]"
+      },
+      "permissions": [
+        "event.evaluation_plans.read",
+        "event.evaluation_plans.update",
+        "event.sessions.update",
+        "org.disclosures.read"
+      ],
+      "audience": [
+        "organizer",
+        "reviewer"
+      ],
+      "use_case": "Organizers running evaluation plans, managing participant disclosures, or accepting CFP submissions will see accurate feedback and correct data in several places that previously showed empty lists, silent failures, or wrong phone defaults.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer reports that field-rule warnings never appeared after saving a session, that the Interest Form Status filter was blank, that bulk evaluator tag edits gave a confusing error, that adding a participant requiring mitigation had no in-app dialog, or that the CFP phone field defaulted to US +1 for non-US events.",
+        "who_should_get_it": "Customers using Sessions 2.0 evaluation plans, field rules, disclosures/mitigations, or public CFP forms for non-US events.",
+        "staff_path": "Event → Sessions → Evaluation Plans → [plan] → Assignments (Interest Form); Event → Sessions → [session] → Participants; Org → Interest Forms → [form] → Evaluation Plans",
+        "gotchas": "The Interest Form assignment count fix and the CFP country-list override each require the companion web-api PR (#4584) to be deployed before the full fix is visible. The mitigation dialog fix is UI-only and works independently.",
+        "talk_track": "Several small but impactful issues in evaluations and CFP have been corrected: field-rule warnings now surface after saving, the Interest Form Status filter is populated, bulk tag edits report partial successes clearly, adding a participant who needs a mitigation decision now walks you through it inline, and the CFP phone field defaults to the right country code for your event's timezone.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The guide should add a note that the Interest Form evaluation plan wizard's Status filter requires the event's org round to be in scope, and that the assignment count reflects active filters. The disclosures guide should document the inline mitigation dialog that appears when adding a participant flagged as requiring a mitigation decision.",
+          "why_use_it": "null",
+          "at": "2026-10-20T02:46:28.295Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1061"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "feature:credits_disclosure (beta)"
+    },
+    {
+      "id": "attendee-ask-thread-sheet",
+      "title": "Reply to attendee Ask handoff threads directly from the Messages page",
+      "summary": "Clicking an **Ask the organizer** handoff thread in the inbox or on the **Messages** page now opens a side sheet showing the attendee's name, the full message history, and a composer. Use the **Reply to attendee** / **Internal note** toggle to send a response that reaches the attendee or to leave a private note visible only to your team. Opening the sheet marks the thread as read automatically.",
+      "article": "/communications/notifications",
+      "related": [
+        "/attend/ask"
+      ],
+      "kind": "new",
+      "module": "Communications",
+      "features": [
+        "attend",
+        "notifications"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Messages → [attendee Ask thread]"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "When an attendee uses Ask to escalate a question to the organizer, the team can now read the full conversation and reply — or leave an internal note — without leaving the Messages page. This closes the loop on attendee questions without switching tools.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer using the Attend app and Ask has attendees escalating questions and wants to manage those replies from the admin side.",
+        "who_should_get_it": "Customers who have the Attend app and Ask enabled and are actively handling attendee questions during an event.",
+        "staff_path": "Event → Messages → click an 'Ask the organizer' thread row",
+        "gotchas": "Attachment support is intentionally disabled in the reply composer for now — the attendee app's thread view has not been confirmed to render them. A 'filter by attendee questions' option is also not yet available; the inbox shows all thread types together.",
+        "talk_track": "If an attendee's question stumps the AI, it hands off to you. You can now open that thread right in Messages, see the full conversation, reply directly to the attendee, or drop an internal note to coordinate with your team first — all without leaving Sessionboard.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The Notifications and messaging guide should add a section explaining attendee Ask handoff threads: how they appear in the inbox, how to open the reply sheet, the Reply to attendee vs. Internal note toggle, and the read-state behaviour.",
+          "why_use_it": "The Messages page is the central place for your team to handle every inbound thread — from speakers, reviewers, and attendees — in one inbox. Attendee Ask handoff threads surface questions that the AI assistant could not answer, letting organizers step in with a direct reply or coordinate internally with a private note before responding. Internal notes are visible only to your team; replies are delivered to the attendee through the app.",
+          "at": "2026-10-20T02:33:54.060Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1060"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "booklet-language-field-blank-fix",
+      "title": "Session fields and participant details no longer appear blank in printed booklets",
+      "summary": "Selected session fields, participant titles, and company names were blank in every printed booklet because the locale code was stored as `en_US` but looked up as `en-US`. The event's configured language is now used with the correct format, so all field values appear as expected.",
+      "article": "/marketing/print-agendas",
+      "kind": "fixed",
+      "module": "Marketing",
+      "features": [
+        "print_agenda"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Marketing → Print → [booklet]"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who generate printed program books rely on session fields and speaker details being populated. This fix ensures those values appear correctly without any manual workaround.",
+      "internal": {
+        "cs_action": {
+          "kind": "reach_out",
+          "note": "Any customer who generated a booklet after PR #4495 (recent release) may have a blank-field booklet saved. Proactively reach out to customers who use Print Agendas and suggest they regenerate."
+        },
+        "when_to_bring_up": "A customer reports that session fields, speaker titles, or company names are missing from their printed booklet or program book.",
+        "who_should_get_it": "Any customer using the Print Agendas / booklet feature — regression affected all booklets since a recent release.",
+        "staff_path": "Event → Marketing → Print → open a booklet → regenerate",
+        "gotchas": "Booklets generated between PR #4495 and this fix will still show blank fields until the customer regenerates them. Friendly ID and Client Session ID now pull from their dedicated Sessions columns.",
+        "talk_track": "A recent update accidentally caused session fields and speaker details to go blank in printed booklets. That is now fixed — just regenerate your booklet and everything will appear correctly.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": null,
+          "why_use_it": "null",
+          "at": "2026-10-20T02:11:48.451Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4584"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "attend-ask-stats-inbox-attendee-threads",
+      "title": "Attendee Ask shows helpfulness stats and surfaces attendee handoff threads in the inbox",
+      "summary": "The **Attendee Ask** usage card now shows a **Rated helpful** percentage (up-votes ÷ total ratings), a breakdown of down-vote reasons, and a **Sent to your team** tile that links to the event inbox. The event inbox also displays attendee-initiated handoff threads with an **Attendee** chip and sender label so staff can identify them at a glance.",
+      "article": "/attend/ask",
+      "related": [
+        "/communications/notifications"
+      ],
+      "kind": "improved",
+      "module": "Communications",
+      "features": [
+        "attend",
+        "attend_app"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Attend → Ask (usage card) and Messages (inbox)"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Event teams using the AI assistant can now see at a glance how often attendees find answers helpful and how many conversations were escalated to staff — without leaving the Attend module. The inbox makes it easy to spot and respond to attendee-initiated threads.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Clicking an attendee handoff thread in the inbox does not yet open a thread view — that is a known gap requiring a follow-on ticket. Warn customers before they try to action those threads."
+        },
+        "when_to_bring_up": "When a customer asks how to measure Ask effectiveness or wants to know if attendees are escalating to staff.",
+        "who_should_get_it": "Customers already using Attend and the Ask AI assistant feature.",
+        "staff_path": "Event → Attend → Ask → Usage card; Event → Messages",
+        "gotchas": "The 'Sent to your team' link opens the unfiltered event inbox — there is no record-type filter yet, so attendee handoff threads are mixed with other threads. Clicking an attend_organizer thread does nothing; the thread detail view is not yet built.",
+        "talk_track": "The Ask usage card now shows your helpfulness score and a count of conversations escalated to your team, so you can see whether the AI is answering well and how much staff follow-up it's generating.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The Usage section of the Ask guide should document the Rated helpful metric, the down-vote reason breakdown, and the Sent to your team tile, including the known limitation that clicking attendee handoff threads in the inbox does not yet open a detail view.",
+          "why_use_it": "Ask is the event app's AI assistant that answers attendee questions in real time. The usage card gives organizers a quick read on answer quality — what percentage of rated responses were marked helpful, which topics prompted down-votes, and how many conversations were handed off to the team — so they can tune the assistant's knowledge base and staffing before and during the event.",
+          "at": "2026-10-20T02:01:49.771Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1059"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "reviewer-portal-qa-wave2",
+      "title": "Reviewer portal: richer submission cards, collapsible Quick Jump, prior-round scores, view-only mode after deadline, and messaging controls",
+      "summary": "Six improvements to the reviewer portal ship together: **Review Submission Card** now shows full abstract titles, presenters, and category in a wrapping layout. The **Quick Jump** panel is narrower, collapses to a rail showing an active-filter count, and remembers its state per user. When messaging is disabled for a round, the messaging panel is hidden entirely rather than shown as read-only. The participant list compacts past five entries and scrolls in its own box; in blind rounds, blocks that only expose a role are dropped. A sticky **Prior round** strip and a collapsible **Prior round feedback** card appear above the rubric so reviewers can see earlier scores without leaving the page. After the deadline, **My Reviews** shows **Closed · View only**, a **ReviewReadOnlyBanner** displays the close date, scoring fields are disabled, and **Save**, conflicts, recommendations, and builds are hidden.",
+      "article": "/evaluations/how-to-evaluate-sessions",
+      "related": [
+        "/evaluations/setting-up-round-based-evaluations",
+        "/evaluations/evaluation-plans"
+      ],
+      "kind": "improved",
+      "module": "Program",
+      "features": [
+        "sessions_v2"
+      ],
+      "availability": "add_on",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Reviewer portal → My Reviews → [round]"
+      },
+      "permissions": [],
+      "audience": [
+        "reviewer",
+        "organizer"
+      ],
+      "use_case": "Multi-round review programs need reviewers to see prior scores in context and understand when scoring has closed. These changes give reviewers the information they need at a glance — prior-round feedback pinned above the rubric, a compact navigation panel, and a clear read-only state after the deadline — reducing confusion and support requests during active review cycles.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer running multi-round reviews asks how reviewers can see prior scores, or when reviewers report confusion about whether scoring is still open after a deadline.",
+        "who_should_get_it": "Customers using Sessions 2.0 evaluation plans with multiple rounds, blind review, or messaging disabled on a round.",
+        "staff_path": "Event → Sessions → Evaluation Plans → [plan] → open reviewer portal",
+        "gotchas": "The prior-round strip and feedback card only render when the API returns the new optional fields (web-api fix/qa-201026-wave2 must be deployed). Without those fields the blocks simply do not appear — no errors, just absent. On production, 1,487 of 1,565 US v2 plans and all 23 EU plans have messaging off, so the messaging panel will be hidden for the vast majority of reviewers once both sides ship.",
+        "talk_track": "Reviewers now see last round's score and feedback pinned right above the rubric, the navigation panel collapses to save space, and once the deadline passes the portal stays open in read-only mode so nothing gets accidentally changed.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should document the new Prior round strip and Prior round feedback card above the rubric, the collapsible Quick Jump rail and its localStorage persistence, the Closed · View only state in My Reviews with the ReviewReadOnlyBanner, the compact participant list behaviour past five entries, and the blind-round rule that drops role-only blocks.",
+          "why_use_it": "The reviewer portal gives evaluators a focused workspace to read abstracts, score submissions, and track their progress across a round. Prior-round scores and feedback surface directly above the rubric so reviewers can calibrate their scores without switching views. After a round closes, the portal stays accessible in read-only mode so reviewers can reference their work without accidentally submitting changes.",
+          "at": "2026-10-20T02:00:20.876Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-org-portal#201"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "attend-ask-wave1-transcripts-actions-feedback-handoff",
+      "title": "Ask gains session transcripts, action proposals, thumbs feedback and organizer handoff",
+      "summary": "The **Ask** AI assistant in the attendee app adds four capabilities. **Session transcripts**: Ask can now read live captions and recorded transcripts to answer questions like \"what did the speaker say about X?\" with cited passage cards. **Action proposals**: Ask can propose adding a session to your schedule (with gap and clash analysis), opening a location on the map, sending a meeting request, or messaging a team — each offered only when the relevant feature is enabled. **Feedback**: attendees can rate any Ask answer with a thumbs up or down. **Handoff to organizer**: attendees can escalate an unanswered question to the organizing team; the reply arrives in the attendee's messaging inbox and organizers respond from their **Messages** inbox. The **Ask** settings panel now shows `feedback` and `handoff` as toggleable features, and admin stats include feedback ratings and handoff counts.",
+      "article": "/attend/ask",
+      "related": [
+        "/attend/networking",
+        "/attend/mobile-app",
+        "/marketing/live-transcribe"
+      ],
+      "kind": "improved",
+      "module": "Agents",
+      "features": [
+        "attend_app",
+        "attend"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Attend → Ask (attendee app) and Attend → Ask → Settings (admin)"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Attendees who missed part of a session can ask Ask what was covered and get cited transcript passages. When they have a question the AI cannot resolve, they can hand it off to the organizer team and receive a reply in-app — reducing support load on event staff while keeping attendees informed.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Transcript access, action proposals (map, meetings, messaging) and handoff routing each depend on separate feature flags being active. Confirm the event has live captions or recorded transcripts, networking/meetings enabled, and a published map before demoing those capabilities."
+        },
+        "when_to_bring_up": "When a customer asks how attendees can get more value from session content after the fact, or when they want to reduce the volume of 'where is X?' and 'what did the speaker say about Y?' questions to event staff.",
+        "who_should_get_it": "Customers already using the Attend app (beta) who also have Live Transcribe or recorded transcripts, and who want a self-serve attendee support loop.",
+        "staff_path": "Event → Attend → Ask → Settings",
+        "gotchas": "Action proposals are gated: map proposals require a published map; meeting/messaging proposals require networking to be on. Handoff creates one organizer thread per attendee registration and is idempotent per answer — a second tap on the same answer will not open a duplicate thread. Transcript passages are capped at 240 characters per citation.",
+        "talk_track": "Attendees can now ask Ask 'what did the keynote say about AI regulation?' and get a cited excerpt from the live transcript. If Ask can't answer, they tap Escalate and the question lands in your Messages inbox — you reply there and they get a push notification.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The /attend/ask guide should document the new transcript citation card format, the four action proposal types and their feature prerequisites, the feedback (thumbs) UI, the handoff flow for both attendees and organizers, and the new feedback/handoff toggles in Ask Settings.",
+          "why_use_it": "Ask lets attendees get instant, event-aware answers without hunting through the agenda or flagging down staff. It reads the live programme, session transcripts, the venue map and the attendee's personal schedule to give specific, cited answers. When Ask cannot help, attendees can rate the response or escalate directly to the organizing team and receive a reply in their messaging inbox.",
+          "at": "2026-10-20T01:58:15.058Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4587"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "attend-location-layer-presence-zones",
+      "title": "Attend app tracks attendee location through check-ins, booth scans and partner zone mappings",
+      "summary": "Room check-ins, check-outs and exhibitor lead scans now write a presence signal that the app's AI assistant (**Ask**) uses to answer \"near me\" questions. Organizers can map third-party location provider zones (CrowdConnected, FieldDrive, xTag) to rooms, booths or venue-map pins under **Attend → Location → Zones**, and **Ask** resolves an attendee's current location from the freshest signal — partner or device reads count for 10 minutes, check-ins and booth scans for 30 — before falling back to a session happening now on their schedule. Presence data is automatically purged after 30 days.",
+      "article": "/attend/ask",
+      "related": [
+        "/attend/checkin-and-seats",
+        "/attend/leads",
+        "/attend/overview"
+      ],
+      "kind": "new",
+      "module": "Apps",
+      "features": [
+        "attend",
+        "attend_app",
+        "signals"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Attend → Location → Zones"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Events using hardware location providers (CrowdConnected, FieldDrive, xTag) or standard room QR check-in can now give attendees accurate \"near me\" answers in Ask without any manual input. Organizers map provider zones once, and the app automatically surfaces relevant sessions, exhibitors and content based on where each attendee actually is.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Zone mapping admin endpoints are live but there is no documented UI surface yet; confirm with the product team before walking a customer through setup."
+        },
+        "when_to_bring_up": "When a customer asks how Ask knows where an attendee is, or when they are evaluating a hardware location partner (CrowdConnected, FieldDrive, xTag) alongside Attend.",
+        "who_should_get_it": "Customers running Attend (beta) who use room QR check-in, exhibitor lead retrieval, or a supported hardware location provider and want Ask to give location-aware answers.",
+        "staff_path": "Attend → Location → Zones (admin API; confirm UI availability with product)",
+        "gotchas": "Presence signals are written asynchronously after commit and never block the check-in or lead-scan response. A zone with no mapping is stored as type 'zone' and will not resolve to a corpus pin, so Ask falls through to the schedule step. Door check-in (venue entry) does NOT write a presence signal — only room and booth events do. Booth scans are recorded as 'tap' and do not affect session fill or speaker ratings.",
+        "talk_track": "When an attendee asks Ask 'what's near me?', the app now checks where they actually are — their last room check-in, a booth scan, or a live signal from your location hardware — and answers based on that. You map your provider's zones to rooms and booths once, and everything stays in sync automatically.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The Ask guide should document the location layer: how presence signals are generated (check-in, booth scan, partner zones), the resolution order Ask uses (explicit near → freshest signal → current schedule session), the signal expiry windows (10 min for partner/device/map, 30 min for check-in/booth scan), how to set up zone mappings under Attend → Location → Zones, and the 30-day automatic retention policy.",
+          "why_use_it": "Ask uses the attendee's current location — derived from check-ins, booth scans or a connected hardware provider — to answer questions like \"what's happening near me?\" or \"which exhibitors are close by?\" without the attendee having to say where they are. You can map zones from any supported location partner to the same rooms, booths and pins the rest of the app uses, so every feature stays in sync. Presence signals respect the attendee's consent settings and are automatically cleaned up after 30 days.",
+          "at": "2026-10-20T01:56:06.811Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4585"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "advocacy-only-new-recipients",
+      "title": "Advocacy notify dialog lets you email only new campaign recipients",
+      "summary": "When sending notifications on a campaign that has already been emailed, the **Notify** dialog now offers two choices: **Everyone (N)** to re-send to all recipients, or **Only new (M)** to reach only people added since the last send. The counts come from a live dry run so you always know exactly how many people will receive the message before you confirm.",
+      "article": "/marketing/advocacy",
+      "kind": "new",
+      "module": "Marketing",
+      "features": [
+        "marketing_advocacy"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Marketing → Advocacy → [campaign] → Notify"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Campaigns that grow over time — such as rolling attendee invitations — previously required organizers to manually track who had already been notified to avoid duplicate emails. The **Only new** option lets organizers safely re-open the notify dialog at any point and send only to people who haven't received the campaign email yet.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Requires the companion API change in lennd/sessionboard-web-api#4584. Until that API ships, the dry-run call returns a 400, the Only new option stays hidden, and Notify behaves as before — no customer impact during the gap."
+        },
+        "when_to_bring_up": "When a customer running a rolling Advocacy campaign asks how to avoid re-emailing people who already received a campaign notification.",
+        "who_should_get_it": "Any customer using Advocacy campaigns where recipients are added in batches over time.",
+        "staff_path": "Event → Marketing → Advocacy → [campaign] → Notify",
+        "gotchas": "The Only new option is hidden until the API (web-api#4584) is deployed. Deploy order is safe — no regression if the UI ships first.",
+        "talk_track": "Once your campaign has been sent, the Notify dialog will show you two options: resend to everyone, or reach only the people added since your last send — with exact counts so you know what you're about to do.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The Advocacy guide should document the Everyone / Only new choice in the Notify dialog, including how the dry-run counts work and when the option appears (only after at least one prior send).",
+          "why_use_it": "Advocacy lets you turn speakers, sponsors, and attendees into a distributed marketing channel by giving each person a personalised sharing link for your event. You can launch a campaign once and keep adding recipients as registrations grow, then notify each new cohort without re-emailing people who already received the message. The live recipient count in the notify dialog shows exactly how many people will be reached before you send.",
+          "at": "2026-10-20T01:45:05.310Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1057"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "team-lead-renamed-to-ask",
+      "title": "The organizer AI assistant is now called Ask",
+      "summary": "The built-in organizer AI assistant, previously labelled **Team Lead**, is now labelled **Ask** throughout the product. All UI labels, aria-labels, placeholders, toasts, onboarding copy, and all four supported locales (English, German, Spanish, French) reflect the new name. The session history panel formerly called **Team Lead Sessions** is now **Ask history**.",
+      "article": "/agents/team-lead",
+      "related": [
+        "/agents/overview"
+      ],
+      "kind": "improved",
+      "module": "Agents",
+      "features": [
+        "coordinators"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Ask panel (header toolbar) → Ask history"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who relied on the assistant to navigate pages or get quick answers will find it under the new **Ask** label. No workflow changes are needed — the rename is cosmetic only.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Pure rename; no functionality changed. The unrelated human 'team lead' role label under Sessions (session-build reviewer) is unchanged."
+        },
+        "when_to_bring_up": "If a customer asks where 'Team Lead' went or cannot find the assistant panel.",
+        "who_should_get_it": "All organizers — the rename is automatic and requires no action.",
+        "staff_path": "Header toolbar → Ask button (previously labelled Team Lead)",
+        "gotchas": "Code identifiers, i18n keys, routes, and feature flags still use 'team-lead' internally. The session-build reviewer role called 'team lead' under Sessions is a separate concept and was not renamed.",
+        "talk_track": "The assistant you used to call Team Lead is now called Ask — same capability, cleaner name. Your session history is now under Ask history.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The /agents/team-lead guide title and all body references to \"Team Lead\" should be updated to \"Ask\", and the guide should note that the session history panel is now called \"Ask history\".",
+          "why_use_it": "Ask is the built-in AI assistant for organizers, available from any page in Sessionboard. It answers questions about your event data, guides you to the right part of the product, and surfaces relevant actions without requiring you to leave your current context. Reach for it whenever you want a faster path to a setting, a quick data lookup, or a plain-language explanation of what a feature does.",
+          "at": "2026-10-20T01:27:15.910Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1056"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    }
+  ]
+}
