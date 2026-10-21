@@ -3371,8 +3371,8 @@
     {
       "id": "clone-event-copies-approval-policies",
       "title": "Cloning an event now copies its approval workflows",
-      "summary": "When you clone an event, its **Approval Policies** and **Approval Policy Steps** are now copied to the new event. Condition values for slot, track, format, level and sponsor tier are remapped to the clone's own IDs; explicit reviewers are carried over only when they are on the clone's team.",
-      "article": "/faq/clone-an-event",
+      "summary": "Cloning an event with **Submission Forms** selected now copies its session file approval workflow. Conditions on an upload slot, track, format, level or sponsor tier point at the clone's own items, and a value with no match on the clone is dropped. Reviewers chosen by role follow the copied roles; reviewers named as people stay only if they are on the clone's event team, so copy **Event team** too. Files in review, decisions and release-time history are not copied.",
+      "article": "/faq/clone-an-event#what-gets-copied",
       "related": [
         "/sessions/file-approvals"
       ],
@@ -3382,7 +3382,7 @@
         "clone_events",
         "approvals"
       ],
-      "availability": "on_request",
+      "availability": "beta",
       "enable": {
         "how": "default_on",
         "path": null
@@ -3395,7 +3395,7 @@
       "audience": [
         "organizer"
       ],
-      "use_case": "Teams that run the same approval workflow across multiple events no longer have to rebuild their approval policies from scratch after cloning — the policies, steps, and reviewer assignments transfer automatically.",
+      "use_case": "Teams that run the same file approval workflow every year no longer rebuild it after cloning: the steps and role-based reviewers come across with the event. Named reviewers carry over only when the event team is copied as well.",
       "internal": {
         "cs_action": {
           "kind": "none",
@@ -3411,7 +3411,7 @@
           "model": "claude-sonnet-4-6",
           "confidence": "medium",
           "docs_gap": "The guide should note that approval policies are included in what gets copied when cloning an event, and explain how condition values and reviewer assignments are remapped.",
-          "why_use_it": "null",
+          "why_use_it": "A file approval workflow decides who signs off on speaker slides and files before they go live. Copying it with the event keeps that review in place from the first upload of the new year.",
           "at": "2026-10-21T02:21:18.637Z"
         }
       },
@@ -3496,70 +3496,6 @@
       "ideas": [],
       "media": [],
       "gated": null
-    },
-    {
-      "id": "speaker-feedback-import-grouping-unmatched",
-      "title": "Speaker Feedback import handles ambiguous and unmatched rows more accurately",
-      "summary": "When importing a survey export into **Speaker Feedback**, rows whose session title matches several sessions are now grouped into one card per title (up to 200 groups) instead of being capped at 200 individual rows, so no comments are silently dropped. Rows that match no session at all are surfaced in a **Didn't match a session** section, where you can search for and assign the correct session. The per-session comment limit has also increased from 200 to 500.",
-      "article": "/portals/speaker-feedback",
-      "kind": "improved",
-      "module": "Portals",
-      "features": [
-        "speaker_feedback"
-      ],
-      "availability": "beta",
-      "enable": {
-        "how": "default_on",
-        "path": null
-      },
-      "where": {
-        "scope": "event",
-        "path": "Settings → Record Settings → Speaker portal → Survey file → import"
-      },
-      "permissions": [],
-      "audience": [
-        "organizer"
-      ],
-      "use_case": "Events with large survey exports — such as multi-run labs or keynotes with hundreds of verbatims — can now import all comments without hitting row caps or losing feedback that didn't match a session title exactly. Organizers can manually place unmatched rows rather than discarding them.",
-      "internal": {
-        "cs_action": {
-          "kind": "reach_out",
-          "note": "HubSpot was the named customer driving this fix (event 6095 with 1,401 sessions). Reach out to any customer who has complained about missing feedback rows or unmatched sessions during a Speaker Feedback import."
-        },
-        "when_to_bring_up": "A customer reports that some sessions are missing feedback after an import, or that rows from extra tabs (comments, Q&A) in their survey export didn't come through.",
-        "who_should_get_it": "Customers using Speaker Feedback with large or multi-tab survey exports, especially HubSpot UNBOUND exports.",
-        "staff_path": "Event → Settings → Record Settings → Speaker portal → Survey file → import",
-        "gotchas": "The 200-group cap applies to ambiguous groups, not individual rows — a single group can represent hundreds of rows. Unmatched rows require a manual session pick via the new UI step (paired web-ui-v2 PR). The MAX_OVERRIDES limit was raised from 2,000 to 10,000 to accommodate one pick per row in a group.",
-        "talk_track": "If your survey export has tabs for comments or Q&A, or if session titles in the file are truncated, the import now groups those rows and shows you anything it couldn't match automatically so you can assign it to the right session — nothing gets silently dropped.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "medium",
-          "docs_gap": "The guide should document the new \"Didn't match a session\" section in the import flow, explain how ambiguous rows are grouped into cards, and describe how to search for and assign a session to unmatched rows.",
-          "why_use_it": "Speaker Feedback lets you share post-event survey results directly with speakers through their portal, giving them visibility into audience ratings and comments without requiring you to send separate reports. It handles survey exports from platforms like HubSpot, grouping comments by session so each speaker sees only the feedback relevant to their talk. Use it when you want to close the loop with speakers after an event and give them actionable audience insight in one place.",
-          "at": "2026-10-21T03:15:11.397Z"
-        }
-      },
-      "related": [
-        "/events/event-details"
-      ],
-      "shipped": {
-        "prs": [
-          "lennd/sessionboard-web-api#4658"
-        ],
-        "docs_only": false,
-        "pending": null,
-        "live": {
-          "us": null,
-          "eu": null,
-          "me": null
-        },
-        "announced_at": null,
-        "emailed_at": null
-      },
-      "ideas": [],
-      "media": [],
-      "gated": "availability:beta"
     },
     {
       "id": "eval-v2-inline-site-create-and-convert-notice",
@@ -4023,10 +3959,10 @@
     {
       "id": "speaker-feedback-import-grouped-unmatched",
       "title": "Speaker Feedback import: grouped matching and a searchable \"Didn't match a session\" section",
-      "summary": "The **Needs a match** step in the Speaker Feedback import dialog now groups duplicate file rows together so one pick — a session, **All N sessions**, or **Don't import this row** — applies to every row in the group. A new **Didn't match a session** section lists file labels that had no automatic match; a search box filters by session title, speaker, room, or time so organizers can assign a series label to multiple sessions at once. Default for unmatched rows remains **Not imported**.",
+      "summary": "The **Needs a match** step in the Speaker Feedback import dialog now groups duplicate file rows together so one pick — a session, **All N sessions**, or **Don't import this row** — applies to every row in the group. A new **Didn't match a session** section lists file labels that had no automatic match; a search box filters by session title, speaker, room, or time so organizers can assign a series label to multiple sessions at once. Default for unmatched rows remains **Not imported**. The importer also keeps up to 500 comments per session (was 200), and file rows that repeat a title are grouped into one card per title, so a large export no longer drops comments past the old cap.",
       "article": "/portals/speaker-feedback",
       "kind": "improved",
-      "module": "Settings",
+      "module": "Portals",
       "features": [
         "speaker_feedback"
       ],
@@ -4070,6 +4006,7 @@
       ],
       "shipped": {
         "prs": [
+          "lennd/sessionboard-web-api#4658",
           "lennd/sessionboard-web-ui-v2#1095"
         ],
         "docs_only": false,
