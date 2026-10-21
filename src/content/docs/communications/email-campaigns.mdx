@@ -163,7 +163,7 @@ Three ways to narrow the list, and they stack:
 - **Describe who to email** — type it in plain English ("speakers who haven't confirmed yet") and click **Suggest**; the wizard translates it into filters you can then adjust.
 - **Quick filters** — the common slices:
   - **Role in event** — Speakers, Chairpersons, Moderators, Submitters
-  - **Submission status** — Accepted, Pending, Declined, Withdrawn, Waitlisted
+  - **Submission status** — the statuses configured for this event under [Program Settings → Statuses](/sessions/program-settings#statuses): the built-in Accepted, Accept Queue, Pending, Decline Queue and Declined, plus every custom status you added, each with its colour. A built-in status also reaches the custom statuses built on it, so **Pending** includes a submission sitting in a custom "In Review". **Withdrawn submissions** is a separate switch under the list, because withdrawn is a flag on the submission rather than one of its statuses. A status the event no longer has — an archived custom status — stays visible and ticked on a saved campaign so you can clear it.
   - **Participant acceptance** — whether the person has confirmed their participation: Accepted, Declined, Pending, Not Accepted
   - **Added to a submission on/after** — only people added as a submission participant on or after a date. Useful for "welcome" sends that should only reach people who joined since your last campaign.
   - **Portal activity** — Any, Logged in or Never logged in, for chasing people who have not opened their portal
@@ -192,6 +192,25 @@ A few things follow from that, and they surprise people:
 - **"Omit past recipients" applies per session.** Someone who already received this campaign for one session is still emailed for their other sessions — otherwise the first session they happened to land in would silence the rest. The run history notes when this happened, so an apparent double-send is explainable.
 
 To send about one specific session instead, set the session on the campaign. Bundling then produces exactly one email, for that session only.
+
+### Subsession participants
+
+When a parent session's subsessions are how you rank candidate speakers — one speaker per subsession, each subsession in a custom status such as **1st Choice**, **2nd Choice** or **Declined** — a Sessions campaign can invite the speakers of a given rank for the parent session in one send.
+
+On the Recipients step of a **Sessions** campaign, open **Subsession participants** and turn on **Email the participants of subsessions under the matching parent sessions**. Two things change:
+
+- **Who is reached.** The parent-level filters — the session scope, **Parent submission status** and any session field filters — choose the parent sessions. The campaign then emails the participants of those parents' subsessions, narrowed by **Subsession status**, which lists the same configured statuses as the parent filter. Pick **1st Choice** and every first-choice speaker under the matching parents is included; pick two statuses to include either.
+- **What merges.** The message's session merge tags resolve to the **parent session**, so `{{session.title}}` and `{{session.starts_at}}` describe the session the person is being invited to. The tag picker gains a **Subsession** group — `{{subsession.title}}` and friends — that resolves to the subsession that qualified each recipient.
+
+The count reads **recipients across parent sessions**. Each person gets **one email per parent session** they qualify for: a speaker ranked on two subsessions of the same parent receives one email for that parent, and a speaker ranked under two different parents receives one email per parent, each merged from its own parent. When more than one subsession under a parent qualified the same person, the subsession tags use the first subsession by order, and the review table flags that row so you can check it.
+
+The **Sample** panel becomes a **review table** in this mode: recipient, parent session, the matching subsession and its status, and a **Remove** action on every row. Removing someone takes them out of this send only — it never changes the session or the subsession — and the count updates. **Restore all** brings them back. History records each email against its parent session.
+
+![The Subsession participants section switched on, with the subsession status list on the left and the review table of recipients, parent sessions and subsessions on the right](/images/kb/email-campaign-subsession-participants.png)
+
+<Note>
+Subsession participants and **Bundle session participants onto one email** are not combined: with subsession participants on, each recipient gets their own email.
+</Note>
 
 ### Step 4: Preview
 
@@ -254,6 +273,9 @@ Merge tags insert personalized data into your emails. Available tags vary by aud
 - Moderator, chairperson, and custom role name(s) — every role your event uses gets its own tag, listed together under **Session Roles** in the tag picker. Each one has a "with titles" version that adds each person's job title and company.
 - Accept By Date (`{{accept_by_date}}`) — the recipient's earliest open [participant acceptance](/speakers/speaker-acceptance#accept-by-rules) deadline for that session, in the event timezone. Empty once they have answered, or when no accept-by rule applies.
 - Portal Link
+
+### Subsession
+Listed for Sessions campaigns. Each session tag has a **Subsession** twin — Subsession title, Subsession date & time, Subsession room, and so on — that resolves to the subsession that qualified the recipient when the campaign targets [subsession participants](#subsession-participants). On any other campaign these tags render empty.
 
 <Note>
 Changing the audience after composing your message invalidates existing merge tags. Pick the audience before writing the body.
