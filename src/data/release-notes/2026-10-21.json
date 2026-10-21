@@ -230,6 +230,548 @@
       "ideas": [],
       "media": [],
       "gated": null
+    },
+    {
+      "id": "approvals-upload-slots-safety-campaign-dedup",
+      "title": "Approvals, upload slots and campaign sends: multiple reliability fixes",
+      "summary": "Several fixes to the **Approvals** workflow, session file upload slots, and email campaign sends: held/denied/embargoed files are no longer downloadable without authentication; **Move to slot** now enforces the slot's file-type, limit and deadline rules; a renamed `.pdf` file is rejected at upload if the slot restricts types; archiving a slot no longer blocks speakers from versioning a denied file; saving an approval workflow now warns when a step has no reachable reviewers, and a new **Preview release** dry run shows how many live files a release-time change would hold or release; the **Files** list gains a **Session ID** column and per-file approval step name; and campaigns sent to hand-picked contacts now deliver exactly one email per person even when a contact appears on both a parent session and a subsession.",
+      "article": "/sessions/file-approvals",
+      "related": [
+        "/sessions/enable-upload-download-content",
+        "/communications/email-campaigns"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "approvals",
+        "sessions",
+        "email_campaigns"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Sessions → Files / Approvals → Policies; Marketing → Email Campaigns"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "reviewer",
+        "speaker"
+      ],
+      "use_case": "Events using Approvals to gate session files can now trust that held, denied, or embargoed files are never accessible without a valid signed URL, that upload-slot rules are always enforced on moves, and that approval workflows cannot be saved in a state that would silently stall. Campaign organizers targeting hand-picked contacts across parent and subsessions will no longer see duplicate emails delivered to the same person.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Nine held files on US prod were previously downloadable unauthenticated (now fixed). 48 US + 2 EU slot/session pairs are already over max_files and 28 US images already sit in PDF-only slots — these are not auto-cleaned; a product decision is needed on whether to surface or remediate them. Two approvals on event 7141 are stuck due to a broken workflow (0 reviewers); the new runtime notification will fire for them on next evaluation."
+        },
+        "when_to_bring_up": "When a customer reports that held or denied files were accessible without login, or asks why a campaign sent duplicate emails to the same contact, or wants to understand why an approval step never completes.",
+        "who_should_get_it": "Any customer using Approvals (beta) for session file gating, upload slots with file-type or limit restrictions, or email campaigns sent to hand-picked contacts that include subsessions.",
+        "staff_path": "Event → Sessions → Files → Approvals; Event → Marketing → Email Campaigns",
+        "gotchas": "The db migration 20261022120000-approval-no-reviewers-notification-type.js must run before the no-reviewers runtime notification fires. Prod rows predating the fixes (over-limit slots, mistyped files) are not backfilled. The admin can override slot deadlines with force:true but cannot override file-type or limit rules.",
+        "talk_track": "We closed a gap where files under review could be downloaded without logging in, tightened slot rules so a move always respects type and limit constraints, and made sure campaigns never send the same person two copies of the same email just because they appear on a parent and a subsession.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should document: (1) the new workflow-save validation that blocks saving when a step has no reachable reviewers and the in-app/email alert sent at runtime; (2) the Preview release dry-run endpoint that shows would_hold / would_release counts before changing a release time; (3) the held-file signed-URL behaviour in the speaker portal; (4) the Session ID column on the Files list; and (5) the move-to-slot enforcement of file-type, limit and deadline rules including the admin force-override for deadlines.",
+          "why_use_it": "Approvals lets you hold session files — presentations, posters, recordings — behind a review gate so nothing goes public before your team has signed off. You set up a workflow with one or more reviewer steps, attach a release time, and speakers upload through their portal while reviewers decide in a dedicated queue. Files stay private until every step passes, giving you full control over what attendees and the public can access.",
+          "at": "2026-10-21T01:13:12.821Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4650"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "shared-report-file-names-booklet-schedule-fix",
+      "title": "Shared report links show file names instead of raw URLs, and booklet schedules built from older templates now display sessions",
+      "summary": "Two display fixes ship together. **Shared report links** (the public URL generated from a saved report) now show a human-readable file name in file-type columns — such as **Company Logo** — instead of a raw CDN URL or `[object Object]`. Separately, **Print Agenda** booklets created from older starter templates that stored `confirmed` or `published` as session statuses now correctly match and display sessions on the schedule; previously those booklets printed an empty schedule.",
+      "article": "/marketing/print-agendas",
+      "related": [
+        "/reporting/custom-reports"
+      ],
+      "kind": "fixed",
+      "module": "Reporting",
+      "features": [
+        "print_agenda",
+        "ai_reports"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Reporting → Shared report link (public URL) · Marketing → Print → [booklet] → Schedule"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who share report links externally no longer need to explain why file columns show garbled URLs. Teams using booklets built before the default starter was corrected no longer see a blank schedule when they export or share a program book.",
+      "internal": {
+        "cs_action": {
+          "kind": "reach_out",
+          "note": "45 booklet templates across 17 US events (5 edited in the last 30 days) were affected by the empty-schedule bug. Those booklets will now show sessions automatically — no action needed, but a heads-up to impacted customers is worthwhile. EU: 0 affected."
+        },
+        "when_to_bring_up": "When a customer reports that their shared report link shows a raw URL in a file column, or that their printed program book shows no sessions.",
+        "who_should_get_it": "Any customer using shared/public report links with file-type columns, or any customer whose booklet was created from an older starter template.",
+        "staff_path": "Event → Reporting → [report] → Share link · Event → Marketing → Print → [booklet]",
+        "gotchas": "The shared-report file-name fix requires the companion UI change in lennd/sessionboard-web-ui-v2#1088 to be fully visible to users. The booklet fix is server-side only and takes effect immediately. CSV and XLSX exports from shared reports are unchanged — they still contain raw URLs.",
+        "talk_track": "Shared report links now display readable file names in file columns, matching what you see on the scheduled-report page. Booklets built from older templates will now correctly show your sessions on the schedule without any manual edits.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The Print Agendas guide should note that booklet agenda blocks filter sessions by status, and that legacy starters using 'confirmed' or 'published' status values are automatically remapped to 'accepted'. The Reporting guide should mention that shared public report links render file-type columns as file names, consistent with the scheduled-report view.",
+          "why_use_it": "null",
+          "at": "2026-10-21T01:09:06.535Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4648"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "portal-profile-status-sentence-case",
+      "title": "Portal profile headings and application statuses now use sentence case",
+      "summary": "Four labels in the Sites portal were displayed in Title Case instead of the correct sentence case. **Reviewer Notifications** and **Applicant Notifications** on the submitter and reviewer profile, and the application statuses **Under Review** and **Pending Payment**, now appear as **Reviewer notifications**, **Applicant notifications**, **Under review**, and **Pending payment**.",
+      "article": "/awards/setting-up-your-sessionboard-site#the-signed-in-portal",
+      "kind": "fixed",
+      "module": "Awards",
+      "features": [
+        "awards"
+      ],
+      "availability": "add_on",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Sites portal → Submitter / Reviewer profile and application status labels"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "reviewer",
+        "participant"
+      ],
+      "use_case": "Organizers running awards programs expect consistent, professional copy throughout the portal. This fix ensures notification headings and application status labels match the sentence-case style used everywhere else in the portal, including the already-correct German, Spanish, and French locales.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "Only if a customer reports inconsistent capitalisation in the Sites portal profile or application status labels.",
+        "who_should_get_it": "All customers using the Awards Sites portal.",
+        "staff_path": "Sites portal → Submitter or Reviewer profile → notification headings; completed applications page → status badges",
+        "gotchas": "Only the English locale was affected; de/es/fr were already correct.",
+        "talk_track": null,
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note the exact sentence-case labels used for notification headings and application statuses in the signed-in portal so customers can reference them when customising copy.",
+          "why_use_it": "null",
+          "at": "2026-10-21T00:42:39.684Z"
+        }
+      },
+      "related": [
+        "/awards/getting-started",
+        "/awards/managing-submissions-reviewers-rounds"
+      ],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-org-portal#211"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "richtext-blocks-rendered-in-reviewer-submission-view",
+      "title": "Rich-text instruction blocks display as formatted text in the reviewer submission view",
+      "summary": "Rich-text blocks added to a submission form as static instructional content were showing raw HTML markup (e.g. `<p><strong>Important Updates…</strong></p>`) in the reviewer submission detail and **Print PDF** views. These blocks now render as formatted text, matching what submitters see on the form.",
+      "article": "/evaluations/how-to-evaluate-sessions#reviewing-a-submission",
+      "related": [
+        "/sessions/submission-forms",
+        "/evaluations/evaluation-plans"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "sessions_v2"
+      ],
+      "availability": "add_on",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Sessions → Evaluation Plans → [plan] → Submissions → [submission]"
+      },
+      "permissions": [
+        "event.evaluation_plans.read",
+        "event.evaluation_plans.read_assigned_evaluations"
+      ],
+      "audience": [
+        "organizer",
+        "reviewer"
+      ],
+      "use_case": "When a submission form includes rich-text blocks with instructions or context for reviewers, those blocks now appear as readable formatted text rather than raw HTML tags. This is especially useful for forms with multiple instructional sections that guide reviewers through the scoring process.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer reports that reviewers are seeing raw HTML tags (e.g. <p>, <strong>) in the submission detail view or Print PDF instead of formatted text.",
+        "who_should_get_it": "Any customer using Sessions 2.0 evaluation plans whose submission forms include rich-text/instructional blocks.",
+        "staff_path": "Event → Sessions → Evaluation Plans → [plan] → open any submission with richtext blocks",
+        "gotchas": "The bug was introduced in PR #155 on 2026-10-06, so only events whose forms were built or reviewed after that date are affected. The fix applies to both the on-screen submission detail and the Print PDF view.",
+        "talk_track": "If your submission form has instructional text blocks, reviewers now see them as formatted paragraphs — not raw HTML — both on screen and when printing to PDF.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The \"Reviewing a submission\" section should note that rich-text instructional blocks from the form builder appear as formatted text in the reviewer submission detail and Print PDF views.",
+          "why_use_it": "null",
+          "at": "2026-10-21T00:13:49.777Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-org-portal#210"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "public-report-page-file-cell-names",
+      "title": "Shared report links show file names instead of raw URLs",
+      "summary": "When a report containing file fields is shared via a public link, the **PublicReportPage** now displays each file as its readable name (linked) rather than a raw file URL. Search and sort on the shared page also use the file name.",
+      "article": "/reporting/custom-reports",
+      "related": [
+        "/reporting/report-builder"
+      ],
+      "kind": "fixed",
+      "module": "Reporting",
+      "features": [
+        "ai_reports"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Reports → [report] → Share → [public link]"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who share report links with stakeholders or vendors no longer need to explain raw file URLs — recipients see a clean, clickable file name in the shared view, matching what admins see inside the platform.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer reports that people receiving shared report links see garbled URLs instead of file names in file-type columns.",
+        "who_should_get_it": "Any customer using shared report links on reports that include file-type fields.",
+        "staff_path": "Reports → [report] → Share link → open the public URL",
+        "gotchas": "The fix requires the API half (lennd/sessionboard-web-api#4648) to ship the file_names field in the share data response; until that API change is live, the page behaves as before.",
+        "talk_track": "File columns in shared report links now show the actual file name as a clickable link — the same clean experience your team sees inside Sessionboard.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that file fields in shared (public) report links render as clickable file names, and that search and sort on the shared page operate on those names.",
+          "why_use_it": "null",
+          "at": "2026-10-21T00:11:54.211Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1088",
+          "lennd/sessionboard-web-api#4648"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "evaluation-plan-closed-round-read-only",
+      "title": "Rounds in closed or past-deadline evaluation plans are now read-only",
+      "summary": "Reviewers could previously save scores on rounds whose evaluation plan was closed or had passed its deadline, even though **My Reviews** labelled those rounds \"Closed · View only\". Rounds in a closed plan or past a plan deadline are now fully locked: the **Closed · View only** label is enforced, and any write attempt returns a validation error. Team leaders and admins can still view the per-reviewer score breakdown regardless of plan state.",
+      "article": "/evaluations/setting-up-round-based-evaluations",
+      "related": [
+        "/evaluations/how-to-evaluate-sessions",
+        "/evaluations/evaluation-plans"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "sessions_v2"
+      ],
+      "availability": "add_on",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Sessions → Evaluation Plans → [plan] → My Reviews"
+      },
+      "permissions": [
+        "event.evaluation_plans.read_assigned_evaluations"
+      ],
+      "audience": [
+        "organizer",
+        "reviewer"
+      ],
+      "use_case": "Events that close a plan or let its deadline pass need to guarantee no further reviewer edits slip through. Rounds in closed or expired plans are now locked server-side, so the \"Closed · View only\" label in My Reviews is always accurate and scores cannot be changed after the window ends.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Prod US had 77 reviewer saves in the last 14 days on 3 rounds in closed-plan state (events 6589, 6678). Those rounds are now locked. Confirm with the event owners that those late saves are acceptable to discard going forward."
+        },
+        "when_to_bring_up": "A customer reports that reviewers were able to submit or change scores after a plan was closed or its deadline passed.",
+        "who_should_get_it": "Any customer using Sessions 2.0 evaluation plans with defined plan deadlines or manual close actions.",
+        "staff_path": "Event → Sessions → Evaluation Plans → [plan] → My Reviews",
+        "gotchas": "Three events on Prod US (6589, 6678) had reviewers saving scores on closed-plan rounds in the past 14 days — those writes will now be blocked. Team leaders and admins retain full read access to the per-reviewer breakdown even when a plan is closed.",
+        "talk_track": "Once you close a plan or its deadline passes, the Closed label in My Reviews is now enforced end-to-end — reviewers cannot sneak in late edits, and your final scores are locked in.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that closing a plan or passing its deadline locks all associated rounds server-side, preventing any further reviewer writes, and clarify that team leaders and admins can still view score breakdowns on closed rounds.",
+          "why_use_it": "Evaluation plans let you run structured, multi-round review cycles with defined deadlines. Locking rounds when a plan closes or its deadline passes protects the integrity of scores already collected, so results you promote or export reflect only the reviews that were submitted on time.",
+          "at": "2026-10-21T00:10:23.637Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4647"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "ask-organizer-public-api-and-setup-draft",
+      "title": "Ask is available on the public API, and AI can draft your event setup",
+      "summary": "Two new capabilities for organizers using Ask. First, a new **`POST /v1/event/:eventId/ask`** public API endpoint lets external AI assistants (such as ChatGPT, Claude or Copilot connected via MCP) query your event data — sessions, knowledge, Help Center articles and topic aggregates — and receive a structured answer with citations. Second, a new **Draft my setup** action generates suggested FAQ answers and flags content gaps (missing hotel, Wi-Fi, parking, accessibility info, etc.) from your published Info pages; the draft FAQ is saved with **Draft** status and is never surfaced to attendees until an organizer approves it.",
+      "article": "/integrations/connect-ai-assistants",
+      "related": [
+        "/attend/ask",
+        "/integrations/api-tokens"
+      ],
+      "kind": "new",
+      "module": "Agents",
+      "features": [
+        "coordinators"
+      ],
+      "availability": "on_request",
+      "enable": {
+        "how": "support",
+        "path": "Ask your Customer Success Manager to enable Ask on the public API; then Settings → API Tokens → create a token and tick the Ask (organizer Q&A) scope (read:ask). It is not included in the read-only or all-scopes presets, so a token without it gets 403 SCOPE_REQUIRED."
+      },
+      "where": {
+        "scope": "event",
+        "path": "External AI assistant (MCP) → ask_event tool, or the public API: POST /v1/event/:eventId/ask; Draft my setup on the event's Assistants page"
+      },
+      "permissions": [
+        "event.settings.update"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Teams using ChatGPT, Claude or Copilot as an MCP client can now ask questions about their event — sessions, speakers, knowledge base — directly from their AI assistant without switching to Sessionboard. The setup-draft feature helps organizers quickly populate their attendee FAQ by generating suggested answers and identifying gaps in their Info pages before the event goes live.",
+      "internal": {
+        "cs_action": {
+          "kind": "must_enable",
+          "note": "The public API Ask endpoint and setup-draft feature require AI credits to be enabled for the org. Confirm the org has ai_credits configured before enabling."
+        },
+        "when_to_bring_up": "When a customer asks about connecting ChatGPT, Claude or Copilot to their event data via MCP, or when they want help pre-populating their attendee FAQ before an event.",
+        "who_should_get_it": "Customers with AI credits enabled who are already using or evaluating MCP-connected AI assistants, and customers who want to accelerate their event knowledge-base setup.",
+        "staff_path": "Settings → API Tokens (tick the read:ask scope explicitly). Public route for integrators: POST /v1/event/:eventId/ask on the public API (public-api.sessionboard.com). Internal web-api routes (not for customers): POST /public-api/v1/event/:eventId/ask, GET/POST /assistant/event/:eventId/setup-draft",
+        "gotchas": "The Ask endpoint is always read-only (actions:[] is forced); it uses the token's user as the principal, not a body-supplied identity. The setup-draft FAQ is saved as Draft status and is never ingested or shown to attendees until an organizer explicitly approves it. Re-running setup-draft replaces the existing draft only while it is still in Draft status. A request already in flight (less than 10 minutes old) is reused rather than queued again.",
+        "talk_track": "You can now point your ChatGPT or Claude MCP client at your Sessionboard event and ask it questions about sessions, speakers and your knowledge base — it answers with citations and respects your credit budget. And before your event opens, you can run Draft my setup to get an AI-generated FAQ and a checklist of content gaps based on your Info pages, then review and approve before attendees ever see it.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The Connect AI assistants guide should document the new ask_event MCP tool, the POST /v1/event/:eventId/ask endpoint contract (request body, response shape, error codes), the organizer-specific rate limits and credit budget, and the setup-draft GET/POST endpoints including how to review and approve the generated FAQ draft.",
+          "why_use_it": "Connecting an AI assistant to Sessionboard lets you query your event data — sessions, speakers, knowledge articles and topic trends — from any MCP-compatible tool without leaving your workflow. Ask answers questions with citations so you can verify the source, and the organizer endpoint enforces the same rate limits and credit budgets as the in-product experience. The setup-draft tool analyses your published Info pages and generates a ready-to-review FAQ draft, flagging common gaps like missing venue, parking or accessibility details so nothing important is left out before attendees start asking.",
+          "at": "2026-10-21T00:05:25.093Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4635",
+          "lennd/sessionboard-public-api#181"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "multi-fix-audit-w3",
+      "title": "Five fixes: date formula filters, bulk language fields, interest-form filter picker, Tiers error messages, and Sign button contrast in dark mode",
+      "summary": "Five pre-release fixes shipped together: (1) **Preferences → Filter** on contacts and sessions now shows a date picker and date operators (is before, is after, etc.) when the filtered field is a date-formula field, instead of a number box. (2) **Title** and **Description** fields now appear in the bulk **Update language values** action for sessions, so translators can fill those fields in bulk like any other. (3) The field picker on the **Assignments** step of an Interest Form evaluation plan no longer overflows into the Impact Preview panel; the remove **×** button stays inside each filter rule. (4) When a **Sponsor Tiers** create, update, or delete fails, the toast now shows the server's reason instead of only a generic message. (5) The **Sign** button on the contract signing page is now readable in dark mode; its fill is automatically adjusted to meet 3:1 contrast against dark backgrounds while keeping the organizer's brand colour in light mode.",
+      "article": "/reporting/dashboard-views#filter",
+      "related": [
+        "/settings/formula-fields",
+        "/settings/language-translation-variant",
+        "/speaker-crm/interest-form-evaluation-plans",
+        "/sponsors-exhibitors/sponsor-settings",
+        "/participants/sign-a-contract"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "sessions_v2",
+        "languages",
+        "sponsors"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Sessions → Preferences → Filter; Contacts → Preferences → Filter; Groups → Sponsors → Tiers; Interest Forms → Evaluation Plan → Assignments; Contract signing page"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "speaker"
+      ],
+      "use_case": "Teams using formula fields to compute dates can now filter sessions and contacts by those dates correctly. Multilingual programs can bulk-fill Title and Description translations. Reviewers assigning interest-form filters no longer fight a broken layout. Admins managing sponsor tiers get actionable error messages when a save fails. Speakers signing contracts in dark mode can see the Sign button clearly.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer reports that filtering on a date formula field shows number operators, that Title/Description are missing from bulk language updates, that the interest-form filter layout is broken, that Tiers errors are unhelpful, or that the Sign button is invisible in dark mode.",
+        "who_should_get_it": "Any customer using formula date fields in filters, language variants on sessions, interest-form evaluation plans, sponsor tiers, or the contract signing page in dark mode.",
+        "staff_path": "Sessions → Preferences → Filter (date formula); Sessions → select rows → Update language values; Groups → Sponsors → Tiers; Interest Forms → Evaluation Plan → Assignments; Contract signing page (dark mode)",
+        "gotchas": "Date formula detection relies on output_type: 'date' or a legacy add_days root expression; numeric formulas like days_until keep number operators. The Sign button contrast fix only applies when the page renders in dark mode; light mode keeps the organizer's brand colour unchanged.",
+        "talk_track": "These are five targeted bug fixes from our pre-release audit. Date formula filters now behave like date fields, bulk language updates include Title and Description, the interest-form assignment layout is clean, Tiers errors are descriptive, and the signing page works in dark mode.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The filter guide should note that formula fields with a date output type use date operators and a date picker, not number operators.",
+          "why_use_it": "null",
+          "at": "2026-10-21T01:15:41.331Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1090"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
     }
   ]
 }
