@@ -5505,74 +5505,9 @@
       "gated": null
     },
     {
-      "id": "my-reviews-language-instructions-and-name-fallback",
-      "title": "My Reviews shows round instructions in the evaluator's language, without fallback markers on names",
-      "summary": "Two fixes for multilingual evaluator portals. First, the **My Reviews** instructions card now displays the text of the active review round translated into the evaluator's selected language (with a fallback to the plan's instructions when no round-level text exists). Second, participant first and last names no longer show a \"Shown in [language]\" fallback marker — only fields such as company and bio that genuinely vary by language carry that indicator.",
-      "article": "/evaluations/how-to-evaluate-sessions",
-      "related": [
-        "/evaluations/setting-up-round-based-evaluations",
-        "/settings/language-translation-variant"
-      ],
-      "kind": "fixed",
-      "module": "Program",
-      "features": [
-        "languages"
-      ],
-      "availability": "on_request",
-      "enable": {
-        "how": "default_on",
-        "path": null
-      },
-      "where": {
-        "scope": "event",
-        "path": "Evaluator portal → My Reviews"
-      },
-      "permissions": [],
-      "audience": [
-        "reviewer"
-      ],
-      "use_case": "Events running multilingual review portals can now be confident that evaluators reading in Spanish (or any enabled language) see the correct translated round instructions — not the default-language fallback — and that reviewer names are never incorrectly flagged as untranslated content.",
-      "internal": {
-        "cs_action": {
-          "kind": "none",
-          "note": null
-        },
-        "when_to_bring_up": "A customer using Language Variants reports that their evaluators see instructions in the wrong language, or that reviewer names show a language-fallback badge.",
-        "who_should_get_it": "Customers with Language Variants enabled who run round-based evaluation plans.",
-        "staff_path": "Evaluator portal → My Reviews (view as evaluator with ?language=es or similar)",
-        "gotchas": "The fix applies to the My Reviews GET only; the init and notifications endpoints still return default-language text. Awards and Interest Form programs are unaffected.",
-        "talk_track": "Evaluators now see the open round's instructions in their chosen language. If no translation exists for that round, it falls back to the plan-level instructions. Names (first, last, full) never show the fallback language badge — only fields like company and bio do.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The guide should note that round instructions are displayed in the evaluator's selected language when Language Variants are enabled, and clarify which fields (company, bio, session fields) carry a language-fallback indicator versus which do not (first name, last name, full name).",
-          "why_use_it": null,
-          "at": "2026-10-21T10:55:29.133Z"
-        }
-      },
-      "shipped": {
-        "prs": [
-          "lennd/sessionboard-web-api#4683"
-        ],
-        "docs_only": false,
-        "pending": null,
-        "live": {
-          "us": null,
-          "eu": null,
-          "me": null
-        },
-        "announced_at": null,
-        "emailed_at": null
-      },
-      "ideas": [],
-      "media": [],
-      "gated": null
-    },
-    {
       "id": "my-reviews-instructions-language",
       "title": "My Reviews instructions appear in the evaluator's own language",
-      "summary": "The **My Reviews** instructions card and instructions modal now display the active round's instructions in the evaluator's content language when a translation exists. When no translation is available for that language, a **Shown in [language]** marker appears so evaluators know the text is a fallback. Contact and attendee name fields never show the marker.",
+      "summary": "The **My Reviews** instructions card and instructions modal now display the active round's instructions in the evaluator's content language when a translation exists. When no translation is available for that language, a **Shown in [language]** marker appears so evaluators know the text is a fallback. Contact and attendee name fields never show the marker. Contact names (first, last and full name) no longer carry a **Shown in [language]** marker; other untranslated values still do.",
       "article": "/evaluations/how-to-evaluate-sessions#my-reviews",
       "related": [
         "/settings/language-translation-variant",
@@ -5618,6 +5553,7 @@
       },
       "shipped": {
         "prs": [
+          "lennd/sessionboard-web-api#4683",
           "lennd/sessionboard-web-org-portal#216"
         ],
         "docs_only": false,
@@ -5704,76 +5640,6 @@
       "gated": null
     },
     {
-      "id": "ai-mode-send-participation-reminder",
-      "title": "Send participation reminders from an AI Mode record card",
-      "summary": "In AI Mode, Team Lead's record cards for a session with pending speakers or a pending contact now surface a **Send reminder** action. Approving the card resends the participation invitation email — using the event's configured template and subject — only to pending, reachable participants on that session or for that person. Blocked or already-answered rows are skipped and their reasons are shown before you confirm.",
-      "article": "/speakers/speaker-acceptance",
-      "related": [
-        "/agents/team-lead",
-        "/agents/agent-window",
-        "/communications/automated-emails"
-      ],
-      "kind": "new",
-      "module": "Agents",
-      "features": [
-        "coordinators",
-        "speaker_acceptance"
-      ],
-      "availability": "on_request",
-      "enable": {
-        "how": "support",
-        "path": "Ask your Customer Success Manager to enable AI Mode; then open the Agent window from any event page"
-      },
-      "where": {
-        "scope": "event",
-        "path": "Agent window → Team Lead → record card → Send reminder"
-      },
-      "permissions": [
-        "event.sessions.read",
-        "event.emails.create"
-      ],
-      "audience": [
-        "organizer"
-      ],
-      "use_case": "When an organizer is reviewing a session or contact record in AI Mode and notices outstanding participation acceptances, they can trigger and approve a targeted reminder without leaving the agent window — no need to navigate to the Participant Acceptance grid and filter manually.",
-      "internal": {
-        "cs_action": {
-          "kind": "must_enable",
-          "note": "AI Mode (agents feature) must be enabled for the org before the record card action is visible."
-        },
-        "when_to_bring_up": "A customer uses Participant Acceptance and also has AI Mode; they are chasing pending speakers session by session.",
-        "who_should_get_it": "Organizers who actively track participant acceptance and are already using or evaluating AI Mode / Team Lead.",
-        "staff_path": "Event → Agent window → Team Lead → open a session or contact record card → Send reminder",
-        "gotchas": "The send goes through the same RBAC gates as the manual invitation send (event.emails.create). Participants who have already answered or whose rows are blocked will not receive the email; blocked reasons surface in the approval card. The companion UI PR (feature/ai-mode-record-card-actions) must also be deployed for the card to appear.",
-        "talk_track": "Open a session card in Team Lead, hit Send reminder, review the recipient list and email subject in the approval card, then approve — the reminder goes only to the people still pending on that session.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "medium",
-          "docs_gap": "The guide should add a section explaining how to send participation reminders from the AI Mode record card, including what the approval card shows (recipients, email subject, blocked-row reasons) and the permissions required.",
-          "why_use_it": "Participant acceptance lets you confirm that speakers and other session participants have agreed to take part before the event. The AI Mode record card action brings that workflow into the agent window: Team Lead identifies who still needs to respond, shows you the recipients and email subject for approval, and sends the reminder only to those who can receive it — keeping your acceptance tracking moving without switching screens.",
-          "at": "2026-10-21T11:57:24.336Z"
-        }
-      },
-      "shipped": {
-        "prs": [
-          "lennd/sessionboard-web-api#4688"
-        ],
-        "docs_only": false,
-        "pending": null,
-        "live": {
-          "us": null,
-          "eu": null,
-          "me": null
-        },
-        "announced_at": null,
-        "emailed_at": null
-      },
-      "ideas": [],
-      "media": [],
-      "gated": null
-    },
-    {
       "id": "ai-mode-record-card-primary-action",
       "title": "Take action directly from AI Mode record cards with one click",
       "summary": "Record cards surfaced in the AI Mode chat now show a **Send reminder** button when a session has unconfirmed speakers or a person is still pending. Clicking the button sends a prompt to Team Lead, which proposes the action and shows an approval card listing the recipients and email subject before anything is sent. No reminder is dispatched until the organizer clicks **Approve**.",
@@ -5822,6 +5688,7 @@
       },
       "shipped": {
         "prs": [
+          "lennd/sessionboard-web-api#4688",
           "lennd/sessionboard-web-ui-v2#1124"
         ],
         "docs_only": false,
@@ -6307,72 +6174,6 @@
       "gated": "availability:beta"
     },
     {
-      "id": "contracts-portal-primary-contact-sign-now",
-      "title": "Account primary contacts can view and sign contracts from their portal",
-      "summary": "Sponsor and exhibitor primary contacts now see their account's contracts listed under **My Contracts** in the portal, even when they are not the named signer email on the contract. When it is their turn in a native (Sessionboard e-sign) signing order, **Sign now** generates a personal signing link for them; attempting to sign out of order returns a clear message naming the role the contract is waiting on.",
-      "article": "/speaker-crm/contracts#let-signers-sign-from-their-portal",
-      "related": [
-        "/participants/sign-a-contract",
-        "/sponsors-exhibitors/adding-exhibitor-groups-contacts"
-      ],
-      "kind": "fixed",
-      "module": "CRM",
-      "features": [
-        "contracts"
-      ],
-      "availability": "beta",
-      "enable": {
-        "how": "default_on",
-        "path": null
-      },
-      "where": {
-        "scope": "both",
-        "path": "Portal → My Contracts → Sign now"
-      },
-      "permissions": [],
-      "audience": [
-        "organizer",
-        "participant"
-      ],
-      "use_case": "Sponsors and exhibitors often designate a primary contact who is different from the email address the contract was originally addressed to. This fix means that person can log into the portal, find the contract waiting for them, and sign it without the organizer having to resend or manually share a link.",
-      "internal": {
-        "cs_action": {
-          "kind": "none",
-          "note": null
-        },
-        "when_to_bring_up": "A customer reports that a sponsor or exhibitor primary contact cannot see or sign a contract in the portal, or that a countersigner on an ordered native contract cannot get their signing link.",
-        "who_should_get_it": "Any customer using Contracts (beta) with sponsor or exhibitor accounts that have primary contacts set up.",
-        "staff_path": "Portal → My Contracts",
-        "gotchas": "The fix only applies to native (Sessionboard e-sign) contracts for the Sign now link; DocuSign contracts still require the portal user to be the stored envelope recipient — the primary-contact visibility path does not grant DocuSign signing authority. Deleted contacts never resolve to the account.",
-        "talk_track": "Primary contacts on a sponsor or exhibitor account now automatically see that account's contracts in the portal. If the contract uses ordered signing, Sign now gives each person their own link when it is their turn, and shows a clear message if they try to sign before the preceding role has completed.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The guide should document that account primary contacts (org-level or event-level) automatically gain visibility into their account's contracts in the portal, and explain the ordered-signing behaviour and the three error states a signer may encounter when using Sign now on a native contract.",
-          "why_use_it": "null",
-          "at": "2026-10-21T14:35:24.266Z"
-        }
-      },
-      "shipped": {
-        "prs": [
-          "lennd/sessionboard-web-api#4686"
-        ],
-        "docs_only": false,
-        "pending": null,
-        "live": {
-          "us": null,
-          "eu": null,
-          "me": null
-        },
-        "announced_at": null,
-        "emailed_at": null
-      },
-      "ideas": [],
-      "media": [],
-      "gated": "availability:beta"
-    },
-    {
       "id": "ai-mode-canvases-forms-plans-portals-tasks",
       "title": "Open forms, evaluation plans, portals and tasks as read-only canvases beside Team Lead",
       "summary": "In AI Mode, clicking a form, evaluation plan, portal or task record link now opens a read-only canvas beside the docked **Team Lead** panel instead of navigating away to the classic page. Each canvas shows a type label, title, status pill, key facts (questions and settings for forms; rounds, reviewers and workload for plans; tasks, forms, file requests and due dates for portals; applies-to, due date and instructions for tasks), an **Ask about this** button that prefills the composer, and a **Full page** link to the classic view. The **Team Lead** rail also gains **Forms**, **Evaluation plans** and **Portals** sections listing the event's (and org's) records with a prompt to ask Team Lead to build one.",
@@ -6442,7 +6243,7 @@
     {
       "id": "portal-contracts-sign-now-native",
       "title": "Sign a Sessionboard e-sign contract directly from the portal",
-      "summary": "Speakers and sponsors with a Sessionboard e-sign contract now see a **Sign now** button in **My Contracts → Needs Signature**. Clicking it opens the signing page in the same tab and returns to **My Contracts** once complete, where the row moves to **All Contracts** as **Signed**. DocuSign contracts continue to open in a new tab; uploaded PDFs show no action button.",
+      "summary": "Speakers and sponsors with a Sessionboard e-sign contract now see a **Sign now** button in **My Contracts → Needs Signature**. Clicking it opens the signing page in the same tab and returns to **My Contracts** once complete, where the row moves to **All Contracts** as **Signed**. DocuSign contracts continue to open in a new tab; uploaded PDFs show no action button. Sponsor and exhibitor primary contacts also see their account's contracts there, even when they are not the named signer, and can sign when it is their turn in a native signing order.",
       "article": "/participants/sign-a-contract",
       "related": [
         "/speaker-crm/contracts"
@@ -6488,6 +6289,7 @@
       },
       "shipped": {
         "prs": [
+          "lennd/sessionboard-web-api#4686",
           "lennd/sessionboard-web-org-portal#217"
         ],
         "docs_only": false,
