@@ -104,13 +104,24 @@ Pick an existing file in the test panel to see which steps would run for it and 
 
 </Steps>
 
-Reviewers must be active members of the event team, so everyone you assign can open the review. Saving changes while files are mid-review doesn't re-route them: the new steps and reviewers apply from their next step.
+Reviewers must be active members of the event team, so everyone you assign can open the review. Roles that are not on the event team, such as **Portal User** and the evaluator roles, are not offered as reviewers. Saving changes while files are mid-review doesn't re-route them: the new steps and reviewers apply from their next step.
+
+**Save workflow** refuses a workflow that could leave a file with nobody to review it, and names the step:
+
+- a **Route to** rule or **Otherwise route to** that reaches nobody on the event team, for example a role with no members;
+- **At least N** where N is more than the people a route can reach. Each file goes to one route, so N must fit the smallest one.
+
+A workflow that is switched off can always be saved, so you can turn off a broken one. The test panel shows the same warning on any step that would reach nobody.
+
+If a file still lands on a step with nobody to review it, for example because everyone was removed from the role after you saved, the file stays **Pending**, the review says so, and the event's admins and whoever last saved the workflow get an email and an in-app notification. Add a reviewer to the step, or use **Override**.
 
 ## Route files to the right reviewers
 
 A **Route to** rule sends matching files to different reviewers, for example the Retail track to its chair, or posters to the poster committee. Rules are checked in order and the first matching rule wins. Files that match no rule go to the step's **Otherwise route to** reviewers. A route can have a label, such as *Posters*, that reviewers see on the file.
 
 Conditions, for steps, routes and **Applies to**, can check the file's **File type**, **Upload slot**, **File format** (PDF, Office document, image, video, audio), and **Uploaded by** (speaker or participant, event team, or API / integration), and the session's **Track**, **Format**, **Level** and **Sponsor tier**.
+
+**Uploaded by** follows where the file was uploaded, not who uploaded it: a file uploaded in the speaker portal counts as **Speaker / participant** even when a team member uploads it there as a speaker, and a file uploaded on the session's **Files** tab counts as **Event team**.
 
 Use the test panel before you save: it shows, for a real file, which steps run and who reviews each one.
 
@@ -157,6 +168,7 @@ A single file can be held past the workflow's release time, for example one abst
 - **An extra hold can only make the release later, never sooner.** A time earlier than the workflow's release is refused.
 - **It holds every version of the file**, including versions uploaded afterwards.
 - **Reviewers of the file can add or extend an extra hold.** Only admins who manage session files can move one earlier or **Remove extra hold**, because either change releases the file sooner.
+- **Remove extra hold asks first when it would release the file now** — when the file is approved and the workflow's release time has passed, so only this hold keeps it back. Confirm with **Remove and release**. If the file is still held by approval or by the workflow's release time, the hold is removed without asking.
 - Each extra hold, change and removal is recorded in the file's history, with who made it and the old and new times.
 
 ![The Hold this file longer form with the date Nov 13, 2026, the time 9 AM and the time zone America/Los Angeles (GMT minus 8), the event time zone, with Cancel and Hold file](/images/kb/file-approvals-hold-longer.png)
@@ -166,6 +178,10 @@ A single file can be held past the workflow's release time, for example one abst
 Changing the release time to an earlier one, switching to **As soon as approved**, switching mode, or narrowing **Applies to** while a release time is on can release held files at once. Before saving such a change, Sessionboard tells you how many files are held right now and asks you to confirm with **Save and release**. **Keep editing** goes back without saving.
 
 ![The Release held files sooner? confirmation, saying 232 files are held by the release time right now, any file this change releases goes out as soon as you save and can't be recalled, and 2 files are mid-review, with Keep editing and Save and release](/images/kb/file-approvals-release-sooner.png)
+
+### Changes that hold files that are live now
+
+A release time holds **every** file the workflow applies to, including files that integrations, embeds and the Public API already have. When you set or move a release time later, or widen **Applies to** while one is set, Sessionboard counts the files that are live now and would be held, and asks you to confirm with **Save and hold**. Held files stop being sent and disappear from embeds, galleries and the Public API until the release time passes.
 
 Every change to the workflow's release time is listed under **Release time changes** in the builder, newest first, with who changed it, when, and the old and new values. The builder also shows how many files the release time holds right now.
 
@@ -185,7 +201,7 @@ Within a minute of a file's release time, Sessionboard releases it and tells you
 - **Deny** asks for changes. A note is required, and it is sent to the person who uploaded the file. The remaining reviewers don't need to act.
 - **Remind** emails the reviewers who haven't decided yet. Each reviewer can be reminded once every 4 hours.
 
-Select several rows to approve, deny or remind in bulk. Files you can't decide are skipped. Event team members whose role is limited to some sessions see only the files on those sessions, plus any file they have been asked to review.
+Select several rows to approve, deny or remind in bulk. Before **Approve** or **Deny** goes ahead, Sessionboard says how many files it will change, for example *Approve 37 of 200 selected — 163 are not waiting on you*. Only the files waiting on you are decided. Event team members whose role is limited to some sessions see only the files on those sessions, plus any file they have been asked to review.
 
 ### Override a decision
 
@@ -220,7 +236,7 @@ The emails are listed under System Notifications, in the Files & Exports categor
 
 ## Turning it off
 
-- **Switching off Require approval for session files** stops holding files for review, **including files that are mid-review or denied**: once the change is saved they are released to integrations, embeds, galleries and the Public API like any approved file, and a file that has been sent can't be recalled. Their review history is kept. **A release time keeps holding files.** To lift it, set **Release time** to **As soon as approved**.
+- **Switching off Require approval for session files** (on **Program → Settings → Files**, then **Save Changes**) stops holding files for review, **including files that are mid-review or denied**. When any are waiting, Sessionboard says how many before it saves. Once saved, they are released to integrations, embeds, galleries and the Public API like any approved file, and a file that has been sent can't be recalled. Their review history is kept, and they show as **Pending · approval off** while approval is off. **A release time keeps holding files.** To lift it, set **Release time** to **As soon as approved**.
 - **If the Approvals Beta is switched off for the event**, files are no longer held for review, but **a release time still holds files** so that nothing under an embargo is released by accident. Set **Release time** to **As soon as approved** before you ask for the Beta to be switched off, or contact Support to lift it afterwards.
 
 </IfFeature>
