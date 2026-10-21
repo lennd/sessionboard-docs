@@ -1,0 +1,1483 @@
+{
+  "date": "2026-10-20",
+  "entries": [
+    {
+      "id": "advocacy-only-new-recipients",
+      "title": "Advocacy notify dialog lets you email only new campaign recipients",
+      "summary": "When sending notifications on a campaign that has already been emailed, the **Notify** dialog now offers two choices: **Everyone (N)** to re-send to all recipients, or **Only new (M)** to reach only people added since the last send. The counts come from a live dry run so you always know exactly how many people will receive the message before you confirm.",
+      "article": "/marketing/advocacy#manage-a-live-campaign",
+      "kind": "new",
+      "module": "Marketing",
+      "features": [
+        "marketing_advocacy"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Marketing → Advocacy → [campaign] → Notify"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Campaigns that grow over time — such as rolling attendee invitations — previously required organizers to manually track who had already been notified to avoid duplicate emails. The **Only new** option lets organizers safely re-open the notify dialog at any point and send only to people who haven't received the campaign email yet.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Requires the companion API change in lennd/sessionboard-web-api#4584. Until that API ships, the dry-run call returns a 400, the Only new option stays hidden, and Notify behaves as before — no customer impact during the gap."
+        },
+        "when_to_bring_up": "When a customer running a rolling Advocacy campaign asks how to avoid re-emailing people who already received a campaign notification.",
+        "who_should_get_it": "Any customer using Advocacy campaigns where recipients are added in batches over time.",
+        "staff_path": "Event → Marketing → Advocacy → [campaign] → Notify",
+        "gotchas": "The Only new option is hidden until the API (web-api#4584) is deployed. Deploy order is safe — no regression if the UI ships first.",
+        "talk_track": "Once your campaign has been sent, the Notify dialog will show you two options: resend to everyone, or reach only the people added since your last send — with exact counts so you know what you're about to do."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1057",
+          "lennd/sessionboard-web-api#4584"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "campaign-emails-logo-wrapper",
+      "title": "Campaign emails now include the event logo",
+      "summary": "Campaign emails, test sends, automated sends, and workflow sends were delivered without the event logo when no email theme was set. All sends now wrap the email body in the same template used by **Send Email**, so the event logo (or org logo for org-scoped sends) appears consistently.",
+      "article": "/communications/email-campaigns#step-4-preview",
+      "related": [
+        "/settings/email-themes",
+        "/communications/create-send-emails"
+      ],
+      "kind": "fixed",
+      "module": "Communications",
+      "features": [
+        "email_campaigns"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Communications → Email Campaigns"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Events that rely on campaigns to communicate with speakers and attendees expect branded emails. The logo now appears in every campaign send without requiring a theme to be configured.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer notices their campaign emails look unbranded or are missing the event logo.",
+        "who_should_get_it": "Any customer using email campaigns without a custom email theme set — particularly common for events that have not configured themes.",
+        "staff_path": "Event → Communications → Email Campaigns",
+        "gotchas": "This fix applies retroactively to all future sends; previously sent emails are not resent. Org-scoped sends use the org logo; event-scoped sends use the event logo.",
+        "talk_track": "Campaign emails now automatically include your event logo in the same branded wrapper as your other emails, even if you haven't set up a custom email theme."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4589",
+          "lennd/sessionboard-web-ui-v2#1064"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "booklet-language-field-blank-fix",
+      "title": "Session fields and participant details no longer appear blank in printed booklets",
+      "summary": "Selected session fields, participant titles, and company names were blank in every printed booklet because the locale code was stored as `en_US` but looked up as `en-US`. The event's configured language is now used with the correct format, so all field values appear as expected.",
+      "article": "/marketing/print-agendas#block-inspector",
+      "kind": "fixed",
+      "module": "Marketing",
+      "features": [
+        "print_agenda"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Marketing → Print → [booklet]"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who generate printed program books rely on session fields and speaker details being populated. This fix ensures those values appear correctly without any manual workaround.",
+      "internal": {
+        "cs_action": {
+          "kind": "reach_out",
+          "note": "Any customer who generated a booklet after PR #4495 (recent release) may have a blank-field booklet saved. Proactively reach out to customers who use Print Agendas and suggest they regenerate."
+        },
+        "when_to_bring_up": "A customer reports that session fields, speaker titles, or company names are missing from their printed booklet or program book.",
+        "who_should_get_it": "Any customer using the Print Agendas / booklet feature — regression affected all booklets since a recent release.",
+        "staff_path": "Event → Marketing → Print → open a booklet → regenerate",
+        "gotchas": "Booklets generated between PR #4495 and this fix will still show blank fields until the customer regenerates them. Friendly ID and Client Session ID now pull from their dedicated Sessions columns.",
+        "talk_track": "A recent update accidentally caused session fields and speaker details to go blank in printed booklets. That is now fixed — just regenerate your booklet and everything will appear correctly."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4584"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "draft-session-fields-saved-correctly",
+      "title": "Draft submissions now save all session fields, not just the title",
+      "summary": "When a speaker saved a submission as a draft, only the **Title** was written to the draft session record — **Description**, other standard fields, and every custom field answer were silently dropped. All standard columns and custom field values are now saved on every draft save, so speakers can resume a draft and find their work intact.",
+      "article": "/participants/save-a-submission-as-a-draft#save-a-draft-submission",
+      "related": [
+        "/sessions/draft-submissions",
+        "/sessions/submission-forms"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "sessions"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Submission Form → Save as Draft"
+      },
+      "permissions": [],
+      "audience": [
+        "speaker",
+        "participant"
+      ],
+      "use_case": "Speakers who fill in a description, custom answers, and other fields before saving a draft no longer lose that work. They can return to the draft and pick up exactly where they left off.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Fix is automatic; no action needed. 3,417 US and 389 EU drafts were affected — those speakers will see their previously missing fields restored on next load."
+        },
+        "when_to_bring_up": "A speaker reports that their draft lost everything except the title, or an organizer notices draft sessions with only a title and no other content.",
+        "who_should_get_it": "Any customer whose speakers use the Save as Draft feature on submission forms.",
+        "staff_path": null,
+        "gotchas": "If a session Description was edited directly on the session record after the draft was saved, the newer session-record value wins over the snapshot on resume — this is intentional.",
+        "talk_track": "Speakers can now save a draft at any point and come back to find all their answers — title, description, and every custom field — exactly as they left them."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4591"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "speaker-feedback-evaluation-plan-v2",
+      "title": "Speaker feedback can use Evaluation Plan 2.0 reviews",
+      "summary": "The speaker-portal **Evaluation reviews** source only listed v1 evaluation plans. Evaluation Plan 2.0 plans are now offered too: each session is scored from its last round with a completed review, shown out of 5 and pooled with any v1 plan on the same scale. A reviewer on both a v1 and a v2 plan counts once toward the minimum number of reviews.",
+      "article": "/portals/speaker-feedback#evaluation-reviews",
+      "kind": "fixed",
+      "module": "Portals",
+      "features": [
+        "speaker_feedback"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event Settings → Record Settings → Speaker portal → Evaluation reviews"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Events running Evaluation Plan 2.0 can finally share reviewer scores with their speakers in the portal.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "Events running Evaluation Plan 2.0 can finally share reviewer scores with their speakers in the portal.",
+        "who_should_get_it": "Every customer using this area; no action needed.",
+        "staff_path": "Event Settings → Record Settings → Speaker portal → Evaluation reviews",
+        "gotchas": "Plan 2.0 has no reviewer note for submitters, so v2 plans add scores but no notes. Sessions below the minimum number of reviews show no score.",
+        "talk_track": "Events running Evaluation Plan 2.0 can finally share reviewer scores with their speakers in the portal."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4600",
+          "lennd/sessionboard-web-api#4625"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "org-interest-form-evaluator-summary",
+      "title": "Weekly evaluator summary now covers org Interest Form plans",
+      "summary": "Reviewers on organization-level Interest Form evaluation plans now get the weekly Evaluator Progress Summary, sent from the organization with the form as its header and linking to the review queue on the org Site. Deleted and merged submissions are not counted.",
+      "article": "/speaker-crm/interest-form-evaluation-plans#where-to-find-it",
+      "kind": "fixed",
+      "module": "CRM",
+      "features": [
+        "crm"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Organization → Sessions → Forms → [form] → Evaluation plans"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "reviewer"
+      ],
+      "use_case": "Org-level Interest Form reviewers now get the same weekly nudge as event reviewers, so reviews don't stall.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "Org-level Interest Form reviewers now get the same weekly nudge as event reviewers, so reviews don't stall.",
+        "who_should_get_it": "Every customer using this area; no action needed.",
+        "staff_path": "Organization → Sessions → Forms → [form] → Evaluation plans",
+        "gotchas": null,
+        "talk_track": "Org-level Interest Form reviewers now get the same weekly nudge as event reviewers, so reviews don't stall."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4600",
+          "lennd/sessionboard-web-api#4625"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "evaluation-due-reminders-restored",
+      "title": "Evaluation due-date reminders send again",
+      "summary": "The daily \"Evaluation reminder\" and \"Evaluator Due Reminder\" emails (one and seven days before a review deadline, for event and org plans) had stopped sending. They now run every morning again and respect each reviewer's notification preferences.",
+      "article": "/evaluations/setting-up-round-based-evaluations#step-2-rounds",
+      "kind": "fixed",
+      "module": "Program",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event → Sessions → Evaluation → [plan]"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "reviewer"
+      ],
+      "use_case": "Reviewers get reminded before their review deadline again, without anyone sending a manual nudge.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "Reviewers get reminded before their review deadline again, without anyone sending a manual nudge.",
+        "who_should_get_it": "Every customer using this area; no action needed.",
+        "staff_path": "Event → Sessions → Evaluation → [plan]",
+        "gotchas": "Reminders go out once a day in the morning; a deadline changed after that run is picked up the next day.",
+        "talk_track": "Reviewers get reminded before their review deadline again, without anyone sending a manual nudge."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4600",
+          "lennd/sessionboard-web-api#4625"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "booklet-pdf-background-export",
+      "title": "Booklet PDF export no longer times out",
+      "summary": "Exporting a Print booklet as **PDF** rendered in the request and failed on large books. PDF now always builds in the background: you can keep editing and get a notification when the file is ready. The separate \"PDF (large book)\" option is gone, and speaker headshots are sized for print so books render faster.",
+      "article": "/marketing/print-agendas#the-booklet-editor",
+      "kind": "fixed",
+      "module": "Marketing",
+      "features": [
+        "print_agenda"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event → Program → Print → [template] → Export → PDF"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Large program books export reliably instead of failing with an API error.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "Large program books export reliably instead of failing with an API error.",
+        "who_should_get_it": "Every customer using this area; no action needed.",
+        "staff_path": "Event → Program → Print → [template] → Export → PDF",
+        "gotchas": null,
+        "talk_track": "Large program books export reliably instead of failing with an API error."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4589",
+          "lennd/sessionboard-web-ui-v2#1064"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "scheduled-report-file-names",
+      "title": "Scheduled reports show file names, not [object Object]",
+      "summary": "File-upload columns (for example a speaker's company logo) on a scheduled report link now show the file's name, linked to the file. Search on the page matches the name. CSV and Excel downloads still contain the file URL.",
+      "article": "/reporting/custom-reports#the-module-reports",
+      "kind": "fixed",
+      "module": "Reporting",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event → Reports → [report] → Schedule → report link"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Teams who share scheduled reports with file columns see readable file names their stakeholders can click.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "Teams who share scheduled reports with file columns see readable file names their stakeholders can click.",
+        "who_should_get_it": "Every customer using this area; no action needed.",
+        "staff_path": "Event → Reports → [report] → Schedule → report link",
+        "gotchas": "Reports that hide personal data (PII obfuscation) do not show file names.",
+        "talk_track": "Teams who share scheduled reports with file columns see readable file names their stakeholders can click."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4589",
+          "lennd/sessionboard-web-ui-v2#1064"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "report-contact-sessions-event-scope",
+      "title": "Event reports no longer list a contact's sessions from other events",
+      "summary": "In an event-scoped custom report, columns that read a contact's sessions (sessions, as speaker, moderator, submitter and so on) included sessions from the contact's other events. They now list only sessions in the report's event.",
+      "article": "/reporting/report-builder#columns",
+      "kind": "fixed",
+      "module": "Reporting",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event → Reports → [report]"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Speakers who appear at several of a customer's events no longer bring other events' sessions into a single event's report.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "Speakers who appear at several of a customer's events no longer bring other events' sessions into a single event's report.",
+        "who_should_get_it": "Every customer using this area; no action needed.",
+        "staff_path": "Event → Reports → [report]",
+        "gotchas": null,
+        "talk_track": "Speakers who appear at several of a customer's events no longer bring other events' sessions into a single event's report."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4584"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "contact-record-submitted-sessions",
+      "title": "Contact records list sessions the contact submitted",
+      "summary": "A contact who only submitted sessions (and holds no speaker or other role on them) saw an empty Sessions list on their contact record. Those sessions now appear with the role **Submitter**.",
+      "article": "/contacts/create-assign-a-session-submitter#set-or-change-the-submitter",
+      "kind": "fixed",
+      "module": "CRM",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event → Contacts → [contact] → Sessions"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Staff can see every session a submitter sent in, straight from their contact record.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "Staff can see every session a submitter sent in, straight from their contact record.",
+        "who_should_get_it": "Every customer using this area; no action needed.",
+        "staff_path": "Event → Contacts → [contact] → Sessions",
+        "gotchas": null,
+        "talk_track": "Staff can see every session a submitter sent in, straight from their contact record."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4589"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "marketing-create-slides-media-open",
+      "title": "Marketing Create, Slides and Media open for every organization",
+      "summary": "For organizations without the full Marketing package, **Create**, **Slides** and **Media** redirected back to the Marketing overview. They now open as intended.",
+      "article": "/marketing/create#what-you-can-make",
+      "kind": "fixed",
+      "module": "Marketing",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event → Marketing → Create / Slides / Media"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Customers on the core plan can use Create, Slides and Media without being bounced to the overview.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "Customers on the core plan can use Create, Slides and Media without being bounced to the overview.",
+        "who_should_get_it": "Every customer using this area; no action needed.",
+        "staff_path": "Event → Marketing → Create / Slides / Media",
+        "gotchas": null,
+        "talk_track": "Customers on the core plan can use Create, Slides and Media without being bounced to the overview."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1057"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [
+        {
+          "src": "https://static.sessionboard.com/training/videos/56-quotes-and-clips/v2026-10-10-87876175/56-quotes-and-clips.mp4",
+          "start": 21.3
+        }
+      ],
+      "gated": null
+    },
+    {
+      "id": "bulk-assign-checkbox-toggle",
+      "title": "Bulk assign: clicking a form or task selects it",
+      "summary": "In the bulk **Assign** sidebar (Tasks, Forms, File Requests), clicking an item's checkbox toggled it twice, so nothing appeared selected. Each item, and Select All, now toggles once whether you click the box or its name.",
+      "article": "/portals/assign-tasks#assign-the-task-to-a-portal",
+      "kind": "fixed",
+      "module": "Portals",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event → Contacts → select contacts → Assign"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Bulk-assigning a newly created form or task to many contacts works on the first click.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "Bulk-assigning a newly created form or task to many contacts works on the first click.",
+        "who_should_get_it": "Every customer using this area; no action needed.",
+        "staff_path": "Event → Contacts → select contacts → Assign",
+        "gotchas": null,
+        "talk_track": "Bulk-assigning a newly created form or task to many contacts works on the first click."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1057"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "location-field-language-variants-save",
+      "title": "Location field language variants save",
+      "summary": "Saving language variants (translated name and option labels) on the system **Location** field failed with \"settings.description cannot be saved for this field\". It now saves like Track, Format and Level.",
+      "article": "/settings/language-translation-variant#enable-a-variant-on-a-field",
+      "kind": "fixed",
+      "module": "Settings",
+      "features": [
+        "languages"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "support",
+        "path": "Languages are turned on by support; then Settings → Languages, and Enable variants on each field"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event Settings → Library → Fields → Location → Edit"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Multilingual events can translate room names for their agendas.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "Multilingual events can translate room names for their agendas.",
+        "who_should_get_it": "Every customer using this area; no action needed.",
+        "staff_path": "Event Settings → Library → Fields → Location → Edit",
+        "gotchas": "When a variant is enabled, the editor needs a translated field name before it will save.",
+        "talk_track": "Multilingual events can translate room names for their agendas."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4584"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "embed-popup-translations",
+      "title": "Embed session popups show translated field labels",
+      "summary": "In an embedded agenda shown in another language, the session popup kept English field labels while the agenda list was translated. The popup now uses the same translations.",
+      "article": "/sessions/embeds#how-to-create-an-embed",
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "embeds_v2",
+        "sessions"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event → CMS → Embeds → [embed]"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Attendees browsing a translated embed see one language in the agenda and in the session details.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "Attendees browsing a translated embed see one language in the agenda and in the session details.",
+        "who_should_get_it": "Every customer using this area; no action needed.",
+        "staff_path": "Event → CMS → Embeds → [embed]",
+        "gotchas": "Embeds are cached; the first load after a translation edit can still show the old label.",
+        "talk_track": "Attendees browsing a translated embed see one language in the agenda and in the session details."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4584"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "content-gallery-thumbnails-refresh",
+      "title": "Content gallery thumbnails stop expiring",
+      "summary": "Media thumbnails in Content Galleries were signed links that expired after 24 hours, leaving broken images. Thumbnails are now refreshed whenever the gallery loads, including items that were already broken.",
+      "article": "/site/content-galleries#create-a-gallery",
+      "kind": "fixed",
+      "module": "CMS",
+      "features": [
+        "content_galleries"
+      ],
+      "availability": "preview",
+      "enable": {
+        "how": "self_serve",
+        "path": "Preview (bottom of the organization or event sidebar) → Content Galleries"
+      },
+      "where": {
+        "scope": "both",
+        "path": "Event → CMS → Galleries → [gallery]"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Published galleries keep their video thumbnails without a re-sync.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "Published galleries keep their video thumbnails without a re-sync.",
+        "who_should_get_it": "Every customer using this area; no action needed.",
+        "staff_path": "Event → CMS → Galleries → [gallery]",
+        "gotchas": null,
+        "talk_track": "Published galleries keep their video thumbnails without a re-sync."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4591"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "org-bulk-assign-submission-filters",
+      "title": "Org evaluation plans: assigning by submission filters works",
+      "summary": "On organization evaluation plans, bulk assigning reviewers **By submission filters** failed for every filter. It now assigns as expected, and a filter that needs a value says so.",
+      "article": "/speaker-crm/interest-form-evaluation-plans#where-to-find-it",
+      "kind": "fixed",
+      "module": "CRM",
+      "features": [
+        "crm"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Organization → Sessions → Forms → [form] → Evaluation plans → [plan] → Assignments"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Org-level programs can route submissions to reviewers by their answers instead of assigning by hand.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "Org-level programs can route submissions to reviewers by their answers instead of assigning by hand.",
+        "who_should_get_it": "Every customer using this area; no action needed.",
+        "staff_path": "Organization → Sessions → Forms → [form] → Evaluation plans → [plan] → Assignments",
+        "gotchas": null,
+        "talk_track": "Org-level programs can route submissions to reviewers by their answers instead of assigning by hand."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4584"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "evaluation-plan-v2-reopen-dates",
+      "title": "Reopening a closed Evaluation Plan 2.0 keeps its dates",
+      "summary": "Opening a closed Evaluation Plan 2.0 without editing its dates failed with \"Set a review end date in the future\". The plan now reopens using the round's saved review end date.",
+      "article": "/evaluations/setting-up-round-based-evaluations#the-evaluation-plan-wizard",
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "sessions_v2"
+      ],
+      "availability": "add_on",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event → Sessions → Evaluation → [plan] → Open"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Admins can reopen a plan for late reviews in one click.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "Admins can reopen a plan for late reviews in one click.",
+        "who_should_get_it": "Every customer using this area; no action needed.",
+        "staff_path": "Event → Sessions → Evaluation → [plan] → Open",
+        "gotchas": "If the round's end date has already passed, set a new end date before reopening.",
+        "talk_track": "Admins can reopen a plan for late reviews in one click."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4584"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "contract-template-published-snapshot",
+      "title": "Contracts use the published template, not unpublished edits",
+      "summary": "Editing a published Sessionboard e-sign template changed what the next contract sent, before the edit was published. Sends, signer lookup and preview now use the content as of the last publish; edits go out once you publish them.",
+      "article": "/speaker-crm/contracts#send-with-sessionboard-e-sign",
+      "kind": "fixed",
+      "module": "CRM",
+      "features": [
+        "contracts"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Organization → CRM → Contracts → Templates"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Legal and ops teams can draft template changes safely without them reaching speakers early.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "Legal and ops teams can draft template changes safely without them reaching speakers early.",
+        "who_should_get_it": "Every customer using this area; no action needed.",
+        "staff_path": "Organization → CRM → Contracts → Templates",
+        "gotchas": null,
+        "talk_track": "Legal and ops teams can draft template changes safely without them reaching speakers early."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4591"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "pipeline-contract-auto-advance",
+      "title": "Contracts sent from a pipeline entry advance it when signed",
+      "summary": "A contract sent from an organization pipeline entry (with no event) was not linked to the entry, so signing it never moved the entry to the next stage. It is now linked, and completion advances the entry forward only.",
+      "article": "/speaker-crm/contracts#track-who-has-signed",
+      "kind": "fixed",
+      "module": "CRM",
+      "features": [
+        "contracts"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Organization → CRM → Pipeline → [entry] → Send contract"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Speaker pipelines move on by themselves once the contract is signed.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "Speaker pipelines move on by themselves once the contract is signed.",
+        "who_should_get_it": "Every customer using this area; no action needed.",
+        "staff_path": "Organization → CRM → Pipeline → [entry] → Send contract",
+        "gotchas": "Entries already past the target stage stay where they are.",
+        "talk_track": "Speaker pipelines move on by themselves once the contract is signed."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4591"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "clip-export-overlays-trim",
+      "title": "Clip exports keep their logo and length",
+      "summary": "Exporting a clip with an image or logo overlay came out at the full source length, and \"Export edited video\" from the video editor dropped the logo shown in preview. Clips now export at the trimmed length with their overlays. Cutting a clip into several segments with an overlay shows a message instead of silently dropping it.",
+      "article": "/marketing/clips#create-a-clip",
+      "kind": "fixed",
+      "module": "Marketing",
+      "features": [
+        "marketing_clips"
+      ],
+      "availability": "limited_release",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Event → Marketing → Media / Create → [video] → Export"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Branded short clips export exactly as previewed, ready to post.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "Branded short clips export exactly as previewed, ready to post.",
+        "who_should_get_it": "Every customer using this area; no action needed.",
+        "staff_path": "Event → Marketing → Media / Create → [video] → Export",
+        "gotchas": null,
+        "talk_track": "Branded short clips export exactly as previewed, ready to post."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4584",
+          "lennd/sessionboard-web-api#4591",
+          "lennd/sessionboard-web-ui-v2#1064"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [
+        {
+          "src": "https://static.sessionboard.com/training/videos/56-quotes-and-clips/v2026-10-10-87876175/56-quotes-and-clips.mp4",
+          "start": 137.8
+        }
+      ],
+      "gated": null
+    },
+    {
+      "id": "poster-gallery-teaser-fix",
+      "title": "Poster gallery loads with embargoed teaser posters",
+      "summary": "A public poster gallery could fail to load when it contained a poster under embargo shown as a teaser. Teaser posters now display without authors until the embargo lifts.",
+      "article": "/marketing/poster-gallery#create-a-gallery",
+      "kind": "fixed",
+      "module": "Marketing",
+      "features": [
+        "poster_gallery"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "support",
+        "path": "Request it from Early Access on the event; our team switches it on"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event → CMS → Poster Gallery → [gallery] → public page"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Events can tease embargoed posters without breaking the gallery.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "Events can tease embargoed posters without breaking the gallery.",
+        "who_should_get_it": "Every customer using this area; no action needed.",
+        "staff_path": "Event → CMS → Poster Gallery → [gallery] → public page",
+        "gotchas": null,
+        "talk_track": "Events can tease embargoed posters without breaking the gallery."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4589",
+          "lennd/sessionboard-web-ui-v2#1057"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "portal-task-description-plain-text",
+      "title": "Portal task descriptions show as plain text",
+      "summary": "Task descriptions bound to a Text Area field now display as plain text with their line breaks, in the speaker portal and the admin tasks panel. Markup in the field is no longer interpreted.",
+      "article": "/portals/assign-tasks#create-a-task",
+      "kind": "fixed",
+      "module": "Portals",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event → Portals → Tasks / Contacts → [contact] → Tasks"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "speaker"
+      ],
+      "use_case": "Task instructions read the way they were typed, everywhere they appear.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "Task instructions read the way they were typed, everywhere they appear.",
+        "who_should_get_it": "Every customer using this area; no action needed.",
+        "staff_path": "Event → Portals → Tasks / Contacts → [contact] → Tasks",
+        "gotchas": null,
+        "talk_track": "Task instructions read the way they were typed, everywhere they appear."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1057"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "dashboard-bar-chart-value-axis",
+      "title": "Dashboard bar charts pick the numeric column",
+      "summary": "A bar chart widget without a chosen value axis plotted the report's second column even when it was text, and drew nothing. It now uses the first numeric column.",
+      "article": "/reporting/dashboards#add-a-widget",
+      "kind": "fixed",
+      "module": "Reporting",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event → Dashboard → [tab] → widget"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Dashboard bar charts built from a report work without extra setup.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "Dashboard bar charts built from a report work without extra setup.",
+        "who_should_get_it": "Every customer using this area; no action needed.",
+        "staff_path": "Event → Dashboard → [tab] → widget",
+        "gotchas": null,
+        "talk_track": "Dashboard bar charts built from a report work without extra setup."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1057"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [
+        {
+          "src": "https://static.sessionboard.com/training/videos/24-custom-dashboards/v2026-09-30-005f6d7c/24-custom-dashboards.mp4",
+          "start": 150.3
+        }
+      ],
+      "gated": null
+    },
+    {
+      "id": "cfp-resume-your-information",
+      "title": "Resuming a submission flags missing \"Your Information\" fields",
+      "summary": "When a submission form has the **Your Information** step, resuming a draft landed there without highlighting missing required fields, and a complete step did not move on. Resuming now shows the \"Required fields missing\" banner and continues to Session Info once the step is complete.",
+      "article": "/participants/save-a-submission-as-a-draft#access-a-saved-draft",
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "sessions"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Public submission form → resume draft"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Submitters who come back to a draft see exactly what is left to fill in.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "Submitters who come back to a draft see exactly what is left to fill in.",
+        "who_should_get_it": "Every customer using this area; no action needed.",
+        "staff_path": "Public submission form → resume draft",
+        "gotchas": null,
+        "talk_track": "Submitters who come back to a draft see exactly what is left to fill in."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1057"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "automation-speakers-changes-trigger",
+      "title": "\"Speakers changes\" automations fire when a speaker is added or removed",
+      "summary": "Automations triggered by **Speakers** changing on a session did not run when a speaker (or a custom participant role) was added or removed. They now run on those changes.",
+      "article": "/automations/overview#when",
+      "kind": "fixed",
+      "module": "Automations",
+      "features": [
+        "automations"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event → Automations → [automation] → Trigger: field changes → Speakers"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Teams can automate follow-up when a session's lineup changes.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "Teams can automate follow-up when a session's lineup changes.",
+        "who_should_get_it": "Every customer using this area; no action needed.",
+        "staff_path": "Event → Automations → [automation] → Trigger: field changes → Speakers",
+        "gotchas": null,
+        "talk_track": "Teams can automate follow-up when a session's lineup changes."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4589"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "booklet-legacy-schedule-filter",
+      "title": "Older booklets print their schedule again",
+      "summary": "Program books created from early starter templates filtered the schedule on statuses that do not exist, so the schedule section printed empty. Those templates now include accepted sessions, like the current starters.",
+      "article": "/marketing/print-agendas#structure",
+      "kind": "fixed",
+      "module": "Marketing",
+      "features": [
+        "print_agenda"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event → Program → Print → [template] → Schedule block"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Customers who built their program book from an early template get a full schedule without rebuilding it.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "Customers who built their program book from an early template get a full schedule without rebuilding it.",
+        "who_should_get_it": "Every customer using this area; no action needed.",
+        "staff_path": "Event → Program → Print → [template] → Schedule block",
+        "gotchas": null,
+        "talk_track": "Customers who built their program book from an early template get a full schedule without rebuilding it."
+      },
+      "shipped": {
+        "prs": [],
+        "docs_only": false,
+        "pending": "lennd/sessionboard-web-api#4648 (fix/qa-sweep-2026-10-20-audit)",
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": null
+    }
+  ]
+}
