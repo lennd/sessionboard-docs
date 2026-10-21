@@ -367,73 +367,6 @@
       "gated": null
     },
     {
-      "id": "portal-profile-status-sentence-case",
-      "title": "Portal profile headings and application statuses now use sentence case",
-      "summary": "Four labels in the Sites portal were displayed in Title Case instead of the correct sentence case. **Reviewer Notifications** and **Applicant Notifications** on the submitter and reviewer profile, and the application statuses **Under Review** and **Pending Payment**, now appear as **Reviewer notifications**, **Applicant notifications**, **Under review**, and **Pending payment**.",
-      "article": "/awards/setting-up-your-sessionboard-site#the-signed-in-portal",
-      "kind": "fixed",
-      "module": "Awards",
-      "features": [
-        "awards"
-      ],
-      "availability": "add_on",
-      "enable": {
-        "how": "default_on",
-        "path": null
-      },
-      "where": {
-        "scope": "event",
-        "path": "Sites portal → Submitter / Reviewer profile and application status labels"
-      },
-      "permissions": [],
-      "audience": [
-        "organizer",
-        "reviewer",
-        "participant"
-      ],
-      "use_case": "Organizers running awards programs expect consistent, professional copy throughout the portal. This fix ensures notification headings and application status labels match the sentence-case style used everywhere else in the portal, including the already-correct German, Spanish, and French locales.",
-      "internal": {
-        "cs_action": {
-          "kind": "none",
-          "note": null
-        },
-        "when_to_bring_up": "Only if a customer reports inconsistent capitalisation in the Sites portal profile or application status labels.",
-        "who_should_get_it": "All customers using the Awards Sites portal.",
-        "staff_path": "Sites portal → Submitter or Reviewer profile → notification headings; completed applications page → status badges",
-        "gotchas": "Only the English locale was affected; de/es/fr were already correct.",
-        "talk_track": null,
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The guide should note the exact sentence-case labels used for notification headings and application statuses in the signed-in portal so customers can reference them when customising copy.",
-          "why_use_it": "null",
-          "at": "2026-10-21T00:42:39.684Z"
-        }
-      },
-      "related": [
-        "/awards/getting-started",
-        "/awards/managing-submissions-reviewers-rounds"
-      ],
-      "shipped": {
-        "prs": [
-          "lennd/sessionboard-web-org-portal#211"
-        ],
-        "docs_only": false,
-        "pending": null,
-        "live": {
-          "us": null,
-          "eu": null,
-          "me": null
-        },
-        "announced_at": null,
-        "emailed_at": null
-      },
-      "ideas": [],
-      "media": [],
-      "gated": null
-    },
-    {
       "id": "richtext-blocks-rendered-in-reviewer-submission-view",
       "title": "Rich-text instruction blocks display as formatted text in the reviewer submission view",
       "summary": "Rich-text blocks added to a submission form as static instructional content were showing raw HTML markup (e.g. `<p><strong>Important Updates…</strong></p>`) in the reviewer submission detail and **Print PDF** views. These blocks now render as formatted text, matching what submitters see on the form.",
@@ -773,6 +706,1456 @@
       "ideas": [],
       "media": [],
       "gated": null
+    },
+    {
+      "id": "formula-date-results-event-timezone",
+      "title": "Date formulas count days in the event's timezone and stay current every day",
+      "summary": "A formula built on **Date + N days** (`add_days`) now returns a date instead of a day count, and today is the calendar day in the event's timezone rather than UTC. Results that depend on today, such as **Days until**, recalculate every day shortly after local midnight without anyone saving the record, and clearing the source date clears the result.",
+      "article": "/settings/formula-fields#how-dates-are-counted",
+      "related": [
+        "/settings/field-rules"
+      ],
+      "kind": "fixed",
+      "module": "Settings",
+      "features": [
+        "field_rules"
+      ],
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Library → Fields → [field] → Field Type: Formula"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Teams that track visa expiries, deadlines or follow-up dates in formula fields get the right number for their own time zone, and it stays right on the days nobody edits the record.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer outside the Americas reports a Days until value that is off by one, a formula that never changes from the day it was saved, or a Date + N days field that shows a number.",
+        "who_should_get_it": "Events with Field Rules turned on that use days_until or add_days formulas.",
+        "staff_path": "Event → Settings → Library → Fields → [formula field]",
+        "gotchas": "SB-9638 is still in QA: the grid filter on a Date + N days formula may still offer number operators until the follow-up web-ui-v2 PR ships. Recalculation only runs for events with Field Rules on that ended less than 30 days ago. add_days can no longer be used inside arithmetic; saving such a formula returns an error.",
+        "talk_track": "Date formulas now follow your event's time zone and refresh every night, so Days until is correct the morning after without anyone touching the record."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4595",
+          "lennd/sessionboard-web-ui-v2#1062"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [
+        "/images/kb/formula-field-builder.png"
+      ]
+    },
+    {
+      "id": "send-date-merge-tags-event-timezone",
+      "title": "Email Send Date tags use the event's calendar day",
+      "summary": "**Email Send Date** and the **+7 / +14 / +30 Days** tags now fill in the day the email goes out in the event's timezone (the organization's for organization-level campaigns), and add whole calendar days. A send late in the day UTC no longer prints the wrong date for an event in Asia or the Pacific.",
+      "article": "/communications/email-campaigns#all-audiences",
+      "related": [
+        "/settings/email-templates"
+      ],
+      "kind": "fixed",
+      "module": "Communications",
+      "features": [],
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Communications → Email campaigns → Merge tags"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Reply-by dates in campaign and automation emails match the calendar your recipients are looking at.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer reports that a \"reply by\" date in an email is a day early or late.",
+        "who_should_get_it": "Every customer using the Email Send Date merge tags, especially events outside the Americas.",
+        "staff_path": "Event → Communications → Email campaigns → [campaign] → Merge tags",
+        "gotchas": "Only the fixed +7, +14 and +30 offsets exist; other offsets are not supported. UTC is used only when neither the event nor the organization has a timezone.",
+        "talk_track": null
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4595"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [
+        "/images/kb/email-campaign-basic-info.png"
+      ]
+    },
+    {
+      "id": "bulk-assign-relative-task-due-date",
+      "title": "Assign → Tasks stamps a due date relative to assignment",
+      "summary": "When you assign a task from a table with **Assign → Tasks** and leave the due date empty, each person now gets the task's **Due date relative to assignment**: the assignment day plus N days, at the end of the day in the event's timezone. A date you set on the assign screen wins, and assigning again keeps a date already stamped. Tasks that reach people through a portal's filters keep using the fixed **Due Date**.",
+      "article": "/portals/task-assignment#assign-to-several-records-at-once",
+      "related": [
+        "/portals/assign-tasks"
+      ],
+      "kind": "fixed",
+      "module": "Portals",
+      "features": [],
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "CRM → Contacts → select records → Assign → Tasks"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Teams that give each speaker a personal deadline (for example seven days after they are asked) get that deadline when they assign in bulk, not only one record at a time.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer assigns tasks in bulk and finds no due date on the people they assigned, or asks why a task reached through a portal filter has the portal's fixed date.",
+        "who_should_get_it": "Events that use tasks with a due date relative to assignment.",
+        "staff_path": "Event → CRM → Contacts → Assign → Tasks; Portals → [portal] → Edit Tasks → pencil → Due date relative to assignment",
+        "gotchas": "Josh's decision: the relative date applies to direct assignment only. Portal-filter assignment uses the fixed Due Date.",
+        "talk_track": null
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4595"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "whats-new-module-filter",
+      "title": "Filter What's New by module",
+      "summary": "**Community → What's New** has a **Module** menu above the feed. Pick **Program**, **Marketing** or any other module to see only its updates; **All modules** shows everything again. The menu lists only modules that have updates.",
+      "article": "/help/community#whats-new",
+      "related": [],
+      "kind": "new",
+      "module": "Platform",
+      "features": [
+        "community"
+      ],
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Community → What's New → Module"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Admins who only run part of the product can read the updates that matter to them without scrolling past the rest.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer says What's New is too long to follow, or asks what changed in one area of the product.",
+        "who_should_get_it": "Every organization with Community.",
+        "staff_path": "Community → What's New",
+        "gotchas": null,
+        "talk_track": null
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4595",
+          "lennd/sessionboard-web-ui-v2#1062"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "record-messages-unread-count-and-resolve",
+      "title": "Record Messages tab: resolve a thread, and the dot counts every unread message",
+      "summary": "A record's **Messages** tab now has a bar that shows whether the conversation is **Open** or **Resolved**, with **Mark resolved** and **Reopen**. The dot on the tab counts every unread message, so three new speaker messages read 3, not 1. Opening a thread from another event also loads that event's session content.",
+      "article": "/communications/notifications#messages",
+      "related": [],
+      "kind": "fixed",
+      "module": "Communications",
+      "features": [],
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "[record] → Messages tab"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Teams that work speaker messages from the record can close a conversation where they read it, and trust the unread count.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer reports the Messages tab dot under-counting, or asks how to close a conversation from the record.",
+        "who_should_get_it": "Every event that uses record messages.",
+        "staff_path": "Event → Program → Submissions → [session] → Messages tab",
+        "gotchas": null,
+        "talk_track": null
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4595",
+          "lennd/sessionboard-web-ui-v2#1062"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "people-automation-portal-assignment-filter",
+      "title": "People automations can enroll only people with an incomplete portal task or form",
+      "summary": "In a People automation, **Only enroll when** now has **Portal assignment**: pick the **Item** (**Task** or **Form**), its **Name** and a **Status** (**Incomplete** or **Complete**), and only people whose portal task or form has that status are enrolled. **Clear** removes it.",
+      "article": "/automations/overview#when",
+      "related": [],
+      "kind": "new",
+      "module": "Automations",
+      "features": [
+        "automations"
+      ],
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Automations → [People automation] → When → Only enroll when → Portal assignment"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Reminder automations can go only to the speakers who still owe a task or form, instead of everyone whose field changed.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer wants an automation to chase only people who have not finished a portal task or form.",
+        "who_should_get_it": "Events using People automations with portal tasks or forms.",
+        "staff_path": "Event → Automations → [People automation] → When",
+        "gotchas": null,
+        "talk_track": null
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1062"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "campaign-cancel-status-refresh",
+      "title": "Cancelling a scheduled campaign shows Cancelled straight away",
+      "summary": "After you cancel, pause or resume a campaign, or create a new schedule, the campaign page now shows the new status and the next send at once, instead of the old status until a reload.",
+      "article": "/communications/email-campaigns#can-i-pause-or-cancel-a-campaign-thats-already-scheduled",
+      "related": [],
+      "kind": "fixed",
+      "module": "Communications",
+      "features": [],
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Communications → Email campaigns → [campaign]"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Teams can trust that a cancelled campaign is really cancelled when the page says so.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer cancelled a campaign and still saw an upcoming send.",
+        "who_should_get_it": "Every customer using scheduled or recurring campaigns.",
+        "staff_path": "Event → Communications → Email campaigns → [campaign]",
+        "gotchas": null,
+        "talk_track": null
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1062"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [
+        "/images/kb/email-campaigns-list.png"
+      ]
+    },
+    {
+      "id": "upload-slot-reminders-skip-declined",
+      "title": "Upload-slot reminders skip declined, withdrawn and cancelled sessions",
+      "summary": "Upload-slot reminders, the reminder preview, slot coverage and its CSV now leave out sessions that are **Declined** or in the decline queue, sessions with a custom status like **Cancelled** or **Withdrawn** under any base status, and withdrawn sessions. A participant who declined every role they hold on a session is not reminded either. Pending sessions are still reminded.",
+      "article": "/sessions/enable-upload-download-content#upload-slots",
+      "related": [
+        "/sessions/accept-decline"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [],
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Program → Settings → Files → Upload slots → Reminders"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Speakers who are no longer presenting stop getting \"upload your slides\" emails, and coverage counts only the sessions that still owe a file.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer reports declined or cancelled speakers getting upload reminders, or a coverage count that looks too high.",
+        "who_should_get_it": "Every event using upload slots with reminders.",
+        "staff_path": "Event → Program → Settings → Files → Upload slots; Program → Submissions → Files → Slot coverage",
+        "gotchas": "Custom statuses are matched by name (contains cancel or withdr), under any base status, so a Cancelled Onsite status under Accepted is excluded too. Pending sessions are still reminded; filter the slot on Status is Accepted to remind accepted sessions only.",
+        "talk_track": "Declined, withdrawn and cancelled sessions no longer get upload reminders, so only the speakers who still owe a file hear from you."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4595",
+          "lennd/sessionboard-web-ui-v2#1062"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "history-identity-access-audit",
+      "title": "History records SSO, two-factor, sign-in method and webhook changes",
+      "summary": "The **Audit** log in **History** now records SSO providers (create, edit, delete, signing certificates, per-event SSO on or off), requiring two-factor for the organization, member two-factor resets with the admin's reason, portal sign-in methods, and webhook endpoints. The **Type** filter offers **SSO provider**, **Webhook** and **Security setting** again, and **Action** offers **Two-factor reset**. Secrets, certificates and header values are never recorded.",
+      "article": "/communications/email-sms-history#changes-to-your-setup-not-just-your-records",
+      "related": [
+        "/integrations/siem-log-export"
+      ],
+      "kind": "improved",
+      "module": "Communications",
+      "features": [],
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "History → Audit → Type / Action filters"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Security and IT reviewers can see who changed sign-in and integration settings, and when, without asking Sessionboard.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer's security team asks for an audit trail of SSO, two-factor or webhook changes, or a security questionnaire asks about access-change logging.",
+        "who_should_get_it": "Organizations with SSO, enforced two-factor, or webhooks, and anyone answering a security review.",
+        "staff_path": "Org → History → Audit; Event → History → Audit",
+        "gotchas": "Webhook changes made in the embedded Svix portal are recorded only once the Svix operational webhook is configured per region (SVIX_OPERATIONAL_WEBHOOK_SECRET); until then only changes through the API routes appear. Portal webhook entries show System as the user because Svix does not say who acted. No rows exist from before this release.",
+        "talk_track": null
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4597",
+          "lennd/sessionboard-web-ui-v2#1076"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "signing-page-dark-mode-accessibility",
+      "title": "The signing page follows dark mode and meets WCAG contrast",
+      "summary": "The Sessionboard e-sign page now follows the signer's light or dark setting, keeps the **Sign** button readable on any brand colour, starts with a **Skip to main content** link, respects reduced motion, and can be completed by keyboard alone.",
+      "article": "/participants/sign-a-contract#sign-from-the-sessionboard-signing-page",
+      "related": [
+        "/speaker-crm/contracts"
+      ],
+      "kind": "improved",
+      "module": "CRM",
+      "features": [
+        "contracts"
+      ],
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Contract signing link → /sign page"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "speaker",
+        "participant"
+      ],
+      "use_case": "Signers on phones in dark mode, and signers who use a keyboard or screen reader, can read and sign agreements without help.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer or their accessibility team asks whether the signing page meets WCAG, or a signer reports the page is hard to read.",
+        "who_should_get_it": "Customers sending contracts with Sessionboard e-sign.",
+        "staff_path": "CRM → Contracts → [contract] → signing link",
+        "gotchas": "A dark-mode button edge and template field-type follow-ups are in a later web-ui-v2 PR.",
+        "talk_track": null
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1076"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "contracts-permission-provider-neutral",
+      "title": "Contracts permission and Add Contract dialog no longer assume Docusign",
+      "summary": "The permission **Can create contracts (send via DocuSign or upload)** is now **Can create contracts (send for e-signature or upload)**, because it also covers Sessionboard e-sign. The **Add Contract** dialog names Docusign only on its Docusign tab. Nobody's access changes.",
+      "article": "/speaker-crm/contracts#permissions",
+      "related": [
+        "/apps/docusign-integration"
+      ],
+      "kind": "improved",
+      "module": "CRM",
+      "features": [
+        "contracts"
+      ],
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Org Settings → Team → Permissions → [role] → Contracts; [record] → Contracts → Add Contract"
+      },
+      "permissions": [
+        "org.contracts.create"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Teams that use Sessionboard e-sign rather than Docusign can see the permission and the dialog cover their workflow.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer asks why the permission label changed, or whether they need Docusign to send contracts.",
+        "who_should_get_it": "Every customer using Contracts; the change is automatic.",
+        "staff_path": "Org Settings → Team → Permissions → [role] → Contracts",
+        "gotchas": "The migration renames the row only while it still holds the original text; a hand-edited label is left alone.",
+        "talk_track": null
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4597",
+          "lennd/sessionboard-web-ui-v2#1076"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "cfp-portal-country-list-and-phone-default",
+      "title": "Your Country list and the event's phone country reach the public form and speaker portal",
+      "summary": "The organization's Country list (**Library → Fields → Country → Edit**) now applies on the public call for papers form and in the speaker portal profile, so hidden countries are not offered and renamed ones show your name. A value saved before you hid or renamed a country stays readable. The phone field on the public form starts on the event's country, from its timezone, instead of always on +1.",
+      "article": "/concepts/custom-field-type-reference#contact-and-link-types",
+      "related": [],
+      "kind": "fixed",
+      "module": "Settings",
+      "features": [],
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Library → Fields → Country → Edit; public CFP form; speaker portal → Profile"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "speaker",
+        "participant"
+      ],
+      "use_case": "Organizations that trim or rename the country list get the same list everywhere a speaker picks a country, and international speakers start on their own dialling code.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer hid or renamed countries and speakers still see the full list, or speakers outside the US complain the phone field starts on +1.",
+        "who_should_get_it": "Organizations with a customised Country list, and events outside the US.",
+        "staff_path": "Org Settings → Library → Fields → Country → Edit",
+        "gotchas": "The phone default comes from the event timezone; there is no separate setting (Josh, SB-9636). Asia/Riyadh was added to the event timezone list.",
+        "talk_track": null
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4596",
+          "lennd/sessionboard-web-ui-v2#1061",
+          "lennd/sessionboard-web-ui-v2#1076"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "call-for-reviewers-approval-and-company-conflicts",
+      "title": "Call for Reviewers: approval calls keep invitees pending, and conflicts check Company Name",
+      "summary": "On a call with **Require approval** on, an invitee who accepts now waits as **Pending approval** and is enrolled, with their expertise picks on their tags, only when you **Approve**. Editing a profile without changing picks no longer clears them. Organization conflicts now compare the reviewer's affiliation with each session participant's **Company Name** (or Educational Affiliation), on the call and when you assign rounds.",
+      "article": "/evaluations/call-for-reviewers#what-the-reviewer-sees",
+      "related": [
+        "/evaluations/evaluation-plans"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [],
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Program → Evaluations → Call for Reviewers"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "reviewer"
+      ],
+      "use_case": "Committees that vet reviewers before they start keep control of who is enrolled, and conflict flags catch reviewers from a speaker's own institution.",
+      "internal": {
+        "cs_action": {
+          "kind": "reach_out",
+          "note": "Rounds with the organization conflict rule on may show new organization flags (about 76 assignments in 6 US rounds on the replica dry-run). Let those customers know before they notice."
+        },
+        "when_to_bring_up": "A customer reports invitees enrolled without approval, lost expertise picks, or no organization conflict where a reviewer and speaker share a company.",
+        "who_should_get_it": "Events running a Call for Reviewers, and any round with the organization conflict rule on.",
+        "staff_path": "Event → Program → Evaluations → Call for Reviewers → [call]",
+        "gotchas": "New organization flags can appear on existing rounds; rounds set to exclude will exclude those pairs at the next assignment.",
+        "talk_track": null
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4596"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [
+        "/images/kb/call-for-reviewers-settings.png",
+        "/images/kb/call-for-reviewers-people-table.png"
+      ]
+    },
+    {
+      "id": "evaluations-w3-fixes",
+      "title": "Evaluation fixes: tagging every evaluator, and Interest Form filters",
+      "summary": "**Edit tags** on the Evaluators view now tags evaluators who joined through a portal or a round, and reports anyone skipped (**Tags updated for N evaluators. M skipped**). Interest Form **By submission** filters list Status values and the count follows the filters on every round.",
+      "article": "/evaluations/evaluation-plans#tag-many-evaluators-at-once",
+      "related": [
+        "/evaluations/call-for-reviewers"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [],
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Program → Evaluations → [plan]"
+      },
+      "permissions": [
+        "event.evaluation_plans.update"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Large review committees can be tagged in one action, and plan settings behave the way the screen says.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer's select-all tag edit failed, or an Interest Form filter showed no Status values.",
+        "who_should_get_it": "Events using Evaluation Plans v2.",
+        "staff_path": "Event → Program → Evaluations → [plan] → Evaluators",
+        "gotchas": "Editing evaluator tags and affiliations now needs the evaluation plans update permission.",
+        "talk_track": null
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4596",
+          "lennd/sessionboard-web-ui-v2#1061"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "plan-require-disclosure-saved-on-create",
+      "title": "Require disclosure is saved when you create an evaluation plan",
+      "summary": "Turning on **Require a disclosure from reviewers** in a new plan's Overview step is now saved with the plan. Before, the first save dropped it and the switch read off after a reload.",
+      "article": "/contacts/disclosures#reviewers-and-judges",
+      "related": [
+        "/evaluations/evaluation-plans"
+      ],
+      "kind": "fixed",
+      "module": "CRM",
+      "features": [
+        "credits_disclosure"
+      ],
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Program → Evaluations → New plan → Overview → Disclosures"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Accredited programs can require reviewer disclosures from the moment a plan is created.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer turned on Require disclosure on a new plan and it was off afterwards.",
+        "who_should_get_it": "Customers with Disclosures on who run evaluation plans.",
+        "staff_path": "Event → Program → Evaluations → [plan] → Overview",
+        "gotchas": null,
+        "talk_track": null
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4596",
+          "lennd/sessionboard-web-ui-v2#1076"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [
+        "/images/kb/evaluation-plan-require-disclosure-from-reviewers.png"
+      ]
+    },
+    {
+      "id": "field-rule-not-applied-warning",
+      "title": "A session save warns when a field rule could not apply",
+      "summary": "When you save a session and a field rule could not apply, a red **Saved, but a field rule was not applied** message now shows on the session page and in the side panel, instead of nothing.",
+      "article": "/settings/field-rules#how-rules-combine-on-one-save",
+      "related": [],
+      "kind": "fixed",
+      "module": "Settings",
+      "features": [
+        "field_rules"
+      ],
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Program → Submissions → [session] → Save"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Admins know when a rule they rely on did not run, instead of finding the wrong value later.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer says a field rule silently did nothing on a session.",
+        "who_should_get_it": "Events with Field Rules on.",
+        "staff_path": "Event → Program → Submissions → [session]",
+        "gotchas": null,
+        "talk_track": null
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1061"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "participant-add-opens-mitigation-dialog",
+      "title": "Adding a participant who needs a mitigation opens the decision dialog",
+      "summary": "On a credit-designated session, adding one participant with relationships and no decision now opens **Record decision** right away. Save the decision and notes and the participant is added, with the decision on the **Mitigations** tab. Bulk adds from the directory still refuse with **Mitigation needed first**.",
+      "article": "/contacts/disclosures#mitigations",
+      "related": [],
+      "kind": "improved",
+      "module": "CRM",
+      "features": [
+        "credits_disclosure"
+      ],
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "[session] → Participants → Add"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Accredited programs record the mitigation and add the faculty member in one step instead of leaving the session and coming back.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer running CE/CME asks why they cannot add a faculty member to a session.",
+        "who_should_get_it": "Customers with Disclosures on and credit-designated sessions.",
+        "staff_path": "Event → Program → Submissions → [session] → Participants",
+        "gotchas": null,
+        "talk_track": null
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1061"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "clips-library-filter-bar",
+      "title": "Filter the Clips library by speaker, topic, aspect ratio and date",
+      "summary": "**Media → Clips** has a filter bar: **Speaker**, **Topic**, **Aspect** (16:9, 9:16, 1:1) and **Created from** / **Created to**. Speaker and Topic offer only values your clips have. When nothing matches, the page says **No clips match these filters** with **Clear filters**.",
+      "article": "/marketing/clips#the-clips-library",
+      "related": [
+        "/marketing/media-library"
+      ],
+      "kind": "new",
+      "module": "Marketing",
+      "features": [
+        "marketing_clips"
+      ],
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Marketing → Media → Clips"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Teams with large clip libraries can pull a speaker's vertical clips from one week in seconds for a post or campaign.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer with many clips asks how to find the right one for a channel.",
+        "who_should_get_it": "Organizations with Clips.",
+        "staff_path": "Marketing → Media → Clips",
+        "gotchas": "Aspect matches only clips with a stored frame size. Clips exported before this release need Josh's backfill script (sb-9757-backfill-clip-media.js) before they appear under an aspect. Topics come from the session taxonomy once clips carry their session.",
+        "talk_track": null
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4594",
+          "lennd/sessionboard-web-ui-v2#1066"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "clip-exports-animated-captions-posters",
+      "title": "Clip exports: animated captions render, posters on every clip, captions sized for 9:16 and 1:1",
+      "summary": "Clips with **Animated** caption styles, overlays and brand-kit exports now finish instead of failing. Every exported video clip gets a poster frame in the clips library and keeps the recording's session. On 9:16 and 1:1 clips and audiograms, captions are sized to the frame and stay in the bottom band, and long lines split into two-line captions. Recordings whose transcript came from a plain SRT or VTT open again, with untagged lines shown as **Speaker 0**.",
+      "article": "/marketing/clips#create-a-clip",
+      "related": [
+        "/marketing/media-library"
+      ],
+      "kind": "fixed",
+      "module": "Marketing",
+      "features": [
+        "marketing_clips"
+      ],
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Marketing → Media → [recording] → Edit & clip → Export"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Teams can export the social-ready, branded clips they designed without falling back to plain captions.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer reports an animated-caption clip stuck on Export failed, captions covering an audiogram waveform, clips without thumbnails, or a recording page that will not open after importing captions.",
+        "who_should_get_it": "Organizations exporting clips and audiograms.",
+        "staff_path": "Marketing → Media → [recording] → Edit & clip",
+        "gotchas": "Clips that failed before this release must be exported again. Existing clips get posters and session links only after Josh's backfill. A failed render now shows a readable message instead of a stack trace.",
+        "talk_track": null
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4594",
+          "lennd/sessionboard-web-api#4601",
+          "lennd/sessionboard-web-ui-v2#1066"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "session-recap-first-summary",
+      "title": "Recaps generate for sessions that have a transcript but no summary yet",
+      "summary": "Generating a recap, podcast or Advocacy content for a session with a transcript and no AI summary now writes the summary first and then the recap, instead of failing with \"capture it first\".",
+      "article": "/marketing/recaps#generate-a-recap",
+      "related": [],
+      "kind": "fixed",
+      "module": "Marketing",
+      "features": [
+        "marketing"
+      ],
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Marketing → Live Transcribe → Recaps → Generate"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Teams that import transcripts can go straight to recaps without a separate summarise step.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer sees \"No AI summary exists for this session yet\" on a session that has a transcript.",
+        "who_should_get_it": "Events generating recaps from transcripts.",
+        "staff_path": "Event → Marketing → Live Transcribe → Recaps",
+        "gotchas": null,
+        "talk_track": null
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4594"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "advocacy-w3-fixes",
+      "title": "Advocacy: shared card designs save to every card, LinkedIn shares count, bad links show a friendly page",
+      "summary": "Changing the colour, background, logo or font in a campaign's designer now saves and re-renders every card of that format, not only the tab you were on. LinkedIn and video shares now count as shares in attribution. A mistyped or malformed share link shows **This link isn't available** instead of an error. Attendee links accept `attend` as the platform for Sessionboard Attend registrations, with no email needed.",
+      "article": "/marketing/advocacy#invite-attendees-from-your-registration-confirmation",
+      "related": [],
+      "kind": "fixed",
+      "module": "Marketing",
+      "features": [
+        "marketing_advocacy"
+      ],
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Marketing → Advocacy → [campaign]"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Speakers and attendees share the card you designed, and the share counts behind your sponsor and ROI reports are complete.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer sees two different card colours after editing a design, LinkedIn shares missing from attribution, or an error page from a share link.",
+        "who_should_get_it": "Every event running Advocacy campaigns.",
+        "staff_path": "Event → Marketing → Advocacy → [campaign] → Edit campaign → Templates",
+        "gotchas": "LinkedIn shares from before this release need Josh's backfill SQL to appear as signals (12 US, 1 EU).",
+        "talk_track": null
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4594",
+          "lennd/sessionboard-web-ui-v2#1066"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [
+        "/images/kb/advocacy-quick-build.png"
+      ]
+    },
+    {
+      "id": "advocacy-attending-native-attend-source",
+      "title": "The advocacy-attending embed accepts Sessionboard Attend registrations",
+      "summary": "The `advocacy-attending` widget now takes `source=\"attend\"` with the registration's id, so an attendee who registered in Sessionboard Attend sees their share card on your confirmation page without an email in the link.",
+      "article": "/marketing/advocacy#invite-attendees-from-your-registration-confirmation",
+      "related": [],
+      "kind": "fixed",
+      "module": "Marketing",
+      "features": [
+        "marketing_advocacy"
+      ],
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Embed code on your registration confirmation page"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Events that take registrations in Attend can show each attendee their share card right after they register.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer using Attend registration asks how to put the attendee share card on their confirmation page.",
+        "who_should_get_it": "Events with Attend registration and an attendee Advocacy campaign.",
+        "staff_path": "Event → Marketing → Advocacy → [attendee campaign]",
+        "gotchas": "Waiting on the next embeds production release.",
+        "talk_track": null
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-embeds#111"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "title-slide-fixes-w3",
+      "title": "Title slides: +N more at the ten-person maximum, and a deleted template no longer offers Regenerate",
+      "summary": "With **Show \"+N more\"** and a maximum of 10, a slide with 11 people now shows 10 and **+1 more**. On a session's **Files** tab, a title slide whose template was deleted says so instead of offering **Regenerate**, matching Presentations & files.",
+      "article": "/marketing/slides#participants",
+      "related": [],
+      "kind": "fixed",
+      "module": "Marketing",
+      "features": [
+        "marketing_slides"
+      ],
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Marketing → Slides → [template] → Participants; [session] → Files"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Production teams see the full speaker list they asked for, and are not sent to regenerate from a template that no longer exists.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer reports a ten-speaker panel showing fewer people, or a Regenerate button that does nothing.",
+        "who_should_get_it": "Events using Slides.",
+        "staff_path": "Event → Marketing → Slides",
+        "gotchas": null,
+        "talk_track": null
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4594",
+          "lennd/sessionboard-web-ui-v2#1066"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "program-settings-save-errors-keep-values",
+      "title": "Program settings sheets stay open with your values when a save fails",
+      "summary": "When saving a tier, track, level, format, language, room or organization session catalog item fails, the sheet now stays open with what you typed and shows the reason, instead of closing as if it had saved.",
+      "article": "/sessions/program-settings#tracks",
+      "related": [],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [],
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Program → Settings → Tracks / Levels / Formats / Languages / Rooms"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Admins do not lose their typing or think a change saved when it did not.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer says a track or room they added disappeared.",
+        "who_should_get_it": "Every event.",
+        "staff_path": "Event → Program → Settings",
+        "gotchas": null,
+        "talk_track": null
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1076"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "qa-sweep-w3e-multi-fix",
+      "title": "Keyboard reordering finishes long lists, Ask restores cut-off answers, sidebar labels fit, Publish shows both embed actions",
+      "summary": "Reordering with the keyboard in **Show/Hide Fields** and upload slots now moves a row all the way through a long list: **Space** or **Enter** picks it up, the arrows move it, **Home** and **End** jump, **Space** drops and **Escape** cancels. An **Ask** answer cut off by a dropped connection is restored when it reconnects. Long translated sidebar labels no longer clip, because the pin appears only on hover or focus. The event **Publish** page shows **New embed** and **Embed on your website** as separate actions.",
+      "article": "/portals/portals-101#manage-fields",
+      "related": [
+        "/sessions/enable-upload-download-content",
+        "/get-started/sidebar",
+        "/site/publishing-surfaces"
+      ],
+      "kind": "fixed",
+      "module": "Platform",
+      "features": [],
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Portals → [portal] → Manage Fields → Show/Hide Fields; Program → Settings → Files; Ask; sidebar; Publish"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Keyboard and screen-reader users can reorder long lists, and teams using Ask during a busy event get the whole answer.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer reports keyboard reordering stalling, an Ask reply cut off mid-sentence, truncated French sidebar labels, or a missing Publish action.",
+        "who_should_get_it": "Everyone; these are fixes with no feature gate.",
+        "staff_path": "Event → Portals → [portal] → Manage Fields → Show/Hide Fields; Event → Program → Settings → Files → Upload slots",
+        "gotchas": "Pointer drag is unchanged. Ask reconnect resync was not run against the live agents service before merge.",
+        "talk_track": null
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1075"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "portal-profile-status-sentence-case",
+      "title": "Evaluations and reviewer portal labels use sentence case",
+      "summary": "Evaluation plan screens and the reviewer portal now use sentence case throughout, for example **Plan options**, **Show scores from other evaluators**, **Overall progress**, **Review rounds**, **Reviewer notifications**, **Under review** and **Pending payment**. German, Spanish and French were already right.",
+      "article": "/awards/setting-up-your-sessionboard-site#the-signed-in-portal",
+      "related": [
+        "/evaluations/evaluation-plans",
+        "/awards/managing-submissions-reviewers-rounds"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [],
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Program → Evaluations; Sites portal → My Reviews / Profile"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "reviewer",
+        "participant"
+      ],
+      "use_case": "Customers who match our product copy in their own reviewer instructions see one consistent style.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "Only if a customer points out inconsistent capitalisation in evaluation screens.",
+        "who_should_get_it": "Every customer using Evaluations or the Sites portal.",
+        "staff_path": "Event → Program → Evaluations → [plan]; Sites portal → My Reviews",
+        "gotchas": "The portal half waits for the next org-portal release; reviewer instructions that quote the old Title Case labels may need updating.",
+        "talk_track": null
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1061",
+          "lennd/sessionboard-web-org-portal#203",
+          "lennd/sessionboard-web-org-portal#211"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "ask-form-merge-refuses-wrong-page-field",
+      "title": "Ask refuses to move a form question onto a page that cannot show it",
+      "summary": "When you ask **Ask** to change a call for papers form, it can no longer put a People field on a session page (or the reverse). The change is refused with a clear message and nothing on the form changes, so a question can no longer vanish from the builder.",
+      "article": "/agents/team-lead#the-panels-tabs",
+      "related": [],
+      "kind": "fixed",
+      "module": "Agents",
+      "features": [],
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Ask → form changes"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who edit forms through Ask do not lose questions.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer says a question disappeared from their form after asking Ask to add a condition.",
+        "who_should_get_it": "Events editing CFP forms through Ask.",
+        "staff_path": "Event → Ask",
+        "gotchas": null,
+        "talk_track": null
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4597"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
     }
   ]
 }
