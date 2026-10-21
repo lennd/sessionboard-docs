@@ -232,20 +232,18 @@
       "gated": null
     },
     {
-      "id": "approvals-upload-slots-safety-campaign-dedup",
-      "title": "Approvals, upload slots and campaign sends: multiple reliability fixes",
-      "summary": "Several fixes to the **Approvals** workflow, session file upload slots, and email campaign sends: held/denied/embargoed files are no longer downloadable without authentication; **Move to slot** now enforces the slot's file-type, limit and deadline rules; a renamed `.pdf` file is rejected at upload if the slot restricts types; archiving a slot no longer blocks speakers from versioning a denied file; saving an approval workflow now warns when a step has no reachable reviewers, and a new **Preview release** dry run shows how many live files a release-time change would hold or release; the **Files** list gains a **Session ID** column and per-file approval step name; and campaigns sent to hand-picked contacts now deliver exactly one email per person even when a contact appears on both a parent session and a subsession.",
+      "id": "approvals-upload-slots-qa-fixes",
+      "title": "Approvals and upload slots: held files stay private, safer releases, slot rules on every move",
+      "summary": "Fixes from the Approvals beta readiness run. A file **Approvals** holds back (pending, changes requested or under a release time) can no longer be downloaded from its file link without signing in; **Copy link** is turned off for those files. Turning off **Require approval**, **Remove extra hold**, a later release time and bulk **Approve**/**Deny** now confirm first with how many files will change. **Save workflow** refuses a step nobody on the event team can review, and admins are emailed if a file ever lands on one. **Uploaded by** follows where the file was uploaded, so team members uploading in the speaker portal count as speakers. **Move to slot** follows the slot's file types, file limit and deadline (**Move anyway** for a passed deadline); speakers can still send a new version of a file sent back for changes after its slot is archived; and the session **Files** tab gains **Accept uploads after the deadline** for upload slots. The Files list shows the Session ID organizers know (SESS-2) and adds **Approve**, **Deny** and **Make visible** to row menus; times show the event time zone with its label, and portal slot cards show dates, file kinds and sizes in the portal language.",
       "article": "/sessions/file-approvals#on-the-files-list",
       "related": [
-        "/sessions/enable-upload-download-content",
-        "/communications/email-campaigns"
+        "/sessions/enable-upload-download-content#upload-slots"
       ],
       "kind": "fixed",
       "module": "Program",
       "features": [
         "approvals",
-        "sessions",
-        "email_campaigns"
+        "sessions"
       ],
       "availability": "beta",
       "enable": {
@@ -254,7 +252,7 @@
       },
       "where": {
         "scope": "event",
-        "path": "Sessions → Files / Approvals → Policies; Marketing → Email Campaigns"
+        "path": "Publish → Approvals; Program → Settings → Files; Session → Files; Program → Submissions → Files"
       },
       "permissions": [],
       "audience": [
@@ -262,25 +260,17 @@
         "reviewer",
         "speaker"
       ],
-      "use_case": "Events using Approvals to gate session files can now trust that held, denied, or embargoed files are never accessible without a valid signed URL, that upload-slot rules are always enforced on moves, and that approval workflows cannot be saved in a state that would silently stall. Campaign organizers targeting hand-picked contacts across parent and subsessions will no longer see duplicate emails delivered to the same person.",
+      "use_case": "Events running Approvals (beta) for press embargoes or sign-off — Advertising Week first — can rely on held files staying private until release, and admins get a confirmation before any click releases files to integrations.",
       "internal": {
         "cs_action": {
           "kind": "review_before_customers_see",
-          "note": "Nine held files on US prod were previously downloadable unauthenticated (now fixed). 48 US + 2 EU slot/session pairs are already over max_files and 28 US images already sit in PDF-only slots — these are not auto-cleaned; a product decision is needed on whether to surface or remediate them. Two approvals on event 7141 are stuck due to a broken workflow (0 reviewers); the new runtime notification will fire for them on next evaluation."
+          "note": "Approvals is beta: turn it on per event (Early Access). Advertising Week events 6023 and 6879 do not have it on yet. Existing data is not cleaned: 48 US + 2 EU slot/session pairs are over their file limit and 28 US images sit in PDF-only slots. Event 7141 has 2 files stuck on a step with no reviewers from before the fix; use Override or Add approver on them."
         },
-        "when_to_bring_up": "When a customer reports that held or denied files were accessible without login, or asks why a campaign sent duplicate emails to the same contact, or wants to understand why an approval step never completes.",
-        "who_should_get_it": "Any customer using Approvals (beta) for session file gating, upload slots with file-type or limit restrictions, or email campaigns sent to hand-picked contacts that include subsessions.",
+        "when_to_bring_up": "When a customer gates session files with Approvals or release times (press embargoes), uses upload slots with file-type limits, or asks why a file link stopped working (held files need a signed link until released).",
+        "who_should_get_it": "Customers on the Approvals beta (Advertising Week first) and any event using upload slots.",
         "staff_path": "Event → Sessions → Files → Approvals; Event → Marketing → Email Campaigns",
         "gotchas": "The db migration 20261022120000-approval-no-reviewers-notification-type.js must run before the no-reviewers runtime notification fires. Prod rows predating the fixes (over-limit slots, mistyped files) are not backfilled. The admin can override slot deadlines with force:true but cannot override file-type or limit rules.",
-        "talk_track": "We closed a gap where files under review could be downloaded without logging in, tightened slot rules so a move always respects type and limit constraints, and made sure campaigns never send the same person two copies of the same email just because they appear on a parent and a subsession.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The guide should document: (1) the new workflow-save validation that blocks saving when a step has no reachable reviewers and the in-app/email alert sent at runtime; (2) the Preview release dry-run endpoint that shows would_hold / would_release counts before changing a release time; (3) the held-file signed-URL behaviour in the speaker portal; (4) the Session ID column on the Files list; and (5) the move-to-slot enforcement of file-type, limit and deadline rules including the admin force-override for deadlines.",
-          "why_use_it": "Approvals lets you hold session files — presentations, posters, recordings — behind a review gate so nothing goes public before your team has signed off. You set up a workflow with one or more reviewer steps, attach a release time, and speakers upload through their portal while reviewers decide in a dedicated queue. Files stay private until every step passes, giving you full control over what attendees and the public can access.",
-          "at": "2026-10-21T01:13:12.821Z"
-        }
+        "talk_track": "Files under review now stay private until they are approved and released, every action that would release files asks first, and slot rules apply to admin moves as well as uploads."
       },
       "shipped": {
         "prs": [
@@ -293,6 +283,62 @@
           "us": "2026-10-21",
           "eu": "2026-10-21",
           "me": "2026-10-21"
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "send-email-one-per-person-picked-contacts",
+      "title": "Send Email: one email per person when you pick contacts across a session and its subsessions",
+      "summary": "In **Send Email** from Sessions, with **Select Individual Contacts** and **Selected sessions and their subsessions**, a picked contact who sits on a session and one of its subsessions got one email per session. They now get one email, with the parent session's details, matching the **Send to 1 recipient** count on the confirmation. Two contact records sharing an address are also sent once. Role-based sends are unchanged: a speaker on three selected sessions still gets three session-specific emails.",
+      "article": "/communications/create-send-emails#fill-in-the-envelope",
+      "related": [
+        "/communications/email-sms-history"
+      ],
+      "kind": "fixed",
+      "module": "Communications",
+      "features": [
+        "email_campaigns"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Sessions → select sessions → Send Email"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers emailing hand-picked speakers across sessions and subsessions send each person exactly one email, as the confirmation says.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Reported by CTA (CES, event 6815, campaign 61305578): one picked contact received two delivered emails. Already-sent duplicates cannot be recalled."
+        },
+        "when_to_bring_up": "When a customer reports a contact received the same campaign twice.",
+        "who_should_get_it": "Any customer who emails hand-picked contacts from the Sessions grid.",
+        "gotchas": "The db migration 20261022120000-approval-no-reviewers-notification-type.js must run before the no-reviewers runtime notification fires. Prod rows predating the fixes (over-limit slots, mistyped files) are not backfilled. The admin can override slot deadlines with force:true but cannot override file-type or limit rules.",
+        "talk_track": "If you pick a person, they get one email — even if they are on both a session and its subsession."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4650",
+          "lennd/sessionboard-web-ui-v2#1089"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
         },
         "announced_at": null,
         "emailed_at": null
@@ -3893,7 +3939,7 @@
       "id": "approvals-held-file-url-lockdown",
       "title": "Held files no longer expose public CDN links to pending, denied or embargoed content",
       "summary": "Files that **Approvals** holds back (pending, denied, superseded, or under a release time) now return a signed, 6-hour **Download** link everywhere in the product instead of a permanent public CDN URL. The **Approvals** drawer, **Program → Files** list and sidebar, session **Related Content**, the **Ready Room**, reviewer evaluation views, omnisearch results and the content export all use the signed link. The public **Companion** hub omits held files entirely. Files that are not held are unchanged.",
-      "article": "/sessions/file-approvals",
+      "article": "/sessions/file-approvals#what-is-held-and-where",
       "related": [
         "/sessions/enable-upload-download-content",
         "/get-started/upload-a-file-to-a-session"
