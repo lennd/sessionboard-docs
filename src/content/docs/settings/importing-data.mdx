@@ -1,12 +1,12 @@
 ---
 title: "Importing data"
-description: "Import contacts, sessions, sponsors, exhibitors and team members from a CSV or Excel file, or update existing records by re-importing an export: templates, file rules, field mapping and validation."
-reviewed: "2026-09-29"
+description: "Import contacts, sessions, sponsors, exhibitors, team members and attendees from a CSV or Excel file, or update existing records by re-importing an export: templates, file rules, field mapping and validation."
+reviewed: "2026-10-21"
 ---
 
 import { Note, Tip, Steps, Step, Accordion, AccordionGroup, TrainingVideo } from '@compat';
 
-Every module with a table — Contacts, Sessions, Sponsors, Exhibitors and Event Team — takes a CSV or Excel file through **Options → Import**. The same import, run on a file you exported first, updates records that already exist. This article covers the file rules, the three-step importer and the update flow.
+Every module with a table — Contacts, Sessions, Sponsors, Exhibitors and Event Team — takes a CSV or Excel file through **Options → Import**, and the event's **Attendees** page through **Import attendees**. The same import, run on a file you exported first, updates records that already exist. This article covers the file rules, the three-step importer and the update flow.
 
 {/* training-video:start 09-contacts-imports */}
 <TrainingVideo id="training-09-contacts-imports" title={"Contacts and imports"} summary={"The Contacts module and its role views, adding a contact without creating a duplicate, columns and saved views, Options > Import (template, upload, mapping, validation), updating existing records by import, removing a contact from one event or all, and merging duplicates."} src="https://static.sessionboard.com/training/videos/09-contacts-imports/v2026-09-30-6bbf742f/09-contacts-imports.mp4" poster="https://static.sessionboard.com/training/videos/09-contacts-imports/v2026-09-30-6bbf742f/poster.jpg" captions="https://static.sessionboard.com/training/videos/09-contacts-imports/v2026-09-30-6bbf742f/09-contacts-imports.vtt" duration={303} chapters={[{"start_s":2.6,"title":"Contacts and imports"},{"start_s":28.4,"title":"The Contacts module"},{"start_s":55.3,"title":"Add a contact"},{"start_s":90,"title":"Columns and saved views"},{"start_s":114.8,"title":"Options > Import"},{"start_s":141.5,"title":"Upload, map, validate"},{"start_s":166,"title":"Import to update"},{"start_s":197.2,"title":"People first, then sessions"},{"start_s":224.1,"title":"Remove from one event, or all"},{"start_s":245,"title":"Merge duplicates"},{"start_s":278.9,"title":"Wrap up"}]}>
@@ -40,6 +40,10 @@ That's contacts. They are the foundation, search before you add, import people b
 </details>
 </TrainingVideo>
 {/* training-video:end */}
+
+## Why use it
+
+Importing brings hundreds of records in at once instead of typing them one by one: speakers and their sessions from last year's spreadsheet, sponsors and exhibitors from a sales list, or the attendee list from a registration platform that isn't connected to Sessionboard. Re-importing an edited export updates records in bulk, and the importer tells you exactly which rows it could not take and why, so you can fix just those and import them again.
 
 ## Before you build the file
 
@@ -125,6 +129,7 @@ The importer finds an existing record by one column per module, and only overwri
 | Contacts (speakers, moderators, chairpersons…) | **Email** | **Update record if already exists** |
 | Sponsors and Exhibitors | **Name** | **Update record if already exists** |
 | Sessions | **Session Friendly ID**, or **Client Session ID** | **Update session if already exists** |
+| Attendees | **Registrant ID**, or **Email** when the row has none | None — choose **When a row already exists** in the importer |
 
 <Steps>
   <Step title="Export first">
@@ -146,6 +151,20 @@ The importer finds an existing record by one column per module, and only overwri
 <Note>
 **Update session if already exists** is a true/false switch, not a match key. If you map an ID column onto it the row fails with an error rather than quietly creating a duplicate. Put identifiers in **Session Friendly ID** or **Client Session ID** and keep this column to `TRUE` / `FALSE`.
 </Note>
+
+## Attendees
+
+Import an attendee list on the event's **Attendees** page with **Import attendees** — for example when your registration platform isn't connected, or to add attendees your sync missed. Imported attendees can share [Advocacy](/marketing/advocacy#bring-in-your-attendees) cards and show up in Pathways like synced ones.
+
+![Import attendees — the marketing opt-in checkbox, When a row already exists set to Create new and update existing, and the file's columns matched to attendee fields](/images/kb/attendees-import-map-columns.png)
+
+- **Email** is the one required column. The rest are your attendee fields (name, company, job title, **Headshot** as an image URL, and any custom attendee fields) plus three import columns:
+  - **Registrant ID** — your registration platform's id. It decides which row a re-import updates; without it, the email does.
+  - **Registration Status** — `Confirmed` (the default when blank), `Checked in`, `Waitlisted` or `Cancelled`.
+  - **Marketing Opt-in** — `Yes` or `No`. A blank cell takes the box above the importer, **These attendees agreed to receive marketing from us**, which starts unticked.
+- **When a row already exists** chooses whether a re-import creates new attendees, updates existing ones, or both.
+- Only confirmed or checked-in attendees who opted in can share an Advocacy card. An attendee who withdrew consent stays opted out whatever the file says.
+- A row with a value the field can't take is skipped whole — nothing from it is saved — and listed with its reason, so you can fix the file and import just those rows again.
 
 ## Common questions
 
