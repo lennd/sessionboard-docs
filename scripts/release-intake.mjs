@@ -31,6 +31,8 @@
  *   node scripts/release-intake.mjs --mark-drafted --draft-pr URL --pr …  # after the review PR exists
  *   node scripts/release-intake.mjs --collect-drafts <git ref>   # drafts on a branch that main lacks → JSON
  *   node scripts/release-intake.mjs --apply-drafts FILE [--apply-drafts FILE]  # append drafts to the day files
+ *   node scripts/release-intake.mjs --recover-drafts --carried FILE [--carried FILE] [--ledger FILE]
+ *       # `drafted` PRs no entry or carried draft names → drafts from their old review PR's head, else back to pending
  *   --dry-run prints the model's answer and writes nothing.
  *
  * The workflow keeps ONE review branch, release-intake/drafts, rebuilt on
@@ -38,6 +40,12 @@
  * the old branch, --apply-drafts onto a fresh checkout of main). A branch that
  * is always "main plus drafts" cannot conflict, and one rolling PR is a review
  * queue rather than thirty PRs a day.
+ *
+ * The old branch is not the only record: when the drafts PR is closed unmerged
+ * and its branch deleted, --recover-drafts reads each lost draft back from
+ * `refs/pull/<n>/head` of the PR the ledger names, and re-queues as `pending`
+ * any it cannot find (src/lib/release-drafts.mjs). To drop a draft for good,
+ * set its ledger record to `skip`.
  *
  * Env: ANTHROPIC_API_KEY (required unless --dry-run with --no-model),
  *      RELEASE_INTAKE_MODEL (default claude-sonnet-4-6),
@@ -68,7 +76,8 @@ import {
 import { gh, parsePrRef, releaseConfig, requireToken } from '../src/lib/github-api.mjs';
 import { SENTENCE_SPLIT, sentenceClaims } from '../src/lib/unshipped.mjs';
 import { WHY_USE_IT_KINDS, changelogPhrase } from '../src/lib/why-use-it.mjs';
-import { loadIntake, saveIntake, recordFor, heuristicSkip } from './release-gaps.mjs';
+import { orphanedDrafts, pickRecovered, requeueLost } from '../src/lib/release-drafts.mjs';
+import { INTAKE_FILE, coveredPrs, loadIntake, saveIntake, recordFor, heuristicSkip } from './release-gaps.mjs';
 
 const argv = process.argv.slice(2);
 const flag = (name) => argv.includes(name);
@@ -80,6 +89,7 @@ const NO_MODEL = flag('--no-model');
 const MARK = flag('--mark-drafted');
 const COLLECT = value('--collect-drafts', null);
 const APPLY = values('--apply-drafts');
+const RECOVER = flag('--recover-drafts');
 const LIMIT = Number(value('--limit', 25));
 const MODEL = process.env.RELEASE_INTAKE_MODEL || 'claude-sonnet-4-6';
 const RESULT_FILE = process.env.RELEASE_INTAKE_RESULT || '/tmp/release-intake-result.json';
@@ -542,6 +552,47 @@ function collectDrafts(ref) {
   return out;
 }
 
+/**
+ * Drafts the ledger marks `drafted` that neither main nor the carried-over
+ * drafts name: read them back from the review PR each record points at
+ * (GitHub keeps refs/pull/<n>/head after the PR closes and its branch is
+ * deleted), and re-queue the rest as `pending` in `ledgerPath`.
+ */
+function recoverDrafts(carriedFiles, ledgerPath) {
+  const ledger = JSON.parse(readFileSync(ledgerPath, 'utf8'));
+  const named = new Set(coveredPrs(loadReleaseNotes().releases, config).keys());
+  const canonical = (raw) => parsePrRef(raw, config)?.ref || null;
+  for (const f of carriedFiles.filter(existsSync)) {
+    const parsed = JSON.parse(readFileSync(f, 'utf8'));
+    for (const { entry } of Array.isArray(parsed) ? parsed : parsed.drafts || []) {
+      for (const raw of entry.shipped?.prs || []) {
+        const r = canonical(raw);
+        if (r) named.add(r);
+      }
+    }
+  }
+  const orphans = orphanedDrafts(ledger, named);
+  const candidates = [];
+  for (const n of new Set(orphans.map((o) => o.draftPr).filter(Boolean))) {
+    const ref = `refs/remotes/origin/release-intake-pr-${n}`;
+    try {
+      execFileSync('git', ['fetch', '-q', 'origin', `+refs/pull/${n}/head:${ref}`], { stdio: ['ignore', 'ignore', 'pipe'] });
+    } catch (err) {
+      console.error(`could not fetch refs/pull/${n}/head: ${String(err.stderr || err.message).trim()}`);
+      continue;
+    }
+    candidates.push(...collectDrafts(ref));
+  }
+  const { drafts, refs, lost } = pickRecovered(orphans, candidates, canonical);
+  const onMain = new Set(allEntries(loadReleaseNotes().releases).map((e) => e.id));
+  const { requeued, stale } = requeueLost(ledger, lost, onMain, TODAY);
+  if (requeued.length && !DRY) writeFileSync(ledgerPath, `${JSON.stringify(ledger, null, 2)}\n`);
+  console.error(`${orphans.length} drafted PR(s) on no branch: recovered ${drafts.length} draft(s) for ${refs.length}, re-queued ${requeued.length}, ${stale.length} stale.`);
+  for (const r of requeued) console.error(`  pending again: ${r}`);
+  for (const s of stale) console.error(`  ${s.ref}: entry ${s.entryId} is on main but does not name it — add it to shipped.prs`);
+  return { drafts, refs, requeued, stale };
+}
+
 /** Append drafts to their day files (creating the file when needed); ids already present are left alone. */
 function applyDrafts(lists) {
   const byDate = new Map();
@@ -616,6 +667,10 @@ function addWhyUseIt(entry) {
 
 if (COLLECT) {
   console.log(JSON.stringify(collectDrafts(COLLECT), null, 2));
+  process.exit(0);
+}
+if (RECOVER) {
+  console.log(JSON.stringify(recoverDrafts(values('--carried'), value('--ledger', INTAKE_FILE)), null, 2));
   process.exit(0);
 }
 if (APPLY.length) {
