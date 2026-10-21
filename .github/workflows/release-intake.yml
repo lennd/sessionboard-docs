@@ -151,6 +151,17 @@ jobs:
           fi
           [ -f /tmp/release-intake-result.json ] || echo '{"drafts":[],"drafted":[],"skipped":[]}' > /tmp/release-intake-result.json
           git checkout -q -B "$DRAFT_BRANCH" origin/main
+          # The old branch is not the only copy. If the drafts PR was closed
+          # unmerged and its branch deleted (#34, 2026-10-20), every PR the
+          # ledger still calls `drafted` would vanish here: read those drafts
+          # back from refs/pull/<n>/head of the PR the ledger names, and send
+          # any that cannot be found back to `pending` (in /tmp/intake.json,
+          # which the next step commits) so the morning triage re-drafts them.
+          node scripts/release-intake.mjs --recover-drafts --carried /tmp/prev-drafts.json \
+            --carried /tmp/release-intake-result.json --ledger /tmp/intake.json > /tmp/recovered-drafts.json
+          jq -r '.stale[] | "::warning::\(.ref) is drafted, but merged entry \(.entryId) does not name it — add it to the shipped.prs of that entry"' /tmp/recovered-drafts.json
+          echo "recovered_refs=$(jq -r '.refs | join(" ")' /tmp/recovered-drafts.json)" >> "$GITHUB_OUTPUT"
+          jq -s '.[0] + .[1].drafts' /tmp/prev-drafts.json /tmp/recovered-drafts.json > /tmp/carried.json && mv /tmp/carried.json /tmp/prev-drafts.json
           node scripts/release-intake.mjs --apply-drafts /tmp/prev-drafts.json --apply-drafts /tmp/release-intake-result.json
           node scripts/check-release-notes.mjs || echo "::warning::release:check reports problems on the drafts — the PR's CI will show them"
           # Docs CI fails the PR on any style problem; fail here instead, before the push.
@@ -218,7 +229,7 @@ jobs:
         if: ${{ !inputs.dry_run }}
         env:
           DRAFT_PR: ${{ steps.pr.outputs.url }}
-          REFS: ${{ steps.draft.outputs.refs }}
+          REFS: ${{ steps.draft.outputs.refs }} ${{ steps.pr.outputs.recovered_refs }}
           GH_RELEASE_STATUS_TOKEN: ${{ secrets.GH_RELEASE_STATUS_TOKEN }}
           GITHUB_TOKEN: ${{ github.token }}
         run: |
@@ -226,7 +237,8 @@ jobs:
           git config user.email 'docs-bot@sessionboard.com'
           git checkout -q main
           cp /tmp/intake.json src/data/release-notes/_intake.json
-          if [ -n "$DRAFT_PR" ] && [ -n "$REFS" ]; then
+          # New drafts and recovered ones both point at the PR that carries them now.
+          if [ -n "$DRAFT_PR" ] && [ -n "${REFS// /}" ]; then
             args=""; for r in $REFS; do args="$args --pr $r"; done
             node scripts/release-intake.mjs --mark-drafted --draft-pr "$DRAFT_PR" $args
           fi
