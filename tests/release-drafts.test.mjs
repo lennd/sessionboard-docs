@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { draftPrNumber, orphanedDrafts, pickRecovered, requeueLost } from '../src/lib/release-drafts.mjs';
+import { draftPrNumber, orphanedDrafts, pickRecovered, requeueLost, supersededOnMain } from '../src/lib/release-drafts.mjs';
 
 const DOCS = 'https://github.com/lennd/sessionboard-docs/pull';
 const canonical = (raw) => (/^lennd\/[a-z0-9-]+#\d+$/.test(raw) ? raw : null);
@@ -67,4 +67,11 @@ test('recovers drafts from the closed PR head, re-attaches a pair that shared an
   // Untouched: human skips, entries, drafts on the live branch.
   assert.equal(l.prs['lennd/sessionboard-web-api#4626'].decision, 'skip');
   assert.equal(l.prs['lennd/sessionboard-web-api#4637'].decision, 'drafted');
+});
+
+test('a draft is superseded only when main names every PR it ships', () => {
+  const named = new Set(['lennd/sessionboard-web-api#4547', 'lennd/sessionboard-web-ui-v2#1054']);
+  assert.ok(supersededOnMain({ shipped: { prs: ['lennd/sessionboard-web-api#4547'] } }, named, canonical));
+  assert.ok(!supersededOnMain({ shipped: { prs: ['lennd/sessionboard-web-api#4547', 'lennd/sessionboard-web-api#9'] } }, named, canonical));
+  assert.ok(!supersededOnMain({ shipped: { prs: [] } }, named, canonical));
 });

@@ -25,6 +25,20 @@ export function draftPrNumber(url) {
 }
 
 /**
+ * A draft whose every PR an entry on main already names. Carrying it onto the
+ * rebuilt branch would put a second entry for the same change in front of the
+ * reviewer (nine on #39 after #44 and #46 wrote those entries by hand).
+ *
+ * @param {object} entry
+ * @param {Set<string>} named  canonical refs some entry on main names
+ * @param {(raw: string) => string|null} canonical
+ */
+export function supersededOnMain(entry, named, canonical) {
+  const prs = (entry.shipped?.prs || []).map(canonical).filter(Boolean);
+  return prs.length > 0 && prs.every((r) => named.has(r));
+}
+
+/**
  * Ledger records `drafted` whose PR no entry names — neither on main nor among
  * the drafts being carried onto the rebuilt branch.
  *
