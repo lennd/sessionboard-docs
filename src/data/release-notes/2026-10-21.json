@@ -504,9 +504,9 @@
       "id": "evaluation-plan-closed-round-read-only",
       "title": "Rounds in closed or past-deadline evaluation plans are now read-only",
       "summary": "Reviewers could previously save scores on rounds whose evaluation plan was closed or had passed its deadline, even though **My Reviews** labelled those rounds \"Closed · View only\". Rounds in a closed plan or past a plan deadline are now fully locked: the **Closed · View only** label is enforced, and any write attempt returns a validation error. Team leaders and admins can still view the per-reviewer score breakdown regardless of plan state.",
-      "article": "/evaluations/setting-up-round-based-evaluations",
+      "article": "/evaluations/how-to-evaluate-sessions#after-the-round-closes",
       "related": [
-        "/evaluations/how-to-evaluate-sessions",
+        "/evaluations/setting-up-round-based-evaluations#additional-settings",
         "/evaluations/evaluation-plans"
       ],
       "kind": "fixed",
@@ -2156,6 +2156,239 @@
       },
       "ideas": [],
       "media": []
+    },
+    {
+      "id": "round-settings-earlier-rounds-and-closed-rounds",
+      "title": "Two round settings: anonymize earlier reviewers and keep reviews visible after the deadline",
+      "summary": "Evaluation plan rounds have two new switches. **Anonymize prior-round reviewers** hides the names of earlier rounds' reviewers on their scores and shared comments, so later-round reviewers see **Anonymous (Evaluator N)**. **Keep reviews visible (read-only) after the deadline** keeps a closed round in the evaluators' **My Reviews** so they can read the submissions and the scores and comments they gave, without changing anything. Both are off by default.",
+      "article": "/evaluations/setting-up-round-based-evaluations#earlier-rounds-in-later-rounds",
+      "related": [
+        "/evaluations/setting-up-round-based-evaluations#additional-settings",
+        "/evaluations/how-to-evaluate-sessions#after-the-round-closes"
+      ],
+      "kind": "new",
+      "module": "Program",
+      "features": [
+        "sessions_v2"
+      ],
+      "availability": "add_on",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Sessions → Evaluation Plans → [plan] → Edit → Rounds → [round]"
+      },
+      "permissions": [
+        "event.evaluation_plans.update"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Multi-round committees can let a final panel weigh earlier scores without knowing who gave them, and reviewers can look back at what they wrote after scoring closes instead of losing access the moment the deadline passes.",
+      "internal": {
+        "cs_action": {
+          "kind": "reach_out",
+          "note": "IAS-USA asked for view-only access after the deadline (CROI 2027 co-review rounds); AUA's round-2 chairs asked for anonymized prior-round feedback."
+        },
+        "when_to_bring_up": "A customer's reviewers ask to see their reviews after a round closed, or a chair wants earlier reviewers' names hidden in round 2.",
+        "who_should_get_it": "Customers running multi-round Sessions 2.0 evaluation plans, starting with IAS-USA and AUA.",
+        "staff_path": "Event → Sessions → Evaluation Plans → [plan] → Edit → Rounds → open a round",
+        "gotchas": "Both switches are per round and off by default. Keeping reviews visible never lets reviewers edit; a closed or past-deadline plan also locks its rounds.",
+        "talk_track": "Open the round's settings: turn on Keep reviews visible so reviewers can read their work after the deadline, and Anonymize prior-round reviewers so later rounds see earlier feedback without names."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4588",
+          "lennd/sessionboard-web-api#4647",
+          "lennd/sessionboard-web-ui-v2#1058"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        }
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "bulk-add-remove-evaluation-round",
+      "title": "Add or remove many submissions from an evaluation round at once",
+      "summary": "Select submissions in the **Submissions**, **Abstracts** or **Sessions** list and choose **More → Add to evaluation round…** or **Remove from evaluation round…**. A preview shows what will be added, what is already in the round, what is skipped and why, and what a funnel plan moves out of its previous round, before you apply. Adding assigns no evaluators; removing keeps the submissions' reviews.",
+      "article": "/evaluations/evaluation-plans#a-plan-in-progress",
+      "related": [
+        "/evaluations/setting-up-round-based-evaluations"
+      ],
+      "kind": "new",
+      "module": "Program",
+      "features": [
+        "sessions_v2"
+      ],
+      "availability": "add_on",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Program → Submissions / Abstracts / Sessions → select → More"
+      },
+      "permissions": [
+        "event.evaluation_plans.update"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers can move a batch of late or reclassified submissions into a review round, or pull them out, in one step instead of reworking the plan's assignment rules.",
+      "internal": {
+        "cs_action": {
+          "kind": "reach_out",
+          "note": "Synopsys asked for this for its Round 2 rounds (event 6822)."
+        },
+        "when_to_bring_up": "A customer needs to put a group of submissions into a round without assigning reviewers yet, or take some out.",
+        "who_should_get_it": "Customers running Sessions 2.0 evaluation plans with several rounds, starting with Synopsys.",
+        "staff_path": "Event → Program → Submissions → select rows → More → Add to evaluation round…",
+        "gotchas": "Adding to a funnel plan's later round moves the submission out of its current round. Removing from a public-voting round is refused once the submission has votes.",
+        "talk_track": "Select the submissions, choose Add to evaluation round, pick the round, check the preview and apply. Evaluators are assigned separately."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4588",
+          "lennd/sessionboard-web-api#4647",
+          "lennd/sessionboard-web-ui-v2#1058",
+          "lennd/sessionboard-web-ui-v2#1086"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        }
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "bulk-sequence-subsession-times",
+      "title": "Schedule the subsessions of many parent sessions at once",
+      "summary": "Select parent sessions in the **Sessions** list or **Agenda → List** and choose **More → Sequence subsession times…** to schedule each parent's subsessions back to back. Set a default duration and a grace gap (or use each session type's default), a start time per parent or one for all, and exclude session types — a type named *Forum* is excluded by default. A preview lists every parent and anything it skips before you apply; parent times never change.",
+      "article": "/sessions/create-a-subsession#many-parent-sessions-at-once",
+      "related": [
+        "/sessions/create-a-subsession#schedule-subsessions-back-to-back"
+      ],
+      "kind": "new",
+      "module": "Program",
+      "features": [
+        "sessions_v2"
+      ],
+      "availability": "add_on",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Program → Sessions (or Agenda → List) → select → More → Sequence subsession times…"
+      },
+      "permissions": [
+        "event.sessions.update"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Programs with many panels or plenaries can give every talk inside them the same length and spacing in one pass instead of opening each parent session.",
+      "internal": {
+        "cs_action": {
+          "kind": "reach_out",
+          "note": "AUA asked for this (AUA 2027, event 6153), with Forum sessions left alone."
+        },
+        "when_to_bring_up": "A customer is setting subsession times one parent at a time.",
+        "who_should_get_it": "Customers with many parent sessions that hold subsessions, starting with AUA.",
+        "staff_path": "Event → Program → Sessions → select parents → More → Sequence subsession times…",
+        "gotchas": "Parents without a start time, without subsessions, or of an excluded type are skipped and listed with the reason. It needs permission to update sessions.",
+        "talk_track": "Select the parent sessions, choose Sequence subsession times, set the duration and gap, preview and apply."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4588",
+          "lennd/sessionboard-web-api#4647",
+          "lennd/sessionboard-web-ui-v2#1058"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        }
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "cfp-review-author-order",
+      "title": "Submitters can reorder authors on a call for papers",
+      "summary": "On the participants step of a call for papers, **Review author order** lets a submitter drag people into order, or use the arrow buttons, and confirm it — no removing and re-adding. The order is saved with the next save or submit, survives a resubmission, and is used in the session's participant list, exports, the program booklet and the public API.",
+      "article": "/sessions/submission-forms#participant-information",
+      "related": [
+        "/sessions/program-settings#role-order-and-participant-display-order"
+      ],
+      "kind": "new",
+      "module": "Program",
+      "features": [
+        "sessions_v2"
+      ],
+      "availability": "add_on",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Call for papers → Participants step → Review author order"
+      },
+      "permissions": [],
+      "audience": [
+        "speaker",
+        "organizer"
+      ],
+      "use_case": "Author order matters for scientific programs; submitters can now fix it themselves before the deadline instead of asking staff to rebuild the participant list.",
+      "internal": {
+        "cs_action": {
+          "kind": "reach_out",
+          "note": "AUA asked for this."
+        },
+        "when_to_bring_up": "A submitter or customer asks how to change the order of authors on a submission.",
+        "who_should_get_it": "Customers whose calls for papers list several authors per submission, starting with AUA.",
+        "staff_path": "Event portal → open a submission → Participants step",
+        "gotchas": "The button is disabled once the form closes for edits, and isn't offered on forms where subsessions are added as linked records.",
+        "talk_track": "Open your submission, go to the participants step, click Review author order, put people in order and confirm, then save or submit."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4588",
+          "lennd/sessionboard-web-api#4647",
+          "lennd/sessionboard-web-ui-v2#1058"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        }
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
     }
   ]
 }

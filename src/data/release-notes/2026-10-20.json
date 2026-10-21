@@ -2267,11 +2267,12 @@
     {
       "id": "reviewer-portal-qa-wave2",
       "title": "Reviewer portal: prior-round scores, view-only after the deadline, and a tidier review page",
-      "summary": "Reviewers now see a sticky **Prior round** strip and a collapsible **Prior round feedback** card above the rubric. After the deadline, **My Reviews** marks a round **Closed · View only** and the round opens read-only with the close date, with Save, conflicts, recommendations and builds hidden. The session builder shows full abstract titles, presenters and category; **Quick Jump** is narrower, collapses to a rail with an active-filter count and remembers its state; long participant lists scroll in their own box; and when messaging is off for a round, the messaging panel is not shown at all.",
-      "article": "/evaluations/how-to-evaluate-sessions#my-reviews",
+      "summary": "Reviewers in a later round see a sticky **Prior round** strip with each earlier round's cumulative score and a collapsible **Prior round feedback** card above the scorecard. Team leads and event administrators also get a **Reviewer breakdown** of each earlier round: every assigned reviewer's total score, shared comments, and whether they **Completed**, **Abstained**, left it **Incomplete** or **Not started**. When a round is kept visible after its deadline, **My Reviews** marks it **Closed · View only** and it opens read-only. The session builder shows full abstract titles, presenters and category; **Quick jump** is narrower and folds into a rail that shows the active-filter count; long participant lists start collapsed and scroll in their own box; and the **Messages** section only appears when messaging is on for the plan.",
+      "article": "/evaluations/how-to-evaluate-sessions#earlier-rounds",
       "related": [
-        "/evaluations/setting-up-round-based-evaluations",
-        "/evaluations/evaluation-plans"
+        "/evaluations/how-to-evaluate-sessions#after-the-round-closes",
+        "/evaluations/how-to-evaluate-sessions#quick-jump",
+        "/evaluations/setting-up-round-based-evaluations#earlier-rounds-in-later-rounds"
       ],
       "kind": "improved",
       "module": "Program",
@@ -2306,8 +2307,9 @@
       },
       "shipped": {
         "prs": [
-          "lennd/sessionboard-web-org-portal#201",
-          "lennd/sessionboard-web-api#4588"
+          "lennd/sessionboard-web-api#4588",
+          "lennd/sessionboard-web-api#4647",
+          "lennd/sessionboard-web-org-portal#201"
         ],
         "docs_only": false,
         "pending": null,
@@ -2526,7 +2528,7 @@
       "id": "scoring-closed-banner-dateless-message",
       "title": "Read-only scoring banner shows a clearer message when a plan is closed before the round deadline",
       "summary": "When an evaluation round becomes read-only because its plan was closed — but the round's own deadline has not yet passed — the banner previously showed **\"Scoring closed on [future date]\"**, which was confusing. It now shows **\"Scoring is closed. You can view your reviews but not change them.\"** The date is only shown once the round's own deadline has actually passed.",
-      "article": "/evaluations/how-to-evaluate-sessions",
+      "article": "/evaluations/how-to-evaluate-sessions#after-the-round-closes",
       "related": [
         "/evaluations/setting-up-round-based-evaluations",
         "/evaluations/evaluation-plans"
@@ -2591,7 +2593,7 @@
       "id": "prior-round-feedback-translations",
       "title": "Prior-round feedback panel is now fully translated for German, Spanish, and French reviewers",
       "summary": "Reviewers using the portal in German, Spanish, or French previously saw all prior-round feedback labels in English — including the pin label, **View feedback**, the panel title, reviewer breakdown statuses (**Completed**, **Abstained**, **Incomplete**, **Not started**), and evaluator labels (**Anonymous** / **Evaluator N**). All of these strings are now translated. The \"{{count}} completed reviews\" count also now correctly uses singular and plural forms in all four languages.",
-      "article": "/evaluations/how-to-evaluate-sessions",
+      "article": "/evaluations/how-to-evaluate-sessions#earlier-rounds",
       "related": [
         "/evaluations/setting-up-round-based-evaluations"
       ],
@@ -3443,77 +3445,6 @@
       "gated": null
     },
     {
-      "id": "evaluation-plans-admin-wave2",
-      "title": "Eight new evaluation-plan controls for admins: convert abstracts, bulk round membership, subsession sequencing, evaluator filters, status mapping, author order, and two new round settings",
-      "summary": "Eight admin-facing capabilities added to evaluation plans and sessions management. **Convert to session** is now available from the abstract profile menu and the bulk **More** menu, with a choice between \"This abstract becomes a session\" and \"Keep the abstract and create a linked session\". **Add to / Remove from evaluation round** appears in the Submissions bulk bar (requires the `canUpdateEvaluationPlans` permission) and shows a dry-run preview before applying. **Sequence subsession times…** is available in the Sessions and Agenda list bulk bars, letting admins set duration, grace gap, and start time across subsessions. A **Filters** popover on the admin **Review** tab lets admins filter by evaluator with per-value counts, search, tree options, chips, and a **Clear filters** button; filter state is preserved in the URL. **Set status to** in **Apply recommendations** lets admins map each decision to any event status (including custom ones), with a warning when nothing would change. **Review author order** on the CFP **Participants** step provides a drag-and-drop list with keyboard controls and a confirm step. Two new round settings are available: **Anonymize prior-round reviewers** (under \"Show scores from previous rounds\") and **Keep reviews visible (read-only) after the deadline** (hidden on Awards rounds and Interest Form plans).",
-      "article": "/evaluations/setting-up-round-based-evaluations",
-      "related": [
-        "/evaluations/evaluation-plans",
-        "/sessions/abstracts",
-        "/sessions/create-a-subsession",
-        "/evaluations/how-to-evaluate-sessions"
-      ],
-      "kind": "new",
-      "module": "Program",
-      "features": [
-        "sessions_v2"
-      ],
-      "availability": "add_on",
-      "enable": {
-        "how": "default_on",
-        "path": null
-      },
-      "where": {
-        "scope": "event",
-        "path": "Sessions → Evaluation Plans → [plan] and Sessions → Sessions / Agenda list"
-      },
-      "permissions": [
-        "event.evaluation_plans.read",
-        "event.evaluation_plans.update",
-        "event.sessions.update"
-      ],
-      "audience": [
-        "organizer"
-      ],
-      "use_case": "Events running multi-round evaluations can now manage round membership in bulk, control exactly which status each recommendation maps to, keep reviewer identities anonymous across rounds, and lock reviews as read-only after a deadline — all without leaving the evaluation plan. Organizers who collect abstracts can also convert them to sessions directly from the abstract profile or in bulk, and reorder CFP review authors with drag-and-drop.",
-      "internal": {
-        "cs_action": {
-          "kind": "review_before_customers_see",
-          "note": "This PR was held until web-api fix/qa-201026-wave2 is live on prod. Confirm the API is deployed before pointing customers at any of these features — the current prod API returns a 400 on the new body keys (statusMap, anonymizePriorRoundReviewers, keepReviewsVisibleAfterDeadline)."
-        },
-        "when_to_bring_up": "When a customer asks about multi-round blind review, bulk round management, converting abstracts to sessions, or controlling what happens to reviews after a deadline.",
-        "who_should_get_it": "Customers on Sessions 2.0 (add-on) running structured, multi-round CFP or abstract review processes.",
-        "staff_path": "Event → Sessions → Evaluation Plans → [plan] → Submissions tab / Evaluators tab / Round settings; also Sessions list and Agenda list bulk bars",
-        "gotchas": "keepReviewsVisible and anonymizePriorRoundReviewers are NOT shown on Awards rounds or Interest Form plans. The Apply recommendations 'Set status to' change forces a fresh Preview — warn customers that changing the status map clears the previous preview. Bulk 'Add to / Remove from evaluation round' shows a dry-run first; public-vote blocks and funnel moves are surfaced there.",
-        "talk_track": "You can now add or remove submissions from a round in bulk with a dry-run preview so you know exactly what will change before you commit. After the review closes, the 'Keep reviews visible after deadline' setting lets evaluators still read their scores without being able to change them — and 'Anonymize prior-round reviewers' keeps earlier reviewer identities hidden as submissions move through rounds.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The guide should document all eight new capabilities: Convert to session (both modes), bulk Add to/Remove from round with dry-run preview, bulk Sequence subsession times, the Filters popover on the Review tab with URL-persisted state, Set status to in Apply recommendations, Review author order on the Participants step, and the two new round settings (Anonymize prior-round reviewers and Keep reviews visible after deadline, including which plan types hide the latter).",
-          "why_use_it": "Round-based evaluations in Sessions 2.0 give organizers fine-grained control over who reviews what, when scores are visible, and how recommendations translate into session statuses. Use these settings to run blind, multi-stage reviews where each round builds on the last, bulk-manage which submissions enter each round, and sequence subsession times automatically — reducing the manual work between submission close and agenda publication.",
-          "at": "2026-10-20T14:13:09.692Z"
-        }
-      },
-      "shipped": {
-        "prs": [
-          "lennd/sessionboard-web-ui-v2#1058"
-        ],
-        "docs_only": false,
-        "pending": null,
-        "live": {
-          "us": "2026-10-21",
-          "eu": "2026-10-21",
-          "me": "2026-10-21"
-        },
-        "announced_at": null,
-        "emailed_at": null
-      },
-      "ideas": [],
-      "media": [],
-      "gated": null
-    },
-    {
       "id": "evaluator-notifications-file-upload-build-returned",
       "title": "Reviewers are notified when a participant uploads a file or a build is returned",
       "summary": "Two new automatic notifications are sent to reviewers on Sessions 2.0 evaluation plans. **Evaluator: Session File Uploaded** alerts reviewers on an open round (with uploaded files enabled) whenever a participant uploads a file — the uploader is not notified. **Evaluator: Build Returned** alerts the team lead when a session build is returned, including the reason. Both notifications appear in each reviewer's **Notification Preferences** profile toggle and can be managed there.",
@@ -3567,79 +3498,6 @@
       "shipped": {
         "prs": [
           "lennd/sessionboard-web-api#4600"
-        ],
-        "docs_only": false,
-        "pending": null,
-        "live": {
-          "us": "2026-10-21",
-          "eu": "2026-10-21",
-          "me": "2026-10-21"
-        },
-        "announced_at": null,
-        "emailed_at": null
-      },
-      "ideas": [],
-      "media": [],
-      "gated": null
-    },
-    {
-      "id": "evaluation-plans-qa-wave2",
-      "title": "Ten evaluation-plan and abstract-workflow improvements across rounds, reviewer visibility, and session building",
-      "summary": "This release delivers ten fixes and new capabilities for evaluation plans and abstract workflows: author order is preserved when sessions are built from abstracts; a new **Anonymize prior-round reviewers** round setting masks reviewer names in shared comments; team leaders see a per-reviewer prior-round score breakdown on each submission; abstracts can be converted into standalone sessions in place or as linked copies; child-session times can be set in bulk; submissions can be bulk-added or removed from a round; the admin **Review** tab gains evaluator facet filters; **Apply Recommendations** accepts a per-apply status map; the submitter's author order survives resubmit and appears correctly in booklets; and a new **Keep reviews visible after deadline** round setting lets reviewers read (but not edit) their work after a round closes.",
-      "article": "/evaluations/setting-up-round-based-evaluations",
-      "related": [
-        "/evaluations/evaluation-plans",
-        "/evaluations/how-to-evaluate-sessions",
-        "/sessions/abstracts",
-        "/sessions/create-a-subsession",
-        "/marketing/print-agendas"
-      ],
-      "kind": "improved",
-      "module": "Program",
-      "features": [
-        "sessions_v2"
-      ],
-      "availability": "add_on",
-      "enable": {
-        "how": "default_on",
-        "path": null
-      },
-      "where": {
-        "scope": "event",
-        "path": "Sessions → Evaluation Plans → [plan] → Rounds / Review / Submissions"
-      },
-      "permissions": [
-        "event.evaluation_plans.read",
-        "event.evaluation_plans.update",
-        "event.sessions.update"
-      ],
-      "audience": [
-        "organizer",
-        "reviewer"
-      ],
-      "use_case": "Events running multi-round evaluations with large submission pools — especially those converting abstracts to sessions — can now manage round membership in bulk, keep reviewer work visible after deadlines, anonymize prior-round identities, and trust that author order is preserved end-to-end from submission through booklet generation.",
-      "internal": {
-        "cs_action": {
-          "kind": "review_before_customers_see",
-          "note": "Ten distinct changes ship together. Several add new round-level settings (anonymize prior-round reviewers, keep reviews visible after deadline) that are off by default but should be walked through with customers who have active multi-round plans. The abstract-to-session conversion endpoint is new and replaces a feature removed in a prior release — confirm with affected accounts (DIA, ASDA, AHA) before promoting."
-        },
-        "when_to_bring_up": "When a customer asks about multi-round blind review, bulk round management, abstract-to-session conversion, or reviewer access after a round closes.",
-        "who_should_get_it": "Customers on Sessions 2.0 (add-on) running evaluation plans with multiple rounds, large submission volumes, or abstract-to-session workflows — particularly IAS-USA, AUA, Synopsys, AHA, DIA, ASDA.",
-        "staff_path": "Event → Sessions → Evaluation Plans → [plan] → Rounds (for new round settings) / Review tab (for admin facet filters)",
-        "gotchas": "The 'keep reviews visible after deadline' setting defaults to off; existing rounds are unaffected. The abstract conversion endpoint accepts at most 500 IDs and runs as a background job. Bulk round membership behaves differently for parallel vs. funnel plans (add is additive in parallel; moves the submission in funnel). Apply Recommendations now accepts a per-apply statusMap — a null value means 'leave status unchanged', not 'clear it'.",
-        "talk_track": "You can now anonymize who reviewed in a prior round so later reviewers aren't anchored to earlier scores, keep your reviewers' work readable after the deadline without letting them edit it, and bulk-move hundreds of submissions into or out of a round in one action. If you're converting abstracts to sessions, author order is now preserved all the way through to the printed booklet.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "medium",
-          "docs_gap": "The setting-up-round-based-evaluations guide should document the new per-round settings (Anonymize prior-round reviewers, Keep reviews visible after deadline), the bulk round-membership action, the per-reviewer prior-round breakdown visible to team leaders, the per-apply statusMap option on Apply Recommendations, and the abstract-to-session conversion workflow including the two modes (convert_in_place and create_session_from_abstract).",
-          "why_use_it": "Round-based evaluations in Sessions 2.0 give organizers fine-grained control over who reviews what, when, and how scores flow between rounds. Use evaluation plans to run blind or multi-stage reviews, convert accepted abstracts directly into program sessions, and apply recommendations to statuses in a single action — all without leaving the platform.",
-          "at": "2026-10-20T14:14:11.888Z"
-        }
-      },
-      "shipped": {
-        "prs": [
-          "lennd/sessionboard-web-api#4588"
         ],
         "docs_only": false,
         "pending": null,
