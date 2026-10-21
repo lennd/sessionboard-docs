@@ -76,7 +76,7 @@ import {
 import { gh, parsePrRef, releaseConfig, requireToken } from '../src/lib/github-api.mjs';
 import { SENTENCE_SPLIT, sentenceClaims } from '../src/lib/unshipped.mjs';
 import { WHY_USE_IT_KINDS, changelogPhrase } from '../src/lib/why-use-it.mjs';
-import { orphanedDrafts, pickRecovered, requeueLost } from '../src/lib/release-drafts.mjs';
+import { orphanedDrafts, pickRecovered, requeueLost, supersededOnMain } from '../src/lib/release-drafts.mjs';
 import { INTAKE_FILE, coveredPrs, loadIntake, saveIntake, recordFor, heuristicSkip } from './release-gaps.mjs';
 
 const argv = process.argv.slice(2);
@@ -525,9 +525,16 @@ function git(...args) {
   return execFileSync('git', args, { encoding: 'utf8' });
 }
 
-/** Entries with `internal.draft` on `ref` whose id main does not have → [{ date, entry }]. */
+/**
+ * Entries with `internal.draft` on `ref` that main does not cover → [{ date, entry }].
+ * Covered = same id on main, or every PR the draft names is already named by
+ * an entry on main (someone wrote or merged the entry under another id).
+ */
 function collectDrafts(ref) {
-  const onMain = new Set(allEntries(loadReleaseNotes().releases).map((e) => e.id));
+  const releases = loadReleaseNotes().releases;
+  const onMain = new Set(allEntries(releases).map((e) => e.id));
+  const named = new Set(coveredPrs(releases, config).keys());
+  const canonical = (raw) => parsePrRef(raw, config)?.ref || null;
   let names;
   try {
     names = git('ls-tree', '--name-only', ref, 'src/data/release-notes/').split('\n').filter(Boolean);
@@ -546,7 +553,8 @@ function collectDrafts(ref) {
       continue;
     }
     for (const entry of data.entries || []) {
-      if (entry.internal?.draft && !onMain.has(entry.id)) out.push({ date: m[1], entry });
+      if (!entry.internal?.draft || onMain.has(entry.id) || supersededOnMain(entry, named, canonical)) continue;
+      out.push({ date: m[1], entry });
     }
   }
   return out;
