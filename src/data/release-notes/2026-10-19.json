@@ -2,71 +2,14 @@
   "date": "2026-10-19",
   "entries": [
     {
-      "id": "participant-sort-blanks-last-submitted-order-asc",
-      "title": "Participant order sorting: blanks sort last and submitted order is ascending only",
-      "summary": "On the **Participant Order** page, participants with a blank last name, first name, or affiliation now sort to the bottom in both ascending and descending directions (previously they appeared first when sorting descending). The **Submitted Order** sort rule is now ascending only — the direction picker is locked, and the preview badges match what the published agenda applies.",
-      "article": "/speakers/create-assign-speakers#order-and-visibility",
-      "kind": "fixed",
-      "module": "Program",
-      "features": [
-        "participant_ordering",
-        "sessions_v2"
-      ],
-      "availability": "on_request",
-      "enable": {
-        "how": "default_on",
-        "path": null
-      },
-      "where": {
-        "scope": "event",
-        "path": "Sessions → [session] → Participants → Order"
-      },
-      "permissions": [],
-      "audience": [
-        "organizer"
-      ],
-      "use_case": "Organizers who sort participants by name or affiliation no longer see blank entries jump to the top when switching to descending order. Events that rely on submitted order for their published agenda can trust the preview matches what attendees see.",
-      "internal": {
-        "cs_action": {
-          "kind": "none",
-          "note": null
-        },
-        "when_to_bring_up": "A customer reports that participants with missing names or affiliations appear at the top of the list when sorting descending, or that the participant order preview does not match the published agenda.",
-        "who_should_get_it": "Customers using Participant Ordering Controls who sort by name, affiliation, or submitted order.",
-        "staff_path": "Event → Sessions → [session] → Participants → Order",
-        "gotchas": "The fix aligns client-side preview with the API behaviour introduced in a companion API PR. Submitted Order can no longer be set to descending — the direction picker is locked to ascending.",
-        "talk_track": "Blank participant fields now consistently sort to the bottom regardless of sort direction, and the order preview on the page always matches what the agenda publishes."
-      },
-      "shipped": {
-        "prs": [
-          "lennd/sessionboard-web-ui-v2#1051"
-        ],
-        "docs_only": false,
-        "pending": null,
-        "live": {
-          "us": null,
-          "eu": null,
-          "me": null
-        },
-        "announced_at": null,
-        "emailed_at": null
-      },
-      "related": [],
-      "ideas": [],
-      "media": [],
-      "gated": null
-    },
-    {
       "id": "session-file-approvals-and-embargoes",
-      "title": "Approve session files before they reach integrations, embeds and galleries — with optional release times",
-      "summary": "A new **Approvals** workflow lets organizers require sign-off on session files (slides, PDFs, etc.) before they are delivered to integrations, embeds, content galleries and posters. Files are held — and their URL returns `null` in the Public API — until every required step is complete. An optional **embargo** holds approved files until a fixed date/time or until each session's start time plus an offset, independently of the approval status. Reviewers receive email and in-app notifications for new requests, reminders and decisions; admins with **Content** update permission can override or reassign at any step. The workflow is configured per event under **Publish → Approvals** and is available as a Beta feature.",
-      "article": "/sessions/file-approvals",
+      "title": "Approvals: review session files and hold them until a release time",
+      "summary": "With the **Approvals** beta, new session files go through a review workflow before they reach integrations, embeds, galleries, the Public API or the attendee app. Turn it on under **Program → Settings → Files → Require approval for session files**, build multi-step workflows that route files by track, format, file type or uploader, and review from the queue in **Publish → Approvals**. A **release time** can hold files until a date and time or until each session starts, and the **Files** list shows approval status and an **Embargoed** tab.",
+      "article": "/sessions/file-approvals#set-up-the-workflow",
       "related": [
-        "/sessions/enable-upload-download-content",
-        "/marketing/poster-gallery",
-        "/site/content-galleries",
-        "/sessions/embeds",
-        "/communications/notifications"
+        "/sessions/file-approvals#hold-files-until-a-release-time",
+        "/sessions/file-approvals#review-files",
+        "/sessions/file-approvals#what-speakers-see"
       ],
       "kind": "new",
       "module": "Program",
@@ -75,12 +18,12 @@
       ],
       "availability": "beta",
       "enable": {
-        "how": "self_serve",
-        "path": "Get started → Early Access → Preview → Approvals"
+        "how": "support",
+        "path": "Event → Admin Settings → Early Access → Approvals; then Program → Settings → Files → Require approval for session files"
       },
       "where": {
         "scope": "event",
-        "path": "Publish → Approvals"
+        "path": "Publish → Approvals; Program → Settings → Files; Files list"
       },
       "permissions": [
         "event.content.read",
@@ -91,143 +34,21 @@
         "reviewer",
         "speaker"
       ],
-      "use_case": "Events that must vet speaker slides before they appear on a conference app or integration (e.g. Bizzabo, Swoogo, ASP) can now gate every file behind a configurable review workflow, preventing unapproved or embargoed content from reaching attendees. Organizers can also hold approved files until a fixed release date or each session's start time, making it easy to manage content embargoes for media or sponsor commitments.",
+      "use_case": "Events that must vet slides before they reach the app, website or an integration — or keep them under embargo until the talk — get one review queue and release time instead of email chains and manual uploads.",
       "internal": {
         "cs_action": {
           "kind": "must_enable",
-          "note": "Feature is behind the Beta flag 'Approvals' (feature--approvals). Customer must join via Early Access before any workflow can be created. Reach out proactively to accounts with integration-heavy programs or media embargo requirements."
+          "note": "Approvals is an Early Access beta that we switch on per event; then the organizer turns on Require approval for session files under Program → Settings → Files."
         },
-        "when_to_bring_up": "When a customer asks how to prevent unapproved slides from appearing in their conference app or integration, or when they need to embargo content until a session starts or a press embargo lifts.",
-        "who_should_get_it": "Customers running large conferences with integrations (Bizzabo, Swoogo, ASP), poster galleries or content galleries who need editorial control over speaker-submitted files before public delivery.",
-        "staff_path": "Event → Publish → Approvals (after enabling the Beta feature via Early Access)",
-        "gotchas": "The embargo holds files independently of the policy's enabled switch and the Beta flag — turning either off does NOT release embargoed files. Files uploaded before a policy was turned on are not retroactively gated. A session_start embargo holds indefinitely if the session has no scheduled start time. The UI ships in a separate web-ui-v2 PR; confirm both are deployed before demoing.",
-        "talk_track": "With Approvals, you set up a review workflow once — pick who reviews which files, whether one sign-off is enough or you need everyone, and optionally a release time — and from then on every new upload goes through that gate automatically. Nothing reaches your app or integration until it is approved and any embargo has lifted, and you get a full audit trail of every decision."
+        "when_to_bring_up": "When a customer asks how to stop unapproved slides reaching their app, website or integrations (Swoogo, Bizzabo, ASP), or needs a press or abstract embargo.",
+        "who_should_get_it": "Events with legal, brand or sponsor review of speaker files, or embargoed content, especially ones syncing files to other systems.",
+        "staff_path": "Event → Publish → Approvals",
+        "gotchas": "Files uploaded before approval was turned on are not held for approval, but a release time covers them. A release time holds files even if the workflow or the beta is turned off. A session-start release holds a file until its session has a start time. A step with no reviewers stays pending and is never auto-approved. Un-approving a file stops future syncs but does not remove it from places it already reached.",
+        "talk_track": "Set up the workflow once and every new slide goes to the right reviewers; nothing leaves Sessionboard until it is approved and its release time has passed, and speakers see where their file stands."
       },
       "shipped": {
         "prs": [
-          "lennd/sessionboard-web-api#4546"
-        ],
-        "docs_only": false,
-        "pending": null,
-        "live": {
-          "us": null,
-          "eu": null,
-          "me": null
-        },
-        "announced_at": null,
-        "emailed_at": null
-      },
-      "ideas": [],
-      "media": [],
-      "gated": "availability:beta"
-    },
-    {
-      "id": "attend-activity-audit-logging",
-      "title": "Attend admin and attendee actions are now logged to History",
-      "summary": "Every admin write action in the Attend module — mobile app editor changes, check-in settings, lead retrieval, notifications, networking, registration, and more — is now recorded in **History** with a before/after diff (for example, `Mobile app › Layout › Theme › Primary color: #112233`). Attendee actions (sign-in, check-in, contact exchange, Q&A, polls, meetings, lead scans, and 70+ more) are recorded in a new **History → Attendees** tab. Pathways-relevant attendee actions (registration, session check-in, reservations, poll votes, LinkedIn shares, and others) also emit **Signals** automatically.",
-      "article": "/attend/overview",
-      "related": [
-        "/pathways/overview",
-        "/communications/email-sms-history"
-      ],
-      "kind": "new",
-      "module": "Pathways",
-      "features": [
-        "attend",
-        "attend_app",
-        "signals",
-        "pathways"
-      ],
-      "availability": "beta",
-      "enable": {
-        "how": "default_on",
-        "path": null
-      },
-      "where": {
-        "scope": "event",
-        "path": "Attend → History / History → Attendees"
-      },
-      "permissions": [
-        "event.history.read"
-      ],
-      "audience": [
-        "organizer"
-      ],
-      "use_case": "Event teams running the Attend app can now audit exactly what changed in their app configuration and when, and can see a full timeline of attendee activity — sign-ins, check-ins, lead scans, networking — without leaving Sessionboard. Pathways customers get richer signal data from attendee behaviour automatically, with no extra setup.",
-      "internal": {
-        "cs_action": {
-          "kind": "review_before_customers_see",
-          "note": "The History → Attendees tab in the web UI follows this API release and degrades to a 'coming soon' state on 404 until the front-end ships. Confirm the UI tab is live before pointing customers to it."
-        },
-        "when_to_bring_up": "When a customer asks how to audit Attend configuration changes, investigate attendee behaviour, or wants richer Pathways signal data from their mobile app.",
-        "who_should_get_it": "Any customer using the Attend beta, especially those also on Pathways who want attendee engagement signals (check-ins, registrations, poll votes, etc.) flowing automatically.",
-        "staff_path": "Event → Attend → History (admin audit); Event → Attend → History → Attendees (attendee activity)",
-        "gotchas": "Quiz attempt logging is temporarily exempt — it will be wired when PR #4577 (quiz rewrite) merges. The Attendees tab in the web UI may show a 'coming soon' state until the front-end release catches up. Attendee-written text (names, messages, answers) is stripped from activity log metadata for privacy.",
-        "talk_track": "Every change your team makes in the Attend app editor — theme colours, notification sends, check-in settings — is now captured in History with the old and new values side by side. And for the first time, you can see a full timeline of what your attendees actually did: who signed in, which sessions they checked into, who exchanged contacts with whom. If you're on Pathways, those actions flow into Signals automatically."
-      },
-      "shipped": {
-        "prs": [
-          "lennd/sessionboard-web-api#4579"
-        ],
-        "docs_only": false,
-        "pending": null,
-        "live": {
-          "us": null,
-          "eu": null,
-          "me": null
-        },
-        "announced_at": null,
-        "emailed_at": null
-      },
-      "ideas": [],
-      "media": [],
-      "gated": "availability:beta"
-    },
-    {
-      "id": "session-file-approvals-beta",
-      "title": "Approvals Beta: review workflows, embargo, and approval queue for session files",
-      "summary": "A new **Approvals** Beta adds a full file-review workflow for session files. Organizers build multi-step workflows in **Publish › Approvals** with conditional routing by track, format, level, sponsor tier, file type, or uploader role; set `any` / `all` / `min` completion rules; and configure a **Release time** — **As soon as approved**, **At a date and time**, or **When each file's session starts** with an offset. The approval queue shows **All / Waiting on me / Pending / Approved / Changes requested** tabs with bulk approve and remind. A **Review drawer** lets reviewers preview the file, track who has reviewed (avatar stack with status rings), approve or deny with a note, send reminders (4 h throttle shown), and view full history across versions. The **Files** list gains approval status, reviewer, room, session date/time, and an **Embargoed** tab. Speakers see approval badges and reviewer notes in their portal and can upload a new version.",
-      "article": "/sessions/file-approvals",
-      "related": [
-        "/sessions/enable-upload-download-content",
-        "/sessions/program-settings",
-        "/get-started/early-access",
-        "/participants/upload-files"
-      ],
-      "kind": "new",
-      "module": "Program",
-      "features": [
-        "approvals"
-      ],
-      "availability": "beta",
-      "enable": {
-        "how": "self_serve",
-        "path": "Get started → Early Access → Approvals; then Program Settings → Require approval for session files"
-      },
-      "where": {
-        "scope": "event",
-        "path": "Publish → Approvals"
-      },
-      "permissions": [],
-      "audience": [
-        "organizer",
-        "reviewer",
-        "speaker"
-      ],
-      "use_case": "Events that must vet presentation files before they go live — for legal, brand, or sponsor compliance — can now route each file to the right reviewers automatically, hold it until a scheduled release time, and give speakers real-time status and a path to resubmit. This replaces ad-hoc email chains and manual tracking with a structured, auditable queue.",
-      "internal": {
-        "cs_action": {
-          "kind": "must_enable",
-          "note": "The Approvals Beta tile must be turned on per event via Early Access before any of this is visible. The workflow also requires 'Require approval for session files' to be toggled on in Program Settings."
-        },
-        "when_to_bring_up": "When a customer asks how to gate session file distribution, enforce brand or legal review before a conference, or manage embargo releases for presentation content.",
-        "who_should_get_it": "Customers running events where session files (slides, videos, posters) need sign-off before release — especially those with sponsor, legal, or AV compliance requirements.",
-        "staff_path": "Event → Early Access → Approvals (enable) → Publish → Approvals",
-        "gotchas": "Everything is hidden unless the event has the Approvals Beta feature flag on. Saving a release time that would release files sooner than the current setting triggers a confirmation dialog showing the held-file count. The skipped DST hour is refused; a repeated DST hour takes the later instant. Reminders are throttled to once per 4 hours per reviewer.",
-        "talk_track": "With Approvals, you build a workflow once — routing slides to legal, then to your AV team — and every file uploaded to a matching session goes through that queue automatically. You set a release time so nothing goes out before your keynote, and speakers see exactly where their file stands and can upload a new version if you request changes."
-      },
-      "shipped": {
-        "prs": [
+          "lennd/sessionboard-web-api#4546",
           "lennd/sessionboard-web-ui-v2#1028"
         ],
         "docs_only": false,
@@ -245,29 +66,28 @@
       "gated": "availability:beta"
     },
     {
-      "id": "history-attendees-tab",
-      "title": "View attendee app activity in a dedicated History tab",
-      "summary": "A new **Attendees** tab in event and org **History** shows a filterable log of every action attendees took in the mobile app — check-ins, session saves, exhibitor scans, lead retrievals and more. Each row shows the time, attendee, action (with a **Failed** badge when relevant), what it was about, and the device used. Click any row to open a detail sheet with IP, metadata and a link to see all activity for that attendee. Export up to 50,000 rows as CSV. The tab appears only when the Attend mobile app is enabled for the event or org.",
+      "id": "attend-activity-audit-logging",
+      "title": "History: Attend admin changes in Audit, attendee app activity in a new Attendees tab",
+      "summary": "Changes your team makes in Attend — the Mobile App editor, check-in, leads, notifications, networking, registration and the rest — now show in **History → Audit**, setting by setting with the old value. A new **Attendees** tab in event and organization **History** lists what attendees did in the app (sign-ins, check-ins, saves, contact swaps, scans and more), with filters, a detail panel per row and CSV export.",
       "article": "/communications/email-sms-history#audit",
       "related": [
-        "/attend/analytics",
-        "/attend/checkin-and-seats",
-        "/attend/overview"
+        "/attend/overview",
+        "/attend/analytics"
       ],
       "kind": "new",
-      "module": "Event team",
+      "module": "Pathways",
       "features": [
         "attend_app",
         "attend_org_app"
       ],
       "availability": "beta",
       "enable": {
-        "how": "default_on",
-        "path": null
+        "how": "support",
+        "path": "Event → Admin Settings → Early Access → Attend Mobile App"
       },
       "where": {
         "scope": "both",
-        "path": "History → Attendees"
+        "path": "History → Audit; History → Attendees"
       },
       "permissions": [
         "event.history.read",
@@ -276,20 +96,21 @@
       "audience": [
         "organizer"
       ],
-      "use_case": "Event ops teams can audit exactly what each attendee did in the app — which sessions they checked into, which exhibitors they scanned, and whether any actions failed — without leaving Sessionboard. This is especially useful for troubleshooting check-in issues or verifying CE credit eligibility after an event.",
+      "use_case": "Organizers can answer \"who changed the app?\" and \"did this attendee check in?\" from History, and hand an attendee's activity to support or an accreditor without asking engineering.",
       "internal": {
         "cs_action": {
           "kind": "none",
-          "note": "Tab auto-appears when attend_app is on; no manual enablement needed."
+          "note": null
         },
-        "when_to_bring_up": "When a customer using the Attend mobile app asks how to audit attendee check-ins, CE credit activity, or exhibitor scans after an event.",
-        "who_should_get_it": "Any customer with the Attend mobile app (beta) enabled at the event or org level.",
-        "staff_path": "Event → History → Attendees tab (only visible when attend_app feature is on)",
-        "gotchas": "Requires the web-api PR #4579 to be deployed; until then the tab shows 'Attendee activity is coming' instead of data. The tab is hidden entirely when the event does not have the attend_app feature — deep links to /history/attendees redirect to the default tab.",
-        "talk_track": "With the Attendees tab in History you can pull up every app action — check-ins, session saves, exhibitor scans — filter to a specific attendee or session, and export the full log for CE reporting or post-event audits, all without leaving Sessionboard."
+        "when_to_bring_up": "When a customer asks who changed an Attend setting, or needs to check what an attendee did in the app (failed sign-ins, check-ins, scans).",
+        "who_should_get_it": "Events and organizations on the Attend Mobile App beta.",
+        "staff_path": "Event → History → Attendees (and org History → Attendees)",
+        "gotchas": "The Attendees tab appears only where the event has the Attend Mobile App (or, at org level, the org app or an event with it). Rows hold ids and action names, never message text, answers or notes. Activity is kept about 13 months. Pathways-relevant attendee actions (sign-in, check-in, reservations, Q&A, polls, contact swaps and more) also become Signals.",
+        "talk_track": "Every change to your app is in History with the old value, and the new Attendees tab shows what each attendee did in the app — filter it, open a row, export it."
       },
       "shipped": {
         "prs": [
+          "lennd/sessionboard-web-api#4579",
           "lennd/sessionboard-web-ui-v2#1050"
         ],
         "docs_only": false,
@@ -307,50 +128,53 @@
       "gated": "availability:beta"
     },
     {
-      "id": "session-quiz-and-certificate-pdf",
-      "title": "Attach a quiz to a session and download CE certificates as PDF",
-      "summary": "A new **Session quiz** panel in **Credits › Session Designations** lets organizers build a quiz directly on a session (with an attempts limit) and optionally gate credit claims behind **Pass the session quiz before they can claim**. Questions become read-only once any attendee has taken the quiz; only the pass mark and attempts limit can be updated after that point. On the public certificate page, attendees can now tap **Download PDF** to get a server-rendered PDF of their CE certificate, with an automatic fallback to the browser print flow.",
+      "id": "learning-session-quizzes-certificates-in-app-claim",
+      "title": "CE quizzes on the session, certificate PDFs, and credit claims in the Attend app",
+      "summary": "A session's **Credits** panel gets a **Session quiz**: write the quiz on the session itself, set the pass mark and attempts, and optionally require a pass before attendees can claim credit. Publishing the session as a lesson copies the quiz. Attendees can claim credit inside the Attend app, and the certificate page has **Download PDF**.",
       "article": "/attend/checkin-and-seats#add-a-ce-quiz-to-a-session",
       "related": [
-        "/attend/checkin-and-seats"
+        "/attend/checkin-and-seats#how-a-pass-unlocks-the-credit-claim",
+        "/participants/attend-app#check-in-to-sessions-and-earn-credit"
       ],
       "kind": "new",
       "module": "Learning",
       "features": [
         "credits",
         "lessons_credits",
-        "attend"
+        "attend_app"
       ],
-      "availability": "limited_release",
+      "availability": "beta",
       "enable": {
         "how": "support",
-        "path": "Ask your Customer Success Manager to enable Credits; then Credits → Session Designations → [session] → Session quiz"
+        "path": "Event → Admin Settings → Early Access → Credits (with Lessons & Credits for the organization); then Sessions → [session] → Credits → Session quiz"
       },
       "where": {
-        "scope": "event",
-        "path": "Credits → Session Designations → [session] → Session quiz panel; public certificate page → Download PDF"
+        "scope": "both",
+        "path": "Sessions → [session] → Credits → Session quiz; Attend app → Credits → claim; certificate page → Download PDF"
       },
       "permissions": [
+        "org.credits.read",
         "org.credits.update"
       ],
       "audience": [
         "organizer",
         "participant"
       ],
-      "use_case": "Events that award continuing education credits can now require attendees to pass a knowledge-check quiz before claiming credit for a specific session — without needing a separate lesson. Attendees who earn a certificate can download a polished PDF copy directly from the certificate page.",
+      "use_case": "CE and CME meetings attach the knowledge check to the session, and attendees take it, claim credit and download their certificate without leaving the app.",
       "internal": {
         "cs_action": {
           "kind": "must_enable",
-          "note": "Credits is a limited-release feature; the session quiz panel and PDF certificate route require the paired API release (lennd/sessionboard-web-api#4577) to be deployed. The panel hides itself with a 404 state if the API is not yet available, and the PDF button falls back to print — so there is no breakage if the API lags."
+          "note": "Needs Credits on the event and Lessons & Credits for the organization (both Early Access)."
         },
-        "when_to_bring_up": "When a customer running CE or CME credits asks how to verify attendee comprehension per session, or when they want attendees to have a downloadable certificate.",
-        "who_should_get_it": "Customers using Credits (limited release) who schedule CE sessions and need a per-session knowledge gate or a professional PDF certificate for their attendees.",
-        "staff_path": "Event → Credits → Session Designations → [session] → Session quiz",
-        "gotchas": "Quiz questions lock to read-only once any attendee has submitted an attempt; only pass mark and max attempts can be changed after that. The PDF download requires the API release to be live; until then the button silently falls back to the browser print dialog.",
-        "talk_track": "You can now add a quiz directly to any credited session — set a pass mark, cap the number of attempts, and require attendees to pass before they can claim their credit. Once they earn it, they can download a clean PDF certificate right from the certificate page."
+        "when_to_bring_up": "When an accredited (CME, CE, CPE) customer asks for post-session quizzes, in-app credit claims or PDF certificates.",
+        "who_should_get_it": "Organizations on the Lessons & Credits beta that award credit at events using the Attend Mobile App.",
+        "staff_path": "Event → Sessions → [session] → Credits → Session quiz",
+        "gotchas": "Questions lock once anyone has attempted the quiz; the pass mark and attempts can still change. A session quiz takes precedence over a quiz on the lesson made from the session, and a pass on either counts. When a session has no credit in Learning, the app shows its CEU credits as a display-only fallback. The Help Center still describes writing the quiz on the lesson — the article needs updating.",
+        "talk_track": "Write the quiz on the session, require a pass, and attendees take it, claim credit and download their certificate right in the app."
       },
       "shipped": {
         "prs": [
+          "lennd/sessionboard-web-api#4577",
           "lennd/sessionboard-web-ui-v2#1047"
         ],
         "docs_only": false,
@@ -364,82 +188,21 @@
         "emailed_at": null
       },
       "ideas": [],
-      "media": [],
-      "gated": "availability:limited_release"
-    },
-    {
-      "id": "learning-session-quizzes-certificates-in-app-claim",
-      "title": "Learning: CE quizzes on sessions, downloadable certificate PDFs, and in-app credit claims",
-      "summary": "Sessions in the Learning module can now carry their own CE quiz — separate from lesson quizzes — with multiple-choice and true/false questions that lock once any attendee has attempted them. Learners who pass can claim continuing-education credit directly from the **Attend** mobile app without a magic link, and their certificate page now includes a **Download PDF** button and a **LinkedIn** add-certification link. When Learning is enabled and a session has credit assigned there, that credit is shown; otherwise the session's **CEU Credits** value is used as a fallback.",
-      "article": "/attend/checkin-and-seats#add-a-ce-quiz-to-a-session",
-      "related": [
-        "/attend/overview",
-        "/participants/attend-app"
+      "media": [
+        "/images/kb/attend-checkin-sessions.png"
       ],
-      "kind": "new",
-      "module": "Learning",
-      "features": [
-        "lessons_credits",
-        "attend_app",
-        "credits"
-      ],
-      "availability": "beta",
-      "enable": {
-        "how": "csm",
-        "path": "Ask your Customer Success Manager to enable Lessons & Credits; then Learning → Sessions → [session] → Credits tab"
-      },
-      "where": {
-        "scope": "event",
-        "path": "Learning → Sessions → [session] → Credits tab; Attend mobile app → Session → Claim Credit"
-      },
-      "permissions": [
-        "org.credits.read",
-        "org.credits.update"
-      ],
-      "audience": [
-        "organizer",
-        "participant"
-      ],
-      "use_case": "Events that award continuing-education credit can now attach a quiz directly to a session, require attendees to pass it before claiming credit, and let them download or share a certificate — all without leaving the Attend app or needing a separate magic-link email.",
-      "internal": {
-        "cs_action": {
-          "kind": "must_enable",
-          "note": "Lessons & Credits (beta) must be active on the org before session quizzes, in-app claims, or certificate PDFs are available."
-        },
-        "when_to_bring_up": "When a customer runs a CME, CLE, CPE, or other accredited event and wants attendees to claim credit and receive certificates without leaving the mobile app.",
-        "who_should_get_it": "Customers already using the Learning / Lessons & Credits beta who need session-level quizzes or certificate downloads.",
-        "staff_path": "Learning → Sessions → [session] → Credits tab → Quiz section",
-        "gotchas": "Quiz questions lock permanently once any attendee submits an attempt — only the pass mark and attempt limit can be changed after that. The CEU fallback (ceuFallback=true) is display-only and does not create a Learning credit record. LinkedIn credential URLs use the claim ID as the credential ID; no certUrl is included because learner links expire.",
-        "talk_track": "Attendees open the session in the app, answer a short quiz, and instantly get a certificate they can download as a PDF or add straight to their LinkedIn profile — no email link required."
-      },
-      "shipped": {
-        "prs": [
-          "lennd/sessionboard-web-api#4577"
-        ],
-        "docs_only": false,
-        "pending": null,
-        "live": {
-          "us": null,
-          "eu": null,
-          "me": null
-        },
-        "announced_at": null,
-        "emailed_at": null
-      },
-      "ideas": [],
-      "media": [],
       "gated": "availability:beta"
     },
     {
-      "id": "mobile-app-editor-ux-fonts",
-      "title": "Mobile app editor: body and heading font pickers, sign-in method fixes, and a full UX overhaul",
-      "summary": "The event and organization mobile app editors have been redesigned for clarity and consistency. The **Theme** section now includes **Body font** and **Heading font** pickers — each font is shown in its own typeface with a sample line, and options include the phone's system font or matching the body font. The **Sign-in & privacy** panel is reorganized into titled white sections (**Availability**, **Sign-in methods**, **Attendee profile**, **Attendee directory**, **Slide notes**) with proper labels and help text; SSO is disabled with a prompt until an identity provider is configured, and the correct provider ID is sent on save. A sticky **Save** bar shows **Unsaved changes — they reach attendees when you click Save** or **All changes saved**. The device toolbar is condensed to two rows with consistent controls, and a note clarifies when the phone drawing is approximate rather than a live preview.",
-      "article": "/attend/mobile-app",
+      "id": "attend-app-custom-fonts",
+      "title": "Mobile App editor: body and heading fonts, and a cleaner editor",
+      "summary": "**Design → Theme** in **Attend → Mobile App** (and the organization app's branding) now has a **Body font** and a **Heading font**, from ten families including Inter, Plus Jakarta Sans, Roboto, Lato, Montserrat, Merriweather and Lora; leaving them empty keeps the phone's system font. The editor also got a tidy-up: one heading per section, **Sign-in & privacy** split into titled sections with a sticky **Save** bar, and **SSO** offered only once your organization has an identity provider.",
+      "article": "/attend/mobile-app#set-the-theme",
       "related": [
-        "/attend/overview",
-        "/attend"
+        "/attend/mobile-app#sign-in-and-privacy",
+        "/attend/mobile-app#the-organization-app"
       ],
-      "kind": "improved",
+      "kind": "new",
       "module": "Apps",
       "features": [
         "attend_app",
@@ -447,31 +210,32 @@
       ],
       "availability": "beta",
       "enable": {
-        "how": "default_on",
-        "path": null
+        "how": "support",
+        "path": "Event → Admin Settings → Early Access → Attend Mobile App"
       },
       "where": {
         "scope": "both",
-        "path": "Attend → Mobile App → Design / Sign-in & privacy"
+        "path": "Attend → Mobile App → Design → Theme; org Publish → Mobile App → branding"
       },
       "permissions": [],
       "audience": [
         "organizer"
       ],
-      "use_case": "Organizers who want their event app to match their brand can now pick distinct body and heading fonts from the Theme section without leaving the editor. The restructured sign-in panel and sticky save bar reduce configuration errors — particularly the SSO misconfiguration that previously caused a 400 error on save.",
+      "use_case": "The app can use the same typefaces as the event's brand and website, so it looks like the organizer's app rather than a generic one.",
       "internal": {
         "cs_action": {
           "kind": "none",
           "note": null
         },
-        "when_to_bring_up": "When a customer asks about branding the attendee app or reports confusion configuring SSO sign-in in the mobile app editor.",
-        "who_should_get_it": "Any customer using the Attend Mobile App or Org App beta who customizes their app's design or sign-in settings.",
-        "staff_path": "Event → Attend → Mobile App → Design → Theme (for fonts); Sign-in & privacy (for SSO/methods)",
-        "gotchas": "Font pickers only appear when the API returns layout_options.fonts — events on older web-api versions (before web-api PR #4576) will not see the font pickers. SSO sign-in method is disabled in the picker until the org has a configured identity provider; if a customer reports SSO is greyed out, check org SSO settings first.",
-        "talk_track": "You can now pick separate body and heading fonts for your attendee app straight from the Theme section — each option previews in its own typeface. The sign-in panel is also reorganized so SSO, magic links, and attendee profile fields each have their own clearly labelled section, and a save bar tells you exactly when changes go live to attendees."
+        "when_to_bring_up": "When a customer asks whether the app can match their brand fonts.",
+        "who_should_get_it": "Events and organizations on the Attend Mobile App beta.",
+        "staff_path": "Event → Attend → Mobile App → Design → Theme",
+        "gotchas": "Only the ten listed families are available; custom font uploads are not. Fonts are part of the design draft, so attendees see them after Publish, once their app version supports fonts. If SSO is greyed out under Sign-in methods, the organization has no identity provider set up.",
+        "talk_track": "Pick a body and heading font in Theme and the app takes on your brand's typography."
       },
       "shipped": {
         "prs": [
+          "lennd/sessionboard-web-api#4576",
           "lennd/sessionboard-web-ui-v2#1048"
         ],
         "docs_only": false,
@@ -489,398 +253,51 @@
       "gated": "availability:beta"
     },
     {
-      "id": "attend-app-custom-fonts",
-      "title": "Choose body and heading fonts for the event and organization mobile app",
-      "summary": "Organizers can now pick separate body and heading typefaces for the Attend mobile app from the **Theme** section of the **Mobile App** editor. Ten freely licensed families are available — Inter, Plus Jakarta Sans, Roboto, Open Sans, Lato, Montserrat, Source Sans 3, Noto Sans, Merriweather, and Lora — at both the event level and the organization app level. Leaving either setting blank keeps the device's system font.",
-      "article": "/attend/mobile-app#set-the-theme",
-      "related": [
-        "/attend/overview"
-      ],
-      "kind": "new",
-      "module": "Apps",
-      "features": [
-        "attend_app",
-        "attend_org_app"
-      ],
-      "availability": "beta",
-      "enable": {
-        "how": "default_on",
-        "path": null
-      },
-      "where": {
-        "scope": "both",
-        "path": "Mobile App → Theme → Body Font / Heading Font"
-      },
-      "permissions": [],
-      "audience": [
-        "organizer"
-      ],
-      "use_case": "Events with strong brand guidelines can now match the app's typography to their visual identity without custom CSS. Organizers can set a distinct heading font for impact and a readable body font for session descriptions and schedules.",
-      "internal": {
-        "cs_action": {
-          "kind": "none",
-          "note": null
-        },
-        "when_to_bring_up": "When a customer asks about branding the Attend app or mentions that the app doesn't match their event's visual identity.",
-        "who_should_get_it": "Any customer using the Attend mobile app (beta) who has brand typography guidelines.",
-        "staff_path": "Mobile App → Theme → Body Font / Heading Font (event or org app settings)",
-        "gotchas": "Font choices are only offered when the API lists them; existing layouts and published bundles are unaffected and default to the system font if no font is set. Unknown stored font IDs are silently dropped and treated as 'no font selected'.",
-        "talk_track": "You can now pick from ten Google-licensed typefaces for your app's body text and headings — set a default at the org level and override it per event if needed."
-      },
-      "shipped": {
-        "prs": [
-          "lennd/sessionboard-web-api#4576"
-        ],
-        "docs_only": false,
-        "pending": null,
-        "live": {
-          "us": null,
-          "eu": null,
-          "me": null
-        },
-        "announced_at": null,
-        "emailed_at": null
-      },
-      "ideas": [],
-      "media": [],
-      "gated": "availability:beta"
-    },
-    {
       "id": "attend-app-registration-id-signin-whos-who-groups",
-      "title": "Attend Mobile App: sign in with email + registration ID, and Who's Who people groups",
-      "summary": "Two new admin capabilities for the Attend mobile app. In **Sign-in & Privacy**, a new **Registration ID** sign-in method lets attendees authenticate with a stored ID (attendee ID, badge number, or confirmation number); admins configure the ID source, minimum length, and the label attendees see (e.g. \"Member ID\"), and an amber warning explains the lockout policy for repeated misses. In the **Mobile App editor → Content**, a new **Who's Who** section lets organizers create, rename, reorder, and delete people groups; add contacts, speakers, or registrants by search with optional roles; and see which members the app will hide and why (opted out, not a public speaker, inactive registration, or no longer on the event). A new **whos-who** layout destination is available for tiles and tabs when the API supports it.",
+      "title": "Attend app: sign in with email and registration ID, and Who's Who groups",
+      "summary": "**Sign-in & privacy** in **Attend → Mobile App** gets a third sign-in method, **Email and registration ID**: attendees enter their email plus an ID from their registration (attendee ID, badge number or confirmation number), with a minimum length and the name attendees see, such as \"Member ID\". A **Who's Who** section in the editor builds groups of people — board, committees, faculty, staff — from contacts, speakers and registrants, each with an optional role, for a Who's Who page in the app.",
       "article": "/attend/mobile-app#sign-in-and-privacy",
       "related": [
-        "/attend/overview",
-        "/attend/networking"
+        "/attend/mobile-app#choose-the-tabs",
+        "/participants/attend-app#find-your-event-and-sign-in"
       ],
       "kind": "new",
       "module": "Apps",
       "features": [
         "attend_app"
-      ],
-      "availability": "beta",
-      "enable": {
-        "how": "default_on",
-        "path": null
-      },
-      "where": {
-        "scope": "event",
-        "path": "Attend → Mobile App editor → Sign-in & Privacy (for Registration ID) and Attend → Mobile App editor → Content → Who's Who (for people groups)"
-      },
-      "permissions": [],
-      "audience": [
-        "organizer",
-        "participant"
-      ],
-      "use_case": "Events that use a registration platform can let attendees sign into the app with their badge number or confirmation number instead of a magic link — useful when attendees arrive on-site without checking email. The Who's Who section lets organizers surface curated groups of people (speakers, VIPs, staff) in the app directory so attendees can find and connect with the right people.",
-      "internal": {
-        "cs_action": {
-          "kind": "review_before_customers_see",
-          "note": "Registration ID sign-in requires the matching API release (sessionboard-web-api#4573) to be live; the UI degrades gracefully against an older API but the feature is inert until both sides ship. Who's Who also shows 'not available yet' against an older API."
-        },
-        "when_to_bring_up": "When a customer asks how on-site attendees can sign into the app without a magic link, or when they want to feature specific people (speakers, sponsors, staff) in the app directory.",
-        "who_should_get_it": "Customers using the Attend Mobile App (beta) who have a registration platform that issues badge or confirmation numbers, or who want a curated people directory in the app.",
-        "staff_path": "Event → Attend → Mobile App editor → Sign-in & Privacy / Content → Who's Who",
-        "gotchas": "The Registration ID method shows an amber warning about short sequential IDs being guessable — reassure customers this is informational and they can raise the minimum length or prefer confirmation numbers. Repeated failed sign-in attempts lock the attendee out for 15 minutes. Who's Who members that the app will hide are still listed in the admin UI with the reason (opted out, not a public speaker, inactive registration, no longer on event).",
-        "talk_track": "If your attendees arrive on-site without checking email, they can now sign in with their badge or confirmation number. And with Who's Who groups you can build a curated directory — speakers, VIPs, staff — so attendees always know who to find."
-      },
-      "shipped": {
-        "prs": [
-          "lennd/sessionboard-web-ui-v2#1044"
-        ],
-        "docs_only": false,
-        "pending": null,
-        "live": {
-          "us": null,
-          "eu": null,
-          "me": null
-        },
-        "announced_at": null,
-        "emailed_at": null
-      },
-      "ideas": [],
-      "media": [],
-      "gated": "availability:beta"
-    },
-    {
-      "id": "attend-overview-page",
-      "title": "Attend → Overview shows app status, setup checklist, live numbers, and recent activity",
-      "summary": "The **Attend → Overview** page is now fully built out. It shows **App Status** (on/off, design published state, sign-in methods, template pack), a **Setup Checklist** with a progress bar and deep links into each configuration step, a **Share with Attendees** card with the app link, QR code, copy button, and **Download QR Poster (PDF)**, and a **Live** section with today's sign-ins, active-now count, messages, meetings, push opens, saves, sponsor impressions, a 14-day daily-active chart, and top sessions and exhibitors. A **Recent Activity** feed shows sign-ins, moderation reports, and sent campaigns with relative timestamps.",
-      "article": "/attend/overview",
-      "related": [
-        "/attend/mobile-app",
-        "/attend/analytics",
-        "/attend/networking",
-        "/attend/notifications"
-      ],
-      "kind": "new",
-      "module": "Event team",
-      "features": [
-        "attend_app"
-      ],
-      "availability": "beta",
-      "enable": {
-        "how": "self_serve",
-        "path": "Get started → Early Access → Preview → Attend Mobile App"
-      },
-      "where": {
-        "scope": "event",
-        "path": "Attend → Overview"
-      },
-      "permissions": [],
-      "audience": [
-        "organizer"
-      ],
-      "use_case": "Organizers running an attendee app can open a single page to confirm the app is configured correctly, share it with attendees via QR poster, and monitor real-time engagement — sign-ins, active users, messages, meetings, and sponsor impressions — without switching between multiple modules.",
-      "internal": {
-        "cs_action": {
-          "kind": "review_before_customers_see",
-          "note": "The overview endpoint (web-api#4549) must be deployed before the live numbers and checklist fully populate; until then the page shows app settings status and an error state for the overview section."
-        },
-        "when_to_bring_up": "When a customer asks how to monitor their attendee app during an event or wants a quick way to share the app link with attendees.",
-        "who_should_get_it": "Any customer using the Attend Mobile App beta who wants a single dashboard view of app health and live engagement.",
-        "staff_path": "Event → Attend → Overview",
-        "gotchas": "Live numbers and the setup checklist depend on the web-api#4549 endpoint being deployed. Until that is live, the page falls back to app settings data and shows an error/retry state for the overview section. The QR poster download uses the organizer's access token as a Bearer header — confirm the API is deployed before demoing the PDF download.",
-        "talk_track": "From the Attend Overview you can see whether your app is fully set up, download a QR poster to hand out at registration, and watch sign-ins and active users tick up in real time — all without leaving one page."
-      },
-      "shipped": {
-        "prs": [
-          "lennd/sessionboard-web-ui-v2#1030"
-        ],
-        "docs_only": false,
-        "pending": null,
-        "live": {
-          "us": null,
-          "eu": null,
-          "me": null
-        },
-        "announced_at": null,
-        "emailed_at": null
-      },
-      "ideas": [],
-      "media": [],
-      "gated": "availability:beta"
-    },
-    {
-      "id": "attend-posters-abstracts-admin-page",
-      "title": "Configure posters, abstracts, embargo and board numbers for the attendee app",
-      "summary": "A new **Attend → Content → Posters & abstracts** page lets organizers control what the mobile app shows for ePosters and abstracts. Choose which **Poster Galleries** to share with signed-in registrants (with **Off / Embargo / Consent** badges), select which poster-session formats appear, surface accepted abstracts not yet placed on the agenda, configure an **Embargo** (hide abstract, poster file, authors or topics until each poster is presented or a fixed date), and set **Board numbers** with a prefix (e.g. \"P12\") that map boards to booths on the venue floor map.",
-      "article": "/attend/posters",
-      "related": [
-        "/marketing/poster-gallery",
-        "/site/content-galleries",
-        "/attend/mobile-app"
-      ],
-      "kind": "new",
-      "module": "Program",
-      "features": [
-        "attend_app",
-        "poster_gallery",
-        "content_galleries",
-        "floor_maps"
       ],
       "availability": "beta",
       "enable": {
         "how": "setting",
-        "path": "Attend → Content → Posters & abstracts"
+        "path": "Attend → Mobile App → Sign-in & privacy → Sign-in methods → Email and registration ID; Attend → Mobile App → Who's Who"
       },
       "where": {
         "scope": "event",
-        "path": "Attend → Content → Posters & abstracts"
+        "path": "Attend → Mobile App → Sign-in & privacy; Attend → Mobile App → Who's Who; Attend app sign-in screen"
       },
-      "permissions": [],
-      "audience": [
-        "organizer"
+      "permissions": [
+        "event.settings.update"
       ],
-      "use_case": "Medical and scientific conferences that display ePosters can now control exactly what attendees see in the app — including embargo windows that hide poster content until a presenter takes the floor — and assign board numbers that tie directly to the venue floor map so attendees can find the right booth.",
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Attendees who cannot get to their email on site sign in with the number on their badge or confirmation, and associations can show their board, committees and faculty in the app.",
       "internal": {
         "cs_action": {
           "kind": "review_before_customers_see",
-          "note": "Requires the companion web-api PR #4542 to be live first; against an older API the page shows a 'needs the next update' message and saves will 400. Confirm both sides are deployed before showing customers."
+          "note": "Some registration platforms issue short, sequential IDs that are easy to guess. Help the customer pick the confirmation number where they have one, raise the minimum length, and keep Email link and code on."
         },
-        "when_to_bring_up": "When a customer running a poster or abstract session asks how attendees can browse or find posters in the mobile app.",
-        "who_should_get_it": "Customers using the Attend mobile app (beta) who run ePoster or abstract sessions — common in medical, scientific, and academic conferences.",
-        "staff_path": "Event → Attend → Content → Posters & abstracts",
-        "gotchas": "The page is gated on the Attend app being enabled for the event; if the app is off, an alert with a link to Publish → Mobile App is shown. Drafts, withdrawn, pending, and declined abstracts are never surfaced to attendees. The embargo applies across the app's list, detail, files, and agenda views.",
-        "talk_track": "You can now pick which of your poster galleries appear in the app, set an embargo so attendees can't read the abstract or download the file until the presenter steps up, and give every board a number with a prefix like 'P' so it matches your printed program and the venue map."
+        "when_to_bring_up": "When a customer says attendees struggle with the email sign-in link on site, or an association wants its leadership and committees listed in the app.",
+        "who_should_get_it": "Events on the Attend Mobile App beta whose registration platform syncs IDs to Sessionboard (Cvent, Swapcard, LiveBuzz, Visit and others), and associations with committees or faculty to show.",
+        "staff_path": "Event → Attend → Mobile App → Sign-in & privacy; Event → Attend → Mobile App → Who's Who",
+        "gotchas": "Email and ID are always both required, and only live registrants of the event can sign in. Repeated misses lock that email out for 15 minutes. IDs shorter than the minimum never sign anyone in. In Who's Who, people the app will hide (not a public speaker, opted out of the directory, inactive registration, no longer on the event) stay listed with the reason; email and phone are never shown. Groups save one at a time and are not part of the design draft.",
+        "talk_track": "Attendees can sign in with their email and badge or confirmation number, and you can build Who's Who groups — board, committees, faculty — that show right in the app."
       },
       "shipped": {
         "prs": [
-          "lennd/sessionboard-web-ui-v2#1022"
-        ],
-        "docs_only": false,
-        "pending": null,
-        "live": {
-          "us": null,
-          "eu": null,
-          "me": null
-        },
-        "announced_at": null,
-        "emailed_at": null
-      },
-      "ideas": [],
-      "media": [],
-      "gated": "availability:beta"
-    },
-    {
-      "id": "floor-map-pdf-background",
-      "title": "Set a venue PDF page as a floor map hall background",
-      "summary": "In the Floor Maps designer, **Map settings → Hall background** now includes a **Use a page of a venue PDF** option. Pick a PDF (up to 50 MB, up to 200 pages), browse thumbnails of the first 24 pages, choose a page, and the platform renders it as a high-resolution background image — no manual PNG export required.",
-      "article": "/attend/mobile-app",
-      "kind": "new",
-      "module": "Apps",
-      "features": [
-        "floor_maps",
-        "attend"
-      ],
-      "availability": "preview",
-      "enable": {
-        "how": "support",
-        "path": "Ask your Customer Success Manager to enable Floor Maps; then Event → Attend → Floor Maps → [map] → Designer → Map settings → Hall background → Use a page of a venue PDF"
-      },
-      "where": {
-        "scope": "event",
-        "path": "Attend → Floor Maps → [map] → Designer → Map settings → Hall background"
-      },
-      "permissions": [],
-      "audience": [
-        "organizer"
-      ],
-      "use_case": "Medical and association venues often supply floor plans only as PDFs. Organizers can now upload the venue PDF directly and pick the right page, skipping the step of manually exporting a PNG before building the hall map.",
-      "internal": {
-        "cs_action": {
-          "kind": "review_before_customers_see",
-          "note": "Feature is gated to super-users until the companion web-api release (lennd/sessionboard-web-api#4545) ships. Do not promote to customers until that API release is confirmed live."
-        },
-        "when_to_bring_up": "When a customer using Floor Maps mentions their venue only provides a PDF floor plan and they are struggling to convert it to an image.",
-        "who_should_get_it": "Customers using Floor Maps (beta) — especially medical, association, or convention-centre events where venues supply PDF layouts.",
-        "staff_path": "Event → Attend → Floor Maps → [map] → Designer → Map settings → Hall background",
-        "gotchas": "The PDF picker is currently gated behind useSuperUser() and will not appear for regular organizers until the API release (web-api#4545) is deployed. File must be ≤ 50 MB and ≤ 200 pages; password-protected PDFs are rejected with an error message. Rendering is async — the UI polls for job completion and shows progress text.",
-        "talk_track": "If your venue sends you a PDF floor plan, you can now upload it straight into the Floor Maps designer, pick the page for each hall, and the platform renders it as the background — no need to open Acrobat or any image tool first."
-      },
-      "related": [
-        "/attend/mobile-app",
-        "/attend/overview"
-      ],
-      "shipped": {
-        "prs": [
-          "lennd/sessionboard-web-ui-v2#1021"
-        ],
-        "docs_only": false,
-        "pending": null,
-        "live": {
-          "us": null,
-          "eu": null,
-          "me": null
-        },
-        "announced_at": null,
-        "emailed_at": null
-      },
-      "ideas": [],
-      "media": [],
-      "gated": "availability:preview"
-    },
-    {
-      "id": "attend-app-design-editor",
-      "title": "Design the event app with template packs, page layouts, home blocks, tabs, theme and live preview",
-      "summary": "A new **App design** section in **Attend → Mobile app → Settings** lets organizers control the full visual layout of the attendee app without leaving the settings panel. Choose a **Template pack** (Atlas, Scholar, Expo, Mosaic, Keynote, Pulse, or Concierge) from illustrated thumbnails — switching a pack resets all pages, home blocks and tabs to the pack's defaults after a confirmation prompt, while the theme is preserved. A **Customised** badge appears whenever any setting differs from the chosen pack. Fine-tune individual pages (Home, Agenda, Session, People, Partners) with per-page layout dropdowns and a **Reset to pack** option per page. Reorder and toggle **Home blocks** (announcements, banner, countdown, button grid, sponsor strip, text, links) using drag-and-drop, with inline editors for each block type. Pick up to five **Tabs** in order, with the Me tab always retained. Set the **Theme** — brand colour, corner radius, spacing, and light/dark/follow-phone mode. A **live phone preview** updates alongside every draft change so the result is visible before saving.",
-      "article": "/attend/mobile-app",
-      "related": [
-        "/attend/overview",
-        "/attend"
-      ],
-      "kind": "new",
-      "module": "Apps",
-      "features": [
-        "attend_app"
-      ],
-      "availability": "beta",
-      "enable": {
-        "how": "default_on",
-        "path": null
-      },
-      "where": {
-        "scope": "event",
-        "path": "Attend → Mobile app → Settings → App design"
-      },
-      "permissions": [],
-      "audience": [
-        "organizer"
-      ],
-      "use_case": "Organizers who want the attendee app to match their event's brand and content priorities can now pick a template pack and adjust individual pages, home blocks, tabs and colours — all from one panel, with a live phone preview — instead of relying on default layouts.",
-      "internal": {
-        "cs_action": {
-          "kind": "review_before_customers_see",
-          "note": "The App design section only appears when the API has shipped the layout settings endpoint (#4527). Confirm the API release is live before walking customers through this feature."
-        },
-        "when_to_bring_up": "When a customer asks how to customise the look of their Attend app or wants to match the app to their event branding.",
-        "who_should_get_it": "Any customer using the Attend Mobile App beta who wants branded or structured app layouts.",
-        "staff_path": "Event → Attend → Mobile app → Settings → App design",
-        "gotchas": "The section is hidden if the API has not yet shipped the layout endpoint — the UI detects this automatically and omits the section. If a customer cannot see App design, confirm the API release is deployed. Switching a template pack resets pages, home blocks and tabs but not the theme; customers should be aware of this before switching packs mid-setup. A page template not yet in the app release will silently fall back to the Atlas layout.",
-        "talk_track": "You can now pick a template pack that sets a consistent look across every page of your app, then customise individual pages, home blocks and tabs to match your agenda and sponsors — and see exactly what attendees will see in the live preview before you save."
-      },
-      "shipped": {
-        "prs": [
-          "lennd/sessionboard-web-ui-v2#1015"
-        ],
-        "docs_only": false,
-        "pending": null,
-        "live": {
-          "us": null,
-          "eu": null,
-          "me": null
-        },
-        "announced_at": null,
-        "emailed_at": null
-      },
-      "ideas": [],
-      "media": [],
-      "gated": "availability:beta"
-    },
-    {
-      "id": "org-mobile-app",
-      "title": "Build a single mobile app that spans all your organization's events",
-      "summary": "A new **Mobile App** section under **Publish** at the organization level lets you configure one attendee app that rolls up every event in your organization. Set the app name, tagline, logo, colors, which events appear (upcoming, all, or a hand-picked list with a featured order), media items, and info pages. Each event's own app settings have also moved from **Attend** into **Publish → Mobile App** at the event level.",
-      "article": "/attend/mobile-app#the-organization-app",
-      "related": [
-        "/attend/overview",
-        "/attend"
-      ],
-      "kind": "new",
-      "module": "CMS",
-      "features": [
-        "attend_org_app",
-        "attend_app"
-      ],
-      "availability": "beta",
-      "enable": {
-        "how": "self_serve",
-        "path": "Get started → Early Access → Beta → Mobile App"
-      },
-      "where": {
-        "scope": "both",
-        "path": "Publish → Mobile App"
-      },
-      "permissions": [],
-      "audience": [
-        "organizer"
-      ],
-      "use_case": "Organizations that run multiple events each year can now give attendees a single branded app that lists all their events in one place, rather than requiring a separate app download per event. This is especially useful for associations or media companies that want a persistent app presence between events.",
-      "internal": {
-        "cs_action": {
-          "kind": "must_enable",
-          "note": "The org-level Mobile App is gated behind the Beta flag 'attend_org_app' (separate from the per-event 'attend_app' flag). Customers must opt in via Early Access at the org level; the flags do not sync."
-        },
-        "when_to_bring_up": "When a customer runs multiple events per year and wants a persistent branded app experience or asks how attendees can discover all their events in one place.",
-        "who_should_get_it": "Multi-event organizations — associations, media companies, conference series — already using or evaluating the Attend mobile app.",
-        "staff_path": "Org → Publish → Mobile App (requires org Beta flag 'attend_org_app' on)",
-        "gotchas": "The org app flag ('attend_org_app') and the event app flag ('attend_app') are independent — enabling one does not enable the other. The public org app endpoint returns 404 if the org flag is off or the app is not marked enabled. Cross-org events and media items are rejected with a 400. Event app settings have moved from the Attend module into Publish → Mobile App at the event level; customers used to the old location will need to look there.",
-        "talk_track": "Instead of asking attendees to download a new app for each conference, you can now build one organization-level app that lists all your events. Attendees download it once, and every time you run a new event it appears automatically — or you can hand-pick exactly which events show and in what order."
-      },
-      "shipped": {
-        "prs": [
-          "lennd/sessionboard-web-api#4528"
+          "lennd/sessionboard-web-ui-v2#1044",
+          "lennd/sessionboard-web-api#4573"
         ],
         "docs_only": false,
         "pending": null,
@@ -898,49 +315,44 @@
     },
     {
       "id": "attend-app-sponsors-exhibitors-session-files",
-      "title": "Attend app shows sponsors, exhibitors and session files",
-      "summary": "The Attend mobile app now surfaces **Sponsors**, **Exhibitors** and per-session **Files** to attendees. Sponsors and exhibitors include name, logo, website, description, tier, and the sessions they are linked to; exhibitors also show booth numbers from published floor maps. Session files marked **Visible** (excluding title slides and poster files) are available to attendees with a signed, time-limited link — hosted files open inline in the iOS viewer; link-type files open the admin's URL.",
-      "article": "/attend/mobile-app",
+      "title": "Attend app: sponsors, exhibitors and session files",
+      "summary": "The Attend app now lists the event's sponsors and exhibitors — logo, description, website, tier, linked sessions, and booth numbers from published floor maps — and shows each session's files. Attendees open a file in the app; only files marked **Visible** on the session are offered, never title slides or poster files.",
+      "article": "/participants/attend-app#find-your-way-around",
       "related": [
+        "/attend/mobile-app#lay-out-the-pages",
         "/attend/showrooms",
-        "/attend/sponsor-ads",
-        "/sessions/enable-upload-download-content",
-        "/sponsors-exhibitors/sponsors",
-        "/sponsors-exhibitors/adding-exhibitor-groups-contacts"
+        "/sessions/enable-upload-download-content"
       ],
       "kind": "new",
       "module": "Apps",
       "features": [
-        "attend_app",
-        "sponsors",
-        "exhibitors",
-        "floor_maps"
+        "attend_app"
       ],
       "availability": "beta",
       "enable": {
-        "how": "default_on",
-        "path": null
+        "how": "support",
+        "path": "Event → Admin Settings → Early Access → Attend Mobile App"
       },
       "where": {
         "scope": "event",
-        "path": "Attend → App → Sessions / Sponsors / Exhibitors"
+        "path": "Attend app → Sponsors / Exhibitors; Attend app → session → files"
       },
       "permissions": [],
       "audience": [
         "organizer",
         "participant"
       ],
-      "use_case": "Attendees can browse sponsor and exhibitor listings directly in the app and open session handouts, slides or reference documents without leaving the app. Organizers get a single place to control what attendees see by toggling the **Visible** flag on session files.",
+      "use_case": "Attendees find sponsors, exhibitors and the session handouts in the same app as the agenda, and organizers decide which files they see with the Visible switch they already use.",
       "internal": {
         "cs_action": {
           "kind": "review_before_customers_see",
-          "note": "Files are served to any attendee with a live registration as long as Content.visible = true. Organizers should audit session files and confirm the Visible flag is set only on files intended for attendees before the app goes live. Title slides and poster files are automatically excluded."
+          "note": "Any live registrant can open a session file marked Visible. Ask the customer to check which files are Visible before the app goes live."
         },
-        "when_to_bring_up": "When a customer using the Attend app asks how attendees can access session materials, or when they want sponsors and exhibitors surfaced in the app.",
-        "who_should_get_it": "Customers already on the Attend (beta) app who have sponsors, exhibitors or session files they want attendees to access.",
-        "staff_path": "Event → Sessions → [session] → Files tab (set Visible); Event → Sponsors or Exhibitors module",
-        "gotchas": "Only files with Content.visible = true are served; title slides (holding_slide) and poster files are always excluded even if visible is true. Booth numbers only appear if a floor map is published. Files whose newest version is quarantined or flagged THREATS_FOUND are silently skipped — no fallback to an older version. The bundle format bumps from b1 to b2; older app clients treat all new fields as optional and show nothing, so there is no regression on older builds. Signed file URLs expire in 10 minutes.",
-        "talk_track": "Attendees open the app, tap a session, and can read the slides or handout right there — no email, no portal login. Sponsors and exhibitors show up with their logo, tier, booth number and the sessions they are part of, so attendees can plan their floor time from the same app they use for the agenda."
+        "when_to_bring_up": "When a customer asks how attendees get slides or handouts in the app, or wants sponsors and exhibitors listed there.",
+        "who_should_get_it": "Events on the Attend Mobile App beta with sponsors, exhibitors or session files.",
+        "staff_path": "Event → Sessions → [session] → Files (Visible); Event → CRM → Sponsors / Exhibitors",
+        "gotchas": "A sponsor or exhibitor is listed when the event holds it in that role or a public session links it. Booth numbers come from published floor maps only. A file whose newest version failed the virus scan is skipped, not replaced by an older version. File links expire after 10 minutes and are re-issued when the attendee opens the file again. Needs the Attend app release with partners and files.",
+        "talk_track": "Sponsors, exhibitors and session handouts are in the app now — you control which files attendees see with the Visible switch."
       },
       "shipped": {
         "prs": [
@@ -957,7 +369,9 @@
         "emailed_at": null
       },
       "ideas": [],
-      "media": [],
+      "media": [
+        "/images/kb/attend-app-exhibitor-directory.png"
+      ],
       "gated": "availability:beta"
     }
   ]
