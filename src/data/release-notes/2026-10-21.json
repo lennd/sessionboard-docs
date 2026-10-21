@@ -706,6 +706,169 @@
       "ideas": [],
       "media": [],
       "gated": null
+    },
+    {
+      "id": "formula-date-results-event-timezone",
+      "title": "Date formulas count days in the event's timezone and stay current every day",
+      "summary": "A formula built on **Date + N days** (`add_days`) now returns a date instead of a day count, and today is the calendar day in the event's timezone rather than UTC. Results that depend on today, such as **Days until**, recalculate every day shortly after local midnight without anyone saving the record, and clearing the source date clears the result.",
+      "article": "/settings/formula-fields#how-dates-are-counted",
+      "related": [
+        "/settings/field-rules"
+      ],
+      "kind": "fixed",
+      "module": "Settings",
+      "features": [
+        "field_rules"
+      ],
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Library → Fields → [field] → Field Type: Formula"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Teams that track visa expiries, deadlines or follow-up dates in formula fields get the right number for their own time zone, and it stays right on the days nobody edits the record.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer outside the Americas reports a Days until value that is off by one, a formula that never changes from the day it was saved, or a Date + N days field that shows a number.",
+        "who_should_get_it": "Events with Field Rules turned on that use days_until or add_days formulas.",
+        "staff_path": "Event → Settings → Library → Fields → [formula field]",
+        "gotchas": "SB-9638 is still in QA: the grid filter on a Date + N days formula may still offer number operators until the follow-up web-ui-v2 PR ships. Recalculation only runs for events with Field Rules on that ended less than 30 days ago. add_days can no longer be used inside arithmetic; saving such a formula returns an error.",
+        "talk_track": "Date formulas now follow your event's time zone and refresh every night, so Days until is correct the morning after without anyone touching the record."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4595",
+          "lennd/sessionboard-web-ui-v2#1062"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [
+        "/images/kb/formula-field-builder.png"
+      ]
+    },
+    {
+      "id": "send-date-merge-tags-event-timezone",
+      "title": "Email Send Date tags use the event's calendar day",
+      "summary": "**Email Send Date** and the **+7 / +14 / +30 Days** tags now fill in the day the email goes out in the event's timezone (the organization's for organization-level campaigns), and add whole calendar days. A send late in the day UTC no longer prints the wrong date for an event in Asia or the Pacific.",
+      "article": "/communications/email-campaigns#all-audiences",
+      "related": [
+        "/settings/email-templates"
+      ],
+      "kind": "fixed",
+      "module": "Communications",
+      "features": [],
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Communications → Email campaigns → Merge tags"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Reply-by dates in campaign and automation emails match the calendar your recipients are looking at.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer reports that a \"reply by\" date in an email is a day early or late.",
+        "who_should_get_it": "Every customer using the Email Send Date merge tags, especially events outside the Americas.",
+        "staff_path": "Event → Communications → Email campaigns → [campaign] → Merge tags",
+        "gotchas": "Only the fixed +7, +14 and +30 offsets exist; other offsets are not supported. UTC is used only when neither the event nor the organization has a timezone.",
+        "talk_track": null
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4595"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [
+        "/images/kb/email-campaign-basic-info.png"
+      ]
+    },
+    {
+      "id": "bulk-assign-relative-task-due-date",
+      "title": "Assign → Tasks stamps a due date relative to assignment",
+      "summary": "When you assign a task from a table with **Assign → Tasks** and leave the due date empty, each person now gets the task's **Due date relative to assignment**: the assignment day plus N days, at the end of the day in the event's timezone. A date you set on the assign screen wins, and assigning again keeps a date already stamped. Tasks that reach people through a portal's filters keep using the fixed **Due Date**.",
+      "article": "/portals/task-assignment#assign-to-several-records-at-once",
+      "related": [
+        "/portals/assign-tasks"
+      ],
+      "kind": "fixed",
+      "module": "Portals",
+      "features": [],
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "CRM → Contacts → select records → Assign → Tasks"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Teams that give each speaker a personal deadline (for example seven days after they are asked) get that deadline when they assign in bulk, not only one record at a time.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer assigns tasks in bulk and finds no due date on the people they assigned, or asks why a task reached through a portal filter has the portal's fixed date.",
+        "who_should_get_it": "Events that use tasks with a due date relative to assignment.",
+        "staff_path": "Event → CRM → Contacts → Assign → Tasks; Portals → [portal] → Edit Tasks → pencil → Due date relative to assignment",
+        "gotchas": "Josh's decision: the relative date applies to direct assignment only. Portal-filter assignment uses the fixed Due Date.",
+        "talk_track": null
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4595"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
     }
   ]
 }

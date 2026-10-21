@@ -1,13 +1,13 @@
 ---
 title: "Create a formula field"
-description: "Build a number from other fields with the builder or by writing the expression, including parentheses."
-reviewed: "2026-09-29"
+description: "Build a number or a date from other fields with the builder or by writing the expression, including parentheses."
+reviewed: "2026-10-21"
 ---
 
 import { Note, Tip, Steps, Step, TrainingVideo } from '@compat';
 import { CardGrid, LinkCard } from '@astrojs/starlight/components';
 
-A **Formula** field always shows a calculated number. Nobody types into it on a contact, session, or group. Use it for a balance due, a fee plus tax, or any other number you can write with plus, minus, multiply, and divide.
+A **Formula** field shows a calculated value. Nobody types into it on a contact, session, or group. Use it for a balance due, a fee plus tax, or any other number you can write with plus, minus, multiply, and divide. A formula built on **Date + N days** shows a date instead, such as a follow-up date one week after a deadline.
 
 {/* training-video:start 28-fields */}
 <TrainingVideo id="training-28-fields" title={"Fields: organization and event"} summary={"The two levels of fields, organization fields every event shares and event fields for one event, where each lives under Settings, Library, Fields, the Contact, Group and Submission tabs with their Profile, Communication, Attribute, Custom and Hidden Fields sub-tabs, standard fields with the lock against custom fields, Add Field with the full type list, Field Level and Contains Personal Data, Copy from another event, the edit sidebar with rename, options, colours and Language variants, the row menu with Edit, Archive and Delete and the Hidden Fields tab, the organization Fields page with Field Rules and the Formatting, Calculation and Assignment rule types, and a custom field turning up as a column in the Contacts directory."} src="https://static.sessionboard.com/training/videos/28-fields/v2026-09-30-e139e009/28-fields.mp4" poster="https://static.sessionboard.com/training/videos/28-fields/v2026-09-30-e139e009/poster.jpg" captions="https://static.sessionboard.com/training/videos/28-fields/v2026-09-30-e139e009/28-fields.vtt" duration={336} chapters={[{"start_s":2.6,"title":"Two levels of fields"},{"start_s":40.1,"title":"Contact, Group and Submission"},{"start_s":79.6,"title":"Add a custom field"},{"start_s":122.5,"title":"Copy fields from another event"},{"start_s":153.7,"title":"Edit a field"},{"start_s":189,"title":"Hide a standard field"},{"start_s":222.4,"title":"Organization fields"},{"start_s":263.2,"title":"Field Rules"},{"start_s":300.3,"title":"A field in the directory"}]}>
@@ -105,9 +105,18 @@ Names match the field label, ignoring extra spaces and capitalization. Two field
 - Parentheses in **Write**
 - Whole numbers and decimals (`1000`, `12.5`). Do not use thousands separators.
 - Fields whose type is **Number**, **Currency**, **Percent**, or **Quantity**, from the **same module** as the formula (or, for a calculation rule, the same module as the target field)
-- Date helpers that still write a number: `days_until({Visa Expiry})` is signed whole days from today (UTC) to that date, and `add_days({Visa Expiry}, 7)` is the same count plus 7. Use these when the result should stay a number (days remaining) rather than a new date.
+- Date helpers:
+  - `days_until({Visa Expiry})` (**Days until** in the builder) is a number: signed whole days from today to that date. Use it for days remaining.
+  - `add_days({Visa Expiry}, 7)` (**Date + N days** in the builder) is a date: the date 7 days after the source date. The whole formula is then a date formula, so `add_days` cannot be added to, subtracted from, or multiplied with anything else; the builder shows an error and you cannot save.
 
 A formula cannot reference itself, another formula field, or a text, dropdown, or checkbox field. A date field is allowed only inside `days_until` or `add_days`.
+
+### How dates are counted
+
+- **Today** is the calendar day in the event's timezone, not UTC. For an event in Auckland, today turns over at midnight Auckland time.
+- A date field counts as its calendar day. A date-and-time field counts as the day it falls on in the event's timezone.
+- Results that depend on today, such as `days_until`, are recalculated every day, shortly after midnight in the event's timezone. Nobody has to save the record.
+- Clearing the source date clears the result. A blank date does not leave the old count or date behind.
 
 Sessionboard uses the stored number as-is. A percent stored as `12.5` times a currency of `1000` is `12500`, not `125`. If you want a percentage of a fee, divide by `100` in the expression: `{Speaker Fee} * {Tax Rate} / 100`.
 
@@ -124,7 +133,7 @@ Currency, percent, and formula results store two decimal places.
 
 ## When a result does not update
 
-Sessionboard leaves the previous value in place when:
+For number sources, Sessionboard leaves the previous value in place when:
 
 - A source field is blank (blank is not treated as zero)
 - A source field has been deleted
@@ -144,7 +153,7 @@ Open an existing field. If other formulas or Field Rules use it, the sidebar sho
 
 These sections appear only when the field is involved. A formula field does not list itself here; its expression is already on the sidebar.
 
-On a view, a formula column filters and sorts like a number.
+On a view, a number formula column filters and sorts like a number. A **Date + N days** formula shows and sorts like a date.
 
 ## Related
 
