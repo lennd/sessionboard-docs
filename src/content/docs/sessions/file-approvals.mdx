@@ -2,9 +2,9 @@
 title: "Approve session files"
 sidebar:
   label: "File approvals"
-description: "Hold session files for review and release them on time: build a multi-step approval workflow, route each file to the right reviewers, set a release time (an embargo) for a date and time or for each session's start, hold one file longer, and keep a history of every decision."
+description: "Hold session files and submission-form files for review and release them on time: build a multi-step approval workflow, route each file to the right reviewers, hold files from evaluators until approved, flag long videos, set a release time (an embargo), and keep a history of every decision."
 features: ["approvals"]
-reviewed: "2026-10-21"
+reviewed: "2026-10-22"
 ---
 
 import { Note, Tip, Warning, Steps, Step, IfFeature } from '@compat';
@@ -15,6 +15,8 @@ Approvals controls when a session file leaves Sessionboard. It does two things, 
 
 - **Approval.** A new session file, or a new version of one, starts as **Pending**. It goes only to the reviewers you choose, one step after another, and is released once the last step approves it.
 - **Release time.** Files are held back until a date and time you set, or until each file's session starts, even after they are approved. Use it for press embargoes, abstracts that can't be public before they are presented, or sponsor content that launches at a set moment.
+
+Approvals can also keep files away from your **evaluators** until they are approved, and review the files people upload in **submission forms**, such as abstract videos. See [Hold files from evaluators](#hold-files-from-evaluators) and [Review files from submission forms](#review-files-from-submission-forms).
 
 A file goes out only when **both** are satisfied: it is approved (or doesn't need approval), **and** its release time has passed. Until then it is not sent to integrations, embeds, galleries, the Public API or the attendee app. Every decision and every change to a release time is kept in the history.
 
@@ -193,7 +195,7 @@ Within a minute of a file's release time, Sessionboard releases it and tells you
 
 ## Review files
 
-**Publish → Approvals** lists every file in the workflow, with tabs for **Waiting on me** and **All approvals**, and a status filter for **Pending**, **Approved** and **Denied**. Each row shows the session with its room and time, the current step, the avatars of the reviewers it is still waiting on, and, in **Release**, when a held file goes out.
+**Publish → Approvals** lists every file in the workflow, with tabs for **Waiting on me** and **All approvals**, and a status filter for **Pending**, **Approved** and **Denied**. The **Files** menu switches the list between **Session files** and **Form files**. Each row shows the session with its room and time, the current step, the avatars of the reviewers it is still waiting on, and, in **Release**, when a held file goes out.
 
 ![The All approvals tab, listing six files on the Expo Opens & Morning Break session with their step, reviewers, Pending, Denied or Approved status, and a Release column showing Embargoed until Nov 10 or Nov 12, 2026, 9 AM PST](/images/kb/file-approvals-queue.png)
 
@@ -220,6 +222,68 @@ Overrides are recorded in the history as overrides. **Approve now** does not lif
 **Program → Submissions → Files** shows each file's approval status and, for a held file, when it is released. Filter by **Waiting on me**, **Pending**, **Approved**, **Denied** or **Embargoed**: the Embargoed tab lists every file the release time is holding right now, approved or not. The list also shows the session's room and time and who last changed the file. The session's **Files** tab shows the approval status on each file.
 
 ![The Embargoed tab of the Files list with 232 files, where each row shows its status, such as Denied or Pending · Track review, above a badge reading Embargoed until Nov 10, 2026, 9 AM PST](/images/kb/file-approvals-files-list.png)
+
+## Hold files from evaluators
+
+By default, evaluators who see uploaded files on their submissions (an evaluation plan with **Include uploaded files** on) see a file as soon as it is uploaded, approved or not. To keep files away from them until they pass review, open the workflow builder and turn on **Hold files from evaluators until approved**. It is on for a new workflow and off for a workflow saved before the setting existed.
+
+- **Session files.** Evaluators see only approved files. While a new version of an approved file waits for review, they keep seeing the approved one.
+- **Form files.** Evaluators see an empty field until the file is approved. A denied file is never shown to them.
+
+The hold covers every place an evaluator reads a submission: the submission's fields and **Uploaded files**, related sessions, the round list and its search and filters, public voting, the legacy **My Evaluations** page, and the submission an AI evaluator is given. Evaluators are told a file was uploaded once it is approved, not before. Admins still see every file on the session and on **Publish → Approvals**.
+
+In the review drawer and the queue, a held file shows **Hidden from evaluators**. The workflow card on the **Workflows** tab shows **Hidden from evaluators until approved** as **On** or **Off**.
+
+<Note>
+The hold applies to evaluation plans in the event. Interest form evaluation plans in the Speaker CRM and awards reviewers are not covered.
+</Note>
+
+## Review files from submission forms
+
+Files and videos people upload in a submission form's file fields (for example, an abstract video) can have their own review, separate from the submission's status: a video can be waiting for approval while its abstract is already being scored.
+
+<Steps>
+
+<Step title="Set up the Form files workflow">
+
+Go to **Publish → Approvals → Workflows**. Next to the **Session files** card, the **Form files** card covers files uploaded in submission forms. Click **Set up workflow**. The **Form files review workflow** builder has the same steps, reviewers, **Approval needed from**, due times, new-version rule and reminders as the session files workflow. **Applies to** is every new file in a submission form; **Limit to some files** narrows it. Release times and the routing test apply to session files only, so the form files builder does not show them.
+
+</Step>
+
+<Step title="Choose what evaluators see">
+
+Leave **Hold files from evaluators until approved** on so evaluators see an empty field until a file is approved. Turn it off and evaluators see form files as they are uploaded, while your team still reviews them.
+
+</Step>
+
+<Step title="Flag long videos (optional)">
+
+Enter a number of minutes in **Flag videos longer than (minutes)**, from 1 to 600, or leave it empty for no limit. See [Flag long videos](#flag-long-videos).
+
+</Step>
+
+</Steps>
+
+Conditions for steps, routes and **Applies to** can check the **Form field**, the **File format**, **Uploaded by**, **Video length**, and the session's **Session track**, **Session format**, **Session level** and **Session sponsor tier**.
+
+A file enters review when it is saved in a form field, from the submission form, the session page, an import or the Public API. Saving the same file again does nothing. Replacing it with a different file starts the review again, from the step chosen under **On a new version, restart from**.
+
+To follow one submission, open the session's **Files** tab: **Form files in review** lists its form files with their status, length and whether they are hidden from evaluators, and **Review** opens the same drawer as the queue.
+
+### Flag long videos
+
+When **Flag videos longer than (minutes)** is set, Sessionboard measures each uploaded video and shows its length on the review card and in the queue, for example **10:12 · over 8 min** when it is longer than the limit. While it measures, the card shows **Measuring length**. A video that can't be measured shows **Length not measured**.
+
+To send long videos to someone else, add a **Video length** condition to a step or a route: **Longer than the limit**, **Within the limit** or **Not measured**. A workflow that uses it waits until the video is measured before its first step starts (the drawer says **Measuring the video. Review starts once its length is known.**). If the video can't be measured, review goes ahead with the length treated as **Not measured**.
+
+### Moderate a file
+
+The review drawer's **Moderate this file** section works for session files and form files:
+
+- **Comment** adds a note to the file's history with **Add comment**. Your team sees it; the person who uploaded the file does not. Reviewers of the file and admins who can edit session files can comment.
+- **Upload new version** puts a corrected file in its place and starts review again. For a session file it adds the next version, as uploading on the session's **Files** tab would. For a form file it replaces the file in the submission's form field. Only admins who can edit session files see it.
+
+To download the file, use the preview. To ask the uploader for changes, use **Deny** with a note.
 
 ## What speakers see
 
