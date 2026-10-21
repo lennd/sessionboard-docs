@@ -4002,15 +4002,7 @@
         "who_should_get_it": "Customers with Approvals enabled, particularly those running press embargoes or strict content-release workflows.",
         "staff_path": "Event → Program → Files; Event → Approvals drawer",
         "gotchas": "CDN URLs that were already copied before this deploy remain valid until the underlying object is moved to private storage (a separate infrastructure follow-up). Office file previews in the Approvals drawer are temporarily unavailable for held files. Signed URLs expire in 6 hours — reports that include related_content will show expiring links for held files instead of permanent CDN URLs.",
-        "talk_track": "Held files now only leave the API as a signed, 6-hour link — no permanent CDN URL, S3 key or Filestack handle is returned for any pending, denied or embargoed file. The public Companion hub omits them entirely. Approved files are completely unchanged.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The guide should note that held files are served via a signed 6-hour link (not a permanent CDN URL), that the public Companion hub omits held files, that Office file previews in the Approvals drawer are unavailable for held files, and that signed links expire after 6 hours requiring a page refresh.",
-          "why_use_it": "Approvals lets you gate session files behind a review step so that pending, denied or embargoed content stays private until you release it. Reviewers see files through a secure, time-limited link, the public Companion hub shows only approved content, and speakers see their own files only after approval. Use it whenever you need to control exactly when and to whom session files become visible — for press embargoes, multi-stage review, or compliance workflows.",
-          "at": "2026-10-21T05:46:45.641Z"
-        }
+        "talk_track": "Held files now only leave the API as a signed, 6-hour link — no permanent CDN URL, S3 key or Filestack handle is returned for any pending, denied or embargoed file. The public Companion hub omits them entirely. Approved files are completely unchanged."
       },
       "shipped": {
         "prs": [
@@ -4025,6 +4017,64 @@
         },
         "announced_at": null,
         "emailed_at": "2026-10-21"
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "approvals-held-files-removed-from-integrations",
+      "title": "Approvals: a file that is held again is removed from integrations at the next sync",
+      "summary": "When a file an integration already received is held again — reverted to pending, denied, put under a later release time or an extra hold, or because **Approvals** was switched on — it is now removed at the next sync: deleted from the session in **Cvent**, **Bizzabo**, **ASP**, **Grip** and **Swoogo**, and unlinked from the session in **Swapcard**. It is added back once it is approved and released. While a new version waits for review, the approved earlier version keeps syncing.",
+      "article": "/sessions/file-approvals#hold-files-until-a-release-time",
+      "related": [
+        "/sessions/file-approvals#turning-it-off"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "approvals"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Program → Files; Program → Sessions (Related Content); Approvals drawer; Ready Room; Reviewer evaluation plans"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "reviewer",
+        "speaker"
+      ],
+      "use_case": "Events that sync session files to Cvent, Bizzabo, ASP, Grip, Swoogo or Swapcard can tighten a release time or revert an approval after a file went out, and the destination follows.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "No cleanup needed: none of the files held in production had been sent to an integration."
+        },
+        "when_to_bring_up": "When a customer on Approvals syncs session files to a registration or event-app platform and asks what happens to a file they un-approve or embargo after it synced.",
+        "who_should_get_it": "Approvals beta customers with a Cvent, Bizzabo, ASP, Grip, Swoogo or Swapcard connection (Advertising Week syncs to Cvent).",
+        "staff_path": "Event → Program → Files; Event → Approvals drawer",
+        "gotchas": "CDN URLs that were already copied before this deploy remain valid until the underlying object is moved to private storage (a separate infrastructure follow-up). Office file previews in the Approvals drawer are temporarily unavailable for held files. Signed URLs expire in 6 hours — reports that include related_content will show expiring links for held files instead of permanent CDN URLs.",
+        "talk_track": "Un-approve or embargo a file after it synced and the integration drops it on the next sync."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4674"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
       },
       "ideas": [],
       "media": [],
@@ -4427,8 +4477,8 @@
     },
     {
       "id": "files-list-sort-room-filter-url-state",
-      "title": "Sort, filter by room, and share a deep link on the Files list",
-      "summary": "The event **Files** list now supports column-header sorting, a **Room** filter, and URL-persisted state. Click any sortable column header — **File Name**, **Session ID**, **Session Name**, **Room**, **Session Date/Time**, or **Last Updated** — to sort ascending or descending, or clear the sort. Use the **Room** filter in the filter bar (including a **No room** option) to narrow results. The search placeholder now reads \"Search file, session, session ID or room\". All search terms, sort choices, and filter selections are saved in the URL and survive a page reload or a shared link.",
+      "title": "Files list: search, sort and filter by session ID, room, session name, file name and last updated",
+      "summary": "In the **Files** list view, select a column header — **File Name**, **Session ID**, **Session Name**, **Room**, **Session Date/Time** or **Last Updated** — to sort ascending or descending across every page, not just the one on screen; Session IDs sort in number order (SESS-2 before SESS-10). Search also matches the Session ID (`SESS-2` or `2`), the session's client ID and the room. A new **Room** filter (including **No room**) combines with the other filters. Search, sort and filters stay in the page address, so a reload or a shared link opens the same list.",
       "article": "/sessions/enable-upload-download-content#viewing-submitted-files",
       "related": [
         "/sessions/file-approvals"
@@ -4451,7 +4501,7 @@
       "audience": [
         "organizer"
       ],
-      "use_case": "Events with many rooms — like Advertising Week — can filter the Files list down to a single room and sort by session date to quickly audit which presentations have been uploaded, then share that filtered URL with a colleague without them having to recreate the view.",
+      "use_case": "Producers working through hundreds of session files (Advertising Week asked for exactly this) can find a file by session ID or room and sort by any column, then share the exact view with a teammate.",
       "internal": {
         "cs_action": {
           "kind": "none",
@@ -4461,18 +4511,11 @@
         "who_should_get_it": "Large events with many rooms and high file volumes, such as Advertising Week; any customer using the Files module.",
         "staff_path": "Event → Program → Files",
         "gotchas": "This UI requires the matching API release for SB-10292 to be in production; the UI sends sortDirection and rooms parameters that the previous API version rejects with a 400 error. Confirm the API PR is deployed before pointing customers to this feature.",
-        "talk_track": "You can now click any column header on the Files list to sort, pick a room from the filter bar to narrow the list, and copy the URL to share that exact view with anyone on your team.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The guide should document the column-header sort controls, the Room filter (including the No room option), and the URL-persistence behaviour on the event Files list.",
-          "why_use_it": "The Files list gives organizers a single place to see every file submitted across all sessions in an event. Sorting by column and filtering by room lets you zero in on exactly the files you need to review — whether you are chasing missing decks for a specific track or checking what came in overnight. Sharing the URL hands a pre-filtered view to a colleague or vendor without any extra steps.",
-          "at": "2026-10-21T07:58:48.321Z"
-        }
+        "talk_track": "You can now click any column header on the Files list to sort, pick a room from the filter bar to narrow the list, and copy the URL to share that exact view with anyone on your team."
       },
       "shipped": {
         "prs": [
+          "lennd/sessionboard-web-api#4674",
           "lennd/sessionboard-web-ui-v2#1111"
         ],
         "docs_only": false,
@@ -4616,71 +4659,6 @@
       "ideas": [],
       "media": [],
       "gated": null
-    },
-    {
-      "id": "files-list-search-sort-room-filter",
-      "title": "Search, sort and filter by room on the Files list",
-      "summary": "The **Files** list now supports sorting by **File Name**, **Session ID**, **Session Name**, **Room**, **Session Start**, and **Last Updated** (ascending or descending), a **Room** filter to narrow files to one or more rooms (or sessions with no room), and keyword search that also matches the session display ID (e.g. \"SESS-2\"), the client session ID and the room name. Each row in the list also exposes the room, session start time, client session ID and display ID. Both the event-level and org-level Files lists support the new options.",
-      "article": "/sessions/enable-upload-download-content",
-      "related": [
-        "/sessions/file-approvals",
-        "/sessions/program-settings"
-      ],
-      "kind": "improved",
-      "module": "Program",
-      "features": [
-        "approvals"
-      ],
-      "availability": "everyone",
-      "enable": {
-        "how": "default_on",
-        "path": null
-      },
-      "where": {
-        "scope": "both",
-        "path": "Program → Files"
-      },
-      "permissions": [],
-      "audience": [
-        "organizer"
-      ],
-      "use_case": "Event teams managing large file libraries can quickly find all slides for a specific room or track down a file by session ID or name without scrolling through hundreds of rows, saving time during pre-event content reviews.",
-      "internal": {
-        "cs_action": {
-          "kind": "none",
-          "note": null
-        },
-        "when_to_bring_up": "A customer asks how to find or sort files by room or session ID on the Files page.",
-        "who_should_get_it": "Any event with a large number of submitted files, especially those using room-based content review workflows.",
-        "staff_path": "Event → Program → Files",
-        "gotchas": "Blank values (e.g. sessions with no room assigned) sort last. The UI PR must be deployed after this API PR or the new sort/filter parameters will return a 400 error.",
-        "talk_track": "You can now sort the Files list by room, session name, session ID or last updated, and filter down to a single room — great for AV teams or content reviewers working room by room.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The guide should document the new sort options (File Name, Session ID, Session Name, Room, Session Start, Last Updated), the Room filter, and the expanded search behaviour that matches session display IDs and room names.",
-          "why_use_it": "The Files list gives organizers a single place to see every file submitted across all sessions. Sorting by room, session start time or file name lets you work through content in the order that matches your review workflow, and the room filter lets you focus on one venue or stage at a time. Search matches session IDs and room names so you can jump straight to a file even when you only know part of the context.",
-          "at": "2026-10-21T08:14:07.914Z"
-        }
-      },
-      "shipped": {
-        "prs": [
-          "lennd/sessionboard-web-api#4674"
-        ],
-        "docs_only": false,
-        "pending": null,
-        "live": {
-          "us": "2026-10-21",
-          "eu": "2026-10-21",
-          "me": "2026-10-21"
-        },
-        "announced_at": null,
-        "emailed_at": "2026-10-21"
-      },
-      "ideas": [],
-      "media": [],
-      "gated": "feature:approvals (beta)"
     },
     {
       "id": "ai-mode-conversation-history",
