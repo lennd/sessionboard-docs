@@ -71,9 +71,13 @@ export const isValidEmail = (email) => EMAIL_RE.test(email) && email.length <= E
  *   sends `t0`; a JSON submit without one is a bot. The no-JS form post has
  *   no `t0` and is not penalised.
  * - With `t1`, a `t0` after `t1` is impossible for a real form: a bot.
- * - Without `t1` (an older cached script), elapsed is `now - t0`; a `t0`
- *   in the future by more than MAX_CLOCK_SKEW_MS is a bot, within it the
- *   fill time cannot be measured and the visitor gets the benefit.
+ * - Without `t1`, elapsed is `now - t0` on the Worker's clock. For a JSON
+ *   submit (`requireT0`) that is strict: the current script always sends
+ *   `t1`, so a JSON body with `t0` and no `t1` is measured against our clock
+ *   and a `t0` at or after "now" is too fast (SB-10408: `t0 = now`, no `t1`
+ *   was relayed because a slightly-ahead `t0` got the skew benefit).
+ *   Otherwise a `t0` in the future by more than MAX_CLOCK_SKEW_MS is a bot,
+ *   and within it the visitor gets the benefit.
  * - A `t0` older than MAX_T0_AGE_MS is a tab left open: not counted.
  */
 export const submittedTooFast = (t0, now = Date.now(), { t1, requireT0 = false } = {}) => {
@@ -85,7 +89,7 @@ export const submittedTooFast = (t0, now = Date.now(), { t1, requireT0 = false }
   const hasEnd = t1 !== undefined && t1 !== null && String(t1).trim() !== '' && Number.isFinite(end) && end > 0;
   const elapsed = (hasEnd ? end : now) - start;
   if (elapsed > MAX_T0_AGE_MS) return false;
-  if (elapsed < 0) return hasEnd || -elapsed > MAX_CLOCK_SKEW_MS;
+  if (elapsed < 0) return hasEnd || requireT0 || -elapsed > MAX_CLOCK_SKEW_MS;
   return elapsed < MIN_FILL_MS;
 };
 

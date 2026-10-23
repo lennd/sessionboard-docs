@@ -157,6 +157,8 @@ test('honeypot and too-fast submissions get the normal "check your inbox" and ar
     { email: 'missing@example.com' },
     { email: 'instant@example.com', t0: String(now), t1: String(now) },
     { email: 'future@example.com', t0: String(now + 60_000), t1: String(now) },
+    // SB-10408 — t0 = now with no t1 (QA's console POST) is a bot too.
+    { email: 'no-t1@example.com', t0: String(now) },
   ]) {
     const botFetch = fakeFetch(202, {});
     const r = await run(SUBSCRIBE_PATH, postJson(body), ENV, botFetch);
@@ -197,6 +199,12 @@ test('submittedTooFast trusts only a plausible t0', () => {
   assert.equal(submittedTooFast('', now, { requireT0: true }), true);
   assert.equal(submittedTooFast(undefined, now, { requireT0: true }), true);
   assert.equal(submittedTooFast(undefined, now), false);
+  // SB-10408 — a JSON submit with t0 and no t1 is timed on our clock, strictly.
+  assert.equal(submittedTooFast(String(now), now, { requireT0: true }), true);
+  assert.equal(submittedTooFast(String(now + 400), now, { requireT0: true }), true);
+  assert.equal(submittedTooFast(String(now + 5000), now, { requireT0: true }), true);
+  assert.equal(submittedTooFast(String(now - 400), now, { requireT0: true }), true);
+  assert.equal(submittedTooFast(String(now - 10_000), now, { requireT0: true }), false);
 });
 
 test('the edge rate limiter answers 429 / slow_down per visitor IP and is skipped when unbound', async () => {
