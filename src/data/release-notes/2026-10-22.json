@@ -1,0 +1,198 @@
+{
+  "date": "2026-10-22",
+  "entries": [
+    {
+      "id": "expo-platform-sync-reliability",
+      "title": "ExpoPlatform sync: accurate status, readable errors, and automatic retries",
+      "summary": "The ExpoPlatform sync now reports an honest outcome and shows actionable error details in **History → Integrations**. Syncs that recorded any session error now finish as **Warning** instead of **Success**, so a partially failed run is no longer hidden. Each failed session is listed by name in the sync results modal instead of showing a blank panel or a raw UUID. Error messages are translated into plain language — for example, a session rejected because it has no **Format** (or a Format not synced to Expo) now says exactly that, and timeout or server errors show how many attempts were made. Sessions without a Format are skipped before reaching Expo, stopping the failed requests at the source. Under the hood, session upserts are throttled to 10 concurrent requests and automatically retried up to three times with exponential back-off, reducing failures on large events.",
+      "article": "/apps/expoplatform-integration#frequently-asked-questions",
+      "related": [
+        "/communications/email-sms-history",
+        "/integrations/integration-readiness"
+      ],
+      "kind": "fixed",
+      "module": "Apps",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Apps → ExpoPlatform → History → Integrations → sync results"
+      },
+      "permissions": [
+        "event.integrations.sync"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers running large events on ExpoPlatform can now trust the sync status at a glance — a Warning badge means something needs attention — and the results modal tells them exactly which sessions failed and why, so they can fix the root cause (such as a missing Format) without filing a support ticket.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Syncs that previously showed Success may now show Warning. Customers with monitoring or Slack alerts on sync status should be told to expect Warning when any session fails. The track.failed count no longer inflates for renamed tracks."
+        },
+        "when_to_bring_up": "A customer reports that their ExpoPlatform sync showed Success but sessions were missing, or that the sync results modal was blank.",
+        "who_should_get_it": "Any customer using the ExpoPlatform integration, especially those with large events (hundreds of sessions).",
+        "staff_path": "Event → Apps → ExpoPlatform → History → Integrations → open a sync row → View results",
+        "gotchas": "Syncs now end as Warning (not Success) when any error row is recorded — this is intentional and correct. Large-event syncs will take longer because upserts are capped at 10 in flight; worst case per session is ~127 s across 4 attempts. HTTP 429 (rate-limit) errors are not retried. Calls that create new tracks, tags, session types, or halls/stands never retry to avoid duplicates.",
+        "talk_track": "The sync now tells you exactly which sessions didn't make it to Expo and why — no more blank error panels or misleading Success badges. If a session is missing a Format, the error says so and the session is skipped cleanly. On large events the sync is also more resilient: it retries timeouts and server errors automatically.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should add a section on reading sync results — what Warning status means, how to interpret per-session error messages (especially the Format-required error), and how retries work — so organizers can self-serve when a sync partially fails.",
+          "why_use_it": "null",
+          "at": "2026-10-22T19:54:43.086Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4704"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "hub-blocks-false-unsaved-changes",
+      "title": "Hub content blocks no longer show \"Unsaved changes\" after a save and reload",
+      "summary": "Opening the **Design** tab of a content gallery whose hub blocks contained a non-breaking space, an image, or API-written HTML previously showed **Unsaved changes** immediately after a reload — with no edits made — and saving never cleared it. The header now correctly reads **Saved** after a reload, and real edits still trigger the unsaved-changes indicator as expected.",
+      "article": "/site/content-galleries",
+      "kind": "fixed",
+      "module": "CMS",
+      "features": [
+        "content_galleries"
+      ],
+      "availability": "preview",
+      "enable": {
+        "how": "self_serve",
+        "path": "Get started → Early Access → Preview → Content Galleries"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Content Galleries → [gallery] → Design → Hub content blocks"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers editing hub content blocks can now save and reload without seeing a false \"Unsaved changes\" warning, making it clear when their content is truly saved versus when they have pending edits.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer reports that their content gallery always shows 'Unsaved changes' even after saving, especially when blocks contain images, links, or non-breaking spaces.",
+        "who_should_get_it": "Any customer using Content Galleries with hub content blocks.",
+        "staff_path": "Event → Content Galleries → [gallery] → Design → Hub content blocks",
+        "gotchas": "The false positive was triggered by HugeRTE re-serializing HTML on mount — specifically nbsp characters, self-closing img tags, and block-level newlines. The fix uses DOM-based comparison to ignore these cosmetic differences while still detecting real edits.",
+        "talk_track": "After saving hub content blocks and reloading, the header now correctly shows 'Saved' instead of 'Unsaved changes'. Real edits still prompt you to save.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that the Design tab's save-state indicator reflects actual content changes, and that reloading a gallery with hub blocks will always show \"Saved\" if no edits have been made.",
+          "why_use_it": null,
+          "at": "2026-10-22T14:13:01.381Z"
+        }
+      },
+      "related": [],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1134"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:preview"
+    },
+    {
+      "id": "awards-dateless-round-status",
+      "title": "Awards programs with dateless review rounds no longer reopen when they should be closed",
+      "summary": "A review round without a submission start or end date no longer overrides the awards program's own deadline. The program status is now computed only from rounds that carry dates, falling back to the program-level deadline when no dated rounds exist — so a closed program stays closed for guests and signed-in site visitors alike.",
+      "article": "/awards/getting-started#program-statuses--lifecycle",
+      "related": [
+        "/awards/managing-submissions-reviewers-rounds",
+        "/awards/setting-up-your-sessionboard-site"
+      ],
+      "kind": "fixed",
+      "module": "Awards",
+      "features": [
+        "awards"
+      ],
+      "availability": "add_on",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Awards → Program → Site"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Organizers who add a dateless review round after closing submissions no longer have to worry that the program will silently reopen for submitters; the deadline they set is respected.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer reports that their awards program appeared open to submitters after they had closed it and added a review round.",
+        "who_should_get_it": "Any customer using Awards with review rounds that lack submission dates.",
+        "staff_path": "Awards → Program → Site → guest form status",
+        "gotchas": "The fix applies to both the guest API and the signed-in site list; no configuration change is needed.",
+        "talk_track": "Adding a review round without dates no longer reopens a closed program — the program deadline is what controls access when no dated rounds exist.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that program open/closed status is derived from dated rounds only, falling back to the program deadline when no rounds carry dates, so adding a dateless round does not affect submitter-facing availability.",
+          "why_use_it": "null",
+          "at": "2026-10-22T14:13:19.254Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4701"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    }
+  ]
+}

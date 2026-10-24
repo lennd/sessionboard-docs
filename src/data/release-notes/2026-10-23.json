@@ -271,6 +271,741 @@
       },
       "ideas": [],
       "media": []
+    },
+    {
+      "id": "my-reviews-hide-empty-instructions",
+      "title": "My Reviews card no longer shows \"View instructions\" when there are no instructions",
+      "summary": "The **View instructions** link on the **My Reviews** card is now hidden when an evaluation plan has no instructions (empty, null, or blank rich-text content such as `<p></p>`). Previously the link appeared even with no instructions to show, opening an empty dialog.",
+      "article": "/evaluations/how-to-evaluate-sessions#my-reviews",
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "sessions_v2"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Portal → My Reviews"
+      },
+      "permissions": [],
+      "audience": [
+        "reviewer"
+      ],
+      "use_case": "Reviewers no longer see a confusing \"View instructions\" link that opens a blank dialog when the organizer left the instructions field empty on an evaluation plan.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A reviewer or organizer reports that the View instructions link on the My Reviews card opens an empty dialog.",
+        "who_should_get_it": "Any customer using evaluation plans where instructions are optional.",
+        "staff_path": "Portal → My Reviews card → View instructions",
+        "gotchas": "The fix applies to the My Reviews card only; the review queue and submission page already hid the link correctly before this change.",
+        "talk_track": "The View instructions link now only appears when the plan actually has instructions, so reviewers won't be confused by a link that leads nowhere.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that the View instructions link is only shown when the evaluation plan has visible instruction text.",
+          "why_use_it": "null",
+          "at": "2026-10-23T21:28:55.847Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-org-portal#224"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "evaluation-plan-copy-filter-fixes",
+      "title": "Evaluation plan filters now carry over correctly when copying from the library or converting to v2",
+      "summary": "Three bugs in evaluation plan management are fixed. First, copying a v1 plan from the library into a new event now preserves its scope filters (Status, Track, Tags, Format, Language, Level rules); option values such as tracks and tags are remapped to the destination event's matching rows, and any filters that cannot be remapped are recorded on the plan as an **Unmapped filters** report rather than silently dropped. Second, the plan editor now shows the carried-over filters and the conversion report after a **Convert to v2** or library import; dismissing the banner clears the report. Third, changes to **Keep reviews visible after the deadline** on a round now appear in the event's **History** audit trail instead of being silently lost.",
+      "article": "/evaluations/evaluation-plans",
+      "related": [
+        "/evaluations/setting-up-round-based-evaluations",
+        "/get-started/navigate-evaluation-plans"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "sessions_v2"
+      ],
+      "availability": "add_on",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Program → Evaluations → [plan] → Filters / History"
+      },
+      "permissions": [
+        "event.evaluation_plans.read",
+        "event.evaluation_plans.update"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Teams that reuse evaluation plans across events — especially those with status or track-based scope rules — can now copy from the library or convert a v1 plan to v2 and trust that all filters arrive intact, with a clear report of anything that needed remapping. Admins can also confirm in History that round deadline-visibility settings were changed and by whom.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "US prod had 28 library plan copies ever; only 1 (a CS org QA plan) had filters — no backfill needed. EU had 1 copy with 0 filters. Customers who copy plans with Status/Track/Tag filters going forward will now see the unmapped-filters report on the plan after import."
+        },
+        "when_to_bring_up": "A customer reports that scope filters disappeared after copying an evaluation plan from the library or converting a v1 plan to v2.",
+        "who_should_get_it": "Any customer using Sessions 2.0 evaluation plans who copies plans across events or converts v1 plans.",
+        "staff_path": "Event → Program → Evaluations → [plan] → Filters panel / History tab",
+        "gotchas": "The 'Keep reviews visible after the deadline' change is now written to Audit_Trail (History), not the Activity log. The activity-log worker is not running in any environment; other ActivityLoggerFactory writers still have the same dead pipeline — flagged as an open item for engineering.",
+        "talk_track": "When you copy a plan from the library, any Status, Track, Tag, Format, Language, or Level filters now travel with it. Tracks and tags are matched by name to the destination event; anything that can't be matched is listed in an unmapped-filters report right on the plan so you know exactly what to fix.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should add a section explaining the conversion report (unmapped filters banner) that appears after a library import or Convert to v2, how to dismiss it, and how filter remapping works across events.",
+          "why_use_it": "null",
+          "at": "2026-10-23T21:26:54.072Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4712"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "contracts-qa-sweep-w6",
+      "title": "Contracts: six signing-page and admin UI fixes (accessibility, i18n, layout, contrast)",
+      "summary": "Six quality fixes across the Contracts feature ship together: (1) Clicking **Upload** in the Filestack file picker no longer closes the **Add Contract** dialog — the dialog stays open with the file name and title intact. (2) The **Skip to main content** link on the signing page is now translated into the signer's chosen language. (3) The signer's language choice is remembered across page reloads (stored as `sb_sign_lng`); a `?lng=` URL parameter still takes precedence and is rewritten when the picker changes it. (4) The signing page no longer scrolls horizontally at 320 px viewports — **Decline to sign** and **Signing progress** fit within the screen. (5) The contract template editor switches to a dark toolbar skin when the admin UI is in dark mode, while the document canvas stays white; four accessibility violations (unnamed font-size input, incorrect `aria-level` on path buttons, resize handle role, unlabelled **+** button in the header) are resolved. (6) The **Contracts** banner step text and **SIGNED** chip now meet WCAG AA contrast (≥ 4.5:1) in both light and dark themes, and the banner has a proper dark-mode style. Admin UI strings (variable names, dates, revision labels, consent placeholder, editor toolbar tooltips) are now translated in German, Spanish and French.",
+      "article": "/speaker-crm/contracts",
+      "related": [
+        "/speaker-crm/contract-templates",
+        "/speaker-crm/contract-template-variables",
+        "/participants/sign-a-contract"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "contracts"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Contracts → Add Contract / Templates / Signing page"
+      },
+      "permissions": [
+        "org.contracts.create",
+        "org.contracts.update",
+        "org.contracts.read"
+      ],
+      "audience": [
+        "organizer",
+        "speaker",
+        "participant"
+      ],
+      "use_case": "Teams sending contracts to speakers and participants get a more reliable upload flow, a signing page that works at any screen width and in any supported language, and an admin template editor that is fully usable in dark mode — reducing friction for both the organizer setting up contracts and the signer completing them.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer reports that the Add Contract dialog closes when they try to upload a PDF, that the signing page looks broken on a phone, or that the template editor is hard to use in dark mode.",
+        "who_should_get_it": "Any customer using the Contracts beta, especially those whose signers use non-English languages or mobile devices.",
+        "staff_path": "Org → Contracts; Org → Contracts → Templates → [template] → editor",
+        "gotchas": "The built-in consent text remains English for all signers regardless of their language choice — this is a deliberate product decision pending a legal review of per-locale consent copy. The admin UI now labels it as 'Default text (English)' so organizers are aware.",
+        "talk_track": "The upload-dialog fix means organizers can attach PDFs without the form disappearing. The signing page now works at 320 px and remembers the signer's language across reloads. The template editor respects dark mode and passes WCAG AA contrast checks.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that the signing page remembers the signer's language choice across reloads (stored in browser local storage as sb_sign_lng) and that the built-in consent text is always delivered in English regardless of the signer's language.",
+          "why_use_it": "Contracts lets you send, collect and track legally binding agreements directly from Sessionboard, without switching to a separate e-signature tool. Signers receive a dedicated signing page they can complete from any device, and organizers track status across all contacts from a single view. The template editor supports rich formatting and merge variables so each contract is personalised to the recipient.",
+          "at": "2026-10-23T20:26:01.909Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1144"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "subsession-participant-email-campaigns",
+      "title": "Email subsession participants from the Sessions grid, with per-row removal and history columns",
+      "summary": "From **Sessions / Submissions → Send Emails → Subsession participants**, choose **Choose subsession participants** to open the campaign wizard scoped to the selected parent sessions (up to 500). In the review step, remove individual (recipient, parent) pairs with the ✕ on each row; **Removed count** and **Restore all** cover both recipient lists. **Preview as…** resolves one entry per recipient–parent pair. In **History → View Recipients**, two new columns — **Parent session** and **Subsession** — appear on campaigns that used this mode. Requires the `campaigns_create` permission.",
+      "article": "/communications/email-campaigns",
+      "related": [
+        "/sessions/create-a-subsession",
+        "/communications/email-sms-history"
+      ],
+      "kind": "new",
+      "module": "Communications",
+      "features": [
+        "email_campaigns",
+        "sessions_v2"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Sessions / Submissions → Send Emails → Subsession participants · Choose subsession participants"
+      },
+      "permissions": [
+        "event.emails.campaigns_create"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Teams running multi-track programs with subsessions can email only the participants of specific subsessions — not the whole session roster — and fine-tune the list by removing individual recipient–parent pairs before sending.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer asks how to email only the participants of specific subsessions, or complains that session-level sends reach too broad an audience.",
+        "who_should_get_it": "Any event team using subsessions (Sessions 2.0) who needs targeted post-acceptance communication.",
+        "staff_path": "Event → Sessions / Submissions → Send Emails → Subsession participants",
+        "gotchas": "Selecting more than 500 parent sessions is blocked with an error — the list is never silently trimmed. The entry point requires campaigns_create permission.",
+        "talk_track": "Select the parent sessions you care about, choose Subsession participants, and the wizard opens already scoped to those sessions. Remove any individual recipient–parent pairs you don't want to hit, preview per pair, then send. History shows Parent session and Subsession columns so you can audit exactly who got the email.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The email-campaigns guide should add a section explaining the Subsession participants recipient mode, the 500-session limit, per-row exclusion, and the History recipient columns it produces.",
+          "why_use_it": "Email campaigns let you reach exactly the right slice of your program — speakers, submitters, or participants — without exporting to a spreadsheet. The subsession participant mode goes one level deeper, letting you target people by the specific subsession they are attached to, so a message about a workshop track reaches only that workshop's participants. Per-row removal and the History recipient columns give you a precise audit trail of who received what and under which parent session.",
+          "at": "2026-10-23T19:26:40.695Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1142"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "file-request-decision-emails",
+      "title": "Email notifications when a file request is approved or denied",
+      "summary": "When an admin sets a file revision's status to **Approved** or **Denied**, the uploader (or the request contact's portal users when an admin uploaded) now receives a system email notifying them of the decision. The emails are off by default and can be turned on per event in **Email Templates → System**.",
+      "article": "/portals/collect-documents",
+      "related": [
+        "/communications/automated-emails",
+        "/sessions/file-approvals"
+      ],
+      "kind": "new",
+      "module": "Communications",
+      "features": [
+        "email_campaigns"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "setting",
+        "path": "Event → Communications → Email Templates → System → File request approved / File request denied → Enable"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event → Communications → Email Templates → System"
+      },
+      "permissions": [
+        "event.emails.manage_email_templates"
+      ],
+      "audience": [
+        "organizer",
+        "speaker",
+        "participant"
+      ],
+      "use_case": "Teams that collect files through file requests can automatically notify submitters the moment their file is approved or denied, removing the need for manual follow-up emails and keeping participants informed without extra admin effort.",
+      "internal": {
+        "cs_action": {
+          "kind": "must_enable",
+          "note": "Emails are defaultEnabled: false — no event starts sending them automatically. A CS or admin must turn on 'File request approved' and 'File request denied' in Email Templates → System for each event that wants them."
+        },
+        "when_to_bring_up": "When a customer asks how to notify speakers or participants after reviewing uploaded files.",
+        "who_should_get_it": "Any customer using file requests with an approval workflow, especially those who previously had to send manual follow-up emails after approving or denying revisions.",
+        "staff_path": "Event → Communications → Email Templates → System → File request approved / File request denied",
+        "gotchas": "These are for legacy File Requests only. The Approvals engine (SB-10117) already sends its own decision emails — enabling these on an Approvals-based workflow would double-notify.",
+        "talk_track": "Go to Email Templates → System, find 'File request approved' and 'File request denied', and turn them on. From that point, anyone who uploads a file will get an email the moment you approve or deny their revision.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The guide should note that file request approval/denial emails exist as opt-in system emails and explain how to enable them in Email Templates → System.",
+          "why_use_it": "File request notifications close the feedback loop between organizers and participants: instead of leaving submitters to wonder whether their upload was accepted, the system sends a clear approval or denial email as soon as an admin acts on the revision. You control whether these emails go out at all — they are off by default — so you can turn them on only for the events and workflows where automated decisions make sense.",
+          "at": "2026-10-23T19:24:32.873Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4710"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "content-gallery-mobile-filter-search-lang-fixes",
+      "title": "Content gallery mobile filter sheet, search box padding, and page language fixed at 320 px",
+      "summary": "Three visual bugs in the public content gallery are resolved. The **filter sheet** (the only way to reach Day chips on a phone) now has a solid background instead of being transparent, and chip focus rings are visible again. The **search box** placeholder text is no longer obscured by the search icon at narrow widths, and the sort and per-page selects now receive their intended right padding. The page `lang` attribute now updates to match the detected language (de, es, fr, etc.), satisfying screen-reader and browser-translation expectations.",
+      "article": "/site/content-galleries",
+      "related": [],
+      "kind": "fixed",
+      "module": "CMS",
+      "features": [
+        "content_galleries"
+      ],
+      "availability": "preview",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Content Galleries → public gallery page (mobile, 320 px)"
+      },
+      "permissions": [],
+      "audience": [
+        "participant"
+      ],
+      "use_case": "Attendees browsing the public session gallery on a phone can now open the filter sheet, read the full search placeholder, and use Day chips without the filter list rendering over the session list. Non-English visitors also get correct browser-translation and screen-reader language detection.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer reports that the gallery filter sheet looks broken or transparent on mobile, or that the search box placeholder is cut off.",
+        "who_should_get_it": "Any customer using Content Galleries with a public-facing gallery page.",
+        "staff_path": null,
+        "gotchas": "All three fixes are deployed together; no separate toggle. The lang-attribute fix applies to all gallery language variants (de, es, fr).",
+        "talk_track": "Three small but noticeable mobile bugs in the public gallery are fixed: the filter sheet is now opaque, the search box shows its full placeholder, and the page language attribute is correct for non-English visitors.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that the filter sheet is the primary way to access Day chips on narrow mobile viewports, and that the gallery respects the visitor's detected language for accessibility.",
+          "why_use_it": "null",
+          "at": "2026-10-23T18:10:12.760Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-org-portal#219"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:preview"
+    },
+    {
+      "id": "embed-multilingual-tag-room-translation",
+      "title": "Tags and room names now translate correctly on multilingual embeds",
+      "summary": "On embeds with a `?language=` parameter, tag chips and room/location labels now appear in the selected language instead of always showing the default language. The translated names appear in list rows, session popups, speaker-detail session lists, and the Rooms view. The plain-text fallback is used when no translation exists for a tag or room.",
+      "article": "/sessions/embeds",
+      "related": [
+        "/settings/language-translation-variant"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "embeds_v2",
+        "languages"
+      ],
+      "availability": "on_request",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Program → Embeds → (any embed with ?language= parameter)"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Events running multilingual embeds — such as a German-language agenda widget — can now show translated tag and room names to attendees, matching the rest of the translated content already displayed in the embed.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer using language variants reports that tag or room names on their embed are not translating.",
+        "who_should_get_it": "Customers with multilingual events who use embeds and have translation maps configured for Tags or Location fields.",
+        "staff_path": "Event → Program → Embeds → open embed → preview with ?language=<code>",
+        "gotchas": "Translations only appear if the event has option_translations configured for the Tags and Location fields. Events without translation maps see no change.",
+        "talk_track": "Tag chips and room labels on your embed now follow the same language setting as tracks and formats — visitors using ?language=de (or any other code) see everything translated consistently.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that Tags and Location field values are translated in the embed payload when language variants are configured, alongside Tracks, Formats, Levels, and Languages.",
+          "why_use_it": "Agenda and speaker embeds let you publish a live, filterable program on your own website without rebuilding it by hand. When your event runs in multiple languages, the embed respects the visitor's chosen language across all labelled content — tracks, formats, levels, languages, tags, and rooms — so attendees always see a consistent, localised view of the program.",
+          "at": "2026-10-23T18:08:07.597Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4709"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "saved-views-permission-controls",
+      "title": "Saved views menu respects edit, create, and delete permissions",
+      "summary": "In the **Sessions**, **Submissions**, and **Abstracts** saved views menu, **Save Changes** and **Rename** are now hidden for roles without \"Can edit views\"; **Save as New View** is hidden without \"Can create views\"; and **Delete** is hidden without \"Can delete views\". Users with none of these permissions see a short note that any changes they make are temporary. **Reset** and switching between views remain available to everyone.",
+      "article": "/reporting/dashboard-views#saved-views",
+      "related": [
+        "/event-team/invite-manage-event-team-members"
+      ],
+      "kind": "improved",
+      "module": "Program",
+      "features": [
+        "sessions"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Program → Sessions (or Submissions / Abstracts) → Saved Views menu"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "reviewer"
+      ],
+      "use_case": "Teams that share a Sessionboard event with reviewers or coordinators can now prevent those roles from accidentally overwriting or deleting shared saved views, while still letting them switch between views and reset filters.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer asks how to stop reviewers or coordinators from modifying shared saved views in Sessions or Abstracts.",
+        "who_should_get_it": "Any org that shares event access with reviewers, coordinators, or vendors who should not alter shared views.",
+        "staff_path": "Event → Program → Sessions → Saved Views dropdown",
+        "gotchas": "Permission enforcement is also applied on the API side (companion PR web-api#4706); both PRs must be live for full enforcement.",
+        "talk_track": "Roles without 'Can edit views' will still see and switch between all saved views — they just won't be able to overwrite or delete them.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The saved-views guide should document the three view-level permissions (edit, create, delete) and explain what each role sees when a permission is absent, including the \"changes are temporary\" notice.",
+          "why_use_it": "Saved views let your team store a named combination of filters, columns, and sort order so anyone on the team can jump straight to the slice of sessions they care about. Permission controls on the saved views menu mean you can designate who is allowed to create, rename, or delete shared views, keeping your curated views stable across a large team.",
+          "at": "2026-10-23T17:47:01.382Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1139"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "marketing-session-view-permissions",
+      "title": "Granular permissions for saved session views and Advocacy/Transcribe actions",
+      "summary": "Event team roles now have three dedicated **Sessions** permissions — **Can create views**, **Can edit views**, and **Can delete views** — and a new **Marketing** permission group with seven switches: **Can view Advocacy**, **Can create Advocacy**, **Can edit Advocacy**, **Can delete Advocacy**, **Can notify Advocacy**, **Can export Advocacy**, and **Can manage transcription settings**. All switches appear in **Event Team → Permissions** and default to on for every existing role. Turn **Can edit views** off to prevent a role from renaming or saving changes to saved views in the Sessions grid; turn **Can view Advocacy** off to block access to Advocacy campaigns; turn **Can manage transcription settings** off to block changes to Live Transcribe configuration.",
+      "article": "/event-team/invite-manage-event-team-members#custom-roles",
+      "related": [
+        "/marketing/advocacy",
+        "/marketing/live-transcribe",
+        "/reporting/dashboard-views"
+      ],
+      "kind": "new",
+      "module": "Event team",
+      "features": [
+        "marketing_advocacy",
+        "marketing_transcribe",
+        "sessions"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event Team → Permissions → Sessions / Marketing"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Teams that include sponsors, evaluators, or coordinators who should be able to switch between saved views but not create or rename them can now lock that down per role. Similarly, orgs that want to restrict who can run Advocacy campaigns or change Live Transcribe settings can do so without removing the person from the event team entirely.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "All 7 Marketing permissions and all 3 Sessions view permissions are seeded ON for every existing role, so no one loses access on deploy. Two US event team members (out of 701 on events with live campaigns) who had no role at all will lose Advocacy access — accepted risk per engineering review."
+        },
+        "when_to_bring_up": "A customer asks how to prevent certain roles from editing saved views, or wants to restrict who can manage Advocacy campaigns or Live Transcribe settings.",
+        "who_should_get_it": "Any customer using Advocacy campaigns or Live Transcribe who has mixed-trust event teams (e.g. sponsors, evaluators, or coordinators alongside admins).",
+        "staff_path": "Event → Event Team → Permissions → Sessions (view permissions) or Marketing (advocacy/transcribe permissions)",
+        "gotchas": "The two US team members with no role on events with live campaigns will lose Advocacy access after deploy. The Marketing permission group appears on every event regardless of whether Advocacy or Live Transcribe is enabled for that org.",
+        "talk_track": "You can now control exactly who on your event team can create, rename, or delete saved views in Sessions, and who can access Advocacy campaigns or change transcription settings — all from Event Team → Permissions.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should document the three new Sessions view permissions and the new Marketing permission group with its seven switches, including what each permission gates and the default-on behaviour for existing roles.",
+          "why_use_it": "Sessionboard's role permissions let you define exactly what each team member can see and do inside an event. The Sessions view permissions prevent lower-trust roles from cluttering the shared saved-view list, while the Marketing permission group gives admins control over who can launch Advocacy campaigns, send notifications to advocates, export recipient lists, and change Live Transcribe settings — all without touching the role's access to other parts of the event.",
+          "at": "2026-10-23T17:45:18.522Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4706"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "contact-honorific-clear-fix",
+      "title": "Clearing a contact's Honorific or Salutation now saves correctly",
+      "summary": "When an organizer opened a contact's name in the event or org contact drawer, cleared the **Honorific** or **Salutation** field, and clicked **Done → Save Changes**, no request was sent and the old value persisted. The field now sends a clear request so the honorific is removed after saving and on reload.",
+      "article": "/contacts/contact-profile",
+      "kind": "fixed",
+      "module": "CRM",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Contacts → [contact record] → name → Honorific / Salutation → Done → Save Changes"
+      },
+      "permissions": [
+        "event.contacts.update",
+        "org.contacts.update"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who need to remove an incorrect or outdated honorific from a contact record can now do so reliably from the contact drawer without the old value silently persisting.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer reports that clearing a contact's honorific or salutation has no effect.",
+        "who_should_get_it": "Any customer managing speaker or contact records with honorifics (e.g. medical or academic conferences).",
+        "staff_path": "Event → Contacts → open contact → click name → clear Honorific → Done → Save Changes",
+        "gotchas": "The org contact page (OrgContactProfile) was already working correctly via PUT …/details; only the event/org contact drawer (ContactProfileSidebar) was affected.",
+        "talk_track": "Clearing the Honorific or Salutation in the contact drawer and saving now removes it from the record everywhere it appears, including embeds and the portal.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The contact profile guide should note that Honorific and Salutation are clearable name-part fields and describe how Save Changes commits those changes.",
+          "why_use_it": "null",
+          "at": "2026-10-23T16:58:02.265Z"
+        }
+      },
+      "related": [
+        "/contacts/add-delete-a-contact",
+        "/faq/fix-a-speakers-details"
+      ],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1138"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "ssf-tags-by-track-value-rules",
+      "title": "Filter which Tags appear in a submission form based on the selected Track",
+      "summary": "Answer rules on **Tags** now work with **Track** selections in session submission forms. In **Form Builder → Tags → Rules → Answer rules**, set each tag option to \"Show when Track is …\" — the portal hides or reveals tags in real time as a submitter picks a track, and shows a notice if a track change removes a previously chosen tag. Tags hidden by a rule are also stripped server-side on submit, so a crafted request cannot save a tag that should be hidden. When a form is duplicated or an event is cloned, answer rules are remapped to the new form's fields and catalog IDs so the copy behaves identically.",
+      "article": "/faq/does-sessionboard-offer-conditional-logic#show-or-hide-individual-answer-options",
+      "related": [
+        "/sessions/submission-forms",
+        "/sessions/program-settings"
+      ],
+      "kind": "new",
+      "module": "Program",
+      "features": [
+        "field_rules",
+        "sessions"
+      ],
+      "availability": "on_request",
+      "enable": {
+        "how": "setting",
+        "path": "Form Builder → Tags → Rules → Answer rules"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Form Builder → Tags → Rules → Answer rules"
+      },
+      "permissions": [
+        "event.session_forms.update"
+      ],
+      "audience": [
+        "organizer",
+        "speaker"
+      ],
+      "use_case": "Conferences with track-specific topic tags can now show submitters only the tags relevant to their chosen track, reducing confusion and preventing mis-tagged submissions without requiring a separate form per track.",
+      "internal": {
+        "cs_action": {
+          "kind": "reach_out",
+          "note": "AMA requested this feature; proactively share with other customers who use both Tracks and Tags on their submission forms."
+        },
+        "when_to_bring_up": "A customer asks how to limit tag choices by track, or complains that submitters pick tags from the wrong track.",
+        "who_should_get_it": "Events with a multi-track program that use Tags to categorise sessions within tracks.",
+        "staff_path": "Event → Program → Submission Forms → open form → Form Builder → Tags → Rules → Answer rules",
+        "gotchas": "Rules are keyed by option text (not ID) on the client, but resolved to catalog IDs server-side on submit. If a required Tags field has no visible tags for the chosen track, the submitter is blocked — advise customers to include at least one unconditioned tag or not mark Tags as required. Field-level (question) rules conditioned on Track IDs are not yet remapped on event clone (pre-existing gap).",
+        "talk_track": "In the form builder, open the Tags field, go to Rules → Answer rules, and set each tag to show only when a specific track is selected. Submitters see only the relevant tags as they fill out the form, and switching tracks clears any tags that no longer apply.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The conditional logic guide should add a section explaining how to set answer rules on Tags conditioned on Track, including the server-side enforcement behaviour and the clone/duplicate remapping.",
+          "why_use_it": "Answer rules let you show or hide individual options within a multi-select field based on what a submitter chose elsewhere in the form. Applied to Tags and Track, they guide submitters to the right topic tags for their track automatically, keeping your taxonomy clean without extra instructions. Rules are enforced both in the portal and on the server, so the saved data always reflects what was visible. Duplicated forms and cloned events carry the rules forward, remapped to the new catalog, so setup work is not lost.",
+          "at": "2026-10-23T16:56:13.847Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4707"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
     }
   ]
 }
