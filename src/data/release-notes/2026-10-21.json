@@ -6883,6 +6883,396 @@
       },
       "ideas": [],
       "media": []
+    },
+    {
+      "id": "gated-galleries-noindex-by-default",
+      "title": "Gated Content Galleries are hidden from search engines by default",
+      "summary": "Content Galleries with any access restriction — **Email gate**, **Share link**, **Members**, or **SSO only** — are now excluded from search engine indexing by default. Previously, a gated gallery was indexable as long as it was published and **Hide from search engines** was not explicitly turned on. Now the default flips: gated galleries are noindex unless an organizer explicitly turns **Hide from search engines** off in **Design → Search engines**. Public (On-Demand Hub) galleries are unchanged and remain indexable. The sitemap and the `X-Robots-Tag` header served to crawlers both reflect the new default automatically.",
+      "article": "/site/content-galleries",
+      "related": [
+        "/site/publishing-surfaces",
+        "/site/site-builder"
+      ],
+      "kind": "fixed",
+      "module": "CMS",
+      "features": [
+        "content_galleries"
+      ],
+      "availability": "preview",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Content Galleries → [Gallery] → Design → Search engines"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizations running email-gated webinar libraries or resource libraries no longer need to remember to turn on \"Hide from search engines\" — gated content is protected from indexing out of the box, preventing unintended public discoverability of registration-walled content.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Two existing US QA fixtures (resource_library / email_gate) were seeded with an explicit noindex:false and remain indexable until the optional SQL migration is run. No customer production rows are known to be affected, but confirm before GA launch. The optional SQL to clear the explicit false and put those rows on the new default is in the PR body."
+        },
+        "when_to_bring_up": "A customer asks why their gated gallery was showing up in Google search results, or when onboarding a customer who uses email-gated resource libraries.",
+        "who_should_get_it": "Any customer using Content Galleries with Email gate, Share link, Members, or SSO-only access modes.",
+        "staff_path": "Content Galleries → [Gallery] → Design → Search engines → Hide from search engines toggle",
+        "gotchas": "Galleries created before this deploy that had an explicit seo.noindex:false (from the old template seed) keep their current indexable behaviour — the explicit value wins. Only galleries created after this deploy, or those where the explicit value is cleared via the SQL migration, follow the new default. The ME replica was unreachable at time of merge so ME row counts were not verified.",
+        "talk_track": "Gated galleries are now hidden from search engines by default — no extra step needed. If you want a gated gallery to appear in search results, go to Design → Search engines and turn off Hide from search engines.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should document the search-engine indexing rules per access mode — specifically that gated galleries (Email gate, Share link, Members, SSO only) are noindex by default, and that the Design → Search engines toggle overrides this default in either direction.",
+          "why_use_it": "Content Galleries let you publish on-demand video hubs, resource libraries, and webinar archives directly from Sessionboard. You control who can access each gallery — from fully public to email-gated or members-only — and the search-engine visibility setting automatically matches that access level, so gated content stays off search indexes unless you deliberately open it up.",
+          "at": "2026-10-21T20:20:33.170Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4702"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:preview"
+    },
+    {
+      "id": "gated-gallery-noindex-default",
+      "title": "Gated Content Galleries default to \"Hide from search engines\"",
+      "summary": "Email-gated Content Galleries now have **Hide from search engines** turned on by default. In the gallery builder, **Design → Search engines** shows the switch on for any gallery with an access gate, with help text reading \"On by default for gated galleries.\" Turning the switch off and saving writes an explicit `seo: { noindex: false }` to the gallery, making it indexable once published. Public galleries still default to indexable (switch off).",
+      "article": "/site/content-galleries#design",
+      "related": [
+        "/site/publishing-surfaces"
+      ],
+      "kind": "fixed",
+      "module": "CMS",
+      "features": [
+        "content_galleries"
+      ],
+      "availability": "preview",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Content Galleries → [Gallery] → Design → Search engines"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who gate a gallery behind an email login no longer risk having its content indexed by search engines by accident — the noindex setting is on from the start, and they can opt in to indexing deliberately by flipping the switch off.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Any existing email-gated gallery that was previously saved with an explicit noindex: false will keep that value and remain indexable. Only galleries where the value was never set will pick up the new default."
+        },
+        "when_to_bring_up": "A customer asks why their gated gallery was showing up in search results, or when onboarding a customer to Content Galleries.",
+        "who_should_get_it": "Any customer using Content Galleries with an email gate.",
+        "staff_path": "Content Galleries → [Gallery] → Design → Search engines",
+        "gotchas": "Galleries that were saved before this fix with an explicit noindex: false are pinned to indexable and will NOT automatically flip to noindex. The customer must open Design and toggle the switch manually if they want to hide them.",
+        "talk_track": "Gated galleries now hide themselves from search engines by default, so attendees who haven't registered can't stumble onto the content. If you ever want a gated gallery to be indexable, just flip the switch off in the Design tab.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should document the Search engines switch under the Design section, noting that it defaults to on for gated galleries and off for public galleries, and explaining what saving with the switch on vs. off writes to the gallery.",
+          "why_use_it": "Content Galleries let you publish session recordings, posters, and other event content to a branded, browsable page. The search-engine switch gives you control over whether that page appears in Google results — useful when you want gated content to stay exclusive to registered attendees, or when you want public content to be discoverable.",
+          "at": "2026-10-21T20:22:23.098Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1136"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:preview"
+    },
+    {
+      "id": "recon-agenda-people-to-speaker-prospects",
+      "title": "Recon crawls now automatically enrich agenda speakers into Speaker Prospects",
+      "summary": "After a Recon agenda crawl completes, every person found on the agenda is automatically enriched and saved as a **Speaker Prospect** in the organization's prospects catalog. Prospects linked to a specific session appear under that session; speakers listed on the agenda without a session are still tied to the event and appear when filtering the **Prospects** list by external event. Each person is processed only once across the organization, so duplicate enrichment runs are skipped.",
+      "article": "/speaker-crm/pipeline",
+      "related": [
+        "/speaker-crm/overview",
+        "/speaker-crm/crm-segments"
+      ],
+      "kind": "new",
+      "module": "Agents",
+      "features": [
+        "speaker_prospects"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "CRM → Prospects (filtered by external event)"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Teams that monitor competitor or partner event agendas with Recon no longer need to manually copy speaker names into their prospects list — everyone found on a crawled agenda is enriched and surfaced as a prospect automatically, including speakers who aren't tied to a specific session.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "The enrichment agent may discard some agenda people who fail enrichment — they will not appear as prospects. Confirm with the customer whether they expect every agenda person to appear or only those the agent can verify."
+        },
+        "when_to_bring_up": "A customer uses Recon to track external event agendas and wants to turn those speakers into outreach targets without manual data entry.",
+        "who_should_get_it": "Customers who have Recon and Speaker Prospects (beta) enabled and actively crawl competitor or partner event agendas.",
+        "staff_path": "CRM → Prospects → filter by external event",
+        "gotchas": "People the enrichment agent discards or that repeatedly fail enrichment never become prospects — this is a known product risk flagged in the PR. The global deduplication registry means a person enriched (or discarded) by one org's crawl will not be re-enriched for another org's crawl of the same person. Security review flagged that org A's agenda URL and event name can reach the shared catalog and be visible to org B; this is under review.",
+        "talk_track": "Once Recon crawls an agenda, every speaker on it is automatically enriched and added to your Speaker Prospects list. Filter prospects by the external event to see everyone found, then move the ones you want into your pipeline.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The Speaker Prospects and Pipeline guides should document how Recon-sourced prospects appear, how the external-event filter works, and what happens when the enrichment agent cannot verify a person.",
+          "why_use_it": "Speaker Prospects lets your team build a pipeline of potential speakers sourced from outside your own events. When Recon crawls an external agenda, the people it finds are enriched through Speaker Scout and land directly in your organization's prospects catalog, ready to contact or advance through the pipeline. Filtering the prospects list by external event shows everyone found on that agenda, whether or not they were assigned to a session.",
+          "at": "2026-10-21T20:24:21.344Z",
+          "permissions_to_confirm": [
+            "org.prospects: read"
+          ]
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4485"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "history-email-send-filter",
+      "title": "Filter History by \"Email send\" to isolate bulk email rows",
+      "summary": "The **Type** filter in **History → Audit** now includes an **Email send** option, letting organizers narrow the audit log to rows generated by bulk email sends. Select **Email send** from the **Content & scheduling** group in the filter to see only those entries.",
+      "article": "/communications/email-sms-history#audit",
+      "kind": "improved",
+      "module": "Communications",
+      "features": [
+        "email_campaigns"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "History → Audit → Type → Email send"
+      },
+      "permissions": [
+        "event.history.read"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "When an organizer needs to audit which bulk emails were sent and when, they can filter the audit log to Email send rows only, without scrolling past unrelated activity types.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer asks how to find a record of bulk emails that were sent from an event.",
+        "who_should_get_it": "Any organizer who uses bulk email sends and wants to audit them in History.",
+        "staff_path": "Event → History → Audit → Type filter → Email send",
+        "gotchas": "Requires the companion API change (web-api #4701) to be deployed; on older API versions the filter is harmless but returns an empty table.",
+        "talk_track": "Open History, go to Audit, click the Type filter, and choose Email send under Content & scheduling to see only bulk email send rows.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The Audit section of the History guide should list all available Type filter options, including Email send, with a note about the Content & scheduling group.",
+          "why_use_it": "The History audit log records every significant action taken in an event, giving organizers a timestamped trail they can filter, search, and review. Filtering by type lets you zero in on a specific category of activity — such as all bulk email sends — without wading through unrelated entries. Use it to verify that a campaign went out, confirm who triggered it, or investigate a delivery issue.",
+          "at": "2026-10-21T20:27:04.077Z"
+        }
+      },
+      "related": [
+        "/communications/email-campaigns",
+        "/communications/create-send-emails"
+      ],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1135"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "awards-reviewer-preview-tab-isolation",
+      "title": "Awards \"Preview as reviewer in portal\" stays stable when another tab signs in",
+      "summary": "Opening **Preview as reviewer in portal** from the Awards reviewers list and then signing in to a different Site in another browser tab no longer kicks the preview out of the review view. The preview session is now kept in the tab's own storage, so a sign-in elsewhere cannot overwrite it. Ending the preview clears only that tab's session and leaves any other portal tabs signed in.",
+      "article": "/awards/managing-submissions-reviewers-rounds",
+      "related": [
+        "/awards/setting-up-your-sessionboard-site"
+      ],
+      "kind": "fixed",
+      "module": "Awards",
+      "features": [
+        "awards"
+      ],
+      "availability": "add_on",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Awards → [Program] → Reviewers → [Reviewer] → Preview as reviewer in portal"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Admins who QA the reviewer experience by previewing it while staying signed in to other Sites in the same browser will no longer see the preview drop to a sign-in screen or land on the wrong user's Welcome page.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer reports that the Awards reviewer preview redirects to sign-in or shows the wrong user's data when they have multiple tabs open.",
+        "who_should_get_it": "Any Awards customer who uses the reviewer preview feature, especially those who QA reviewer flows while signed in to other Sites.",
+        "staff_path": "Awards → [Program] → Reviewers → [Reviewer] → Preview as reviewer in portal",
+        "gotchas": "If a link is opened from inside the preview into a brand-new tab (with noopener), that new tab does not carry the preview session — it uses the browser's own stored session. This is a known trade-off.",
+        "talk_track": "The reviewer preview now runs in its own isolated tab session. Signing in to another Site in a second tab won't disrupt the preview, and ending the preview won't sign the admin out of their other portal tabs.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that the reviewer preview runs in an isolated tab session and that links opened from the preview into a new tab (noopener) will not carry the preview.",
+          "why_use_it": "null",
+          "at": "2026-10-21T20:33:51.141Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-org-portal#220"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "portal-certificate-download-safari-fix",
+      "title": "Certificate downloads in the speaker portal now work in Safari",
+      "summary": "Downloading a certificate PDF from the speaker portal no longer relies on opening a new tab, so Safari's popup blocker no longer silently drops the download. Clicking **Download PDF** in the **Certificates** tab now triggers a direct file download and keeps the portal page open.",
+      "article": "/documents/document-generation#share-certificates-with-participants-in-the-portal",
+      "kind": "fixed",
+      "module": "Portals",
+      "features": [
+        "new_portals"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Speaker portal → session → Certificates → Download PDF"
+      },
+      "permissions": [],
+      "audience": [
+        "speaker"
+      ],
+      "use_case": "Speakers using Safari who click Download PDF on their certificate no longer get a blank result or a popup warning — the PDF downloads immediately without leaving the portal.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A speaker or organizer reports that certificate downloads do not work in Safari.",
+        "who_should_get_it": "Any event using document-generated certificates shared through the speaker portal.",
+        "staff_path": "Speaker portal → session flyover → Certificates tab → Download PDF",
+        "gotchas": "The fix applies only to the Certificates tab download; other portal file downloads were already using the anchor-click approach.",
+        "talk_track": "The certificate download in Safari was being blocked by the popup blocker because the signed link was fetched asynchronously. It now uses a direct anchor download, so the PDF saves to disk and the portal stays open in all browsers.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that speakers can download their certificate PDF directly from the Certificates tab in the session flyover of the speaker portal.",
+          "why_use_it": "null",
+          "at": "2026-10-21T21:08:35.091Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1137"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": null
     }
   ]
 }
