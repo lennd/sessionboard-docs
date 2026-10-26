@@ -30,17 +30,30 @@ while read -r _local_ref local_sha remote_ref _remote_sha; do
 done
 [ "${#shas[@]}" -gt 0 ] || exit 0
 
-# Agent shells often have no node on PATH (nvm is not sourced). Find one rather
-# than silently passing: a hook that cannot run its checks must not approve.
-if ! command -v node >/dev/null 2>&1; then
-  latest=$(ls -d "$HOME"/.nvm/versions/node/v*/bin 2>/dev/null | sort -V | tail -1 || true)
-  if [ -n "$latest" ] && [ -x "$latest/node" ]; then
-    export PATH="$latest:$PATH"
+# Run the checks on the Node major CI uses (docs-ci.yml `node-version`). Agent
+# shells often have no node on PATH, or an older nvm default ahead of it — on
+# Node 20 check:style dies in 0.0s and the hook refuses a commit CI would pass.
+# Find a new-enough one rather than silently passing: a hook that cannot run its
+# checks must not approve.
+required_major=24
+node_major() { "$1" -p 'process.versions.node.split(".")[0]' 2>/dev/null || echo 0; }
+current=$(command -v node 2>/dev/null || true)
+if [ -z "$current" ] || [ "$(node_major "$current")" -lt "$required_major" ]; then
+  found=""
+  for bin in $(ls -d "$HOME"/.nvm/versions/node/v*/bin 2>/dev/null | sort -rV); do
+    if [ -x "$bin/node" ] && [ "$(node_major "$bin/node")" -ge "$required_major" ]; then
+      found="$bin"
+      break
+    fi
+  done
+  if [ -n "$found" ]; then
+    export PATH="$found:$PATH"
   else
-    echo "pre-push: node not found (PATH or ~/.nvm). Install Node 24 or push with DOCS_SKIP_PREFLIGHT=1 and watch CI." >&2
+    echo "pre-push: need Node ${required_major}+ (found ${current:-none}; nothing new enough in ~/.nvm). Install Node ${required_major} or push with DOCS_SKIP_PREFLIGHT=1 and watch CI." >&2
     exit 1
   fi
 fi
+echo "pre-push: using node $(node -v) ($(command -v node))"
 
 top=$(git rev-parse --show-toplevel)
 if [ ! -d "$top/node_modules" ]; then
