@@ -76,8 +76,14 @@ jobs:
     name: Check production, send digest
     runs-on: ubuntu-latest
     steps:
+      # ref: main, not the event SHA. A burst of production deploys queues
+      # several runs behind the concurrency group; without a ref each one
+      # checks out the SHA main had when its event fired, i.e. before the
+      # previous run's status commit, recomputes the same live dates on stale
+      # data and conflicts on rebase (2026-10-26, run 40263370709).
       - uses: actions/checkout@v4
         with:
+          ref: main
           token: ${{ secrets.GH_RELEASE_STATUS_TOKEN || github.token }}
 
       - uses: actions/setup-node@v4
@@ -156,6 +162,8 @@ jobs:
         env:
           REQUESTED_BY: ${{ inputs.requested_by }}
           CHANNEL: ${{ steps.plan.outputs.channel }}
+          GH_RELEASE_STATUS_TOKEN: ${{ secrets.GH_RELEASE_STATUS_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           if git diff --quiet -- src/data/release-notes; then
             echo "No data changes."
@@ -176,7 +184,27 @@ jobs:
             fi
             echo "Push rejected (attempt $attempt): main moved, rebasing."
             git fetch --deepen=50 origin main
-            git rebase origin/main || { git rebase --abort; echo "::error::release-notes commit conflicts with main — resolve by hand"; exit 1; }
+            if git rebase origin/main; then
+              continue
+            fi
+            git rebase --abort
+            if [ "$CHANNEL" != none ]; then
+              # A digest went out and this commit holds its sent markers:
+              # re-deriving would lose them, so a human has to merge.
+              echo "::error::release-notes commit conflicts with main — resolve by hand"
+              exit 1
+            fi
+            # Status-only run: nothing was sent, and live dates are derived
+            # from production, so redo the check on top of the new main.
+            echo "Rebase conflicted on a status-only run: re-checking production on origin/main."
+            git reset --hard origin/main
+            node scripts/release-status.mjs
+            if git diff --quiet -- src/data/release-notes; then
+              echo "main already has these live dates."
+              exit 0
+            fi
+            git add src/data/release-notes
+            git commit -m "chore(release-notes): production status $(date -u +%Y-%m-%d) [$CHANNEL]${REQUESTED_BY:+ (requested by $REQUESTED_BY)}"
           done
           echo "::error::could not push release-notes status after 5 attempts"
           exit 1
