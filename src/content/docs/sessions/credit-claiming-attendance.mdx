@@ -1,0 +1,105 @@
+---
+title: "Record attendance for credit claiming"
+sidebar:
+  label: "Record attendance"
+description: "Bring session attendance into Credit Claiming from Swapcard door scans, Attend app check-ins, or a CSV import (email or badge_id, session_code, occurred_at) so the claim site can list and verify the sessions each attendee attended."
+features: ["credit_claiming"]
+enable_path: "Preview → Credit Claiming → Request access (a Sessionboard CSM turns it on for the event)"
+---
+
+import { Note, Tip, Steps, Step } from '@compat';
+
+[Credit Claiming](/sessions/credit-claiming) uses session attendance in three places: the claim site's **Session list** setting (to show scanned sessions first, or only), the **Attendance** claim gate on a session's credit, and the **Audit** tab, which flags claims with no attendance behind them. Attendance comes from door scans, check-ins and imports. What attendees report about themselves doesn't count.
+
+## Why use it
+
+Accrediting bodies ask whether credit went to people who were actually in the room. Recorded attendance lets the claim site put the right sessions in front of each attendee, and gives you an audit trail with the source of every attendance record.
+
+## Sources that count as attendance
+
+| Source | How it gets in | Shown on the transcript as |
+| --- | --- | --- |
+| Swapcard door scans | Automatically, on each Swapcard sync | **Session scan** |
+| Your own scanning or registration system | The CSV import on the **Attendance** tab | **Imported attendance** |
+| Attend app room check-in | The attendee scans the room QR code, or a room monitor scans their badge | **Check-in** |
+
+When the same attendee has attendance for a session from more than one source, Sessionboard keeps one record with the strongest source (scan, then import, then check-in). Importing or syncing again never downgrades it.
+
+## Swapcard door scans
+
+If the event syncs with Swapcard, door scans can turn into attendance without a file.
+
+<Steps>
+  <Step title="Sync the program first">
+    Swapcard reports scans against its own copy of each session, so the sessions must already be synced from Sessionboard to Swapcard. See [Swapcard](/apps/swapcard-integration).
+  </Step>
+  <Step title="Turn on session activity">
+    In **Apps → Swapcard**, open the event mapping's **Event Settings** and turn on **Pull session attendee lists & door scans**. It is off by default.
+  </Step>
+  <Step title="Let it sync">
+    On each sync, Sessionboard reads the session access-code scans and records attendance for every scan it can match to a session and to an attendee registered for this event.
+  </Step>
+</Steps>
+
+Scans are left out for anyone whose attendee data Sessionboard isn't allowed to process: when your organization has turned attendee data processing off, or when the attendee withdrew consent. Those attendees can still claim; they just don't get the **Attended** marker on the claim site.
+
+## Import attendance from a CSV
+
+Use the CSV import for scans from any other badge-scanning, room-monitoring or registration system.
+
+Open **Program → After the event → Credit Claiming** and click **Attendance**.
+
+![Import attendance card with Download template CSV and Upload CSV](/images/kb/credit-claiming/attendance-import.png)
+
+<Steps>
+  <Step title="Download the template">
+    Click **Download template CSV**. It has four columns:
+
+    | Column | Required | What goes in it |
+    | --- | --- | --- |
+    | `email` | One of `email` or `badge_id` | The attendee's registration email |
+    | `badge_id` | One of `email` or `badge_id` | The attendee's badge number on their registration |
+    | `session_code` | One of `session_code` or `session_id` | The session's code: its Sessionboard session number or your own session id |
+    | `occurred_at` | No | When they scanned in, for example `2026-09-22T21:04:00Z` |
+
+    A `session_id` column (the Sessionboard session id) works in place of `session_code`. Headers aren't case sensitive, and `badge`, `badge_number`, `email_address`, `code` and `scanned_at` are accepted too. Other columns are ignored and listed after the import.
+  </Step>
+  <Step title="Fill it in">
+    One row per scan. A row needs a person (email or badge) and a session (code or id). When both email and badge are present, the badge is matched first. Up to 5,000 rows per file.
+
+    ```csv
+    email,badge_id,session_code,occurred_at
+    dana.whitfield@example.com,,81,2026-09-22T21:04:00Z
+    ,RAE-10421,183,2026-09-22T23:02:00Z
+    ```
+  </Step>
+  <Step title="Upload it">
+    Click **Upload CSV** and choose the file. The results show how many attendance records were **Created**, **Updated** and **Skipped**, and every row that failed, by line number.
+  </Step>
+</Steps>
+
+![Import results: 12 created, 0 updated, 0 skipped, 2 errors, with line 14 and line 15 explained](/images/kb/credit-claiming/attendance-import-results.png)
+
+A row fails when:
+
+- **No registered attendee of this event matches that badge id or email.** The person isn't registered for this event, or the badge or email is different.
+- **No session of this event matches that session id or code.**
+- **occurred_at is not a valid date.**
+- **That attendee has no email on their registration.**
+
+The rows that match are saved even when other rows fail. Fix the failed rows and upload the file again.
+
+<Tip>
+Re-running a file is safe. Rows already imported come back as **Skipped**, so you can upload the full file every day of the show instead of only the new scans. A row is **Updated** only when it adds a stronger source to a record that already exists.
+</Tip>
+
+<Note>
+Always include a timezone in `occurred_at`: `Z` for UTC, or an offset such as `-07:00`. Without one, the time is ambiguous.
+</Note>
+
+## Related
+
+- [Credit Claiming](/sessions/credit-claiming)
+- [Set up credit claiming](/sessions/credit-claiming-setup)
+- [Review claims and report on credit](/sessions/credit-claiming-review)
+- [Credit Claiming FAQ](/sessions/credit-claiming-faq)
