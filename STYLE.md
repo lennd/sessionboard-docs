@@ -27,6 +27,18 @@ docs automatically. Automated PRs that don't follow this guide don't merge.
 | Program Site | microsite, event site |
 | Participant | end user, attendee (in portal contexts) |
 | Event team | admins (when meaning invited team members) |
+| Reviewer | evaluator, judge (the person who scores submissions, in Program and Awards) |
+| Review, review plan (prose) | evaluation (prose; quote the UI label **Evaluation plan** in bold where the screen still says it) |
+| Review portal | evaluator site, evaluator portal, reviewer site |
+| Survey (attendee feedback) | evaluation, evaluation survey, feedback form |
+| Attendee | participant, delegate (someone in the audience; "participant" is a session role) |
+| Program Site | event site, microsite, application site |
+| Early Access | Labs; "Preview" only for the self-serve stage or when quoting the sidebar row |
+| Organization | account, workspace (for the customer's tenant; "account" is a CRM company) |
+| Field Events | gatherings |
+| Team Lead | Ask, assistant, copilot, AI Mode (the admin agent) |
+
+The full table, with the reasoning and the terms for people, surfaces, awards and agents, is `sessionboard-tam/docs/product/nomenclature.md`. Change it there first.
 
 ## Formatting
 
