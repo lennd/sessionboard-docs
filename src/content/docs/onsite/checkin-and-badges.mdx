@@ -2,10 +2,10 @@
 title: "Run onsite check-in and badges"
 sidebar:
   label: "Check-in & badges"
-description: "Watch live check-ins, badge prints and walk-ups, create PIN-protected desk and door links for staff phones, limit a door link to sessions, and hold badges until a balance is paid."
+description: "Watch live check-ins, badge prints and walk-ups, create PIN-protected desk and door links for staff phones, set up print stations, upload attendance, accept other systems' badge QR codes, and hold badges until a balance is paid."
 features: ["registration"]
 enable_path: "Event → Preview → Registration → Request access"
-reviewed: "2026-10-27"
+reviewed: "2026-10-29"
 ---
 
 import { Note, Tip, Warning, Steps, Step } from '@compat';
@@ -59,9 +59,55 @@ Desk staff search or scan the QR code or wallet pass, check people in and print 
 - Walk-ups register and pay at the desk through your gateway, or as cash, check or comp.
 - Check-ins work offline and sync when the signal returns; printing a badge needs a connection.
 
-Turn on **Hold badges for unpaid balances** to have the desk take payment before it prints the badge of someone who still owes money.
+Turn on **Hold badges for unpaid balances** to keep badges from printing for anyone who still owes money. Sessionboard refuses the print and the reprint everywhere — the web desk, the Attend app, print stations and batch prints — until the balance is paid, so the desk takes payment first.
 
 ![The At the desk panel with the Hold badges for unpaid balances switch](/images/kb/onsite-at-the-desk.png)
+
+## Print stations
+
+A print station is a named badge printer at the venue, such as **Hall A desk**. Desk staff check people in on any phone and send the badge to a station; the laptop or tablet beside that printer prints the badges in the order they arrive.
+
+<Steps>
+<Step title="Add the stations">
+Under **Print stations**, click **Add a station** and give it a name. Choose its stock (or **The design's stock**) and a design (or **Each person's type design**). If the printer feeds a little off, nudge everything right or down (negative moves left or up), in inches, up to 1. Click **Save**.
+</Step>
+<Step title="Open Station mode beside each printer">
+On the device next to the printer, open a desk link, unlock it with the PIN, then choose **Station mode** and pick which station it is. It prints each badge sent to it, in order. **Pause** stops it; **That one failed** marks the last badge failed.
+</Step>
+<Step title="Send badges from the desk">
+At the desk, choose the station under **Print to**. In the Attend app, choose it under **Printer**.
+</Step>
+</Steps>
+
+**Queues** under the stations list badges that are waiting or failed. **Send again** puts a failed badge back in its queue; **Cancel** takes it out. A badge that sits half-printed for 5 minutes goes back in the queue on its own.
+
+## Upload attendance
+
+To mark people attended from another list — a door system's export, a scanner log or a sign-in sheet — use **Attendance upload**:
+
+<Steps>
+<Step title="Choose a CSV">
+Each row needs one column that names the person: **email**, **registration id**, **badge** (the printed badge number) or the other system's ID (for example **external id** or **Cvent id**). Add a time column (**checked in at**, **arrival** or **time**) to keep when they arrived; without one, the upload time is used.
+</Step>
+<Step title="Check the file">
+**Check the file** changes nothing and tells you how many would be checked in, how many were not found, and how many are canceled, pending or waitlisted.
+</Step>
+<Step title="Apply">
+**Apply** checks them in. People already checked in keep their first arrival unless you tick **Replace the arrival time of people already checked in**.
+</Step>
+</Steps>
+
+Uploaded check-ins count in **Checked in**, show on each registration, and reach webhooks and integrations like a check-in at the door.
+
+## Badges printed by other systems
+
+If attendees carry badges printed by another registration system, add its format under **Badge QR formats from other systems** so the desk and session doors read them. For each format, give it a name, a pattern and what its code holds: **Email address**, **Badge number**, **Registration ID from the other system** or **Sessionboard registration ID**. The part of the pattern in brackets is what is looked up — for example `^CVT-(\d{6})$` reads the six digits after `CVT-`. Tick **Any case** to ignore upper and lower case.
+
+Use **Try a code** to scan or paste a sample badge and see whose registration it finds. Sessionboard's own badges and QR codes always scan; formats are tried after them. The Attend app reads the same formats offline.
+
+<Note>
+Patterns are limited to keep scanning fast: up to 10 formats, under 200 characters each, with no repeated groups like `(a+)+`.
+</Note>
 
 ## Print ahead
 
