@@ -1684,6 +1684,886 @@
       },
       "ideas": [],
       "media": []
+    },
+    {
+      "id": "cfp-logged-in-as-portal-user",
+      "title": "CFP submit form correctly identifies the account a submission is saved under",
+      "summary": "On the public session submission form, the **\"You are logged in as\"** banner and **\"Welcome\"** heading now show the portal account the submission will actually be attributed to — not the admin account open in the same browser. The inline disclosure check and the participant self-identification (\"that's you\") also use the correct identity.",
+      "article": "/sessions/submission-forms",
+      "related": [
+        "/portals/portals-101",
+        "/participants/save-a-submission-as-a-draft"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "sessions"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Submit form → Account step → \"You are logged in as\" banner"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "speaker"
+      ],
+      "use_case": "When an admin opens a CFP submission link while also signed into a speaker portal as a different person, the form now clearly shows which account will own the submission — preventing confusion about who the session is attributed to.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Fix is automatic; no configuration needed. The server's portal-first attribution logic is unchanged — only the UI label is corrected to match it."
+        },
+        "when_to_bring_up": "If a customer reports that a submission was saved under the wrong person, or that the 'You are logged in as' name on the submit form did not match the submitter recorded in the event.",
+        "who_should_get_it": "Any customer whose team members or speakers open CFP links while also logged in as an admin in the same browser.",
+        "staff_path": null,
+        "gotchas": "The fix is web-UI only; no API change. The server has always attributed submissions to the portal bearer when one is present — this just makes the page say so. Admin session remains active; only the displayed identity on the submit form changes.",
+        "talk_track": "The submit form now tells submitters exactly which account their session will be filed under, so there is no surprise when the submission shows up under a portal user rather than the admin.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The submission forms guide should note that when a portal magic-link session is active in the browser, the submit form attributes the submission to the portal user and displays that user's name in the \"You are logged in as\" banner.",
+          "why_use_it": "null",
+          "at": "2026-10-28T20:45:15.289Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1212"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "sessions-summary-html-escape-default-cells",
+      "title": "Session titles and speaker names in `{{{sessions_summary}}}` emails now render as plain text",
+      "summary": "The **`{{{sessions_summary}}}`** merge tag in **Send Email** and **Email Campaigns** now HTML-escapes the six default table columns — Session ID, Status, **Title**, Starts At, Ends At, and **Speakers** — so that special characters such as `&`, `<`, and `>` in session titles or speaker names are delivered as literal text rather than interpreted as markup by mail clients. Session titles like `Q&A` now appear correctly as `Q&A` in the rendered table.",
+      "article": "/communications/email-campaigns#merge-tags-reference",
+      "related": [
+        "/communications/create-send-emails"
+      ],
+      "kind": "fixed",
+      "module": "Communications",
+      "features": [
+        "email_campaigns"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Communications → Send Email or Email Campaigns → email body using {{{sessions_summary}}}"
+      },
+      "permissions": [
+        "event.emails.create",
+        "event.emails.campaigns_create"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Any event whose session titles or speaker names contain ampersands or angle brackets (e.g. medical comparisons like `>3 mg` or `Q&A` panels) will now have those characters displayed correctly in emailed session summary tables, without relying on mail-client error recovery.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Two US titles (AACE event 5022, UKG Aspire event 5540) store a literal &gt; — today those emails show > but after this fix they will show &gt; as literal text, matching how the app UI already displays them. Flag to those accounts if they notice the change."
+        },
+        "when_to_bring_up": "When a customer reports that session titles or speaker names with special characters (ampersands, angle brackets) look wrong or render as HTML in their emailed session summary tables.",
+        "who_should_get_it": "All events using the {{{sessions_summary}}} merge tag — approximately 101 US events and 27 EU events identified in production. Particularly relevant for medical/scientific conferences with titles containing comparison operators or ampersands.",
+        "staff_path": null,
+        "gotchas": "Two customer titles that stored a literal &gt; entity will now display as &gt; in email (instead of >) — this matches the app UI but is a visible change for those two events. Empty Status and Speakers cells still render as 'undefined'/'null' (known cosmetic issue, not addressed in this fix). ME region was not audited.",
+        "talk_track": "Session titles and speaker names submitted through CFP or portal forms are now always delivered as plain text in session summary emails — special characters like & or < in a title such as 'Q&A' or '<25 kg' display correctly in every mail client without depending on error recovery.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The merge tags reference section should note that all default columns in the sessions_summary table are HTML-escaped, so special characters in titles and speaker names are always delivered as plain text.",
+          "why_use_it": "null",
+          "at": "2026-10-28T20:51:50.276Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4799"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "cfp-closed-form-blocks-new-drafts",
+      "title": "Closed submission forms now block new drafts and edits",
+      "summary": "When a submission form is closed with **Open for submissions = No**, the public submit page now shows the \"Submissions closed\" gate and the **Start submission** button is disabled. Attempting to save a new draft or edit an existing one returns an error: \"Form submissions are no longer being accepted.\" The portal **Edit submission** link is also hidden for submissions on a closed form. Re-opening the form (**Open for submissions = Yes**) restores all access immediately.",
+      "article": "/sessions/submission-forms",
+      "related": [
+        "/sessions/draft-submissions",
+        "/participants/edit-submission",
+        "/participants/save-a-submission-as-a-draft"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "sessions"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Sessions → Forms → [form] → Open for submissions toggle; public submit link"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "speaker",
+        "participant"
+      ],
+      "use_case": "Organizers who close a form mid-cycle — for example to pause intake before a committee review — can now be confident that no new drafts slip through the public link after they flip the toggle off.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Five live US production forms had is_enabled = false with no past close date and were silently accepting drafts before this fix. Check whether any of those customers have unexpected draft rows they need to know about."
+        },
+        "when_to_bring_up": "Any time a customer reports that speakers are still submitting after they closed the form, or asks how to pause intake without setting a close date.",
+        "who_should_get_it": "All customers using session submission forms — fix is automatic, nothing to enable.",
+        "staff_path": "Sessions → Forms → [form] → Settings → Open for submissions",
+        "gotchas": "Existing in-progress drafts on a closed form are also blocked from saving (same behaviour as a passed close date). Re-opening the form restores them. No data is deleted.",
+        "talk_track": "Flipping Open for submissions to No now locks the door completely — the public page shows a closed message, no new drafts can start, and anyone mid-draft cannot save until you re-open.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The submission forms guide should note that setting Open for submissions = No immediately blocks the public submit page, new drafts, in-progress draft saves, and the portal Edit submission link — and that toggling back to Yes restores all access without touching existing data.",
+          "why_use_it": "null",
+          "at": "2026-10-28T20:54:04.462Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4800"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "evaluation-renamed-review",
+      "title": "\"Evaluation\" renamed to \"Review\" across the product",
+      "summary": "All human-facing labels that previously said \"evaluation\", \"evaluator\", or \"judge\" now read **Review**, **Reviewer**, or **My Reviews**. Affected surfaces include: **Program → Collect & Review** tabs (**Review plans**, **My reviews**, **Reviewers**, **Reviewer tags**, **Call for Reviewers**), the **Review summary** page, the **Reviewer portal**, Awards round settings and reviewer pages (no more \"judge\"), and the Agents **Reviewer** page whose AI persona is now labelled **Screener** with a **Re-screen** action. Attendee scoring strings use **Survey** wording. The navigation item formerly called \"Preview\" is now **Early Access**. Labels are updated in English, German, Spanish, and French.",
+      "article": "/evaluations/evaluation-plans",
+      "related": [
+        "/evaluations/how-to-evaluate-sessions",
+        "/evaluations/evaluation-summary",
+        "/evaluations/call-for-reviewers",
+        "/awards/managing-submissions-reviewers-rounds",
+        "/agents/reviewer",
+        "/get-started/early-access",
+        "/get-started/glossary"
+      ],
+      "kind": "improved",
+      "module": "Program",
+      "features": [
+        "sessions_v2",
+        "awards"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Program → Collect & Review; Awards → Rounds; Agents → Reviewer"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "reviewer"
+      ],
+      "use_case": "Teams that use both the scoring and attendee-feedback features no longer have to explain the difference between \"evaluations\" and \"surveys\" — the product now uses distinct, self-explanatory terms: Review for committee scoring and Survey for attendee feedback.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "A companion API PR (lennd/sessionboard-web-api#4785, SB-10526) ships the server-owned sidebar labels. Until both are deployed, the sidebar may briefly show old 'Evaluation' labels while page titles already read 'Review'. Coordinate deployment timing. Help Center manifest update is in lennd/sessionboard-docs#89 — docs pages still use old terminology until that ships."
+        },
+        "when_to_bring_up": "Any time a customer asks about the scoring or abstract-review workflow, or when onboarding a new program committee.",
+        "who_should_get_it": "All customers using the scoring/review workflow; Awards customers who previously saw 'judge' in round settings.",
+        "staff_path": null,
+        "gotchas": "de/es/fr translations were applied by rule and have not had a native-speaker review. Eight strings in the English bundle intentionally retain 'evaluat' (interpolation variables and Pathways example copy) — these are not regressions. The sidebar labels depend on the companion API PR deploying together.",
+        "talk_track": "We've standardised the language across the product: your committee members are Reviewers, the scoring process is a Review, and what attendees fill in after a session is a Survey. Nothing about how the feature works has changed — just the labels.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "All evaluation-related guide titles, headings, and body copy still use \"evaluation\" and \"evaluator\" — they need a find-and-replace pass to match the new \"Review\" / \"Reviewer\" nomenclature, including the article titles in the /evaluations/ folder and the Glossary entry.",
+          "why_use_it": "The Review module is where your program committee scores, ranks, and selects submissions before they become sessions. Reviewers work through their assigned submissions on a scorecard, and organizers track progress, manage conflicts of interest, and make final decisions — all in one place. Use it any time you need a structured, auditable scoring process separate from what attendees tell you after a session.",
+          "at": "2026-10-28T20:59:28.302Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1199"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "early-access-surveys-screener-label-copy",
+      "title": "Clearer names for Surveys, Participant Feedback, and the Screener context in Early Access",
+      "summary": "The **Early Access** catalogue now shows updated descriptions for two features. The **Surveys** card reads \"Collect attendee feedback on sessions, speakers, and posters during the event…\" (previously described scoring). The **Participant Feedback** card clarifies that it shows speakers their attendee survey results and is labelled **Early Access Beta**. In the AI context sidebar, the Team Lead label for the reviewer section now reads **Screener** instead of \"Review Agent\".",
+      "article": "/get-started/early-access",
+      "related": [
+        "/evaluations/surveys",
+        "/portals/speaker-feedback",
+        "/agents/reviewer"
+      ],
+      "kind": "fixed",
+      "module": "Settings",
+      "features": [
+        "surveys",
+        "speaker_feedback"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "self_serve",
+        "path": "Get started → Early Access → Preview → Surveys / Participant Feedback"
+      },
+      "where": {
+        "scope": "both",
+        "path": "Settings → Early Access"
+      },
+      "permissions": [
+        "event.settings.manage_early_access",
+        "org.settings.manage_early_access"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers browsing Early Access now see accurate descriptions for Surveys and Participant Feedback, making it easier to understand what each feature does before opting in. The Screener label in the AI context sidebar matches the product's standard terminology.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer is confused about the difference between Surveys (attendee feedback during the event) and evaluation plans, or asks what Participant Feedback shows speakers.",
+        "who_should_get_it": "Any organizer using or considering Surveys or Participant Feedback.",
+        "staff_path": "Admin Settings → Early Access",
+        "gotchas": "This is a copy-only change — no functional behaviour changed. The Screener label update is in the AI context sidebar only; the sidebar nav label itself is in a sibling PR (SB-10526).",
+        "talk_track": "The Early Access cards now say exactly what each feature does, so customers can make an informed decision about opting in without needing to ask support.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The Early Access guide should note that the Surveys card describes during-event attendee feedback and that Participant Feedback surfaces those results to speakers, distinguishing both from evaluation plans.",
+          "why_use_it": null,
+          "at": "2026-10-28T21:01:55.472Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4793"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "transcript-per-line-speaker-split-insert-delete",
+      "title": "Edit live-session transcripts line by line: reassign speaker, split, insert and delete lines",
+      "summary": "Four new editing actions are available on live-session transcripts. **Change** on a single line's speaker popover now re-attributes only that line without affecting the speaker's other lines. A **Split here** action divides one line at the cursor into two. The **+** button inserts a new line above or below any existing line with its own speaker. A **Delete** (trash) action removes a mistaken split or inserted line. All changes persist on refresh and flow through to recaps, captions, exports and clips.",
+      "article": "/marketing/live-transcribe",
+      "related": [
+        "/marketing/recaps",
+        "/marketing/clips",
+        "/marketing/what-is-sessionboard-marketing"
+      ],
+      "kind": "fixed",
+      "module": "Marketing",
+      "features": [
+        "marketing_transcribe"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Marketing → Source & Produce → Transcribe → [live-session transcript]"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "When a live-session transcript misidentifies a speaker on one line, or a single line contains words from two different people, editors can now fix it precisely — reassigning just that line, splitting it at the right word, or inserting a missed line — without disturbing the rest of the transcript.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer reports that speaker attribution in a live-session transcript is wrong on individual lines, or that the Change button did nothing.",
+        "who_should_get_it": "Any customer using Live Transcribe on session recordings, especially those who noticed the bug (e.g. NGA Executive Conference 2026).",
+        "staff_path": "Marketing → Source & Produce → Transcribe → open a live-session transcript",
+        "gotchas": "These actions only work on transcripts captured in live-session mode. Transcripts bridged from a linked media recording (provider: 'media') return a 400 error — the customer must edit from the media profile instead. The companion UI PR (lennd/sessionboard-web-ui-v2, same branch) must also be deployed; API must go first.",
+        "talk_track": "You can now fix speaker attribution one line at a time — change who said a single sentence, split a line where two speakers overlap, add a line that was missed, or delete one that shouldn't be there. Everything downstream — recaps, captions, exports — picks up the correction automatically.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should document the four per-line editing actions (Change speaker for one line, Split here, Insert line, Delete line) and note that they are unavailable on transcripts sourced from a linked media recording.",
+          "why_use_it": "null",
+          "at": "2026-10-28T21:10:33.779Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4802"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "portal-24h-time-format-everywhere",
+      "title": "Event time-format setting now applies to the speaker portal, CFP, follow-up forms and admin grids",
+      "summary": "The **Event Settings > Time format** (12-hour / 24-hour) now controls every clock-display surface: speaker and account portal task due dates, message timestamps, session flyover start/end editors, file deadlines, profile datetime and time fields, the CFP submission page, follow-up form date fields, and admin session grid date-time cells and sidebars. Previously the portal derived 12 vs 24-hour from the viewer's browser language, so French- or German-language portals showed 24-hour times even on 12-hour events, and English-language portals on 24-hour events still showed AM/PM. The event setting now takes precedence everywhere; the portal language continues to control month/day words and AM/PM wording.",
+      "article": "/portals/portals-101#dates-and-times-in-the-portal",
+      "related": [
+        "/sessions/program-settings",
+        "/events/event-details"
+      ],
+      "kind": "fixed",
+      "module": "Portals",
+      "features": [
+        "new_portals",
+        "sessions"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "setting",
+        "path": "Event Settings → Time format"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Speaker portal (tasks, session flyover, files, profile fields, messages); CFP /submit page; Follow-up form; Admin Sessions grid and session sidebar"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "speaker",
+        "participant"
+      ],
+      "use_case": "European events that use 24-hour time can now set the event to 24-hour once and have every portal page, CFP deadline, and admin grid cell display times consistently — no more AM/PM leaking through on English-language portals or 24-hour times appearing on 12-hour events viewed in a non-English browser.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "On 12-hour events (the default, ~97 % of live events), French- and German-language portal viewers will now see '2:05 PM' where they previously saw '14:05' from their browser locale. This is correct behaviour per the event setting, but organizers of European events who relied on the browser-locale fallback should set their event to 24-hour if they want 24-hour display."
+        },
+        "when_to_bring_up": "Any European or international event that has complained about AM/PM appearing in the portal or about inconsistent time display across surfaces.",
+        "who_should_get_it": "All events; especially European events that already have Time format set to 24-hour and were seeing inconsistent display.",
+        "staff_path": "Event Settings → Time format",
+        "gotchas": "Portal home Sessions/Calendar card and follow-up form times require the companion API PR (web-api #4804) to be deployed before they reflect the setting. Native browser <input type='time'> elements in grid editors cannot be forced to 24-hour — this is a known browser limitation. Some admin views (agenda list/calendar cards, activity tab, eval displays) are not yet updated and remain on a follow-up list.",
+        "talk_track": "Set your event's time format once in Event Settings and every surface your speakers and reviewers touch — portal tasks, session editors, CFP deadlines, admin grids — will show times consistently in 12- or 24-hour format.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The \"Dates and times in the portal\" section of Portals 101 should be updated to state that the Event Settings Time format controls 12 vs 24-hour display across the portal, CFP, follow-up forms and admin grids, and that the portal language no longer determines the clock format.",
+          "why_use_it": "null",
+          "at": "2026-10-28T21:13:30.091Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1216"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "crm-org-level-field-permission-enforcement",
+      "title": "Org CRM field permissions now enforced on inline edits and profile saves",
+      "summary": "Org role permissions for **Contacts** and **Accounts** — including **Edit** access, locked fields, and hidden fields — are now enforced when a team member edits a contact cell inline in the org contacts grid, saves a contact profile, saves an account profile, or updates contact address/header fields. Previously, any org member could write these values regardless of their role. Now, a member without **Contacts Edit** or **Contacts Manage** receives a 403 and the cell reverts; a locked field returns a 403; a hidden field returns a 404. Event-level edits are unchanged.",
+      "article": "/speaker-crm/inviting-organization-team-members",
+      "related": [
+        "/speaker-crm/overview",
+        "/speaker-crm/creating-crm-fields"
+      ],
+      "kind": "fixed",
+      "module": "CRM",
+      "features": [
+        "crm"
+      ],
+      "availability": "add_on",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Org → Contacts (grid inline edit and contact profile); Org → Accounts (account profile)"
+      },
+      "permissions": [
+        "org.contacts.update",
+        "org.contacts.manage",
+        "org.accounts.update",
+        "org.accounts.manage"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Orgs that restrict certain team members to read-only access on contacts or accounts can now trust that restriction holds on every edit surface — inline grid cells, contact profiles, account profiles, and address fields — not only the bulk edit sidebar.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "The fix is a security correction — no one who was actively editing in the last 90 days loses access (verified against prod audit logs). However, members whose org role has neither Contacts Update nor Contacts Manage will now receive a 403 on inline edits and profile saves. The UI reverts the cell automatically. A follow-up UI change to hide the inline edit control for read-only roles is planned but not yet shipped."
+        },
+        "when_to_bring_up": "When a customer asks why a team member's inline contact or account edit is now being rejected, or when discussing org role permissions and field-level locks.",
+        "who_should_get_it": "Any CRM customer who uses custom org roles with restricted Contacts or Accounts permissions, or who uses locked/hidden field settings under Settings → Permissions.",
+        "staff_path": "Org → Settings → Permissions → [org role] → Fields (to configure locked/hidden fields)",
+        "gotchas": "Program Manager is the default org role and has Contacts Manage but not Contacts Update — these users retain edit access. Members with a role that has neither Update nor Manage on Contacts (or Accounts) will now get a 403 on saves. Prod data shows zero such members made org-level edits in the last 90 days, so real-world impact is expected to be minimal. The inline grid cell reverts on 403 automatically; no UI change is needed on the customer side.",
+        "talk_track": "Org role permissions and field locks now apply consistently everywhere in the org CRM — inline grid edits, profile saves, and address fields — matching the behaviour already in place for bulk edits.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The org roles and field permissions guide should note that hidden and locked field settings, and the Contacts/Accounts Edit permission, now apply to inline grid edits and profile saves in the org CRM, not only the bulk edit sidebar.",
+          "why_use_it": "null",
+          "at": "2026-10-28T21:19:02.237Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4805"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "advocacy-preview-as-all-recipient-types",
+      "title": "Preview as… now lists attendee and group recipients in Advocacy campaigns",
+      "summary": "The **Preview as…** button on an Advocacy campaign page now lists all recipient types — contacts (speakers), attendees, and group (exhibitor/sponsor) recipients — matching what the per-row **View as** action already showed. Previously, the dialog incorrectly showed \"No recipients assigned yet\" for campaigns whose recipients were imported as attendees or added as groups, even though those recipients appeared on the **Recipients** tab.",
+      "article": "/marketing/advocacy#manage-a-live-campaign",
+      "kind": "fixed",
+      "module": "Marketing",
+      "features": [
+        "marketing_advocacy"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Marketing → Advocacy → [campaign] → Preview as…"
+      },
+      "permissions": [
+        "event.marketing.advocacy_read"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers running attendee or exhibitor/sponsor Advocacy campaigns can now use **Preview as…** to verify exactly what each recipient sees before the campaign goes live, without having to click through individual rows on the Recipients tab.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer reports that Preview as… shows no recipients on an attendee or exhibitor/sponsor Advocacy campaign.",
+        "who_should_get_it": "Any customer using Advocacy with attendee CSV imports or group (exhibitor/sponsor) recipients.",
+        "staff_path": "Marketing → Advocacy → [campaign] → Preview as…",
+        "gotchas": "The fix is client-side only; no API change. The footer text 'N total assigned (including groups)' has been removed since groups now appear directly in the list.",
+        "talk_track": "If you have been using the per-row View as workaround to preview attendee or group recipient links, the header Preview as… button now works the same way for all recipient types.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that Preview as… supports all recipient kinds — contacts, attendees, and groups — and explain how to use it to verify the share experience before launch.",
+          "why_use_it": "null",
+          "at": "2026-10-28T21:24:01.968Z"
+        }
+      },
+      "related": [
+        "/marketing/advocacy-attendees",
+        "/marketing/advocacy"
+      ],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1220"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "portal-legacy-form-module-mismatch-fix",
+      "title": "Portals with mismatched forms can be edited again",
+      "summary": "A contact portal that already held a Group (accounts-module) form assigned before module validation was introduced would return a **400 \"Failed to assign items.\"** error on every save — including reorders and new additions — leaving the portal stuck. The fix grandfathers already-assigned forms: organizers can now add, reorder, and remove forms on those portals without error. Adding a new mismatched form still returns a 400 and now names the offending form.",
+      "article": "/portals/create-assign-forms",
+      "kind": "fixed",
+      "module": "Portals",
+      "features": [
+        "new_portals"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Portals → [portal] → Customize → Assign Items → Forms"
+      },
+      "permissions": [
+        "event.portals.update"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Any organizer whose contact portal was silently assigned a Group form in the past and could no longer add or reorder forms can now manage that portal normally without needing to delete and recreate it.",
+      "internal": {
+        "cs_action": {
+          "kind": "reach_out",
+          "note": "55 portals / 107 form rows on US prod are in this state (EU: 0). Identify affected customers and let them know the portal is editable again. The companion web-ui-v2 PR will add a 'Not for this portal' badge on the legacy mismatched forms once deployed."
+        },
+        "when_to_bring_up": "When a customer reports 'Failed to assign items.' on a contact portal or says they cannot reorder or add forms to an existing portal.",
+        "who_should_get_it": "Any organizer on US prod with a contact portal that held a Group form before module validation was added — 55 portals identified on US prod.",
+        "staff_path": "Portals → [affected portal] → Customize → Assign Items → Forms",
+        "gotchas": "The fix only grandfathers forms already in the database for that portal. Adding a brand-new Group form to a contact portal still returns a 400 (by design). The UI's form picker does not offer Group forms on People portals, so this is API-only for new additions.",
+        "talk_track": "A past data state was causing every save on certain contact portals to fail. The portal is now fully editable again — you can add, reorder, and remove forms as normal.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that forms must match the portal's module type, and that legacy mismatched forms already assigned to a portal are grandfathered and will display a badge indicating they are not intended for that portal type.",
+          "why_use_it": "null",
+          "at": "2026-10-28T21:26:25.502Z"
+        }
+      },
+      "related": [
+        "/portals/portals-101",
+        "/portals/assign-tasks"
+      ],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4803"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "portals-legacy-group-form-badge-and-error",
+      "title": "Forms panel flags mismatched legacy forms and shows the API's error message",
+      "summary": "On a People portal's **Assign Items → Forms** panel, any form whose module does not match the portal (for example, a Group form assigned before module validation existed) now shows a **Not for this portal** badge with a tooltip explaining the mismatch and prompting removal. When adding or reordering forms fails, the error toast now shows the exact message returned by the API (for example, \"forms must match this portal's module … : New Form 7\") instead of the generic \"Failed to assign items.\"",
+      "article": "/portals/create-assign-forms",
+      "kind": "fixed",
+      "module": "Portals",
+      "features": [
+        "new_portals"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Portals → [portal] → Customize → Assign Items → Forms"
+      },
+      "permissions": [
+        "event.portals.update"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who inherited a People portal with a legacy Group form assigned can now immediately see which forms are mismatched and remove them, unblocking the ability to add or reorder other forms without cryptic error messages.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Visible to all organizers automatically once web-api #4803 is deployed; the badge only renders when the API returns module_id on assigned forms."
+        },
+        "when_to_bring_up": "When a customer reports being unable to add or reorder forms on a contact portal, or sees 'Failed to assign items' with no explanation.",
+        "who_should_get_it": "Any organizer with a People portal that was configured before module validation was introduced — most likely older accounts.",
+        "staff_path": "Portals → [People portal] → Customize → Assign Items → Forms",
+        "gotchas": "The 'Not for this portal' badge only appears after web-api #4803 is live and serving module_id on form objects. Until then, the panel looks unchanged but the improved error toast is already active.",
+        "talk_track": "If you've ever been stuck unable to add forms to a contact portal with a confusing error, the panel now tells you exactly which form is the problem and why, so you can remove it and move on.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that forms must match the portal's module type and explain what the \"Not for this portal\" badge means and how to resolve it.",
+          "why_use_it": "Portal forms let you collect structured information from speakers, sponsors, or other participants directly inside their portal experience. Assigning the right forms to the right portal type keeps the participant experience clean and ensures submissions land in the correct module. The forms panel gives admins full control over which forms appear, in what order, and for whom.",
+          "at": "2026-10-28T21:32:18.271Z"
+        }
+      },
+      "related": [
+        "/portals/portals-101",
+        "/portals/assign-tasks"
+      ],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1215"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "bulk-edit-checkbox-no-save",
+      "title": "Bulk edit now saves a checkbox field as \"No\" without requiring a workaround",
+      "summary": "In the **Bulk Edit** sidebar, selecting a checkbox field and leaving the switch at **No** now enables the **Save** button immediately. Clicking **Save** opens the **Confirm Bulk Edit** dialog and sets the field to **No** on all selected records. Previously, the **Save** button stayed disabled until the switch was flipped to **Yes** and back to **No**.",
+      "article": "/settings/bulk-edit-fields",
+      "kind": "fixed",
+      "module": "CRM",
+      "features": [
+        "sessions",
+        "crm"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "CRM → All Contacts → select records → Edit; Sessions → select records → Edit"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who need to bulk-set a checkbox field to \"No\" across many contacts or sessions can now do so in a single action without first toggling the switch on and off as a workaround.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "If a customer reports that bulk-setting a checkbox to No does nothing or requires a toggle workaround.",
+        "who_should_get_it": "Any organizer using Bulk Edit on contacts or sessions with checkbox fields.",
+        "staff_path": "Event → CRM or Sessions → select records → Edit → pick a checkbox field",
+        "gotchas": "The fix only changes the dialog's initial state and Save gating; the API payload is unchanged. Sessions grid Bulk Edit (same component) is also fixed.",
+        "talk_track": null,
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that selecting a checkbox field in Bulk Edit treats the switch position itself as the value, so leaving it at \"No\" is a valid, saveable choice.",
+          "why_use_it": "null",
+          "at": "2026-10-28T21:34:30.925Z"
+        }
+      },
+      "related": [
+        "/settings/bulk-edit-fields",
+        "/concepts/custom-field-type-reference"
+      ],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1218"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "cfp-deleted-form-message",
+      "title": "Clearer message when a session submission form has been deleted",
+      "summary": "When a session submission form has been deleted, the public submission page now shows **\"This submission form is no longer available.\"** instead of the generic view-only copy. Visitors who already submitted see their answers read-only with a banner: **\"This submission form is no longer available. If you submitted through it, your submission is shown below, read-only. Contact the event organizer if you need to make changes.\"**",
+      "article": "/sessions/submission-forms",
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "sessions"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Public submission form link (Call for Papers page)"
+      },
+      "permissions": [],
+      "audience": [
+        "speaker",
+        "participant"
+      ],
+      "use_case": "When an organizer deletes a submission form, anyone who opens the public link now immediately understands the form is gone — rather than seeing a confusing \"view-only\" message that implies editing was simply disabled.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "If a customer reports that speakers are confused by the read-only state on a deleted submission form.",
+        "who_should_get_it": "All customers who use session submission forms; no action needed.",
+        "staff_path": null,
+        "gotchas": "The new message only appears when the API returns is_form_deleted: true (requires web-api #4801). Sponsor/exhibitor view-only forms on live (non-deleted) forms still show the original read-only copy — this change is scoped to deleted CFP forms only.",
+        "talk_track": "Speakers who click a link to a deleted submission form now see a clear explanation instead of a generic read-only notice.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note what submitters see when a form is deleted and how to restore a form from Trash to re-enable submissions.",
+          "why_use_it": "null",
+          "at": "2026-10-28T21:37:43.528Z"
+        }
+      },
+      "related": [
+        "/sessions/draft-submissions",
+        "/participants/edit-submission"
+      ],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1214"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
     }
   ]
 }
