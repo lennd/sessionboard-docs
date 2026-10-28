@@ -2,10 +2,10 @@
 title: "Set up tickets, add-ons and workshop seats"
 sidebar:
   label: "Tickets & pricing"
-description: "Create registrant types, registration tickets, add-ons, bundles, donations and session fees, with capacity, date-tiered prices, prices per registrant type, access codes and sales windows, and sell seats in Program workshops."
+description: "Create registrant types, registration tickets, add-ons, bundles, donations and session fees, with capacity, date and count price tiers, prices per registrant type, shared capacity, quantity rules, guest badges, access codes and sales windows; import the fee schedule; and sell seats in Program workshops with picking rules."
 features: ["registration"]
 enable_path: "Event → Preview → Registration → Request access"
-reviewed: "2026-10-27"
+reviewed: "2026-10-28"
 ---
 
 import { Note, Tip, Warning, Steps, Step } from '@compat';
@@ -49,14 +49,45 @@ Tickets, bundles and session fees are listed under **Tickets**; add-ons and dona
 - **Capacity** — leave blank for unlimited. Registrations waiting for approval and seats held during checkout count toward it, so a ticket cannot oversell.
 - **Max per order**.
 - **Date tiers** — early bird, standard, onsite. Each price applies through its end date in the event's time zone, and the base price applies after the last tier. Prices roll automatically.
+- **Count tiers** — a price for the first seats sold: "first 100 at 495, the next 100 at 595". Each row covers seats up to its count; after the last row the date tiers and base price apply. The form shows how many seats are left at today's price. A registrant type with its own price is not counted, and a group buying several seats at once pays the tier of its first seat.
 - **Price by registrant type** — a different price for each type. Leave a type blank to use the ticket's price.
 - **Who can buy** — **Anyone**, **With an access code** (enter the **Access code**) or **Hidden (admin only)**.
 - **On sale from** / **Until** — the sales window.
 - **GL code** — shown on receipts and exports.
 - **Taxable** — whether tax rules apply. See [Tax](/registration/payments#tax).
 - **Offered on** — when the event has several forms, pick which forms sell it. Leave all unticked for every form.
+- **Fee group** — a label such as `meals` or `workshops`. A promo code can then discount only that group. See [Promo codes](/registration/promo-codes).
+- **Sold in exactly** — an order holds exactly this many of the fee, or none. Use it for a table of 10.
+- **Only with** — tick other fees: the order (or, for an add-on bought later, the registration) must also have one of them. Use it for a guest dinner that needs the dinner.
+- **Guest badge** (add-ons) — each one bought is a named guest with their own registration and badge, priced at the add-on rather than the ticket. Under **Guests register as**, pick the registrant type their badge prints. On the form, the registrant adds each guest's name under the add-on.
+
+### Donations
+
+A **Donation** is a set amount (its price) unless you turn on **Registrant chooses the amount**. Then set a **Minimum** and **Maximum**, **Suggested amounts** shown as buttons (for example `25, 50, 100`), and the **Funds** the registrant can give to, each with its own **GL code**. On the form, the registrant enters an amount and picks a fund; the order line carries the fund and its GL code.
+
+### Staff orders at an earlier price
+
+When you add a registration yourself from **Registrants**, **Use prices as of** prices the order as of a past date — an early-bird rate someone was promised after it ended. The ticket must have been on sale that day. Registrants on the public form always pay today's price.
 
 ![The ticket editor with price, capacity, date tiers, price by registrant type, who can buy and sales dates](/images/kb/registration-ticket-dialog.png)
+
+## Shared capacity
+
+A **pool** caps two or more fees together — tickets that fill the same hall, meals that share a room. Each fee keeps its own capacity too, and a registration must fit both. Under **Shared capacity**, click **Add a pool**, name it, set its **Capacity** and tick the fees in it. The table shows each pool's sold seats against its capacity. When a pool is full, every fee in it shows as sold out on the form, or takes the waitlist on a free form with a waitlist.
+
+## Landing step
+
+Instead of a list of forms, the registration page can ask one question — "Which describes you?" — and send each answer to a form with the registrant type already chosen. Under **Landing step**, click **Set up**, write the **Question**, and for each **Answer** pick the form it **Opens** and, optionally, the registrant type. A type that needs a verified membership still asks for the member check on the form.
+
+## Import or export the fee schedule
+
+**Export fee schedule** downloads every ticket, add-on, bundle, donation and session fee as a CSV, one row per price: a base row, a row per date tier, and a row per registrant-type price. **Import CSV** reads the same columns: `ticket_id, name, kind, registrant_type, tier, through, price, capacity, max_per_order, gl_code, taxable, status`. Prices are amounts like `595.50`.
+
+- A row matches a ticket by `ticket_id`, else by its exact name. A new name creates the ticket from its base row (a row with no tier and no registrant type).
+- A ticket with tier rows in the file gets exactly those tiers. `through` is the tier's last day.
+- Session fees are created from **Workshops**, not imported.
+
+Click **Start from the current data** to edit what is there, **Dry run** to see each row's result, then **Apply**.
 
 The tickets table shows each ticket's **Price now** (and which tier applies), **Sold** against capacity, sales window and status. Archiving a ticket stops it selling; existing registrations and orders keep it.
 
@@ -83,6 +114,33 @@ The table shows seats taken against capacity, **Full** workshops and the **Waitl
 ![The Workshops table with time, price, seats taken against capacity and waitlist per workshop](/images/kb/registration-workshops.png)
 
 **Take out of registration** stops a workshop selling; people who already have a seat keep it.
+
+### Import workshop prices and capacity
+
+**Export prices** downloads every public Program session with its price, capacity, GL code and a `price:<registrant type>` column per type. **Import prices** reads the same file. A row matches a session by `session_id`, else by its exact title.
+
+- A blank **price** keeps the price; `remove` takes the session out of registration; `0` makes it a free workshop.
+- A blank **capacity** keeps it; `unlimited` clears it.
+- A blank type column keeps that type's price; `-` drops it.
+
+### Picking rules
+
+**Picking rules** on the Workshops page decide what the form lists and what each registrant may pick. Click **Edit rules**:
+
+- **List free sessions** — public Program sessions without a price are offered as free picks. A free session's Program capacity is held at checkout.
+- **Overlapping picks** — **Allow, say nothing**, **Allow, with a warning** or **Block: pick one**.
+- **Slots** — group sessions the registrant picks among, such as "one Thursday afternoon workshop". **Required** of 1 or more makes the slot required; **At most** limits how many.
+- **Each session** — **General** puts it on everyone's registration as included (listed, never picked). **Hidden** keeps it off the form (staff can still assign it). Tick registrant types to say who may pick it, and tickets to show it only with those tickets.
+
+The form shows each workshop's room, track, description and public faculty. Staff adding someone on their behalf, and **Bulk assign**, are not held to these rules.
+
+### Let registrants change paid workshops
+
+Under **Self-service changes**, turn on **Registrants change paid workshops**, and set **Until** to close it on a date. Registrants then see **Change** next to a paid workshop in their attendee portal or manage link. They pick another workshop or drop it, see the difference, and confirm:
+
+- When the new workshop costs more, they pay the difference by card.
+- When it costs less, or they drop it, the difference goes back to the card they paid with, through your gateway.
+- When the workshop was paid by invoice, check or cash, they are asked to contact you; refund it from the order.
 
 ### Move people in bulk
 
