@@ -2018,8 +2018,8 @@
     {
       "id": "scout-intelligence-topic-comparison",
       "title": "Compare an external event's topics with one of your events in Scout",
-      "summary": "The **Intelligence** tab on a scouted external event now compares its topics with one of your events. Pick the event in **Compare with**, then switch between **Summary**, **Focus & convergence** and **All topics**: topics you share, **Affinity matches** you can **Unify** or **Dismiss**, **Opportunities** only the external event covers, and **Differentials** only yours covers. The **Agenda** tab gains a **Topics** column for each external session.",
-      "article": "/speaker-crm/pipeline",
+      "summary": "The **Intelligence** tab on a scouted external event compares its topics with one of your events. Pick the event in **Compare with**, then switch between **Summary**, **Focus & convergence** and **All topics**: topics you share, **Affinity matches** you can **Unify** or **Dismiss**, **Opportunities** only the external event covers, and **Differentials** only yours covers. The **Agenda** tab gains a **Topics** column for each external session. External sessions get their topics from extraction runs that cover **External sessions** — tick it in the **Run extraction** popover on **Settings → Library → Taxonomy**.",
+      "article": "/speaker-crm/overview#compare-an-external-events-topics-with-your-own",
       "related": [
         "/speaker-crm/overview"
       ],
@@ -2050,13 +2050,15 @@
         "when_to_bring_up": "When a customer benchmarks their program against another conference or asks what topics they are missing.",
         "who_should_get_it": "Customers with Speaker Prospects / Scout who crawl external events.",
         "staff_path": "Organization → CRM → Scout → External Events → [event] → Intelligence",
-        "gotchas": "Needs web-api #4547 live; without it the comparison 404s and the Agenda shows no topic chips. Focus & convergence runs a model on the first request for a pair (about 5 s, then cached). Unify makes the topics synonyms and can only be undone from the taxonomy review.",
+        "gotchas": "Needs web-api #4547 live; without it the comparison 404s and the Agenda shows no topic chips. Focus & convergence runs a model on the first request for a pair (about 5 s, then cached). Unify makes the topics synonyms and can only be undone from the taxonomy review. The comparison needs topics on both sides: run extraction with External sessions ticked after a crawl, or the Intelligence tab has nothing to compare. SB-10125.",
         "talk_track": "Program teams can see in a minute which topics a competing or peer conference covers that theirs does not, and where the two already overlap."
       },
       "shipped": {
         "prs": [
+          "lennd/sessionboard-web-api#4547",
           "lennd/sessionboard-web-ui-v2#1054",
-          "lennd/sessionboard-web-api#4547"
+          "lennd/sessionboard-web-api#4645",
+          "lennd/sessionboard-web-ui-v2#1085"
         ],
         "docs_only": false,
         "pending": null,
@@ -3189,12 +3191,12 @@
     },
     {
       "id": "cms-taxonomy-import-glossary",
-      "title": "Import a pre-existing glossary into Taxonomy before running topic extraction",
-      "summary": "A new **Import glossary** button in **Settings → Library → Taxonomy** opens a dialog where organizers can paste terms (one per line, with an optional ` | description`) or upload a CSV (`term,description`) to seed the topic library before the AI extraction run. A preview shows the first 10 rows, flags duplicates and empty names, and disables submit when the batch exceeds 500 terms. After import, the result view lists created topics, skipped duplicates (with retired-topic flags), and invalid rows with readable reasons.",
-      "article": "/get-started/glossary",
+      "title": "Import a glossary into Taxonomy, and choose what an extraction run covers",
+      "summary": "**Settings → Library → Taxonomy** gains **Import glossary** next to **New topic**: paste terms one per line (an optional ` | description` after each) or upload a CSV (`term,description`), check the preview, and import up to 500 terms at once. The result lists what was **created**, what was **skipped** because the topic already exists, and any **invalid** rows with the reason; importing the same file twice creates nothing new, and imported terms are human topics that extraction runs never rename or prune. **Run extraction** now opens a popover where you tick **Sessions**, **Contacts** and **External sessions** before **Start run**, and the runs table shows a **Covers** column.",
+      "article": "/speaker-crm/overview#taxonomy",
       "related": [],
       "kind": "new",
-      "module": "CMS",
+      "module": "Settings",
       "features": [
         "generate_topics"
       ],
@@ -3205,13 +3207,13 @@
       },
       "where": {
         "scope": "org",
-        "path": "Settings → Library → Taxonomy → Import glossary"
+        "path": "Settings → Library → Taxonomy → Import glossary / Run extraction"
       },
       "permissions": [],
       "audience": [
         "organizer"
       ],
-      "use_case": "Organizations that already maintain a controlled vocabulary or medical/industry glossary can load those terms directly into Taxonomy before the AI extraction run, ensuring the generated topic graph reflects their established terminology rather than starting from scratch.",
+      "use_case": "A society that already keeps a controlled vocabulary — MeSH-style terms, programme tracks, a sponsor's product list — loads it as the starting topic library instead of waiting for the AI to rediscover it, so the first extraction run maps sessions onto the words the committee already uses. Re-running extraction for external sessions only is how Scout's event comparisons stay current.",
       "internal": {
         "cs_action": {
           "kind": "review_before_customers_see",
@@ -3219,8 +3221,8 @@
         },
         "when_to_bring_up": "When a customer using Generate Topics mentions they already have a controlled vocabulary, taxonomy, or glossary they want to preserve in the AI topic graph.",
         "who_should_get_it": "Customers on the Generate Topics limited release who have an existing term list — medical societies, trade associations, or any org with a formal content taxonomy.",
-        "staff_path": "Settings → Library → Taxonomy → Import glossary",
-        "gotchas": "Submit is disabled for batches over 500 terms; customers with large glossaries will need to split imports. Retired topics that match an imported term are flagged as skipped in the result view — reassure customers the term already exists. No client-side file size cap yet (follow-up planned); advise customers to keep CSV files under ~1 MB.",
+        "staff_path": "Organization → Settings → Library → Taxonomy (needs Generate Topics in Early Access for the org)",
+        "gotchas": "Submit is disabled for batches over 500 terms; customers with large glossaries will need to split imports. Retired topics that match an imported term are flagged as skipped in the result view — reassure customers the term already exists. No client-side file size cap yet (follow-up planned); advise customers to keep CSV files under ~1 MB. Terms match existing topics by slug (case- and punctuation-insensitive), so \"Machine learning\" and \"machine-learning\" count as the same topic. One extraction run per organization at a time: a run that covers only External sessions holds the nightly sessions/contacts run back until it finishes. SB-10107, SB-10125.",
         "talk_track": "If you already have a glossary or controlled vocabulary, you can paste it straight into Taxonomy before the AI runs — up to 500 terms at a time, with optional descriptions. The preview shows you exactly what will be created, skipped, or flagged as invalid before you commit.",
         "draft": {
           "by": "release-intake",
@@ -3233,69 +3235,12 @@
       },
       "shipped": {
         "prs": [
-          "lennd/sessionboard-web-ui-v2#1073"
-        ],
-        "docs_only": false,
-        "pending": null,
-        "live": {
-          "us": "2026-10-21",
-          "eu": "2026-10-21",
-          "me": "2026-10-21"
-        },
-        "announced_at": "2026-10-21",
-        "emailed_at": "2026-10-21"
-      },
-      "ideas": [],
-      "media": [],
-      "gated": "availability:limited_release"
-    },
-    {
-      "id": "cms-taxonomy-glossary-import",
-      "title": "Import a pre-existing glossary into the Taxonomy topic library",
-      "summary": "A new **Import glossary** action in the Taxonomy library lets org admins upload up to 500 terms (name + optional description) via paste or CSV before running a topic-extraction job. The response shows which terms were **created**, which were **skipped** (already exist), and which rows were **invalid** (blank, too long, or duplicate within the file), so the valid ones are always saved even when some rows fail.",
-      "article": "/get-started/glossary",
-      "related": [],
-      "kind": "new",
-      "module": "CMS",
-      "features": [
-        "generate_topics"
-      ],
-      "availability": "limited_release",
-      "enable": {
-        "how": "support",
-        "path": "Ask your Customer Success Manager to enable Generate Topics; then Settings → Library → Taxonomy → Import glossary"
-      },
-      "where": {
-        "scope": "org",
-        "path": "Settings → Library → Taxonomy → Import glossary"
-      },
-      "permissions": [],
-      "audience": [
-        "organizer"
-      ],
-      "use_case": "Organizations that already maintain a controlled vocabulary or subject taxonomy can seed Sessionboard's topic library with their existing terms before the first AI extraction run, so the AI reuses and reinforces those terms rather than generating synonyms from scratch.",
-      "internal": {
-        "cs_action": {
-          "kind": "review_before_customers_see",
-          "note": "A medium-severity security finding is open: the import endpoint currently requires only org membership, not the MANAGE_FIELDS permission that a topic-extraction run requires. Confirm the intended permission gate before promoting this to customers."
-        },
-        "when_to_bring_up": "When a customer asks how to pre-populate the topic library with their own taxonomy or controlled vocabulary before running Generate Topics for the first time.",
-        "who_should_get_it": "Customers on Generate Topics (limited release) who have an existing glossary, subject taxonomy, or controlled vocabulary they want the AI to respect.",
-        "staff_path": "Settings → Library → Taxonomy → Import glossary",
-        "gotchas": "1) The companion UI PR must also be deployed — the button 404s until both API and UI are live. 2) If an imported term is later grouped with a shorter LLM-generated synonym, the display label may show the shorter name (accepted risk, no rename occurs). 3) Permission gate is currently org-membership only — follow up on whether MANAGE_FIELDS should be required.",
-        "talk_track": "If you already have a list of approved topics or a subject taxonomy, you can paste them straight into Sessionboard before your first extraction run. The library will mark each term as human-reviewed, protect it from pruning, and use it as a preference signal when the AI groups new submissions.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "medium",
-          "docs_gap": "The Glossary article does not cover the Taxonomy topic library or the Import glossary workflow; a new guide (or a dedicated section) should explain how to prepare a CSV, what the created/skipped/invalid response means, and how human-sourced terms interact with AI extraction runs.",
-          "why_use_it": "The Taxonomy library is where Sessionboard stores the topics used to tag sessions, surface recommendations, and power AI-driven content grouping. Seeding it with your organization's own controlled vocabulary before extraction runs means the AI works within your preferred terminology from day one. You can import up to 500 terms at once — with optional descriptions — and the library flags duplicates and invalid rows without discarding the valid ones. Human-sourced terms are protected from automatic pruning, so your glossary stays intact across extraction cycles.",
-          "at": "2026-10-20T18:09:31.758Z"
-        }
-      },
-      "shipped": {
-        "prs": [
-          "lennd/sessionboard-web-api#4612"
+          "lennd/sessionboard-web-api#4612",
+          "lennd/sessionboard-web-api#4643",
+          "lennd/sessionboard-web-ui-v2#1073",
+          "lennd/sessionboard-web-ui-v2#1084",
+          "lennd/sessionboard-web-api#4645",
+          "lennd/sessionboard-web-ui-v2#1085"
         ],
         "docs_only": false,
         "pending": null,
@@ -3651,74 +3596,6 @@
       "ideas": [],
       "media": [],
       "gated": null
-    },
-    {
-      "id": "competitor-session-topic-comparison",
-      "title": "Compare your event's topics against a competitor event's sessions",
-      "summary": "Organizers using Speaker Prospects can now open a competitor (external) event and see a **Topic Comparison** — which topics only the competitor covers, which only your event covers, and affinity matches that pair similar-but-differently-named topic clusters across both programmes. A separate **Topic Convergence** view groups both events' topics into thematic families, writes a one-sentence focus characterisation for each event, and proposes up to three concrete moves to close the content gap. Topics are also extracted automatically from competitor sessions via the existing `generate_topics` pipeline, and the **Topics** list now shows an **External Session Count** column alongside the existing usage count.",
-      "article": "/speaker-crm/overview",
-      "related": [
-        "/speaker-crm/pipeline",
-        "/speaker-crm/speaker-crm-interest-forms"
-      ],
-      "kind": "new",
-      "module": "CRM",
-      "features": [
-        "speaker_prospects",
-        "generate_topics"
-      ],
-      "availability": "limited_release",
-      "enable": {
-        "how": "csm",
-        "path": "Ask your Customer Success Manager to enable Generate Topics; then Prospects → External Events → [event] → Topic Comparison / Topic Convergence"
-      },
-      "where": {
-        "scope": "org",
-        "path": "Prospects → External Events → [competitor event] → Topic Comparison / Topic Convergence"
-      },
-      "permissions": [
-        "org.prospects.read"
-      ],
-      "audience": [
-        "organizer"
-      ],
-      "use_case": "Programme teams researching competitor events can instantly see which topic areas a rival conference emphasises that their own event does not, and get AI-generated suggestions for where to shift or expand their content strategy to close the gap.",
-      "internal": {
-        "cs_action": {
-          "kind": "must_enable",
-          "note": "Requires the org-level `feature--generate_topics` flag. Keep `TAXONOMY_EXTERNAL_SESSIONS_MAX_PER_RUN=0` in Doppler until every worker image is on this release, then set it to the desired cap. Do NOT enable for orgs that only have the contact-topics flag without explicit product sign-off — the unified flag would send contact bios to the LLM."
-        },
-        "when_to_bring_up": "When a customer asks how their programme compares to a specific competitor event, or when they are building their CFP and want to identify content gaps.",
-        "who_should_get_it": "Customers with Speaker Prospects and Generate Topics already enabled who actively track competitor events.",
-        "staff_path": "Org → Prospects → External Events → [event] → Topic Comparison / Topic Convergence",
-        "gotchas": "Topic Convergence calls gpt-4o-mini (model env `PROSPECTS_CONVERGENCE_MODEL`) and takes ~5 s cold / ~0.1 s cached. The kill switch is `TAXONOMY_EXTERNAL_SESSIONS_MAX_PER_RUN=0`. External session topic counts are shown in a separate `External Session Count` column and intentionally excluded from the existing `usage_count` to avoid inflating internal topic usage stats. Two product conflicts are pending sign-off: the unified feature flag and whether competitor text should mint new org topics.",
-        "talk_track": "You can now pull up any competitor event in Prospects and see a side-by-side topic breakdown — what they cover that you don't, what you cover that they don't, and where your topic clusters are close enough to compete. The Convergence view then groups everything into themes and tells you exactly where the biggest content gaps are and what moves would close them.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The Speaker Prospects section of the help centre has no guide covering External Events, topic comparison, or topic convergence — a new article should document how to open a competitor event's Topic Comparison and Topic Convergence views, what the affinity matches and convergence moves mean, and how topics are extracted from competitor sessions.",
-          "why_use_it": "Speaker Prospects lets you track competitor events and the speakers who appear at them. The topic comparison and convergence tools extend that intelligence to the content layer: you can see at a glance where a rival event's programme diverges from yours, identify adjacent topic clusters that could attract the same audience, and get structured recommendations for closing the gap — all without leaving Sessionboard.",
-          "at": "2026-10-20T14:15:41.724Z"
-        }
-      },
-      "shipped": {
-        "prs": [
-          "lennd/sessionboard-web-api#4547"
-        ],
-        "docs_only": false,
-        "pending": null,
-        "live": {
-          "us": "2026-10-21",
-          "eu": "2026-10-21",
-          "me": "2026-10-21"
-        },
-        "announced_at": "2026-10-21",
-        "emailed_at": "2026-10-21"
-      },
-      "ideas": [],
-      "media": [],
-      "gated": "availability:limited_release"
     },
     {
       "id": "field-rules-archived-fields",
