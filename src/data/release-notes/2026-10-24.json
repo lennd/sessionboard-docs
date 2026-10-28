@@ -676,6 +676,219 @@
       "ideas": [],
       "media": [],
       "gated": "availability:beta"
+    },
+    {
+      "id": "qa-sweep-2026-10-23-cfp-refund-status-abort-toast-focus-layout-a11y",
+      "title": "Six fixes: CFP draft reset 403 error, \"Refunded\" acceptance-fee status, spurious connection-error toast, focus management after removal, contract editor badge wrapping, and video editor accessibility",
+      "summary": "Six bugs corrected in one sweep: (1) After using **Reset saved data** on a CFP draft, the next **Submit** no longer returns a 403 \"Found non-existing or deleted Session\" error — the deleted draft is removed from the cache and the submission sends with `sessionId: null`. (2) The **Connections** status column now shows **Refunded** (with date and amount) when an acceptance fee has been refunded, in English, German, Spanish, and French. (3) Navigating **Quick Launch → Continue → Back** no longer flashes a red \"Connection error … signal is aborted\" toast for cancelled in-flight requests; real network failures still toast. (4) After confirming a removal, keyboard focus returns to **Apply filter** instead of jumping to \"Skip to main content\". (5) At 1440 px with the Ask panel open, the contract template editor's Draft/module badges no longer wrap into a three-line chip. (6) The caption-style select and aspect-ratio select in the video editor now have accessible names readable by screen readers.",
+      "article": "/sessions/submission-forms",
+      "related": [
+        "/speakers/speaker-acceptance",
+        "/marketing/create",
+        "/speaker-crm/contract-templates"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "sessions",
+        "speaker_acceptance",
+        "contracts",
+        "marketing_create",
+        "marketing_media"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Sessions → submission form (CFP draft reset → Submit); Speakers → Connections (acceptance fee status); Quick Launch → Continue → Back; Marketing → Create (removal confirm); Contracts → template editor; Marketing → Media → video editor"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "speaker"
+      ],
+      "use_case": "Organizers running a CFP can now safely reset a draft and resubmit without hitting a 403 error. Teams reviewing acceptance fees get accurate refund status in their language, and keyboard-only users and screen-reader users encounter fewer focus and labelling issues across the platform.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "If a customer reports a 403 error after resetting a CFP draft, a missing 'Refunded' status on acceptance fees, a spurious 'Connection error' toast during Quick Launch navigation, focus jumping to 'Skip to main content' after a removal, badge wrapping in the contract editor, or accessibility audit failures on the video editor selects.",
+        "who_should_get_it": "All customers — fixes are default-on.",
+        "staff_path": null,
+        "gotchas": "The abort-error suppression only silences React Query's own AbortError on caller-cancelled requests; genuine network failures still produce the toast. The CFP draft reset fix drops the row from the in-progress cache and refetches both queries, so a race between reset and submit should no longer be possible.",
+        "talk_track": "Six QA fixes shipped together: resetting a CFP draft and resubmitting now works cleanly; refunded acceptance fees show the correct status with date and amount in four languages; Quick Launch back-navigation no longer shows a false connection-error toast; keyboard focus lands in the right place after a removal confirm; contract editor badges stay on one line at 1440 px; and the video editor caption-style and aspect-ratio controls are now labelled for screen readers.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The submission-forms guide should note that resetting a saved draft fully clears the cached draft IDs before the next submission. The speaker-acceptance guide should document the Refunded status (with date and amount) that appears in the Connections column when an acceptance fee is reversed.",
+          "why_use_it": "null",
+          "at": "2026-10-24T16:35:29.582Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1154"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "feature:contracts (beta)"
+    },
+    {
+      "id": "cfp-acceptance-payment-fixes",
+      "title": "Four fixes for CFP acceptance payments: correct field names in error messages, pay-link emails reach only the payer, no retroactive billing, and refunded payments show the right status",
+      "summary": "Four bugs in the CFP acceptance-payment flow are corrected: (1) Length-limit validation errors on draft/submit now show the field's configured alias (e.g. **Business Mobile**) instead of the base field name. (2) Payment-link merge tags in acceptance emails are sent only to the contact who can pay; when **Combine recipients per record** would deliver one copy to multiple people, the payment tags render empty to prevent the wrong person receiving a pay link. (3) Acceptance payments are never billed retroactively — only sessions accepted after the payment feature was activated on a form are charged. (4) A refunded acceptance payment now shows as **Refunded** (not **Paid**), and the pay and complete-free actions refuse to act on it.",
+      "article": "/sessions/accept-decline",
+      "related": [
+        "/sessions/submission-forms",
+        "/communications/email-campaigns",
+        "/awards/awards-pricing-payments-invoices"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "speaker_acceptance",
+        "sessions"
+      ],
+      "availability": "on_request",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Sessions → submission form → Acceptance settings; Communications → email merge tags for acceptance payments"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "speaker"
+      ],
+      "use_case": "Organizers collecting payments on session acceptance can trust that pay links go only to the person responsible for payment, that speakers accepted before the payment feature was turned on are not billed unexpectedly, and that refunded rows are clearly labelled so finance reconciliation is accurate.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "US replica shows 566 sessions where the submitter contact (not the payer) previously received a broken pay link; EU shows 38. Those speakers got a link that errored. Also 15 refunded CFP payment rows in US now show Refunded instead of Paid — flag to any customer reconciling payments. A db:migrate is required at deploy time (migration: 20261027100000-cfp-forms-acceptance-payment-enabled-at)."
+        },
+        "when_to_bring_up": "When a customer reports that acceptance payment emails went to the wrong person, that speakers accepted before the feature was enabled are being billed, or that a refunded payment still shows as Paid.",
+        "who_should_get_it": "Any customer using on-acceptance CFP payments — particularly those with co-speaker submissions or who have recently refunded acceptance payments.",
+        "staff_path": null,
+        "gotchas": "The activation timestamp (acceptance_payment_enabled_at) is stamped at deploy via migration for forms already set to on_acceptance; cloned events get the clone time. Bulk re-saves skip sessions already accepted before that timestamp. The one-person guard on pay-link tags counts distinct To, CC, BCC, and additional-contact addresses — not just To.",
+        "talk_track": "Four QA fixes for CFP acceptance payments: field alias names now appear correctly in validation errors; pay links in acceptance emails go only to the payer (co-speakers no longer receive a link that errors); sessions accepted before the payment feature was activated are not billed retroactively; and refunded payments are clearly labelled Refunded so your finance team can reconcile accurately.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The accept-or-decline guide should document how acceptance payments work, including the activation timestamp behaviour, the one-payer-only rule for merge tags, and the Refunded status on invoices.",
+          "why_use_it": "null",
+          "at": "2026-10-24T16:54:17.121Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4722"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "sentry-sweep-2026-10-24-frontend-fixes",
+      "title": "Seven fixes: award category crash, field-translation numbers, notification links, PDF viewer on iOS Safari, booklet pagination, preload recovery, and Ready Room error noise",
+      "summary": "Seven bugs corrected in one sweep: (1) Award submissions with no category no longer crash the **Details** tab — they now show **No category** in English, German, Spanish, and French. (2) Custom field translation values that are numbers or booleans no longer throw an error in the **Field Translations** sidebar; they are coerced to strings, and objects are treated as empty. (3) File-export notification links that point to an external domain now open in a new tab instead of crashing the router. (4) The PDF viewer and floor-map PDF picker now load the legacy PDF.js build on iOS 15–18 Safari, where the modern build was missing a required `Map` method and failing silently. (5) Booklet preview pagination no longer throws when the preview iframe detaches from the document. (6) The Vite preload-error recovery now reloads the page correctly every time a chunk fails to load, instead of getting stuck after the first reload and leaving imports undefined. (7) Ready Room API calls no longer report 401, 404, and 422 responses to Sentry as errors; only 5xx and network failures are tracked, so callers still receive the error.",
+      "article": "/awards/managing-submissions-reviewers-rounds",
+      "related": [
+        "/settings/language-translation-variant",
+        "/communications/notifications",
+        "/marketing/poster-gallery",
+        "/marketing/print-agendas"
+      ],
+      "kind": "fixed",
+      "module": "Awards",
+      "features": [
+        "awards",
+        "languages",
+        "notifications",
+        "poster_gallery",
+        "floor_maps"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Awards → submission → Details tab; Sessions → Field Translations sidebar; Notifications bell → file-export link; Poster Gallery → PDF viewer; Floor Maps → PDF picker; Marketing → Print → Booklet preview; Ready Room"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "reviewer",
+        "speaker",
+        "participant"
+      ],
+      "use_case": "Organizers reviewing uncategorized award submissions, translating custom fields with numeric values, or working with PDF content on iOS devices will no longer hit crashes or blank screens. Teams using file-export notifications or booklet previews will see those surfaces work reliably without workarounds.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "If a customer reports a crash on the Awards Details tab for uncategorized submissions, errors in the Field Translations sidebar, broken notification links for file exports, PDF viewer failures on iOS Safari, booklet preview issues, or repeated page-blank errors after a deploy.",
+        "who_should_get_it": "All customers — all fixes are default-on.",
+        "staff_path": null,
+        "gotchas": "The Ready Room change suppresses Sentry noise for 401/404/422 but does not change how callers handle those errors — speakers and organizers still see the appropriate error states. The iOS PDF fix loads the legacy pdfjs build only; modern browsers are unaffected.",
+        "talk_track": "Seven QA fixes shipped together: uncategorized award submissions now show 'No category' instead of crashing; numeric custom-field translation values no longer break the sidebar; file-export notification links open correctly in a new tab; the PDF viewer works on iOS 15–18 Safari; booklet previews no longer fail when the iframe detaches; the preload-error recovery reloads reliably on every chunk failure; and Ready Room API noise in error tracking is reduced to genuine failures only.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The awards guide should note that submissions without a category display \"No category\" on the Details tab. The language-variants guide should clarify that numeric and boolean custom-field values are accepted in the Field Translations sidebar. The notifications guide should note that file-export links to external domains open in a new tab.",
+          "why_use_it": "null",
+          "at": "2026-10-24T18:05:30.325Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1155"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "feature:poster_gallery (beta)"
     }
   ]
 }

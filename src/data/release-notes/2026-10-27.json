@@ -62,6 +62,823 @@
         "/images/kb/credit-claiming/claiming-settings.png",
         "/images/kb/credit-claiming/claims-report.png"
       ]
+    },
+    {
+      "id": "interest-form-eval-plan-preview-assignments",
+      "title": "Interest Form evaluation plans now preview assignment changes before applying",
+      "summary": "The **Review and apply** step of an Interest Form evaluation plan now shows the same assignment preview panel as session-based plans — including projected create, remove, and keep counts — before any changes are written. The **Replace** button stays disabled while the preview loads and shows exact counts in the confirmation dialog.",
+      "article": "/speaker-crm/interest-form-evaluation-plans",
+      "related": [
+        "/evaluations/evaluation-plans",
+        "/evaluations/setting-up-round-based-evaluations"
+      ],
+      "kind": "improved",
+      "module": "CRM",
+      "features": [
+        "sessions"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Speaker CRM → Interest Forms → [form] → Evaluation Plans → [plan] → Review and apply"
+      },
+      "permissions": [
+        "org.interest_forms.read",
+        "org.interest_forms.update"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers running Interest Form evaluations can see exactly how many reviewer assignments will be created, removed, or kept before committing the change — reducing the risk of accidentally overwriting assignments mid-review cycle.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer asks why Interest Form eval plans didn't show a preview before applying assignments, or when they report accidentally overwriting assignments.",
+        "who_should_get_it": "Any org using Interest Form evaluation plans with reviewer assignments.",
+        "staff_path": "Speaker CRM → Interest Forms → [form] → Evaluation Plans → [plan] → Review and apply",
+        "gotchas": "The preview requires the companion API change (lennd/sessionboard-web-api#4743). Until that API ships, the UI falls back gracefully to the old static note and Replace confirms without counts — no broken experience, but no preview either.",
+        "talk_track": "Interest Form evaluation plans now show the same assignment preview as session plans — you see exactly what will be created, removed, or kept before hitting Replace.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The Interest Form evaluation plans guide should document the assignment preview panel under the \"Review and apply\" step, including what the create/remove/keep counts mean and how the Replace confirmation works.",
+          "why_use_it": "Interest Form evaluation plans let you score and assign reviewers to submissions collected outside a specific event. The preview panel gives you a dry-run view of assignment changes so you can confirm the impact before any records are written, matching the safety controls already available in session-based evaluation plans.",
+          "at": "2026-10-27T23:32:52.666Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1166"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "sso-self-service-setup",
+      "title": "SSO self-service setup: share a guided link so your IT team configures SAML or OIDC directly",
+      "summary": "Staff can create a SAML or OIDC identity-provider shell with just a name and domain, then share a secure **Setup Link** with the customer's IT team. The IT team opens a dedicated **Enterprise SSO Setup** page to enter connection details, map claims, add IT contacts, run a live sign-in test, and track wizard progress — all without needing a Sessionboard login. A config moves through **Pending → Configured → Verified** states; enforcing SSO now requires a **Verified** config. Once verified, the setup form becomes read-only via the shared link, and staff editing remains unrestricted.",
+      "article": "/integrations/sso",
+      "related": [],
+      "kind": "new",
+      "module": "Settings",
+      "features": [
+        "sso"
+      ],
+      "availability": "on_request",
+      "enable": {
+        "how": "support",
+        "path": "Ask your Customer Success Manager to enable SSO; then Organization Settings → Security → Single Sign-On"
+      },
+      "where": {
+        "scope": "org",
+        "path": "Organization Settings → Security → Single Sign-On → Setup Link"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who need their IT department to configure SSO can hand off the technical setup without granting Sessionboard admin access. The IT team follows a step-by-step wizard, runs a real sign-in test against their identity provider, and confirms completion — all through a time-limited, token-authenticated link.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "The UI counterpart (sessionboard-web-ui-v2 branch feature/SB-8293) must be merged and deployed after this API PR. Also verify that the v1 SSO relay allow-list includes the APPV2_URL origin in every region (US, EU, ME) before sharing the first setup link with a customer — missing origin causes the sign-in test to strand on the v1 error page."
+        },
+        "when_to_bring_up": "When a prospect or customer says their IT team needs to configure SSO but doesn't have (or shouldn't have) Sessionboard admin access, or when SSO setup has stalled because of back-and-forth on connection fields.",
+        "who_should_get_it": "Enterprise customers and any org using or evaluating SSO (SAML or OIDC) where the Sessionboard admin and the IT/IdP owner are different people.",
+        "staff_path": "Organization Settings → Security → Single Sign-On → create a config in setup mode → Generate Setup Link",
+        "gotchas": "Existing enforced SSO configs on main are backfilled to Verified by the migration, so no customer is blocked on upgrade. The setup link expires after 24 hours once the config is verified (read-only after that via the public link; staff editing is always available). The development-only flag SSO_SETUP_ALLOW_LOCAL_IDP must never be set in production. No email notifications for IT contacts are sent yet — that is a follow-up ticket.",
+        "talk_track": "You can now create an SSO config shell and send your IT team a secure, time-limited link to a guided setup wizard. They enter the connection details, map claims, add their contact info, and run a live sign-in test — all without a Sessionboard login. Once they verify it works, the config is locked in and you can enforce SSO with one click.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The SSO guide should document the new self-service setup flow: creating a shell config in setup mode, generating and sharing a Setup Link, the Pending → Configured → Verified lifecycle, the IT contacts feature, the live sign-in test, wizard progress tracking, and the requirement that enforcing SSO now requires a Verified config.",
+          "why_use_it": "SSO lets your attendees, speakers, and team members sign in to Sessionboard using your organization's existing identity provider, eliminating separate passwords and centralizing access control. The self-service setup link means your IT team can configure and verify the connection on their own schedule without waiting for a Sessionboard admin to relay every field value. A built-in sign-in test confirms the integration works before you enforce it, and the Pending → Configured → Verified lifecycle prevents an incomplete config from being enforced by mistake.",
+          "at": "2026-10-27T23:23:02.055Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4713"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "enterprise-sso-self-service-setup",
+      "title": "Enterprise SSO self-service setup: shareable setup link and guided wizard for IT teams",
+      "summary": "Organizers can now set up SAML and OIDC identity providers end-to-end without leaving Sessionboard. The **Add identity provider** dialog asks for Name, Domain, and Protocol; after creation the IdP's edit sidebar opens showing a **Share setup link** card (generate, copy, regenerate, revoke) alongside the manual connection form. A customer's IT team opens the link at `/enterprise-sso-setup/<token>` and walks through a five-step wizard — **Identity provider → Create the application → Identity provider details → Map your user attributes → Test sign-in** — with progress saved on every step. Staff see a compact status badge (**Not configured / Configured — not tested / Verified / Waiting for customer**) next to each IdP in the **Enterprise SSO** list, and **Enforce login** becomes available only after a verified test. An **IT contacts** section on the wizard and in the edit sidebars lets staff record up to five contacts per IdP.",
+      "article": "/integrations/sso",
+      "related": [
+        "/get-started/sidebar",
+        "/settings/portal-login-methods"
+      ],
+      "kind": "new",
+      "module": "Settings",
+      "features": [
+        "sso"
+      ],
+      "availability": "on_request",
+      "enable": {
+        "how": "support",
+        "path": "Ask your Customer Success Manager to enable SSO; then Organization Settings → Enterprise SSO"
+      },
+      "where": {
+        "scope": "org",
+        "path": "Organization Settings → Enterprise SSO"
+      },
+      "permissions": [
+        "event.settings.manage_sso"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Event teams that rely on corporate SSO can hand off the technical configuration to their IT department via a secure, time-limited setup link — no admin credentials required. Staff retain full visibility into setup progress and can complete the connection manually at any time if preferred.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "The API PR (sessionboard-web-api#4713) must be deployed in all regions before this UI is usable. Machine translations for de/es/fr strings need native review before non-English customers see them. Twelve manual browser QA cases (staff M1–M6, customer M7–M12) were not run in the automated suite and should be verified in a staging environment before customer rollout."
+        },
+        "when_to_bring_up": "When a prospect or customer asks about SSO setup complexity, IT team involvement, or reducing time-to-go-live for identity provider configuration.",
+        "who_should_get_it": "Enterprise customers with SAML or OIDC identity providers who want their IT team to handle the technical SSO configuration without needing Sessionboard admin access.",
+        "staff_path": "Organization Settings → Enterprise SSO → Add identity provider → (after creation) Share setup link",
+        "gotchas": "The public setup page at /enterprise-sso-setup/<token> is only functional after the companion API PR #4713 is live in every region. A verified connection opened via a setup link is read-only in the wizard (forms disabled with a notice); the sign-in test and IT contacts remain available. Enforce login is gated on a verified test — a 409 is rendered inline if attempted before verification. The setup link token travels only in the Authorization header and sessionStorage, never in the URL.",
+        "talk_track": "Instead of emailing configuration instructions back and forth with a customer's IT team, you generate a secure setup link from the Enterprise SSO settings page. The IT team opens it, follows a five-step wizard to configure their identity provider, runs a test sign-in, and you see the status update to Verified in real time. Once verified, you can enforce SSO login with one click.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The SSO guide should be updated to document the new self-service setup flow: the Add identity provider dialog (name/domain/protocol only), the Share setup link card in the edit sidebar, the five-step public wizard at /enterprise-sso-setup/<token>, the IT contacts section, the status badges (Not configured / Configured — not tested / Verified / Waiting for customer), progress persistence, the sign-in test polling flow, and the rename of the settings menu entry to \"Enterprise SSO\".",
+          "why_use_it": "Single Sign-On lets your attendees and team members authenticate with your organization's existing identity provider instead of managing separate Sessionboard passwords. The self-service setup flow gives your IT team a guided, five-step wizard — covering application creation, metadata exchange, attribute mapping, and a live sign-in test — so configuration happens without back-and-forth with Sessionboard support. Staff control when to share the link, can track progress in real time, and can enforce SSO login only after a successful test, reducing the risk of locking anyone out.",
+          "at": "2026-10-27T23:20:46.954Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1147"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "interest-form-evaluation-plan-dry-run-preview",
+      "title": "Interest Form evaluation plans now preview evaluator assignments before applying",
+      "summary": "The **Review and apply** step of an Interest Form evaluation plan's bulk-assign wizard now shows a live preview of which evaluator will receive which submission — including counts of projected **Created**, **Restored**, **Existing**, **Removed**, and **Kept due to reviews** assignments — before any changes are written. The **Replace** confirmation also displays accurate counts. Previously, Interest Form plans showed the message \"Interest Form plans do not preview pairings before applying\" because the underlying endpoint had no dry-run capability.",
+      "article": "/speaker-crm/interest-form-evaluation-plans",
+      "related": [
+        "/evaluations/setting-up-round-based-evaluations",
+        "/evaluations/evaluation-plans"
+      ],
+      "kind": "fixed",
+      "module": "CRM",
+      "features": [
+        "sessions_v2"
+      ],
+      "availability": "add_on",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "CRM → Interest Forms → [form] → Evaluation Plans → [plan] → Assignments → Review and apply"
+      },
+      "permissions": [
+        "org.interest_forms.update"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers running Interest Form evaluations can now see exactly which evaluator will be assigned to which submission — and how many assignments will be created, restored, or removed — before committing the bulk assignment. This prevents surprises when replacing or adding evaluators across a large submission pool.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer using Interest Form evaluation plans complains that they cannot see a preview of evaluator assignments before applying, or that the Replace confirmation shows no counts.",
+        "who_should_get_it": "Customers using Interest Forms with evaluation plans and Sessions 2.0.",
+        "staff_path": "CRM → Interest Forms → [form] → Evaluation Plans → [plan] → Assignments → Review and apply",
+        "gotchas": "The companion UI PR (sessionboard-web-ui-v2) must be deployed after this API change is live in prod; the old endpoint rejected dryRun with a 400. No action needed once both are deployed — the feature is default-on.",
+        "talk_track": "Interest Form evaluation plans now show the same assignment preview that event evaluation plans have had — projected counts and a searchable, pageable list of evaluator-to-submission pairings — before anything is written.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The Interest Form evaluation plans guide should document the dry-run preview step in the bulk-assign wizard, including the meaning of the Created, Restored, Existing, Removed, and Kept due to reviews counts.",
+          "why_use_it": "Interest Form evaluation plans let you distribute submissions to reviewers in structured rounds, score them, and surface the best candidates — all without creating a full event. The assignment preview shows you the projected outcome of any bulk-assign action so you can verify the distribution looks right before it takes effect. Grouping, searching, and paging through the preview gives you confidence that every submission lands with the right evaluator.",
+          "at": "2026-10-27T20:53:58.680Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4743"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "add-to-session-dialog-five-fixes",
+      "title": "Five fixes for Add to Session: event scoping, status picker, Sessions 2.0 guard, events list refresh, and nested column order",
+      "summary": "Five bugs corrected in the **Add to Session** dialog and related contact views: (1) Bulk **Add to Session** from **Event → Contacts** now shows only the current event instead of every org event. (2) The **Status** picker is hidden on events without speaker acceptance enabled, and sends `pending` automatically so no data is lost. (3) Selecting an event that does not have **Sessions 2.0** shows an explanation and disables **Add** and bulk **Create**, preventing a contact from being silently enrolled in the wrong event. (4) After adding a contact to a session in a new event, the **Events** card on the contact profile updates immediately without a full-page reload. (5) Nested related-record rows (e.g. Sessions expanded under a contact) now show the record's **Title** column first, followed by **Relation** and then other columns, so the identifying field is always visible without scrolling.",
+      "article": "/contacts/add-a-moderator-chairperson",
+      "related": [
+        "/speakers/create-assign-speakers",
+        "/speakers/speaker-acceptance",
+        "/contacts/contact-profile",
+        "/speaker-crm/crm-add-contact-to-events"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "sessions_v2",
+        "speaker_acceptance",
+        "sessions",
+        "crm"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Event → Contacts → select contacts → Add to Session; CRM → contact → Program tab → Add to Session; Event → Contacts → Columns → Related → Sessions → expand row"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who bulk-add contacts to sessions from the Event Contacts view, manage speaker acceptance workflows, or work across events with and without Sessions 2.0 will no longer encounter wrong event lists, phantom status fields, silent enrolment errors, stale event counts, or off-screen title columns in nested tables.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "If a customer reports seeing other org events in the Add to Session dialog from Event Contacts, a Status field appearing on events without speaker acceptance, contacts being unexpectedly enrolled in non-Sessions-2.0 events, stale event counts after adding a session, or the Title column missing from nested session rows.",
+        "who_should_get_it": "All customers — fixes are default-on.",
+        "staff_path": null,
+        "gotchas": "Fix #3 only disables Add and bulk Create for non-Sessions-2.0 events; single Create (legacy endpoint) still works there. Fix #2 silently sends 'pending' when acceptance is off — no status is stored, which matches the API's existing behaviour.",
+        "talk_track": "Five QA fixes to the Add to Session dialog: it now scopes to the current event when launched from Event Contacts; hides the Status picker on events without speaker acceptance; warns and blocks Add when the target event lacks Sessions 2.0; refreshes the contact's Events card immediately after adding; and puts the session Title first in nested related-record tables.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide for adding a moderator or chairperson should be expanded (or a new guide created) to cover the bulk Add to Session dialog, including how event scoping works from Event Contacts vs. the CRM, the Sessions 2.0 requirement, and how the speaker acceptance setting controls the Status picker.",
+          "why_use_it": "null",
+          "at": "2026-10-27T20:35:21.993Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1167"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "nested-related-record-tables",
+      "title": "Expand any Contacts, Groups, or Sessions row to see its related records inline",
+      "summary": "A new **Related** panel in table **Preferences** lets organizers choose a related type (e.g. *Sessions (as participant)*, *Contacts*, *Participants*) and pick columns, sort order, and filters. Rows that have related records show a chevron and count; expanding a row opens a nested table with its own pagination (**1–10 of N**, with 5 / 10 / 25 per-page options) and inline editing. The configuration is saved with the view and persists on reload. Exports gain an **Include related records?** option: XLSX groups related rows under each parent at Excel outline level 1; CSV repeats parent columns with a `<Type>: ` prefix per related row.",
+      "article": "/reporting/dashboard-views",
+      "related": [
+        "/reporting/exporting-data",
+        "/contacts/contact-profile",
+        "/sessions/create-a-session",
+        "/sponsors-exhibitors/sponsors"
+      ],
+      "kind": "new",
+      "module": "CRM",
+      "features": [
+        "sessions",
+        "sessions_v2"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "setting",
+        "path": "Event → Contacts (or Groups or Sessions) → table Preferences → Related"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event → Contacts / Groups / Sessions → any saved table view → row chevron"
+      },
+      "permissions": [
+        "event.contacts.read",
+        "event.sessions.read",
+        "event.accounts.read",
+        "event.speakers.read",
+        "event.sponsors.read",
+        "event.exhibitors.read"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Teams that need submission, submitter, and speaker details in one place — or want to see a contact's sessions, a group's contacts, or a session's participants without building a separate report — can expand any row to browse and edit related records inline. Session-manager scoping applies automatically, so each team member sees only the records they are permitted to view.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer says they build custom reports just to see speaker + session + submitter details together, or when they ask how to see a sponsor's contacts alongside their sessions.",
+        "who_should_get_it": "Any event team that manages complex speaker or sponsor relationships and wants to reduce tab-switching or custom report overhead.",
+        "staff_path": "Event → Contacts → Preferences → Related (or Groups / Sessions equivalent)",
+        "gotchas": "Contact scope (Ticket 3) is not yet implemented — nested contacts are not yet filtered by the session-manager's contact scope, only by session scope. Related sessions show top-level sessions only; a contact on a sub-session only will not appear. Org CRM (/organization/...) has no related endpoint yet. XLSX nested exports do not split datetime columns the same way as parent rows.",
+        "talk_track": "You can now expand any contact, group, or session row to see its related records inline — sessions a speaker is on, contacts in a sponsor group, participants in a session — with the same columns and filters you already use. The config saves with the view, and exports include the nested rows in XLSX (with outline grouping) or CSV.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The dashboard-views guide should document the new Related panel in Preferences — how to choose a related type, configure columns/sort/filters, and what the chevron count and nested pagination controls look like — and note that the configuration is saved per view.",
+          "why_use_it": "Related-record tables let you browse the connections between contacts, groups, and sessions without leaving the table you are already working in. Expand a contact to see every session they are speaking on, or open a sponsor group to review its contacts and linked sessions — all with the same columns, filters, and inline editing available on the parent table. When you export, related rows travel with their parent in the same file, either grouped in XLSX or flattened in CSV, so downstream reporting tools receive a complete picture in one download.",
+          "at": "2026-10-27T19:32:52.517Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4737"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "related-records-expandable-nested-tables",
+      "title": "Expand any Contacts, Groups, or Sessions row to see related records inline",
+      "summary": "A new **Related** tab in table **Preferences** lets organizers configure a related record type (e.g. Sessions under Contacts, Contacts under Sponsors/Exhibitors, Participants under Sessions). Rows that have related records show a chevron and count; clicking expands an inline nested table with its own columns, sort, filters, pagination, and editable cells. The **Export** dialog gains a **Yes, nested** option that produces an XLSX with collapsible groups or a CSV with prefixed columns.",
+      "article": "/reporting/dashboard-views",
+      "related": [
+        "/contacts/add-delete-a-contact",
+        "/sessions/create-a-session",
+        "/sponsors-exhibitors/adding-exhibitor-groups-contacts",
+        "/reporting/exporting-data"
+      ],
+      "kind": "new",
+      "module": "Program",
+      "features": [
+        "sessions"
+      ],
+      "availability": "limited_release",
+      "enable": {
+        "how": "support",
+        "path": "Ask your Customer Success Manager to enable Related Records; then Event → Contacts / Groups / Sessions → Preferences → Related"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event → Contacts → Preferences → Related; Event → Sponsors/Exhibitors → Preferences → Related; Event → Sessions → Preferences → Related"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Show teams that need submission, submitter, and speaker details in one view can expand any row to see related records without building a separate custom report. Teams managing sponsors or exhibitors can expand a group row to see all associated contacts and their session participation without leaving the table.",
+      "internal": {
+        "cs_action": {
+          "kind": "must_enable",
+          "note": "Requires the companion API PR (sessionboard-web-api#4737) to be live in PROD before enabling. Deploy the API first, then the UI."
+        },
+        "when_to_bring_up": "When a customer asks for a combined view of submissions + submitters + speakers, or when a show team is building custom reports just to see related records side by side.",
+        "who_should_get_it": "Large show teams (e.g. Tahaluf) that need cross-entity visibility in a single table; any customer who regularly exports combined contact + session data.",
+        "staff_path": "Event → Contacts / Groups / Sessions → Preferences → Related",
+        "gotchas": "Not yet wired to the Agenda list view, org CRM (Experts) table, or org Sessions directories. Nested filters are a fixed set (text, session status, CFP form, participant status, sponsor/exhibitor) — not the full filter builder. The API must be deployed first or the POST view schema will 400 on unknown keys. The Additional Contacts grid is excluded by design.",
+        "talk_track": "Instead of building a custom report every time you need to see a contact's sessions or a sponsor's contacts, you can now expand any row in the Contacts, Groups, or Sessions table to see related records inline — with editable cells, filters, and export support.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The dashboard-views guide should document the new Related tab in Preferences, how to configure a related record type with nested columns/sort/filters/page size, how the chevron and count work on expandable rows, and the nested export options in the Export dialog.",
+          "why_use_it": "Related Records lets you see connected data — a contact's sessions, a group's contacts, a session's participants — directly inside the main table without switching views or building a separate report. Configure which related type to show, choose the columns, set filters (including by CFP form, session status, or participant status), and the nested table appears inline when you expand a row. Edits made in the nested table save in place, and exports can include the nested rows alongside their parent records.",
+          "at": "2026-10-27T19:00:45.310Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1164"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:limited_release"
+    },
+    {
+      "id": "contact-scope-restricted-team-roles",
+      "title": "Restrict team role access to specific contacts by field value or list membership",
+      "summary": "Restricted team roles (roles with **Restrict records** enabled) can now be scoped to contacts by **Contact access** filters — a contact custom field value (dropdown, multiselect, or checkbox) or a static contact list — in addition to the existing session filters. Contacts outside the scope are hidden from the contacts list, search, pickers, exports, email campaign recipient previews, and profile routes; on session profiles, out-of-scope participants appear as **Restricted** rows with no name, email, or photo.",
+      "article": "/event-team/invite-manage-event-team-members#give-an-outside-vendor-limited-access",
+      "related": [
+        "/contacts/add-delete-a-contact",
+        "/contacts/contact-profile",
+        "/communications/email-campaigns"
+      ],
+      "kind": "new",
+      "module": "Event team",
+      "features": [
+        "sessions"
+      ],
+      "availability": "limited_release",
+      "enable": {
+        "how": "setting",
+        "path": "Event → Team → [role] → Restrict records → Contact access"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event → Team → [role] → Contact access"
+      },
+      "permissions": [
+        "event.settings.manage_permissions",
+        "event.users.update"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Hosting and travel vendors who should only see the speakers they are responsible for can be given a restricted role scoped to a \"Hosted = Yes\" checkbox field, so they never see other speakers' names, emails, or headshots — even when those speakers share a session.",
+      "internal": {
+        "cs_action": {
+          "kind": "reach_out",
+          "note": "This feature was built for Tahaluf's hosting/travel vendor workflow. Reach out to any customer who uses restricted team roles and has asked for per-contact (rather than per-session) scoping."
+        },
+        "when_to_bring_up": "When a customer wants to give a vendor or sub-team access to only a subset of speakers — for example, hosted speakers, VIP speakers, or speakers in a specific region.",
+        "who_should_get_it": "Customers with external vendors (hosting, travel, green-room staff) or internal teams that should see only a defined subset of contacts at an event.",
+        "staff_path": "Event → Team → [role] → Restrict records (enable_session_filters) → Contact access",
+        "gotchas": "Session-scoped and contact-scoped filters AND together when both are set. Dynamic contact list segments are not supported — only static lists. Insights/SbQL and email campaign send/schedule jobs are not yet scoped; advise customers not to grant Insights access to vendor roles. Subsession participant lists and session-list speaker columns still show all participant names on a visible session.",
+        "talk_track": "You can now give a hosting vendor a role that shows only the speakers they are responsible for — set a 'Hosted' checkbox on each speaker, then point the vendor's role at 'Hosted = Yes' in Contact access. They see those contacts everywhere in the event: list, search, export, email campaigns, and session profiles. Anyone outside that scope is hidden or shown as Restricted.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should document the new Contact access filter options (contact custom field and static contact list) under the restricted-role section, including how field-value filters OR within a field and AND across fields, and the behaviour of the Restricted placeholder on session profiles.",
+          "why_use_it": "Restricted team roles let you give outside vendors or internal sub-teams access to your event without exposing every contact. Contact access filters narrow that access further — to only the people who match a specific field value (such as a \"Hosted\" checkbox or a \"Region\" dropdown option) or who belong to a static contact list. This means a vendor sees exactly the speakers they manage and nothing more, across the contacts list, search, exports, email campaigns, and session profiles.",
+          "at": "2026-10-27T18:55:39.799Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4735"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:limited_release"
+    },
+    {
+      "id": "event-team-contact-access-restricted-roles",
+      "title": "Restrict team member access by contact field value or contact list",
+      "summary": "A new **Contact access** section in the event team member sidebar lets organizers scope a restricted role to only the contacts that match a specific field value or belong to a static contact list. Pick a dropdown, multiselect, or checkbox contact field, choose the allowed option(s) (checkbox fields offer **Yes** / **No**), and optionally add one or more static lists — team members with that role will only see contacts that satisfy those filters. The step is now titled **Restrict records**, with **Session filters** and **Contact access** as subsections.",
+      "article": "/event-team/invite-manage-event-team-members#give-an-outside-vendor-limited-access",
+      "related": [
+        "/speaker-crm/crm-segments"
+      ],
+      "kind": "new",
+      "module": "Event team",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Team → (member) → Edit → Next → Restrict records → Contact access"
+      },
+      "permissions": [
+        "event.users.update"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Hosting and travel vendors who should only see the speakers they are responsible for — for example, those tagged as \"Hosted\" — can now be given a restricted team role scoped to that contact field value, preventing them from seeing any other speakers on the event.",
+      "internal": {
+        "cs_action": {
+          "kind": "reach_out",
+          "note": "Proactively share with customers who use restricted team roles for hosting, travel, or other vendors who should see only a subset of contacts."
+        },
+        "when_to_bring_up": "When a customer asks how to give a vendor access to only certain speakers, or when they report that session-scoped roles expose too many contacts.",
+        "who_should_get_it": "Customers with multi-vendor events (e.g. Tahaluf-style hosted speaker programmes) where different vendors manage different subsets of speakers.",
+        "staff_path": "Team → (member) → Edit → Next → Restrict records → Contact access",
+        "gotchas": "Requires the companion API PR (sessionboard-web-api#4735) to be live in production before the new filter types are accepted; merging the UI before the API is deployed will cause 400 errors on save. Static (non-dynamic) lists only — dynamic segments are excluded from the list picker.",
+        "talk_track": "You can now scope a restricted team role to contacts that match a specific field value — like 'Hosted: Yes' — or belong to a static contact list. This means your hosting vendor logs in and only sees their speakers, with no risk of seeing anyone else's data.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The invite-and-manage guide should document the new Contact access section: how to pick a contact field, select option values (including Yes/No for checkbox fields), and add a static contact list, and explain how contact-only scopes interact with the existing session filters.",
+          "why_use_it": "Restricted team roles let you give outside vendors or internal sub-teams access to only the records they need. Contact access filters go beyond session-based scoping: you can limit a role to contacts that match a specific field value (such as a \"Hosted\" flag) or belong to a curated static list, so vendors see exactly their subset of speakers without any data leaking from shared sessions.",
+          "at": "2026-10-27T18:47:59.571Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1163"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "crm-add-to-session-bulk-any-event-status",
+      "title": "Add contacts to a session in bulk from the CRM, across any event, with an acceptance status",
+      "summary": "**Add to session** in the CRM now works for contacts on no event, lists every viewable org event (not just the contact's own events), and lets you set the participant status to **Pending** or **Accepted** in the same step. A new **Add to session** bulk action on the org Contacts table and an **Assign → Session** bulk action on the event Contacts table let you place up to 200 selected contacts onto one session at once; contacts not yet in the chosen event are added automatically before the session assignment runs.",
+      "article": "/speaker-crm/crm-add-contact-to-events",
+      "related": [
+        "/speakers/create-assign-speakers",
+        "/contacts/add-delete-a-contact",
+        "/contacts/adding-existing-contacts-to-a-new-event"
+      ],
+      "kind": "improved",
+      "module": "CRM",
+      "features": [
+        "crm",
+        "sessions"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Org CRM → Contacts → contact profile → Program tab → Add to session; Org CRM → Contacts → select contacts → Add to session (bulk bar); Event → Contacts → select contacts → Assign → Session"
+      },
+      "permissions": [
+        "org.contacts.update",
+        "event.sessions.update"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Teams that confirm speakers before the agenda is finalised can now assign a contact to a session — and set them as Accepted — directly from the CRM without first adding them to an event manually. Bulk assignment lets programme teams place a whole panel or track cohort onto a session in one action instead of editing each contact individually.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer says adding speakers to sessions from the CRM is tedious, or when they keep placeholder sessions because speakers are confirmed before the agenda exists.",
+        "who_should_get_it": "Any customer using the CRM who manages speakers across multiple events or confirms speakers before sessions are scheduled — especially large conference teams like Tahaluf/Informa.",
+        "staff_path": "Org CRM → Contacts → contact profile → Program tab; or Contacts table bulk bar",
+        "gotchas": "Bulk assignment is capped at 200 contacts; selecting more shows an error toast and posts nothing. The Assign → Session bulk action is hidden in sponsor and exhibitor modes on the event Contacts table. A team member needs contacts update permission (org) or sessions update permission (event) to see the respective bulk action.",
+        "talk_track": "You can now add any contact to a session straight from the CRM — even if they are not yet on the event — and mark them Accepted in the same step. Select up to 200 contacts at once and assign them all to one session, or create a new session on the spot. Contacts not yet linked to the event are added automatically before the session assignment runs.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The /speaker-crm/crm-add-contact-to-events guide should be expanded to cover: (1) the updated Add to session dialog that lists all org events and auto-adds the contact to the event if needed; (2) the Pending/Accepted status picker; (3) the bulk Add to session action on the org Contacts table; and (4) the Assign → Session bulk action on the event Contacts table including the 200-contact cap and partial-failure toast behaviour.",
+          "why_use_it": "The CRM's Add to session workflow lets you move a confirmed speaker from your contact database onto a specific session without leaving the CRM. You can assign a status at the same time, so downstream syncs and portal tasks that filter on Accepted speakers pick the person up immediately. Bulk assignment means you can place an entire group of contacts onto a session — or create a new session for them — in a single action, whether you are working from the org-level directory or an event's Contacts table.",
+          "at": "2026-10-27T18:44:49.680Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1162"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "evaluator-assignment-import-multi-submission-subsession",
+      "title": "Evaluator and Assignment imports now accept multiple submission IDs and sub-session IDs in one cell",
+      "summary": "The **Submission ID** column in the **Import Evaluators** and **Import Assignments** spreadsheets now accepts a comma-, semicolon-, pipe-, or newline-separated list of IDs in a single cell, so one row can assign an evaluator to several submissions at once. Sub-session IDs (e.g. `SESS-1977-2`) are also now resolved correctly, matching the behaviour of the sessions import. A single bad ID in a list fails only that row with a clear error message; no partial writes occur.",
+      "article": "/evaluations/setting-up-round-based-evaluations#step-4-assignments",
+      "related": [
+        "/evaluations/evaluation-plans",
+        "/settings/importing-data",
+        "/faq/common-csv-xlsx-import-issues-and-how-to-fix-them"
+      ],
+      "kind": "improved",
+      "module": "Program",
+      "features": [
+        "sessionboard_imports",
+        "sessions_v2"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Evaluation Plans → Plan → Plan Options → Import Evaluators / Import Assignments"
+      },
+      "permissions": [
+        "event.evaluation_plans.read",
+        "event.evaluation_plans.update"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Events with large reviewer pools can now bulk-assign one evaluator to many submissions in a single import row instead of repeating the evaluator's details on every line. Programs that use sub-sessions as review targets — common in abstract-heavy conferences — can reference those sub-sessions directly by their ID without workarounds.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer asks how to assign one reviewer to multiple submissions at once, or reports that sub-session IDs fail in the evaluator/assignment import.",
+        "who_should_get_it": "Any customer running round-based evaluations with sub-sessions or large reviewer pools.",
+        "staff_path": "Evaluation Plans → Plan → Plan Options → Import Evaluators / Import Assignments",
+        "gotchas": "One invalid ID in a multi-ID cell fails the entire row with no partial write. The Submission ID column max length is now 4000 characters (was 255), so existing templates downloaded before this change may show the old limit — advise customers to re-download the template. Import undo correctly removes all assignments created by a multi-ID row; runs recorded before this change (single assignment_id) are still undone correctly.",
+        "talk_track": "You can now put a comma-separated list of submission IDs — including sub-session IDs like SESS-1977-2 — in the Submission ID column of the evaluator or assignment import. One row, many assignments. If any ID in the list is invalid or not found, the whole row is rejected with a clear error so nothing is half-applied.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide's \"Import assignments from a spreadsheet\" section should be updated to document that Submission ID accepts a comma-, semicolon-, pipe-, or newline-separated list of IDs and that sub-session IDs (e.g. SESS-123-2) are supported.",
+          "why_use_it": "The Evaluators and Assignments imports let you set up your entire review programme from a spreadsheet in one step. You can assign evaluators to specific submissions, map them to rounds, and undo a run if something goes wrong — all without touching each record by hand. This is especially useful when you have hundreds of reviewers and thousands of submissions to wire together before a review cycle opens.",
+          "at": "2026-10-27T17:19:09.542Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4734"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "feature:sessionboard_imports (limited_release)"
+    },
+    {
+      "id": "swapcard-map-session-privacy",
+      "title": "Swapcard: map a Sessionboard field to \"Make the session private\" and stop syncs from resetting it",
+      "summary": "A new destination field **Make the session private** is available in the Swapcard field-mapping UI. Map a checkbox, dropdown, or text field from Sessionboard to control whether each session is private in Swapcard. When no mapping is set, syncs now preserve whatever privacy value Swapcard already holds instead of resetting every session to public.",
+      "article": "/apps/swapcard-integration#mapping-session-fields",
+      "related": [
+        "/integrations/integration-readiness",
+        "/integrations/what-syncs"
+      ],
+      "kind": "fixed",
+      "module": "Apps",
+      "features": [
+        "sessions"
+      ],
+      "availability": "limited_release",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Apps → Swapcard → Field Mappings → Session fields → Make the session private"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who mark certain sessions as private in Swapcard (e.g. invite-only or internal sessions) no longer need to re-apply that setting after every sync. They can also drive the private flag directly from a Sessionboard field so the setting is managed in one place.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "The bug affected all 94 production Swapcard mappings (85 US, 9 EU). Any customer who had manually re-privatised sessions in Swapcard after each sync will now find those sessions stay private automatically. Confirm with affected accounts (especially Informa Connect/Tech — AI Summit NY, World AI Cannes) that the new behaviour matches expectations before their next scheduled sync."
+        },
+        "when_to_bring_up": "When a customer using Swapcard reports that private sessions keep becoming public after a sync, or asks how to control session visibility from Sessionboard.",
+        "who_should_get_it": "All customers with active Swapcard mappings, particularly those running large events with private or invite-only sessions.",
+        "staff_path": "Apps → Swapcard → Field Mappings → Session fields",
+        "gotchas": "If no mapping is set, the sync now reads Swapcard's current isPrivate value and writes it back unchanged — so sessions that were accidentally made public by previous syncs will stay public until someone corrects them in Swapcard or adds a mapping. The Help Center article (swapcard-integration.mdx) needs a 'Make the session private' row added to the standard session fields table after this ships.",
+        "talk_track": "Every Swapcard sync used to silently reset all sessions to public — this fix stops that. You can also now map any checkbox, dropdown, or text field in Sessionboard to drive the private flag in Swapcard, so your access rules are managed in one place.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The Swapcard integration guide's \"Mapping session fields\" section should add a row for \"Make the session private\" describing the supported source field types (checkbox, dropdown, text) and the accepted values for dropdown/text fields (yes/true/private/1 → private; no/false/public/0 → public).",
+          "why_use_it": "The Swapcard integration lets you push your program — sessions, speakers, and their details — from Sessionboard into Swapcard without manual re-entry. Mapping fields gives you a single source of truth: change a value in Sessionboard and the next sync carries it across. Controlling session privacy through the mapping means your access rules in Swapcard stay consistent with your program data rather than requiring a separate manual step after each sync.",
+          "at": "2026-10-27T13:19:05.878Z",
+          "permissions_to_confirm": [
+            "event.integrations: sync"
+          ]
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4726"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:limited_release"
     }
   ]
 }
