@@ -65,9 +65,9 @@
     },
     {
       "id": "interest-form-eval-plan-preview-assignments",
-      "title": "Interest Form evaluation plans now preview assignment changes before applying",
-      "summary": "The **Review and apply** step of an Interest Form evaluation plan now shows the same assignment preview panel as session-based plans — including projected create, remove, and keep counts — before any changes are written. The **Replace** button stays disabled while the preview loads and shows exact counts in the confirmation dialog.",
-      "article": "/speaker-crm/interest-form-evaluation-plans",
+      "title": "Interest Form evaluation plans preview assignments before you apply them",
+      "summary": "On an Interest Form evaluation plan's **Assignments** step, **Review and apply** now previews every pairing the rule would make, by submission or by reviewer, before anything is saved, as event plans already do. **Replace not-yet-reviewed** and **Replace all** show the exact numbers to create, remove, leave in place and keep before you confirm.",
+      "article": "/speaker-crm/interest-form-evaluation-plans#set-up-a-plan",
       "related": [
         "/evaluations/evaluation-plans",
         "/evaluations/setting-up-round-based-evaluations"
@@ -84,7 +84,7 @@
       },
       "where": {
         "scope": "org",
-        "path": "Speaker CRM → Interest Forms → [form] → Evaluation Plans → [plan] → Review and apply"
+        "path": "Speaker CRM → Interest Forms → [form] → Evaluation → [plan] → Assignments → Review and apply"
       },
       "permissions": [
         "org.interest_forms.read",
@@ -93,17 +93,17 @@
       "audience": [
         "organizer"
       ],
-      "use_case": "Organizers running Interest Form evaluations can see exactly how many reviewer assignments will be created, removed, or kept before committing the change — reducing the risk of accidentally overwriting assignments mid-review cycle.",
+      "use_case": "Committees scoring Interest Form proposals can check who will review what, and what a Replace would remove, before anything changes — the same safety net event plans have.",
       "internal": {
         "cs_action": {
           "kind": "none",
           "note": null
         },
-        "when_to_bring_up": "When a customer asks why Interest Form eval plans didn't show a preview before applying assignments, or when they report accidentally overwriting assignments.",
+        "when_to_bring_up": "When a customer asks why Interest Form plans showed \"do not preview pairings before applying\", or worries about overwriting reviewer assignments mid-cycle.",
         "who_should_get_it": "Any org using Interest Form evaluation plans with reviewer assignments.",
-        "staff_path": "Speaker CRM → Interest Forms → [form] → Evaluation Plans → [plan] → Review and apply",
-        "gotchas": "The preview requires the companion API change (lennd/sessionboard-web-api#4743). Until that API ships, the UI falls back gracefully to the old static note and Replace confirms without counts — no broken experience, but no preview either.",
-        "talk_track": "Interest Form evaluation plans now show the same assignment preview as session plans — you see exactly what will be created, removed, or kept before hitting Replace.",
+        "staff_path": "Speaker CRM → Interest Forms → [form] → Evaluation → [plan] → Assignments → Review and apply",
+        "gotchas": "Nothing is saved by the preview; assignments are written only on Assign or on confirming Replace. Counts in the Replace dialog are exact for that moment — if someone else changes assignments in between, apply reports what it actually did.",
+        "talk_track": "Interest Form plans now preview assignments exactly like event plans: see every reviewer–submission pairing, and the exact numbers a Replace will change, before you commit.",
         "draft": {
           "by": "release-intake",
           "model": "claude-sonnet-4-6",
@@ -115,6 +115,7 @@
       },
       "shipped": {
         "prs": [
+          "lennd/sessionboard-web-api#4743",
           "lennd/sessionboard-web-ui-v2#1166"
         ],
         "docs_only": false,
@@ -245,73 +246,6 @@
       "shipped": {
         "prs": [
           "lennd/sessionboard-web-ui-v2#1147"
-        ],
-        "docs_only": false,
-        "pending": null,
-        "live": {
-          "us": "2026-10-28",
-          "eu": "2026-10-28",
-          "me": "2026-10-28"
-        },
-        "announced_at": null,
-        "emailed_at": null
-      },
-      "ideas": [],
-      "media": [],
-      "gated": null
-    },
-    {
-      "id": "interest-form-evaluation-plan-dry-run-preview",
-      "title": "Interest Form evaluation plans now preview evaluator assignments before applying",
-      "summary": "The **Review and apply** step of an Interest Form evaluation plan's bulk-assign wizard now shows a live preview of which evaluator will receive which submission — including counts of projected **Created**, **Restored**, **Existing**, **Removed**, and **Kept due to reviews** assignments — before any changes are written. The **Replace** confirmation also displays accurate counts. Previously, Interest Form plans showed the message \"Interest Form plans do not preview pairings before applying\" because the underlying endpoint had no dry-run capability.",
-      "article": "/speaker-crm/interest-form-evaluation-plans",
-      "related": [
-        "/evaluations/setting-up-round-based-evaluations",
-        "/evaluations/evaluation-plans"
-      ],
-      "kind": "fixed",
-      "module": "CRM",
-      "features": [
-        "sessions_v2"
-      ],
-      "availability": "add_on",
-      "enable": {
-        "how": "default_on",
-        "path": null
-      },
-      "where": {
-        "scope": "org",
-        "path": "CRM → Interest Forms → [form] → Evaluation Plans → [plan] → Assignments → Review and apply"
-      },
-      "permissions": [
-        "org.interest_forms.update"
-      ],
-      "audience": [
-        "organizer"
-      ],
-      "use_case": "Organizers running Interest Form evaluations can now see exactly which evaluator will be assigned to which submission — and how many assignments will be created, restored, or removed — before committing the bulk assignment. This prevents surprises when replacing or adding evaluators across a large submission pool.",
-      "internal": {
-        "cs_action": {
-          "kind": "none",
-          "note": null
-        },
-        "when_to_bring_up": "When a customer using Interest Form evaluation plans complains that they cannot see a preview of evaluator assignments before applying, or that the Replace confirmation shows no counts.",
-        "who_should_get_it": "Customers using Interest Forms with evaluation plans and Sessions 2.0.",
-        "staff_path": "CRM → Interest Forms → [form] → Evaluation Plans → [plan] → Assignments → Review and apply",
-        "gotchas": "The companion UI PR (sessionboard-web-ui-v2) must be deployed after this API change is live in prod; the old endpoint rejected dryRun with a 400. No action needed once both are deployed — the feature is default-on.",
-        "talk_track": "Interest Form evaluation plans now show the same assignment preview that event evaluation plans have had — projected counts and a searchable, pageable list of evaluator-to-submission pairings — before anything is written.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The Interest Form evaluation plans guide should document the dry-run preview step in the bulk-assign wizard, including the meaning of the Created, Restored, Existing, Removed, and Kept due to reviews counts.",
-          "why_use_it": "Interest Form evaluation plans let you distribute submissions to reviewers in structured rounds, score them, and surface the best candidates — all without creating a full event. The assignment preview shows you the projected outcome of any bulk-assign action so you can verify the distribution looks right before it takes effect. Grouping, searching, and paging through the preview gives you confidence that every submission lands with the right evaluator.",
-          "at": "2026-10-27T20:53:58.680Z"
-        }
-      },
-      "shipped": {
-        "prs": [
-          "lennd/sessionboard-web-api#4743"
         ],
         "docs_only": false,
         "pending": null,
