@@ -190,6 +190,125 @@
       "ideas": [],
       "media": [],
       "gated": "availability:beta"
+    },
+    {
+      "id": "docusign-account-primary-contact-signer",
+      "title": "Docusign contracts sent to sponsor/exhibitor accounts now resolve the signer from the account's primary contact",
+      "summary": "When sending a Docusign contract whose subject is an account (sponsor, exhibitor, or partner), Sessionboard now automatically resolves the signer from the account's primary contact — no manual recipient entry required. If the account has exactly one primary contact for the event (or org-level as a fallback), that person becomes the envelope recipient and their details fill any **Contact** template variables. If there are multiple primary contacts, the send is blocked with a message naming each candidate and prompting the organizer to choose one in **Review & edit fields**; if there is no primary contact, the error clearly states that no primary contact was found.",
+      "article": "/apps/docusign-integration#send-and-track-contracts",
+      "related": [
+        "/speaker-crm/contracts",
+        "/speaker-crm/contract-template-variables"
+      ],
+      "kind": "fixed",
+      "module": "CRM",
+      "features": [
+        "contracts"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Sponsors or Exhibitors → [account record] → Contracts → Send via Docusign"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers sending Docusign contracts to sponsors or exhibitors no longer need to type a recipient manually — as long as the account has one primary contact, the envelope goes straight to them. When the account has multiple primary contacts, the error message names each candidate so the organizer knows exactly who to choose.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Behaviour change is automatic for all Docusign contract sends where the subject is an account. Previously these always failed with a 400 unless the admin typed a recipient; now they succeed when there is exactly one primary contact. Live in production since web-api release/2026-10-28 (2026-10-28 18:11 UTC)."
+        },
+        "when_to_bring_up": "Any time a customer reports that Docusign contracts to sponsors or exhibitors fail with a missing signer error, or when onboarding customers who use the sponsor/exhibitor pipeline with Docusign.",
+        "who_should_get_it": "Customers using Docusign contracts with sponsor, exhibitor, or partner account subjects.",
+        "staff_path": "Event → Sponsors or Exhibitors → account record → Contracts",
+        "gotchas": "The fix only resolves a signer when the account has exactly one primary contact. Accounts with two or more primary contacts will receive a 400 naming the candidates; accounts with none will receive a 400 saying no primary contact was found. Admins must designate a single primary contact or manually pick a recipient in Review & Edit.",
+        "talk_track": "Docusign contracts sent to sponsor or exhibitor accounts now automatically use the account's primary contact as the signer, so your team doesn't have to type a recipient every time. If an account has more than one primary contact, the system tells you exactly who they are so you can choose.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The Docusign guide should document how account-subject contracts resolve the signer from the primary contact, including the event-scoped vs. org-level fallback logic and what happens when there are zero or multiple primary contacts.",
+          "why_use_it": "null",
+          "at": "2026-10-28T16:30:02.682Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4767"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "docusign-app-tile-contracts-copy",
+      "title": "The Docusign app page shows its real connection state and describes contracts, not a program sync",
+      "summary": "**Apps → Docusign** no longer shows a **Coming soon** badge or copy about syncing your program. The tile and the app page now describe what Docusign does in Sessionboard — sending speaker, sponsor and exhibitor agreements from the record with Sessionboard variables, tracking the signature, and storing the signed PDF — and show **Connected** / **Connect Docusign** from your organization's real Docusign connections. The **Learn more** link opens the Docusign integration guide.",
+      "article": "/apps/docusign-integration#connect-docusign",
+      "related": [
+        "/speaker-crm/contracts",
+        "/apps/docusign-integration#manage-connections"
+      ],
+      "kind": "fixed",
+      "module": "Apps",
+      "features": [
+        "contracts"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Apps → Docusign"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers evaluating Docusign for contracts see the real feature on the Apps page and can connect from there, instead of a Coming soon tile that described a program sync Docusign never did.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Cosmetic plus the connect state. Live in production since the web-ui-v2 prod publish of 2026-10-28 18:23 UTC (sha 58117bc27d)."
+        },
+        "when_to_bring_up": "A customer asks what the Docusign app in Apps does, or says it shows Coming soon.",
+        "who_should_get_it": "Every organization — the page is visible to all; connecting still needs the Contracts feature."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1188"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
     }
   ]
 }
