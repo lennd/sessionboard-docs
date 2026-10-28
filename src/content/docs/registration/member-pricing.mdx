@@ -5,7 +5,7 @@ sidebar:
 description: "Look up members at checkout from your association management system's data, route members, lapsed members and non-members to the right registrant type and price, offer join-and-register, and limit who can pick each type."
 features: ["registration"]
 enable_path: "Event → Preview → Registration → Request access"
-reviewed: "2026-10-27"
+reviewed: "2026-10-29"
 ---
 
 import { Note, Tip, Warning, Steps, Step } from '@compat';
@@ -41,6 +41,32 @@ Under **Join and register**, pick an add-on that sells membership dues. A non-me
 ![The Member pricing panel in Registration settings with the Look up members at checkout switch](/images/kb/registration-settings-member-pricing.png)
 
 Click **Save**. The **Membership** panel on the Registration Overview then shows members, lapsed members, non-members and people who joined while registering.
+
+## Where membership comes from
+
+**Read membership from** chooses the source:
+
+- **Member status attribute (SSO / AMS sync)**: the attribute above. Optionally choose the attributes that hold the **Member id**, **Category** and **Level**.
+- **Uploaded member list (CSV)**: your member list, uploaded under **Member list and test lookup**. Use it when your association management system cannot send membership to Sessionboard.
+- **iMIS**, **Nimble AMS**, **netFORUM**: listed as **not connected**. A live read from these needs your system's API access, which we set up with you. Until then, use the uploaded member list.
+
+### Upload the member list
+
+Under **Member list and test lookup**, choose a CSV with an `email` column and any of `member_id`, `first_name`, `last_name`, `category`, `level`, `status` and `expires_at`. Click **Preview** to see how many people are new or updated and which rows are skipped and why, then **Import**. Tick **Remove people not in this file** to replace the whole list. The list belongs to your organization, so every event reads the same one. With no `status`, someone on the list is a member until their `expires_at`; a past expiry makes them lapsed.
+
+## Rules: category, level and status
+
+**Rules** decide more than member or non-member. Each rule names a **Category**, **Level** and **Status** (blank means any) and then either sets what they **register as** (and so their price), limits them to a **package** of tickets, or marks that they **cannot register**, with the message they see. The first rule that matches wins. For example: Students → cannot register online ("Students register through their school"); Physician + Fellow → registers as Fellow, Full conference only.
+
+A person a rule refuses cannot check out, and a ticket outside their package is refused at checkout.
+
+### Test an email
+
+**Test an email** shows every step for one person: where their record came from, what it says, member or not, the rule that matched, their registrant type, the tickets they may buy and whether they can register. It reads the saved settings, so save first.
+
+## Join or renew in your system
+
+Put your system's join or renew page in **Join or renew page**. Non-members get a **Join or renew, then come back** link on the form, and lapsed members a **Renew membership** link. We add the way back to the form to the link (or put it where your URL has `{return_url}`). Back on the form, they continue with their email and the lookup runs again, so the member price applies as soon as your system (or your uploaded list) shows them as a member.
 
 ## What registrants see
 
