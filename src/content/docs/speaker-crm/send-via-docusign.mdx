@@ -1,0 +1,87 @@
+---
+title: "Send via Docusign"
+sidebar:
+  label: "Send via Docusign"
+description: "Send a Docusign template from a contact, account, group, or pipeline entry, pre-filled from the record, and let Docusign collect the signature while Sessionboard tracks the status and files the signed PDF."
+features: ["contracts"]
+reviewed: "2026-10-28"
+---
+
+import { Note, Tip, Warning, Steps, Step, Walkthrough } from '@compat';
+
+With a Docusign account connected, your team sends Docusign templates from the people and program records they already manage. Sessionboard fills the template's fields from the contact, account, session, and event, Docusign sends the envelope and captures the signature, and the status and signed PDF come back to the record automatically.
+
+## Why use it
+
+Your legal team keeps writing and approving agreements in Docusign, with Docusign's branding, audit trail, and account controls — and your event team stops retyping names and chasing status. Every envelope is sent from a record, pre-filled, and tracked next to the session, the portal tasks, and the pipeline stage.
+
+## Watch it end to end
+
+<Walkthrough src="/media/walkthroughs/contracts-docusign-demo.mp4" title="Connect Docusign, send a pre-filled speaker agreement, sign it, and track the result" />
+
+<details class="sb-accordion">
+<summary>Video transcript</summary>
+<div class="sb-accordion-body">
+
+This is Sessionboard Contracts, our Docusign integration. Sessionboard is a speaker and content platform for conferences. Event teams use it to run calls for papers, manage speakers and sessions, and now to send speaker, sponsor and exhibitor agreements through Docusign, pre-filled from the data Sessionboard already holds.
+
+Setup lives under Organization Settings, Integrations. Each administrator connects their own Docusign user, so envelopes are sent as them. The panel shows who has connected, the Docusign account, and a disconnect action that revokes our token. We use OAuth 2.0 Authorization Code Grant with a single integration key for all customers: Connect Docusign opens Docusign's authorization page, the user grants access, and Sessionboard stores an encrypted token.
+
+Envelopes are created API-direct from server templates that the customer designs in Docusign. There is no sender view and no free-form signing. Here, from the speaker's pipeline entry, we open the Contracts tab and add a contract. Sessionboard lists the templates from the connected Docusign account, and we pick the event the agreement belongs to. The template's text tabs carry data labels such as contact dot full name and session dot title; Sessionboard resolves each one and shows where the value came from before we send.
+
+Signers can use the Docusign email as usual, or sign inside the Sessionboard participant portal, where Sign Now requests a recipient view and opens an embedded signing session. Here we open the envelope in Docusign. Every text tab arrived pre-filled from Sessionboard: name, email, event, session title, session date, hotel and travel. The signer applies their signature and finishes.
+
+Status comes back through Docusign Connect envelope-level event notifications, verified with an HMAC signature. We do not poll. When the envelope completes, we fetch the envelope and the combined document, store the signed PDF on the contact record, and optionally advance the speaker's pipeline entry to the next stage. Both agreements now show as Signed with the PDF available for download, and Open in Docusign takes you to the envelope.
+
+</div>
+</details>
+
+## Before you start
+
+- **A connected Docusign account.** Connections are per person: each teammate who sends connects their own Docusign login, and envelopes are sent as them. See [Docusign](/apps/docusign-integration) to connect.
+- **A Docusign template** with a signer role and, for the fields Sessionboard should fill, **Text** fields whose **Data label** is a Sessionboard variable such as `contact.full_name` or `event.name`. See [Prepare a Docusign template](/apps/docusign-integration#prepare-a-docusign-template) and the [variable reference](/speaker-crm/contract-template-variables).
+- **Permission to create contracts** on your organization role or on your event role for the event the agreement is for. See [Who can manage contracts](/speaker-crm/contracts-permissions).
+
+## Send the agreement
+
+<Steps>
+<Step title="Open the Contracts section and click Add Contract">
+Open the record — a contact's **CRM** tab, an account or group profile, or a pipeline entry — find **Contracts**, then click **Add Contract**. Under **Who is this contract with?**, the record is pre-selected; switch between **Contact** and **Account** if you need to.
+</Step>
+<Step title="Choose the Send via Docusign tab">
+Pick a **Template** from your connected Docusign account and the **Event** the agreement is for. The **Signer name** and **Signer email** fill from the contact — or, for a sponsor or exhibitor, from the account's primary contact for that event; change them if someone else should sign.
+</Step>
+<Step title="Write the email (optional)">
+Add an **Email subject** and **Email message** for the Docusign notification. Leave them blank to use Docusign's defaults.
+</Step>
+<Step title="Review and edit fields">
+Sessionboard lists every text field in the template and the value it resolved. Each row shows where the value came from, such as **Contact profile**, **Account primary contact**, or **Event record**. Rows marked **No source** could not be resolved automatically; type the value yourself. You can edit any value before sending — the edit is used for this contract only and does not change the record.
+</Step>
+<Step title="Click Send via Docusign">
+Docusign emails the signer. The contract appears on the record as **Needs signature** with the **Docusign** source.
+</Step>
+</Steps>
+
+![The Review & edit fields step of the Add Contract dialog with resolved and unresolved template variables](/images/kb/contracts-add-contract-review-fields.png)
+
+<Tip>
+Session variables such as `session.title` resolve when the contact has a session in the selected event. If they show **No source**, type the value in the review step. The full list of variables and how to name your template fields is in [Contract template variables](/speaker-crm/contract-template-variables).
+</Tip>
+
+### Sponsor and exhibitor agreements
+
+An account's signer is its primary contact for the event you picked, or its organization-wide primary contact when the event has none. If the account has more than one primary contact for that event, Sessionboard does not guess: the dialog asks you to choose who signs. If it has none, enter the signer's name and email, or add a primary contact to the account first.
+
+## How the signature comes back
+
+Every envelope Sessionboard sends asks Docusign to notify Sessionboard when it changes. When the signer signs, declines, or the envelope is voided, the contract's status updates within moments, the signed PDF is stored on the record, and, if [auto-advance](/speaker-crm/contracts#contract-settings) is set, the linked pipeline entry moves to the chosen stage. Nothing needs to be configured in your Docusign account for this to work.
+
+Signers can sign from the Docusign email as usual or, when the portal has **My Contracts** turned on, from **Sign now** in their portal, which opens Docusign in a new tab. See [Let signers sign from their portal](/speaker-crm/contracts#let-signers-sign-from-their-portal).
+
+## Manage a Docusign contract
+
+From the contract's **⋮** menu: **Open in Docusign** opens the envelope in your Docusign account; **Resend reminder** re-sends Docusign's notification to the signer; **Void** cancels the envelope in Docusign and marks the contract **Voided**; **Delete** removes the record from Sessionboard without changing the envelope in Docusign. Details in [Manage a contract](/speaker-crm/contracts#manage-a-contract).
+
+## Still having issues?
+
+If **Send via Docusign** shows no templates, make sure the template is saved in the Docusign account you connected and has a signer role. If the tab says Docusign is not connected, connect from [Docusign](/apps/docusign-integration) — connections are per person, so a teammate's connection does not cover you. For anything else, email [support@sessionboard.com](mailto:support@sessionboard.com) with the record name, the template, and a screenshot of the **Review & edit fields** step or the error message. Questions about your Docusign plan go to [Docusign Support](https://support.docusign.com).
