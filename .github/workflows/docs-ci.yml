@@ -187,6 +187,11 @@ jobs:
 
   prose:
     name: Vale prose lint
+    # PR-only. The action reports through reviewdog's github-pr-annotations
+    # (filter_mode: added), which has nothing to annotate on a push: reviewdog
+    # exits at once with "this is not PullRequest build", and Vale's writer then
+    # dies with EPIPE on the closed pipe, failing every push to main.
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
