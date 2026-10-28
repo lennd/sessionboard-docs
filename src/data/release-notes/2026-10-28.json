@@ -592,12 +592,13 @@
         "when_to_bring_up": "A customer does not want status or session ID in the Sessions Summary table (Community idea, 7 votes), or wants track or location in it.",
         "who_should_get_it": "Customers who email speakers, moderators or chairpersons from Contacts.",
         "staff_path": "Event → Contacts → select → Send Emails → insert Sessions Summary, then edit the tag",
-        "gotchas": "The modal that builds the options for you (web-ui-v2 #1186) is super-user only for now; customers type the options into the tag. Unknown columns are ignored, and an include that names nothing known falls back to the default table.",
+        "gotchas": "The modal that builds the options for you (web-ui-v2 #1186) is super-user only for now; customers type the options into the tag. Unknown columns are ignored, and an include that names nothing known falls back to the default table. The Customize modal that builds the options with a live preview (lennd/sessionboard-web-ui-v2#1186) is super-user-only until promoted; typed options work for every admin.",
         "talk_track": "Add exclude= or include= to the Sessions Summary tag to choose which columns your participants see."
       },
       "shipped": {
         "prs": [
-          "lennd/sessionboard-web-api#4766"
+          "lennd/sessionboard-web-api#4766",
+          "lennd/sessionboard-web-ui-v2#1186"
         ],
         "docs_only": false,
         "pending": null,
@@ -609,6 +610,305 @@
         "announced_at": null,
         "emailed_at": null
       }
+    },
+    {
+      "id": "send-email-rate-limit-message",
+      "title": "Send Email: a clear wait message when you hit the sending limit, and a limit that fits real use",
+      "summary": "When **Send Email** is rate-limited, the **Review** and **Send** steps now say **You have sent a lot of emails in a short time. Please wait about N minutes and try again.** instead of the misleading \"We could not build a preview\" error; the minutes come from the server (or \"a few minutes\" when unknown). The limit itself was widened: it is now counted per event, building a preview no longer spends the sending budget, and the allowance is 300 per 15 minutes — several times faster than anyone can click Review → Send — so an admin sending invitations one session at a time, or a team behind one office network, is no longer stopped after ten sends.",
+      "article": "/communications/create-send-emails#send",
+      "kind": "fixed",
+      "module": "Communications",
+      "features": [
+        "email_campaigns"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Speakers (or Contacts) → Send Email → Review / Send"
+      },
+      "permissions": [
+        "event.emails.campaigns_send"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "An organizer sending moderator invitations one session at a time no longer hits a wall after ten sends, and when a team really does send a great deal at once the dialog says how long to wait instead of blaming their recipient selection.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "No action needed; the fix is default-on and purely changes error copy."
+        },
+        "when_to_bring_up": "If a customer reports a confusing 'could not build a preview' error when sending emails to a large list.",
+        "who_should_get_it": "Any organizer who sends high-volume email batches and may hit the rate limit.",
+        "staff_path": "Event → Speakers or Contacts → Send Email → Review or Send step",
+        "gotchas": "The wait time shown is rounded up from the Retry-After header; if the header is absent the message says 'a few minutes'. The new limit is 300 previews and 300 sends per event per 15 minutes, with a 1,000-request-per-15-minute ceiling per IP address across events as a flood guard. SB-10516 (CES 2027, event 6815).",
+        "talk_track": "Sending one email at a time used to stop after about ten with a confusing 'could not build a preview' error. The limit is now generous and per event, and if you ever do hit it the dialog tells you exactly how many minutes to wait."
+      },
+      "related": [
+        "/communications/email-campaigns",
+        "/faq/why-am-i-not-receiving-emails"
+      ],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4775",
+          "lennd/sessionboard-web-ui-v2#1195"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "ready-room-desktop-download-links",
+      "title": "Download the Ready Room desktop app from inside Sessionboard",
+      "summary": "A **Download Ready Room** card on the **Live Transcribe** page and at the top of the Live Transcribe Console home offers the installer for your operating system first — macOS, Windows, or Windows on ARM — with the other builds, a checksums link and the version beside it. Links are made when the page opens and work for 15 minutes; the card appears only while a release is published.",
+      "article": "/marketing/live-transcribe#what-each-room-needs",
+      "related": [
+        "/marketing/live-transcribe-console"
+      ],
+      "kind": "new",
+      "module": "Marketing",
+      "features": [
+        "marketing_transcribe"
+      ],
+      "availability": "limited_release",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Marketing → Live Transcribe (Download Ready Room card); Live Transcribe Console home"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "A/V operators and event admins no longer need to hunt for a separate download page — the correct version of the Ready Room desktop app is always one click away from the Live Transcribe setup screen, with links that expire after 15 minutes for security.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "The download card only appears once the S3 bucket is provisioned and a release is published. Until the infrastructure follow-up (IaaC) is complete, the card will be hidden (available: false). Confirm with engineering before telling customers the download is live."
+        },
+        "when_to_bring_up": "When a customer is setting up Live Transcribe and asks how their A/V crew gets the desktop app.",
+        "who_should_get_it": "Customers using Live Transcribe with an on-site A/V crew running Ready Room.",
+        "staff_path": "Event → Marketing → Live Transcribe",
+        "gotchas": "Download links are presigned and expire after 15 minutes — send the crew to the page, not the link. The card is invisible until the S3 bucket exists and a release has been published (the API returns available: false otherwise). Requires S3_BUCKET_READY_ROOM_RELEASES in Doppler per environment. Ready Room is the desktop twin of the browser Console: same audio capture, same sessions.",
+        "talk_track": "Your A/V team can now download the Ready Room app straight from the Live Transcribe setup page — no separate link to share, and the download is authenticated so only your team can access it."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4778",
+          "lennd/sessionboard-web-ui-v2#1198"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:limited_release"
+    },
+    {
+      "id": "dashboard-share-allow-export",
+      "title": "Dashboard shares: let viewers download widget data as CSV or XLSX",
+      "summary": "**Allow viewers to download** on a dashboard share link lets anyone opening the shared dashboard download each widget's data as **.CSV** or **.XLSX** — the same rows the widget shows, with the same PII setting, date and time format and 500-row cap, named after the widget. It is off on every existing and new link until you turn it on; a password-protected link asks for the password first, every download is written to the link's access log, and switching it off or revoking the link stops downloads at once. Links with it on show a **Downloads** badge in the Share dialog.",
+      "article": "/reporting/dashboards#share-a-dashboard",
+      "related": [
+        "/reporting/report-builder",
+        "/reporting/exporting-data"
+      ],
+      "kind": "new",
+      "module": "Reporting",
+      "features": [
+        "ai_reports"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "setting",
+        "path": "Dashboard → Settings → Share → Create New Link → Allow viewers to download"
+      },
+      "where": {
+        "scope": "both",
+        "path": "Shared dashboard page → Download menu on each widget"
+      },
+      "permissions": [
+        "org.data_insights.dashboards_update",
+        "event.reports.dashboards_update"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who share live dashboards with clients or stakeholders can now let those viewers download widget data directly, without needing admin access or a separate report share. The toggle is off by default, so existing shares stay view-only until an organizer deliberately enables it.",
+      "internal": {
+        "cs_action": {
+          "kind": "must_enable",
+          "note": "Staff turn Allow viewers to download on per share link in the dashboard's Share dialog (super-user control). ICS Events (US) was the originating request and has 2 dashboard shares — reach out once it is on."
+        },
+        "when_to_bring_up": "Any time a customer says their clients want to download data from a shared dashboard, or when they are using dashboard shares instead of report shares.",
+        "who_should_get_it": "Customers who share dashboards externally with clients, sponsors, or leadership who need offline copies of the data.",
+        "staff_path": "Dashboard → Settings → Share → link row → Allow viewers to download (super user)",
+        "gotchas": "The checkbox and the per-link switch are super-user-only in the Share dialog for now (web-ui-v2 #1192); customers see the viewer side (Download menus) once staff turn it on for a link. All 13 existing dashboard shares (12 US, 1 EU) default to off. Downloads are capped at 500 rows (the widget's display limit). There is no 'Download all widgets'; each widget is downloaded individually.",
+        "talk_track": "If your clients are viewing a shared dashboard and want to take the data away in a spreadsheet, you can now flip a switch on that share link to let them download any widget as CSV or XLSX — same data they see on screen, same formatting, and you can turn it off at any time."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4772",
+          "lennd/sessionboard-web-ui-v2#1192"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "portal-edit-submission-hide-empty-tasks-tasks-widget-toggle",
+      "title": "Portal: Edit Submission when the form is open, no empty Submission Tasks, and a Show Tasks Widget setting",
+      "summary": "The button on a portal session now reads **Edit Submission** while the submission form still accepts changes, and **View Submission** once the form has closed or the submission was withdrawn. Portal users who have contact tasks but no submission tasks no longer see an empty **Submission Tasks** section. A new **Show Tasks Widget** setting on the portal's **Configuration** step hides the Tasks card on the portal home and **Tasks** in the portal navigation, the same way the Sessions widget can be hidden.",
+      "article": "/portals/portals-101#configuration",
+      "related": [
+        "/portals/assign-tasks",
+        "/participants/edit-submission",
+        "/faq/common-speaker-portal-issues-and-how-to-fix-them"
+      ],
+      "kind": "improved",
+      "module": "Portals",
+      "features": [
+        "new_portals"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Portal → Configuration → Show Tasks Widget; portal home → Tasks card; session → Edit Submission / View Submission"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "speaker",
+        "participant"
+      ],
+      "use_case": "Speakers who can still edit their submission now see a clearly labelled **Edit Submission** button instead of the ambiguous \"View Submission\" label, reducing confusion and support requests. Organizers who do not use submission tasks can hide the Tasks widget entirely so the portal home stays clean and relevant for their speakers.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "All three changes are on by default. Show Tasks Widget is on for every existing portal, so nothing disappears until an organizer turns it off."
+        },
+        "when_to_bring_up": "When a customer asks why speakers are confused about whether they can edit their submission, or when a customer wants to simplify the portal home for events that don't use submission tasks.",
+        "who_should_get_it": "Any customer using the speaker/contact portal with submission forms or portal tasks.",
+        "staff_path": "Event → Portal → Configuration → Show Tasks Widget",
+        "gotchas": "The Edit Submission label follows the same rules as the submission form itself: form open, not past its last close date, submission not withdrawn, and the form not deleted. A form the organizer deleted still shows View Submission.",
+        "talk_track": "Speakers told us the 'View Submission' button was confusing — they didn't know they could still edit. Now the button says 'Edit Submission' when the form is open, and 'View Submission' when it's closed. We also cleaned up the Tasks panel so speakers who have no submission tasks don't see an empty section, and gave organizers a toggle to hide the Tasks widget entirely if they don't use it."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4762",
+          "lennd/sessionboard-web-ui-v2#1184"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "portal-resources-library-order",
+      "title": "Put portal pages and files in the order speakers should read them",
+      "summary": "**Portals → Resources** and **Portals → Files** now have an order of their own. Drag a page or file by its handle, or use **Move up** and **Move down**, and the new order saves at once and applies to every portal of the event, so the onboarding checklist sits first and the venue map last without editing each portal's **Customize → Resources**. Reordering pauses while a search filters the list.",
+      "article": "/portals/assign-pages#create-a-page",
+      "related": [
+        "/portals/share-files#add-a-file",
+        "/portals/portals-101#build-the-content-once"
+      ],
+      "kind": "improved",
+      "module": "Portals",
+      "features": [
+        "new_portals"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Program → Portals → Resources / Files (drag handle, Move up, Move down)"
+      },
+      "permissions": [
+        "event.portal_tasks.update"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "What matters most at the start of speaker onboarding is obsolete a month later. Instead of rebuilding each portal's resource list, the team drags the current priority to the top once and every portal follows.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "On for everyone. The release also backfilled every event's library order from the order its portals already used, so nothing moved on the day."
+        },
+        "when_to_bring_up": "When a customer asks why the Resources page lists pages in a strange order (it used to be by title, Z→A) or wants the most important resource shown first.",
+        "who_should_get_it": "Any event with more than a handful of portal pages or files; Eudēmonia raised it.",
+        "staff_path": "Event → Portals → Resources or Files → drag handle",
+        "gotchas": "Needs permission to update portal tasks. The same release lets staff assign pages and files to individual contacts, sessions or groups (checkbox per row, Assign to contacts, sessions or groups, an Everyone / N assigned badge) — super-user-only for now; promote the gate before telling customers. Per-portal Customize → Resources order still works and is re-sequenced to follow the library order.",
+        "talk_track": "You can now drag your portal resources into the order you want speakers to read them, once, and every portal follows."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4776",
+          "lennd/sessionboard-web-ui-v2#1197"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
     },
     {
       "id": "grid-header-sort",
@@ -720,178 +1020,6 @@
       "media": []
     },
     {
-      "id": "shared-dashboard-widget-downloads",
-      "title": "Shared dashboards: let viewers download a widget as CSV or XLSX",
-      "summary": "A dashboard share link can now allow downloads. When **Allow viewers to download** is on for a link, anyone opening the shared dashboard gets a download menu on each widget that has data, with **Download .CSV** and **Download .XLSX**. The file holds the same rows the widget shows (up to 500), with the widget's PII setting and your event's date and time format applied. Downloads are off for every existing and new link until it is switched on, a password-protected link needs the password first, every download is written to the share's access log, and revoking the link or switching downloads off stops them at once.",
-      "article": "/reporting/dashboards#share-a-dashboard",
-      "related": [
-        "/reporting/report-builder",
-        "/reporting/exporting-data"
-      ],
-      "kind": "new",
-      "module": "Reporting",
-      "features": [
-        "ai_reports"
-      ],
-      "availability": "limited_release",
-      "enable": {
-        "how": "support",
-        "path": "Ask your Customer Success Manager to turn on downloads for a dashboard share link"
-      },
-      "where": {
-        "scope": "both",
-        "path": "Dashboard → Settings → Share (the link); the shared dashboard page → widget download menu"
-      },
-      "permissions": [],
-      "audience": [
-        "organizer"
-      ],
-      "use_case": "Agencies and event teams that share a live dashboard with a client, sponsor or board can let those viewers take a widget's rows away as a spreadsheet, without giving them a Sessionboard login or building a separate report share.",
-      "internal": {
-        "cs_action": {
-          "kind": "must_enable",
-          "note": "The Allow viewers to download checkbox (new-link form) and the per-link switch (expanded row) are super-user only for now: a staff user turns it on per link in the customer's Share dialog. ICS Events asked for this (Community idea) and has 2 dashboard shares — reach out once it is on. Report shares already had CSV/XLSX export and are unchanged."
-        },
-        "when_to_bring_up": "A customer says the people they share a dashboard with want to download the data, or is using report shares only because dashboards could not export.",
-        "who_should_get_it": "Customers sharing dashboards with clients, sponsors or leadership who need the numbers offline.",
-        "staff_path": "Event or Org → Dashboard → Settings → Share → expand the link → Allow viewers to download (lock badge)",
-        "gotchas": "Off by default on all 13 existing dashboard shares. Capped at the 500 rows the widget shows; there is no Download all. 30 downloads per 10 minutes per viewer IP. A wrong password is refused before the export flag is checked, so it cannot reveal whether downloads are on.",
-        "talk_track": "Once downloads are on for your share link, each widget on the shared dashboard gets a download menu — the same rows and formatting the viewer sees, as CSV or XLSX — and you can switch it off again at any time."
-      },
-      "shipped": {
-        "prs": [
-          "lennd/sessionboard-web-api#4772",
-          "lennd/sessionboard-web-ui-v2#1192"
-        ],
-        "docs_only": false,
-        "pending": null,
-        "live": {
-          "us": null,
-          "eu": null,
-          "me": null
-        },
-        "announced_at": null,
-        "emailed_at": null
-      },
-      "ideas": [],
-      "media": []
-    },
-    {
-      "id": "portal-edit-submission-button-and-tasks-widget-toggle",
-      "title": "Portal: an Edit Submission button, no empty Submission Tasks section, and a Show Tasks Widget toggle",
-      "summary": "Three portal changes from Community ideas. The button at the bottom of a session's details now reads **Edit Submission** while the submission form still accepts changes, and **View Submission** once it is closed or read-only. The **Submission Tasks** section and tab appear only for people who actually have submission tasks, so a speaker with contact tasks alone no longer sees *No submission tasks found*. And a new **Show Tasks Widget** setting in the portal's **Configuration** step hides the Tasks card on the portal home and the Tasks entry in its menu, the way the Sessions widget can already be hidden.",
-      "article": "/portals/portals-101#configuration",
-      "related": [
-        "/participants/edit-submission",
-        "/portals/assign-tasks",
-        "/faq/common-speaker-portal-issues-and-how-to-fix-them"
-      ],
-      "kind": "improved",
-      "module": "Portals",
-      "features": [
-        "new_portals"
-      ],
-      "availability": "everyone",
-      "enable": {
-        "how": "default_on",
-        "path": null
-      },
-      "where": {
-        "scope": "event",
-        "path": "Portals → edit the portal → Configuration → Show Tasks Widget; the portal's session details → Edit Submission"
-      },
-      "permissions": [],
-      "audience": [
-        "organizer",
-        "speaker",
-        "participant"
-      ],
-      "use_case": "Speakers stop asking whether they are still allowed to change their submission — the button says Edit Submission while they can — and organizers who do not use portal tasks can take the empty Tasks card off the portal home.",
-      "internal": {
-        "cs_action": {
-          "kind": "none",
-          "note": "All three are on by default. Show Tasks Widget is on for every existing portal; nothing changes until an organizer switches it off."
-        },
-        "when_to_bring_up": "A customer asks to rename View Submission (Community idea, 12 votes, 5 orgs), to hide No submission tasks found (6 votes) or to hide the Tasks widget like the Sessions widget (5 votes).",
-        "who_should_get_it": "Every customer running a speaker or contact portal.",
-        "staff_path": "Event → Portals → ⋯ → Edit → Configuration → Show Tasks Widget (after Control Submission Visibility, before Add to Calendar)",
-        "gotchas": "Edit Submission follows the form's own rules: not withdrawn, the form still exists and is open, not past its latest close date, and not a sponsor or exhibitor view. View portal as (read-only) keeps the disabled View Submission button. Show Tasks Widget hides the card and menu entry only; the tasks themselves are untouched and Always Show Tasks keeps its meaning. Duplicate portal and event clone copy the setting.",
-        "talk_track": "Your speakers now see Edit Submission while the form is open, the Tasks panel no longer shows an empty Submission Tasks section, and if you do not use tasks you can hide the Tasks widget from the portal's Configuration step."
-      },
-      "shipped": {
-        "prs": [
-          "lennd/sessionboard-web-ui-v2#1184",
-          "lennd/sessionboard-web-api#4762"
-        ],
-        "docs_only": false,
-        "pending": null,
-        "live": {
-          "us": null,
-          "eu": null,
-          "me": null
-        },
-        "announced_at": null,
-        "emailed_at": null
-      },
-      "ideas": [],
-      "media": []
-    },
-    {
-      "id": "send-email-rate-limit-wait-message",
-      "title": "Send Email says how long to wait when you have hit the sending limit",
-      "summary": "When a **Send Email** from a module table is rate-limited because many emails went out in a short time, the **Review** and **Send** steps now say *You have sent a lot of emails in a short time. Please wait about N minutes and try again.* (or *a few minutes* when no wait time is known) instead of the misleading *We could not build a preview for the records you selected*. The limit itself was also widened, and preview and send no longer share one allowance, so reviewing a large send does not use up the quota for sending it.",
-      "article": "/communications/create-send-emails#send",
-      "related": [
-        "/communications/email-campaigns",
-        "/communications/email-sms-history"
-      ],
-      "kind": "fixed",
-      "module": "Communications",
-      "features": [],
-      "availability": "everyone",
-      "enable": {
-        "how": "default_on",
-        "path": null
-      },
-      "where": {
-        "scope": "event",
-        "path": "Contacts / Sessions / Sponsors / Exhibitors → Send Email → Review & Preview and Send"
-      },
-      "permissions": [],
-      "audience": [
-        "organizer"
-      ],
-      "use_case": "An organizer who sends several large batches in a row now reads a plain wait time rather than a message that looks like their selection is broken — the CES 2027 team escalated exactly this through Team Lead.",
-      "internal": {
-        "cs_action": {
-          "kind": "none",
-          "note": "SB-10516. Nothing to enable."
-        },
-        "when_to_bring_up": "A customer reports 'could not build a preview' on a big send, or asks why Send Email stopped working after a few batches.",
-        "who_should_get_it": "High-volume senders: large programs, multi-event teams.",
-        "staff_path": "Event → Contacts → select records → Send → Send Email → Review",
-        "gotchas": "The minutes shown come from the API's Retry-After header, rounded up. Scheduled Email Campaigns are a different path and were not affected.",
-        "talk_track": "If you hit the sending limit, the dialog now tells you how many minutes to wait, and previewing a send no longer counts against sending it."
-      },
-      "shipped": {
-        "prs": [
-          "lennd/sessionboard-web-ui-v2#1195",
-          "lennd/sessionboard-web-api#4775"
-        ],
-        "docs_only": false,
-        "pending": null,
-        "live": {
-          "us": null,
-          "eu": null,
-          "me": null
-        },
-        "announced_at": null,
-        "emailed_at": null
-      },
-      "ideas": [],
-      "media": []
-    },
-    {
       "id": "weekly-portal-summary-skips-finished-participants",
       "title": "The weekly portal summary skips people who have nothing left to do",
       "summary": "The Monday **Weekly Digest Email** now goes only to portal users who still have something open. If any of a person's items is marked **Required**, only incomplete required items count; if nothing is required, every open item counts. A comment on one of their sessions in the last 7 days still sends it. A denied file request now reads **Denied - Please Resubmit** and counts as open, because the person has to upload again. The dry run under the portal's weekly reminders lists the same people the Monday send will reach. **Send → Send Portal Summary** from Contacts or Accounts is unchanged and always sends.",
@@ -988,62 +1116,6 @@
       "shipped": {
         "prs": [
           "lennd/sessionboard-web-ui-v2#1177"
-        ],
-        "docs_only": false,
-        "pending": null,
-        "live": {
-          "us": null,
-          "eu": null,
-          "me": null
-        },
-        "announced_at": null,
-        "emailed_at": null
-      },
-      "ideas": [],
-      "media": []
-    },
-    {
-      "id": "ready-room-desktop-app-download",
-      "title": "Download the Ready Room desktop app from inside Sessionboard",
-      "summary": "A download card on **Marketing → Transcribe** and on the Live Transcribe Console home offers the Ready Room desktop app — the installer for your operating system first (macOS universal, Windows x64, Windows on ARM), the others below it, the version and a checksums link. The links are signed and expire after 15 minutes, so the download stays behind sign-in with no public download page. The card shows only once a release has been published.",
-      "article": "/marketing/live-transcribe#what-each-room-needs",
-      "related": [
-        "/marketing/live-transcribe-console"
-      ],
-      "kind": "new",
-      "module": "Marketing",
-      "features": [
-        "marketing_transcribe"
-      ],
-      "availability": "limited_release",
-      "enable": {
-        "how": "support",
-        "path": "Ask your Customer Success Manager whether the Ready Room desktop app is available for your event"
-      },
-      "where": {
-        "scope": "event",
-        "path": "Marketing → Transcribe (download card); Live Transcribe Console home"
-      },
-      "permissions": [],
-      "audience": [
-        "organizer"
-      ],
-      "use_case": "AV crews running Live Transcribe from a laptop in each room can install the desktop app straight from the event they are working on, with the right build for their machine, instead of being sent a link.",
-      "internal": {
-        "cs_action": {
-          "kind": "review_before_customers_see",
-          "note": "The card is hidden everywhere until the releases bucket exists (S3_BUCKET_READY_ROOM_RELEASES in Doppler, iaac follow-up) and a release has been published from lennd/sessionboard-ready-room. Check with engineering before telling a customer the download is there."
-        },
-        "when_to_bring_up": "A customer setting up Live Transcribe with an AV crew asks how the crew gets the desktop app.",
-        "who_should_get_it": "Customers running Live Transcribe with an on-site AV team.",
-        "staff_path": "Event → Marketing → Transcribe → Ready Room desktop app card",
-        "gotchas": "Download links expire 15 minutes after the page loads them (the card refreshes them every 10 minutes). Hidden for simplified self-serve organizations. The Help Center still says nothing is installed for Live Transcribe, which stays true for the browser Console; the desktop app is an addition for crews.",
-        "talk_track": "Your AV team downloads the Ready Room app from the Transcribe page of the event — signed links, no separate download site."
-      },
-      "shipped": {
-        "prs": [
-          "lennd/sessionboard-web-api#4778",
-          "lennd/sessionboard-web-ui-v2#1198"
         ],
         "docs_only": false,
         "pending": null,
