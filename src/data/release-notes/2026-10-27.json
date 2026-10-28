@@ -264,174 +264,26 @@
       "gated": null
     },
     {
-      "id": "add-to-session-dialog-five-fixes",
-      "title": "Five fixes for Add to Session: event scoping, status picker, Sessions 2.0 guard, events list refresh, and nested column order",
-      "summary": "Five bugs corrected in the **Add to Session** dialog and related contact views: (1) Bulk **Add to Session** from **Event → Contacts** now shows only the current event instead of every org event. (2) The **Status** picker is hidden on events without speaker acceptance enabled, and sends `pending` automatically so no data is lost. (3) Selecting an event that does not have **Sessions 2.0** shows an explanation and disables **Add** and bulk **Create**, preventing a contact from being silently enrolled in the wrong event. (4) After adding a contact to a session in a new event, the **Events** card on the contact profile updates immediately without a full-page reload. (5) Nested related-record rows (e.g. Sessions expanded under a contact) now show the record's **Title** column first, followed by **Relation** and then other columns, so the identifying field is always visible without scrolling.",
-      "article": "/contacts/add-a-moderator-chairperson#from-the-contacts-list",
-      "related": [
-        "/speakers/create-assign-speakers",
-        "/speakers/speaker-acceptance",
-        "/contacts/contact-profile",
-        "/speaker-crm/crm-add-contact-to-events"
-      ],
-      "kind": "fixed",
-      "module": "Program",
-      "features": [
-        "sessions_v2",
-        "speaker_acceptance",
-        "sessions",
-        "crm"
-      ],
-      "availability": "everyone",
-      "enable": {
-        "how": "default_on",
-        "path": null
-      },
-      "where": {
-        "scope": "both",
-        "path": "Event → Contacts → select contacts → Add to Session; CRM → contact → Program tab → Add to Session; Event → Contacts → Columns → Related → Sessions → expand row"
-      },
-      "permissions": [],
-      "audience": [
-        "organizer"
-      ],
-      "use_case": "Organizers who bulk-add contacts to sessions from the Event Contacts view, manage speaker acceptance workflows, or work across events with and without Sessions 2.0 will no longer encounter wrong event lists, phantom status fields, silent enrolment errors, stale event counts, or off-screen title columns in nested tables.",
-      "internal": {
-        "cs_action": {
-          "kind": "none",
-          "note": null
-        },
-        "when_to_bring_up": "If a customer reports seeing other org events in the Add to Session dialog from Event Contacts, a Status field appearing on events without speaker acceptance, contacts being unexpectedly enrolled in non-Sessions-2.0 events, stale event counts after adding a session, or the Title column missing from nested session rows.",
-        "who_should_get_it": "All customers — fixes are default-on.",
-        "staff_path": null,
-        "gotchas": "Fix #3 only disables Add and bulk Create for non-Sessions-2.0 events; single Create (legacy endpoint) still works there. Fix #2 silently sends 'pending' when acceptance is off — no status is stored, which matches the API's existing behaviour.",
-        "talk_track": "Five QA fixes to the Add to Session dialog: it now scopes to the current event when launched from Event Contacts; hides the Status picker on events without speaker acceptance; warns and blocks Add when the target event lacks Sessions 2.0; refreshes the contact's Events card immediately after adding; and puts the session Title first in nested related-record tables.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The guide for adding a moderator or chairperson should be expanded (or a new guide created) to cover the bulk Add to Session dialog, including how event scoping works from Event Contacts vs. the CRM, the Sessions 2.0 requirement, and how the speaker acceptance setting controls the Status picker.",
-          "why_use_it": "null",
-          "at": "2026-10-27T20:35:21.993Z"
-        }
-      },
-      "shipped": {
-        "prs": [
-          "lennd/sessionboard-web-ui-v2#1167"
-        ],
-        "docs_only": false,
-        "pending": null,
-        "live": {
-          "us": "2026-10-28",
-          "eu": "2026-10-28",
-          "me": "2026-10-28"
-        },
-        "announced_at": null,
-        "emailed_at": null
-      },
-      "ideas": [],
-      "media": [],
-      "gated": null
-    },
-    {
-      "id": "nested-related-record-tables",
-      "title": "Expand any Contacts, Groups, or Sessions row to see its related records inline",
-      "summary": "A new **Related** panel in table **Preferences** lets organizers choose a related type (e.g. *Sessions (as participant)*, *Contacts*, *Participants*) and pick columns, sort order, and filters. Rows that have related records show a chevron and count; expanding a row opens a nested table with its own pagination (**1–10 of N**, with 5 / 10 / 25 per-page options) and inline editing. The configuration is saved with the view and persists on reload. Exports gain an **Include related records?** option: XLSX groups related rows under each parent at Excel outline level 1; CSV repeats parent columns with a `<Type>: ` prefix per related row.",
+      "id": "related-records-expandable-nested-tables",
+      "title": "Expand Contacts, Groups or Sessions rows to see up to three kinds of related records inline",
+      "summary": "A **Related** button at the end of the table toolbar lets you add up to three related record types to a Contacts, Groups or Sessions table, such as a session's participants and groups, or a contact's sessions. Each type starts with sensible default columns that you can switch on or off and drag to reorder, and has its own sort and filter that work like the table's own **Sort** and **Filter** tabs. Rows with related records show a chevron and count; expanding one opens a nested table with its own pagination and inline editing. Related settings count as Saved View changes and save with the view. Export can include the nested rows: XLSX grouped under each parent, or CSV with one row per parent and related record.",
       "article": "/reporting/dashboard-views#related-records",
       "related": [
         "/reporting/exporting-data",
-        "/contacts/contact-profile",
         "/sessions/create-a-session",
-        "/sponsors-exhibitors/sponsors"
-      ],
-      "kind": "new",
-      "module": "CRM",
-      "features": [
-        "sessions",
-        "sessions_v2"
-      ],
-      "availability": "everyone",
-      "enable": {
-        "how": "setting",
-        "path": "Event → Contacts (or Groups or Sessions) → table Preferences → Related"
-      },
-      "where": {
-        "scope": "event",
-        "path": "Event → Contacts / Groups / Sessions → any saved table view → row chevron"
-      },
-      "permissions": [
-        "event.contacts.read",
-        "event.sessions.read",
-        "event.accounts.read",
-        "event.speakers.read",
-        "event.sponsors.read",
-        "event.exhibitors.read"
-      ],
-      "audience": [
-        "organizer"
-      ],
-      "use_case": "Teams that need submission, submitter, and speaker details in one place — or want to see a contact's sessions, a group's contacts, or a session's participants without building a separate report — can expand any row to browse and edit related records inline. Session-manager scoping applies automatically, so each team member sees only the records they are permitted to view.",
-      "internal": {
-        "cs_action": {
-          "kind": "none",
-          "note": null
-        },
-        "when_to_bring_up": "When a customer says they build custom reports just to see speaker + session + submitter details together, or when they ask how to see a sponsor's contacts alongside their sessions.",
-        "who_should_get_it": "Any event team that manages complex speaker or sponsor relationships and wants to reduce tab-switching or custom report overhead.",
-        "staff_path": "Event → Contacts → Preferences → Related (or Groups / Sessions equivalent)",
-        "gotchas": "Contact scope (Ticket 3) is not yet implemented — nested contacts are not yet filtered by the session-manager's contact scope, only by session scope. Related sessions show top-level sessions only; a contact on a sub-session only will not appear. Org CRM (/organization/...) has no related endpoint yet. XLSX nested exports do not split datetime columns the same way as parent rows.",
-        "talk_track": "You can now expand any contact, group, or session row to see its related records inline — sessions a speaker is on, contacts in a sponsor group, participants in a session — with the same columns and filters you already use. The config saves with the view, and exports include the nested rows in XLSX (with outline grouping) or CSV.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The dashboard-views guide should document the new Related panel in Preferences — how to choose a related type, configure columns/sort/filters, and what the chevron count and nested pagination controls look like — and note that the configuration is saved per view.",
-          "why_use_it": "Related-record tables let you browse the connections between contacts, groups, and sessions without leaving the table you are already working in. Expand a contact to see every session they are speaking on, or open a sponsor group to review its contacts and linked sessions — all with the same columns, filters, and inline editing available on the parent table. When you export, related rows travel with their parent in the same file, either grouped in XLSX or flattened in CSV, so downstream reporting tools receive a complete picture in one download.",
-          "at": "2026-10-27T19:32:52.517Z"
-        }
-      },
-      "shipped": {
-        "prs": [
-          "lennd/sessionboard-web-api#4737"
-        ],
-        "docs_only": false,
-        "pending": null,
-        "live": {
-          "us": "2026-10-28",
-          "eu": "2026-10-28",
-          "me": "2026-10-28"
-        },
-        "announced_at": null,
-        "emailed_at": null
-      },
-      "ideas": [],
-      "media": [],
-      "gated": null
-    },
-    {
-      "id": "related-records-expandable-nested-tables",
-      "title": "Expand any Contacts, Groups, or Sessions row to see related records inline",
-      "summary": "A new **Related** tab in table **Preferences** lets organizers configure a related record type (e.g. Sessions under Contacts, Contacts under Sponsors/Exhibitors, Participants under Sessions). Rows that have related records show a chevron and count; clicking expands an inline nested table with its own columns, sort, filters, pagination, and editable cells. The **Export** dialog gains a **Yes, nested** option that produces an XLSX with collapsible groups or a CSV with prefixed columns.",
-      "article": "/reporting/dashboard-views#related-records",
-      "related": [
-        "/contacts/add-delete-a-contact",
-        "/sessions/create-a-session",
-        "/sponsors-exhibitors/adding-exhibitor-groups-contacts",
-        "/reporting/exporting-data"
+        "/sponsors-exhibitors/adding-exhibitor-groups-contacts"
       ],
       "kind": "new",
       "module": "Program",
-      "features": [
-        "sessions"
-      ],
+      "features": [],
       "availability": "limited_release",
       "enable": {
         "how": "support",
-        "path": "Ask your Customer Success Manager to enable Related Records; then Event → Contacts / Groups / Sessions → Preferences → Related"
+        "path": "Not yet available to customers: Sessionboard staff only while in limited release"
       },
       "where": {
         "scope": "event",
-        "path": "Event → Contacts → Preferences → Related; Event → Sponsors/Exhibitors → Preferences → Related; Event → Sessions → Preferences → Related"
+        "path": "Event → Contacts / Groups / Sessions → table toolbar → Related"
       },
       "permissions": [],
       "audience": [
@@ -440,95 +292,22 @@
       "use_case": "Show teams that need submission, submitter, and speaker details in one view can expand any row to see related records without building a separate custom report. Teams managing sponsors or exhibitors can expand a group row to see all associated contacts and their session participation without leaving the table.",
       "internal": {
         "cs_action": {
-          "kind": "must_enable",
-          "note": "Requires the companion API PR (sessionboard-web-api#4737) to be live in PROD before enabling. Deploy the API first, then the UI."
+          "kind": "none",
+          "note": "Staff-only (super user) while in limited release; customers cannot see the Related button yet. Use it to demo, not to promise a date."
         },
         "when_to_bring_up": "When a customer asks for a combined view of submissions + submitters + speakers, or when a show team is building custom reports just to see related records side by side.",
-        "who_should_get_it": "Large show teams (e.g. Tahaluf) that need cross-entity visibility in a single table; any customer who regularly exports combined contact + session data.",
-        "staff_path": "Event → Contacts / Groups / Sessions → Preferences → Related",
-        "gotchas": "Not yet wired to the Agenda list view, org CRM (Experts) table, or org Sessions directories. Nested filters are a fixed set (text, session status, CFP form, participant status, sponsor/exhibitor) — not the full filter builder. The API must be deployed first or the POST view schema will 400 on unknown keys. The Additional Contacts grid is excluded by design.",
-        "talk_track": "Instead of building a custom report every time you need to see a contact's sessions or a sponsor's contacts, you can now expand any row in the Contacts, Groups, or Sessions table to see related records inline — with editable cells, filters, and export support.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The dashboard-views guide should document the new Related tab in Preferences, how to configure a related record type with nested columns/sort/filters/page size, how the chevron and count work on expandable rows, and the nested export options in the Export dialog.",
-          "why_use_it": "Related Records lets you see connected data — a contact's sessions, a group's contacts, a session's participants — directly inside the main table without switching views or building a separate report. Configure which related type to show, choose the columns, set filters (including by CFP form, session status, or participant status), and the nested table appears inline when you expand a row. Edits made in the nested table save in place, and exports can include the nested rows alongside their parent records.",
-          "at": "2026-10-27T19:00:45.310Z"
-        }
+        "who_should_get_it": "Show teams (e.g. Tahaluf) that build custom reports just to see submission, submitter and speaker details side by side.",
+        "staff_path": "Event → Contacts / Groups / Sessions → table toolbar → Related (super users only)",
+        "gotchas": "One level deep only. Not on the org CRM, Agenda list or org Sessions directories. Nested rows and counts follow the viewer's session and contact scope, so restricted team members see only records they could open themselves. Nested XLSX does not split datetime columns the way parent rows do.",
+        "talk_track": "Instead of building a custom report every time you need to see a contact's sessions or a sponsor's contacts, you can now expand any row in the Contacts, Groups, or Sessions table to see related records inline — with editable cells, filters, and export support."
       },
       "shipped": {
         "prs": [
-          "lennd/sessionboard-web-ui-v2#1164"
-        ],
-        "docs_only": false,
-        "pending": null,
-        "live": {
-          "us": "2026-10-28",
-          "eu": "2026-10-28",
-          "me": "2026-10-28"
-        },
-        "announced_at": null,
-        "emailed_at": null
-      },
-      "ideas": [],
-      "media": [],
-      "gated": "availability:limited_release"
-    },
-    {
-      "id": "contact-scope-restricted-team-roles",
-      "title": "Restrict team role access to specific contacts by field value or list membership",
-      "summary": "Restricted team roles (roles with **Restrict records** enabled) can now be scoped to contacts by **Contact access** filters — a contact custom field value (dropdown, multiselect, or checkbox) or a static contact list — in addition to the existing session filters. Contacts outside the scope are hidden from the contacts list, search, pickers, exports, email campaign recipient previews, and profile routes; on session profiles, out-of-scope participants appear as **Restricted** rows with no name, email, or photo.",
-      "article": "/event-team/invite-manage-event-team-members#give-an-outside-vendor-limited-access",
-      "related": [
-        "/contacts/add-delete-a-contact",
-        "/contacts/contact-profile",
-        "/communications/email-campaigns"
-      ],
-      "kind": "new",
-      "module": "Event team",
-      "features": [
-        "sessions"
-      ],
-      "availability": "limited_release",
-      "enable": {
-        "how": "setting",
-        "path": "Event → Team → [role] → Restrict records → Contact access"
-      },
-      "where": {
-        "scope": "event",
-        "path": "Event → Team → [role] → Contact access"
-      },
-      "permissions": [
-        "event.settings.manage_permissions",
-        "event.users.update"
-      ],
-      "audience": [
-        "organizer"
-      ],
-      "use_case": "Hosting and travel vendors who should only see the speakers they are responsible for can be given a restricted role scoped to a \"Hosted = Yes\" checkbox field, so they never see other speakers' names, emails, or headshots — even when those speakers share a session.",
-      "internal": {
-        "cs_action": {
-          "kind": "reach_out",
-          "note": "This feature was built for Tahaluf's hosting/travel vendor workflow. Reach out to any customer who uses restricted team roles and has asked for per-contact (rather than per-session) scoping."
-        },
-        "when_to_bring_up": "When a customer wants to give a vendor or sub-team access to only a subset of speakers — for example, hosted speakers, VIP speakers, or speakers in a specific region.",
-        "who_should_get_it": "Customers with external vendors (hosting, travel, green-room staff) or internal teams that should see only a defined subset of contacts at an event.",
-        "staff_path": "Event → Team → [role] → Restrict records (enable_session_filters) → Contact access",
-        "gotchas": "Session-scoped and contact-scoped filters AND together when both are set. Dynamic contact list segments are not supported — only static lists. Insights/SbQL and email campaign send/schedule jobs are not yet scoped; advise customers not to grant Insights access to vendor roles. Subsession participant lists and session-list speaker columns still show all participant names on a visible session.",
-        "talk_track": "You can now give a hosting vendor a role that shows only the speakers they are responsible for — set a 'Hosted' checkbox on each speaker, then point the vendor's role at 'Hosted = Yes' in Contact access. They see those contacts everywhere in the event: list, search, export, email campaigns, and session profiles. Anyone outside that scope is hidden or shown as Restricted.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The guide should document the new Contact access filter options (contact custom field and static contact list) under the restricted-role section, including how field-value filters OR within a field and AND across fields, and the behaviour of the Restricted placeholder on session profiles.",
-          "why_use_it": "Restricted team roles let you give outside vendors or internal sub-teams access to your event without exposing every contact. Contact access filters narrow that access further — to only the people who match a specific field value (such as a \"Hosted\" checkbox or a \"Region\" dropdown option) or who belong to a static contact list. This means a vendor sees exactly the speakers they manage and nothing more, across the contacts list, search, exports, email campaigns, and session profiles.",
-          "at": "2026-10-27T18:55:39.799Z"
-        }
-      },
-      "shipped": {
-        "prs": [
-          "lennd/sessionboard-web-api#4735"
+          "lennd/sessionboard-web-api#4737",
+          "lennd/sessionboard-web-api#4755",
+          "lennd/sessionboard-web-ui-v2#1164",
+          "lennd/sessionboard-web-ui-v2#1167",
+          "lennd/sessionboard-web-ui-v2#1179"
         ],
         "docs_only": false,
         "pending": null,
@@ -546,23 +325,25 @@
     },
     {
       "id": "event-team-contact-access-restricted-roles",
-      "title": "Restrict team member access by contact field value or contact list",
-      "summary": "A new **Contact access** section in the event team member sidebar lets organizers scope a restricted role to only the contacts that match a specific field value or belong to a static contact list. Pick a dropdown, multiselect, or checkbox contact field, choose the allowed option(s) (checkbox fields offer **Yes** / **No**), and optionally add one or more static lists — team members with that role will only see contacts that satisfy those filters. The step is now titled **Restrict records**, with **Session filters** and **Contact access** as subsections.",
+      "title": "Restrict a team member to the contacts that match rules you set",
+      "summary": "A **Contact access** section on a restricted team member lets you limit which contacts they can see. Build rules on standard fields (such as name, email, company or contact type) and custom fields with **is**, **is not**, **contains** and **is empty**, match **all** or **any** of them, or pick a static contact list. Contacts outside the scope are hidden from the contacts list, search, pickers, exports and profile links. On sessions, the agenda and session exports, out-of-scope participants appear as **Restricted** rows. Emails they send skip out-of-scope recipients, and Insights queries return only in-scope rows.",
       "article": "/event-team/invite-manage-event-team-members#give-an-outside-vendor-limited-access",
       "related": [
-        "/speaker-crm/crm-segments"
+        "/speaker-crm/crm-segments",
+        "/contacts/contact-profile",
+        "/communications/create-send-emails"
       ],
       "kind": "new",
       "module": "Event team",
       "features": [],
-      "availability": "everyone",
+      "availability": "limited_release",
       "enable": {
-        "how": "default_on",
-        "path": null
+        "how": "support",
+        "path": "Ask your Customer Success Manager: Sessionboard staff set Contact access on the team member for you while it is in limited release"
       },
       "where": {
         "scope": "event",
-        "path": "Team → (member) → Edit → Next → Restrict records → Contact access"
+        "path": "Event → Team → (member) → Edit → Restrict records → Contact access"
       },
       "permissions": [
         "event.users.update"
@@ -570,29 +351,28 @@
       "audience": [
         "organizer"
       ],
-      "use_case": "Hosting and travel vendors who should only see the speakers they are responsible for — for example, those tagged as \"Hosted\" — can now be given a restricted team role scoped to that contact field value, preventing them from seeing any other speakers on the event.",
+      "use_case": "Hosting and travel vendors who should only see the speakers they are responsible for can be given a restricted role scoped to a \"Hosted = Yes\" checkbox field, so they never see other speakers' names, emails, or headshots — even when those speakers share a session.",
       "internal": {
         "cs_action": {
           "kind": "reach_out",
-          "note": "Proactively share with customers who use restricted team roles for hosting, travel, or other vendors who should see only a subset of contacts."
+          "note": "Built for Tahaluf's hosting / travel vendors. Staff (super users) configure Contact access on the customer's team member; the restriction then applies to that member everywhere."
         },
         "when_to_bring_up": "When a customer asks how to give a vendor access to only certain speakers, or when they report that session-scoped roles expose too many contacts.",
         "who_should_get_it": "Customers with multi-vendor events (e.g. Tahaluf-style hosted speaker programmes) where different vendors manage different subsets of speakers.",
-        "staff_path": "Team → (member) → Edit → Next → Restrict records → Contact access",
-        "gotchas": "Requires the companion API PR (sessionboard-web-api#4735) to be live in production before the new filter types are accepted; merging the UI before the API is deployed will cause 400 errors on save. Static (non-dynamic) lists only — dynamic segments are excluded from the list picker.",
-        "talk_track": "You can now scope a restricted team role to contacts that match a specific field value — like 'Hosted: Yes' — or belong to a static contact list. This means your hosting vendor logs in and only sees their speakers, with no risk of seeing anyone else's data.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The invite-and-manage guide should document the new Contact access section: how to pick a contact field, select option values (including Yes/No for checkbox fields), and add a static contact list, and explain how contact-only scopes interact with the existing session filters.",
-          "why_use_it": "Restricted team roles let you give outside vendors or internal sub-teams access to only the records they need. Contact access filters go beyond session-based scoping: you can limit a role to contacts that match a specific field value (such as a \"Hosted\" flag) or belong to a curated static list, so vendors see exactly their subset of speakers without any data leaking from shared sessions.",
-          "at": "2026-10-27T18:47:59.571Z"
-        }
+        "staff_path": "Event → Team → (member) → Edit → Restrict records → Contact access (super users only)",
+        "gotchas": "Session filters and contact rules AND together. Static lists only, not dynamic segments. Unreadable rules fail closed (the member sees no contacts). Roster merge tags in emails still list every speaker on the session, by design. Not yet scope-aware: Insights dashboard computed counts and the automated-email forecast count. Admin roles are never restricted.",
+        "talk_track": "You can now give a hosting vendor a role that shows only the speakers they are responsible for — set a 'Hosted' checkbox on each speaker, then point the vendor's role at 'Hosted = Yes' in Contact access. They see those contacts everywhere in the event: list, search, export, email campaigns, and session profiles. Anyone outside that scope is hidden or shown as Restricted."
       },
       "shipped": {
         "prs": [
-          "lennd/sessionboard-web-ui-v2#1163"
+          "lennd/sessionboard-web-api#4735",
+          "lennd/sessionboard-web-api#4751",
+          "lennd/sessionboard-web-api#4752",
+          "lennd/sessionboard-web-api#4753",
+          "lennd/sessionboard-web-api#4769",
+          "lennd/sessionboard-web-ui-v2#1163",
+          "lennd/sessionboard-web-ui-v2#1173",
+          "lennd/sessionboard-web-ui-v2#1180"
         ],
         "docs_only": false,
         "pending": null,
@@ -611,11 +391,11 @@
     {
       "id": "crm-add-to-session-bulk-any-event-status",
       "title": "Add contacts to a session in bulk from the CRM, across any event, with an acceptance status",
-      "summary": "**Add to session** in the CRM now works for contacts on no event, lists every viewable org event (not just the contact's own events), and lets you set the participant status to **Pending** or **Accepted** in the same step. A new **Add to session** bulk action on the org Contacts table and an **Assign → Session** bulk action on the event Contacts table let you place up to 200 selected contacts onto one session at once; contacts not yet in the chosen event are added automatically before the session assignment runs.",
-      "article": "/speaker-crm/crm-add-contact-to-events#add-contacts-to-an-event",
+      "summary": "**Add to session** in the CRM now works for contacts who are not in any event yet, and lists every org event you can manage (not just the contact's own events). Adding someone to a session in a new event adds them to that event first. A new **Add to session** bulk action on the org Contacts table and on the event Contacts table places up to 200 selected contacts on one session at once, with one role, and reports anyone who could not be added. When the event has speaker acceptance turned on, a **Status** picker (**Pending** / **Accepted**) sets the participant status in the same step. Events that do not use Sessions 2.0 show a message instead of adding.",
+      "article": "/speaker-crm/crm-add-contact-to-events#add-contacts-to-a-session",
       "related": [
         "/speakers/create-assign-speakers",
-        "/contacts/add-delete-a-contact",
+        "/speakers/speaker-acceptance",
         "/contacts/adding-existing-contacts-to-a-new-event"
       ],
       "kind": "improved",
@@ -631,7 +411,7 @@
       },
       "where": {
         "scope": "both",
-        "path": "Org CRM → Contacts → contact profile → Program tab → Add to session; Org CRM → Contacts → select contacts → Add to session (bulk bar); Event → Contacts → select contacts → Assign → Session"
+        "path": "Org CRM → Contacts → contact profile → Submissions card → Add to session; Org CRM → Contacts → select contacts → Add to session; Event → Contacts → select contacts → Add to session"
       },
       "permissions": [
         "org.contacts.update",
@@ -648,21 +428,14 @@
         },
         "when_to_bring_up": "When a customer says adding speakers to sessions from the CRM is tedious, or when they keep placeholder sessions because speakers are confirmed before the agenda exists.",
         "who_should_get_it": "Any customer using the CRM who manages speakers across multiple events or confirms speakers before sessions are scheduled — especially large conference teams like Tahaluf/Informa.",
-        "staff_path": "Org CRM → Contacts → contact profile → Program tab; or Contacts table bulk bar",
-        "gotchas": "Bulk assignment is capped at 200 contacts; selecting more shows an error toast and posts nothing. The Assign → Session bulk action is hidden in sponsor and exhibitor modes on the event Contacts table. A team member needs contacts update permission (org) or sessions update permission (event) to see the respective bulk action.",
-        "talk_track": "You can now add any contact to a session straight from the CRM — even if they are not yet on the event — and mark them Accepted in the same step. Select up to 200 contacts at once and assign them all to one session, or create a new session on the spot. Contacts not yet linked to the event are added automatically before the session assignment runs.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The /speaker-crm/crm-add-contact-to-events guide should be expanded to cover: (1) the updated Add to session dialog that lists all org events and auto-adds the contact to the event if needed; (2) the Pending/Accepted status picker; (3) the bulk Add to session action on the org Contacts table; and (4) the Assign → Session bulk action on the event Contacts table including the 200-contact cap and partial-failure toast behaviour.",
-          "why_use_it": "The CRM's Add to session workflow lets you move a confirmed speaker from your contact database onto a specific session without leaving the CRM. You can assign a status at the same time, so downstream syncs and portal tasks that filter on Accepted speakers pick the person up immediately. Bulk assignment means you can place an entire group of contacts onto a session — or create a new session for them — in a single action, whether you are working from the org-level directory or an event's Contacts table.",
-          "at": "2026-10-27T18:44:49.680Z"
-        }
+        "staff_path": "Org CRM → Contacts → contact profile → Submissions card → Add to session; or the Add to session button in either Contacts table's bulk bar",
+        "gotchas": "Bulk is capped at 200 contacts; selecting more shows a toast and posts nothing. The Status picker only appears when the event has speaker acceptance on; otherwise the participant is saved as pending. Events not on Sessions 2.0 block Add (single and bulk) with a message; add those contacts from the session itself. The event Contacts bulk button is hidden in sponsor and exhibitor modes and needs session update permission.",
+        "talk_track": "You can add any contact to a session straight from the CRM, even before they are in the event, and mark them Accepted in the same step. Select up to 200 contacts and put them all on one session, or create the session on the spot."
       },
       "shipped": {
         "prs": [
-          "lennd/sessionboard-web-ui-v2#1162"
+          "lennd/sessionboard-web-ui-v2#1162",
+          "lennd/sessionboard-web-ui-v2#1167"
         ],
         "docs_only": false,
         "pending": null,
