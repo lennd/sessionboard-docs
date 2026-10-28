@@ -1,0 +1,477 @@
+{
+  "date": "2026-10-26",
+  "entries": [
+    {
+      "id": "qa-sweep-w13-approvals-copy-upload-slots-files-errors-awards-import",
+      "title": "Seven fixes: approval workflow copy, file-count accuracy, builder validation, upload-slot staleness, full-slot error, portal error persistence, and awards import update-only mode",
+      "summary": "Seven bugs corrected in one sweep: (1) The **Hold files that are live now?** confirmation dialog and the embargo note in the approval workflow builder now correctly state that integrations remove held files at their next sync (Swapcard unlinks them), replacing outdated copy that said files were kept. (2) The \"N files are held for approval\" count in the **Require approval** toggle and the builder now includes denied files and reads \"held for approval (pending or denied)\" so the number matches reality. (3) The approval workflow builder's error summary box now re-validates live as you fix problems — switching a duration unit from days to hours updates the range shown immediately, and a step name made up of only spaces is caught as you type with an inline message and in the error box. (4) The upload-slot list under **Program → Settings → Files** now reflects a newly created or edited slot immediately without waiting for a server round-trip. (5) Uploading a file into a slot that has already reached its file limit now shows an inline alert and a toast before the request is sent, and keeps the staged file visible if the server also refuses it; previously the error was silently dropped. (6) In the speaker portal, removing a refused file or staging a replacement now clears the upload error immediately instead of waiting until the next **Confirm**. (7) The **Update existing rows only** mode in the Awards and Interest Form import wizard no longer requires every required field to be mapped — it now requires only one of the match columns (**id**, **friendly_id**, or **submitter_email**) to be mapped, and shows a clear message when none is mapped.",
+      "article": "/sessions/file-approvals",
+      "related": [
+        "/sessions/enable-upload-download-content",
+        "/sessions/program-settings",
+        "/settings/importing-data",
+        "/awards/getting-started"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "approvals",
+        "sessions",
+        "awards"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Sessions → session → Files tab; Program → Settings → Files; Approvals → Workflows; Awards → Submissions → Import"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "speaker"
+      ],
+      "use_case": "Organizers managing file approvals will see accurate held-file counts and correct integration behaviour described in the UI, so they can confidently release or hold files without confusion. Teams importing award submissions in update-only mode no longer need to map every required field — only a row-matching column — which makes bulk updates faster and less error-prone.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "If a customer reports confusing approval copy about integrations, a wrong held-file count, a builder error box that shows the wrong range after switching units, upload slots not refreshing, a silent error when uploading to a full slot, a stale portal upload error, or an awards import that blocks update-only mode with required-field errors.",
+        "who_should_get_it": "All customers — all fixes are default-on.",
+        "staff_path": null,
+        "gotchas": "The full-slot check (SB-10328) fires client-side before the request; if the server still refuses (e.g. a race condition), the error is shown inline and the staged file is kept so the organizer can choose a different slot. The awards import update-only change only applies to importers that pass updateMatchColumns (Awards and Interest Form); other importers are unchanged.",
+        "talk_track": "Seven QA fixes shipped together: approval workflow copy now accurately describes what integrations do with held files; the held-file count includes denied files; the builder error box updates live as you fix issues; upload-slot settings refresh instantly after a save; uploading to a full slot shows a clear error before and after the request; the portal clears upload errors as soon as you remove or replace the file; and the awards import wizard no longer demands every required field when you are only updating existing rows.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": null,
+          "why_use_it": "null",
+          "at": "2026-10-26T15:01:09.107Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1151"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "feature:approvals (beta)"
+    },
+    {
+      "id": "contracts-signing-page-return-to-my-contracts",
+      "title": "Signers are returned to My Contracts after signing from the portal",
+      "summary": "After signing a contract from the portal's **Sign now** link, signers see a \"Taking you back to My Contracts…\" message and are automatically redirected to **My Contracts** after 6 seconds. A **Back to My Contracts** link is also shown immediately, and a **Stay on this page** button cancels the redirect. Declining a contract shows the **Back to My Contracts** link without redirecting. Contracts opened from emailed links (with no portal context) are unchanged.",
+      "article": "/participants/sign-a-contract",
+      "related": [
+        "/speaker-crm/contracts",
+        "/portals/portals-101"
+      ],
+      "kind": "fixed",
+      "module": "Portals",
+      "features": [
+        "contracts",
+        "new_portals"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Portal → My Contracts → Sign now → signing page"
+      },
+      "permissions": [],
+      "audience": [
+        "speaker",
+        "participant"
+      ],
+      "use_case": "Signers who click **Sign now** from their portal no longer get stranded on the signing confirmation page — they are automatically returned to **My Contracts** so they can see their updated contract status and continue with other portal tasks without navigating back manually.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer reports that signers are confused or stranded after signing a contract from the portal.",
+        "who_should_get_it": "All customers using Contracts (beta) with portal Sign now links.",
+        "staff_path": null,
+        "gotchas": "The redirect only fires when the signer arrives via a portal link carrying the ?return= and rs= parameters. Contracts opened from emailed links are unaffected. Declining shows the Back to My Contracts link but does not auto-redirect and does not show the ?signed= toast.",
+        "talk_track": "Signers who use the portal Sign now button are now automatically returned to My Contracts after 6 seconds, with a Stay on this page option if they need more time on the confirmation screen.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should document the post-signing redirect behaviour — the \"Taking you back to My Contracts…\" message, the Back to My Contracts link, the Stay on this page option, and the difference in behaviour between portal-initiated and email-initiated signing links.",
+          "why_use_it": "The portal signing flow lets speakers and other participants sign contracts directly from their portal without leaving the Sessionboard experience. After signing, they land back in **My Contracts** where they can confirm the updated status, download a copy, or move on to other tasks — keeping the entire contracting process in one place.",
+          "at": "2026-10-26T15:01:28.598Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1143"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "eval-plans-v2-qa-sweep-w7-rounds-scope-history",
+      "title": "Four fixes for evaluation plans v2: round flow saved correctly, scope card on Assignments step, History type filter, and Interest Form language error",
+      "summary": "Four bugs corrected in one sweep: (1) Changing the round flow (e.g. **Parallel**) on the Rounds step now saves correctly when you click **Continue**; if the API rejects the change because submissions are already in round 2+, the error message is now shown instead of silently dropped. (2) A new **EvalPlanScopeCard** appears at the top of the **Assignments** step for event-scoped plans, showing the plan's scope rules in the same filter builder as submission filters, with **Save scope**, **Remove scope**, and **Dismiss** for any filters that could not be converted; the **Copy from…** sheet also warns per plan when a filter was skipped. (3) The **History** type filter now includes **Evaluation plan** as a subject type (available in English, German, Spanish, and French). (4) The Interest Form wizard no longer fires a broken `/event/<org-scope-key>/enabled-languages` request on the Rounds step, eliminating a spurious 400 error toast.",
+      "article": "/evaluations/setting-up-round-based-evaluations",
+      "related": [
+        "/evaluations/evaluation-plans",
+        "/communications/email-sms-history"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "sessions_v2"
+      ],
+      "availability": "add_on",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Sessions → Evaluation Plans → plan wizard → Rounds step; Sessions → Evaluation Plans → plan wizard → Assignments step; History → Audit → Type filter"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers setting up parallel-flow evaluation plans will no longer lose their round-flow selection when advancing through the wizard. Teams using plan scope rules can now view, edit, and clean up those rules directly on the Assignments step without leaving the wizard, and can audit evaluation plan changes in the History log.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer reports that their parallel round flow setting is not sticking, that scope filters were dropped during a library import, or that they cannot find evaluation plan events in the History audit log.",
+        "who_should_get_it": "Any customer using Sessions 2.0 evaluation plans, especially those with round-based or parallel-flow plans and those who use plan scope rules.",
+        "staff_path": "Sessions → Evaluation Plans → open a plan → Rounds step (round flow picker); Assignments step (scope card); History → Audit → Type filter",
+        "gotchas": "The scope card only appears on event-scoped plans that have a scope or a conversion report. The Dismiss button for unmapped filters only appears when the API sends a conversion report — it will not show on older API versions. The enabled-languages fix means no language request fires at all for org-scoped Interest Form plans, which is correct behaviour.",
+        "talk_track": "Four QA fixes for evaluation plans v2: the round flow (e.g. Parallel) now saves when you click Continue on the Rounds step; a new scope card on the Assignments step lets you view and edit plan scope rules in place; the History type filter now includes Evaluation plan so you can audit changes; and a spurious 400 error toast on the Interest Form wizard's Rounds step is gone.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The setting-up-round-based-evaluations guide should document the new EvalPlanScopeCard on the Assignments step, including the Save scope, Remove scope, and Dismiss controls, and note that the Copy from… sheet warns when a filter could not be converted.",
+          "why_use_it": "null",
+          "at": "2026-10-26T15:01:56.256Z",
+          "permissions_to_confirm": [
+            "event.evaluation_plans:update",
+            "event.history:read"
+          ]
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1145"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "site-detail-page-soft-404-seo-fix",
+      "title": "Session, speaker, and exhibitor \"not found\" pages on Program Sites no longer appear in search engine indexes",
+      "summary": "Session detail pages that return a \"This session could not be found.\" state, speaker or exhibitor pages that load no matching record, and profile pages that are turned off for a Site now correctly signal to search engines that the page does not exist. The canonical link and JSON-LD structured data are dropped for these states, preventing soft 404s from being indexed.",
+      "article": "/site/program-site",
+      "related": [
+        "/site/site-builder"
+      ],
+      "kind": "fixed",
+      "module": "CMS",
+      "features": [
+        "sessions"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Program Site → session / speaker / exhibitor detail pages"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Organizers running public Program Sites will no longer have \"not found\" detail pages polluting their search engine results or diluting their site's SEO authority. Attendees searching for sessions or speakers via Google will not land on dead-end pages.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "If a customer reports that Google is indexing 'session not found' or 'speaker not found' pages from their Program Site, or if an SEO audit flags soft 404s on the site.",
+        "who_should_get_it": "All customers using public-facing Program Sites with session, speaker, or exhibitor detail pages.",
+        "staff_path": null,
+        "gotchas": "The fix distinguishes a true 404 (session ID resolves to nothing) from a failed API load (network error); a failed load is not treated as 'not found' and does not suppress the canonical. Profile pages that are disabled at the Site level are also treated as not found.",
+        "talk_track": "Search engines were rendering the JavaScript and indexing 'not found' states as real pages. The fix drops the canonical and structured data on those states so crawlers correctly treat them as 404s.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The Program Site guide should note that detail pages for sessions, speakers, and exhibitors that cannot be found — or whose profile type is disabled — are automatically excluded from search engine indexing.",
+          "why_use_it": "null",
+          "at": "2026-10-26T15:02:14.614Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-org-portal#222"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "qa-sweep-2026-10-23-w3-embeds-sites-content-galleries",
+      "title": "Four fixes: embed filter dropdowns, colour field autosave, hub content block \"Unsaved changes\", and refresh cache",
+      "summary": "Four bugs corrected in one sweep: (1) In the **Filters** builder on an embed, removing a rule above another rule no longer causes the lower rule's value dropdown to show the wrong field's options — for example, a **Language** rule no longer shows tag values after a **Tags** rule is removed above it. (2) Typing a partial hex colour (e.g. `#12345`) in a **Text Color** or similar colour field on a Site no longer auto-saves an intermediate shorthand value mid-keystroke; only a complete `#RRGGBB` or `#RRGGBBAA` value is saved, and an invalid entry on blur restores the previous colour. An undo issued while another value is still saving now correctly queues the restore rather than being silently dropped. (3) Hub content blocks that contain links set to open in a new tab no longer show **Unsaved changes** on every page load or save — the editor's automatically added `rel=\"noopener\"` attribute is now treated as equivalent to its absence. (4) Clicking **Refresh Cache** on an embed multiple times in quick succession now shares a single in-flight request instead of stacking duplicate calls.",
+      "article": "/sessions/embeds",
+      "related": [
+        "/site/content-galleries",
+        "/awards/setting-up-your-sessionboard-site"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "embeds_v2",
+        "content_galleries",
+        "awards"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Publish → Embeds → [embed] → Included sessions → Filters; Awards → Site → Settings → Branding → colour fields; Content Galleries → [gallery] → Design → Hub content blocks"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who build filtered session embeds with multiple rules, customise Site branding colours, or maintain hub content blocks with external links will no longer encounter phantom filter values, stray colour saves, or a persistent \"Unsaved changes\" warning that cannot be cleared.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "If a customer reports wrong values appearing in an embed filter dropdown after reordering rules, a colour field saving unexpected values mid-typing, a hub content block that always shows Unsaved changes, or Refresh Cache being slow when clicked repeatedly.",
+        "who_should_get_it": "All customers — fixes are default-on.",
+        "staff_path": null,
+        "gotchas": "The stale-options fix (SB-10251) was confirmed on EU event 418 embed 7b1b59bc; no wrong-field value was persisted to the database, so no data cleanup is needed. The colour autosave fix (SB-10406) also corrects a subtle undo-during-save race in useSiteDraftAutosave. The hub block fix (SB-8116) ignores only editor-injected rel tokens and attribute order; genuine link or style changes still trigger a save.",
+        "talk_track": "Four QA fixes shipped together: embed filter dropdowns now always show the correct field's options even after rules are reordered or removed; colour fields on Sites only save complete hex values; hub content blocks with new-tab links no longer falsely report unsaved changes; and Refresh Cache on an embed deduplicates concurrent requests.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The embeds guide should note that filter rule value dropdowns are field-scoped and that removing a rule above another does not affect the remaining rule's options. The content-galleries guide should clarify that editor-added rel attributes on links do not count as content changes.",
+          "why_use_it": "null",
+          "at": "2026-10-26T15:02:43.215Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1141"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "feature:content_galleries (preview)"
+    },
+    {
+      "id": "embed-fixes-tags-label-hour-axis-rich-text",
+      "title": "Three embed fixes: Tags label pluralised, agenda hour axis respects 24-hour format, and rich-text custom fields render as formatted text",
+      "summary": "Three bugs corrected in the public-facing embeds. (1) The **Schedule Itinerary** widget now labels the tags row **Tags** (previously \"TAG:\") in English, German, French, and Spanish. (2) The **Agenda** widget's hour axis now matches the same time format (12-hour or 24-hour) and locale used on the session cards, instead of always printing 12-hour times. (3) Custom fields whose type is rich text (WYSIWYG) now render as formatted HTML — with paragraph spacing and list markers — in session cards and in session, subsession, and speaker detail modals; previously the raw HTML tags were visible as plain text.",
+      "article": "/sessions/embeds",
+      "related": [
+        "/concepts/custom-field-type-reference",
+        "/settings/language-translation-variant"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "embeds_v2",
+        "sessions",
+        "languages"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Sessions → Embeds → any Schedule Itinerary, Agenda, or Sessions embed"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Organizers who embed their agenda or session list on an event website will see accurate tag labels in all supported languages, consistent time formatting across the agenda view, and properly formatted rich-text content in session details — without any configuration changes.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "If a customer reports that their embedded agenda shows raw HTML in custom fields, mismatched time formats on the hour axis, or 'TAG:' instead of 'Tags' in the Itinerary widget.",
+        "who_should_get_it": "All customers using agenda, itinerary, or sessions embeds — fixes are default-on.",
+        "staff_path": null,
+        "gotchas": "The 24-hour axis fix relies on a new 'hourLabels' field in the API payload (web-api#4709). Embeds serving a cached payload from before that deploy will fall back to 12-hour labels until the cache refreshes — no action needed.",
+        "talk_track": "Three embed QA fixes shipped together: the Tags label is now plural and translated in all four supported locales; the agenda hour axis matches the 24-hour or 12-hour setting already used on session cards; and any custom field marked as rich text now displays formatted paragraphs and lists instead of raw HTML tags.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The embeds guide should note that rich-text custom fields render as formatted HTML in session cards and modals, and that the agenda hour axis inherits the time format configured for the event.",
+          "why_use_it": "Sessionboard embeds let you publish a live, branded agenda, speaker list, or session catalogue directly on your own website. They pull data automatically from your event so attendees always see current information. You control the look with custom CSS and choose which fields appear, including rich-text descriptions, tags, and localised time formats.",
+          "at": "2026-10-26T15:03:07.384Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-embeds#117"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "integration-event-mappings-load-error",
+      "title": "Integration Event Mappings step now shows why events failed to load",
+      "summary": "When the **Event Mappings** step cannot fetch events from an integration (for example, because a saved access token has been rejected), an inline alert now appears with the specific error message instead of a silently empty list. A toast notification also fires once per failed load. For recoverable errors (server errors or network failures) a **Try again** button appears; for credential errors (4xx) the button is hidden because retrying with the same credentials cannot succeed.",
+      "article": "/apps/expoplatform-integration#map-events",
+      "related": [
+        "/integrations/overview",
+        "/integrations/integration-readiness"
+      ],
+      "kind": "fixed",
+      "module": "Apps",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Settings → Integrations → [any integration] → Event Mappings step"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers setting up or maintaining an integration no longer have to guess why the Event Mappings step is blank — the exact error (such as \"Expo Platform rejected the saved access token\") is shown inline so they know immediately whether to reconnect the integration or contact support.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer reports that the Event Mappings step is empty or that they cannot tell why an integration is not working.",
+        "who_should_get_it": "All customers using any integration with an Event Mappings step (ExpoPlatform, and others sharing the same hook).",
+        "staff_path": "Settings → Integrations → [integration] → open a connection → Event Mappings step",
+        "gotchas": "For 4xx errors the API's English error message is shown as-is, so admins using the French, German, or Spanish UI will see that sentence in English. The Try Again button is intentionally absent for 4xx errors — retrying with the same bad credentials cannot succeed. A failed background refetch keeps any previously cached event list intact.",
+        "talk_track": "The Event Mappings step now shows a clear inline error and a toast when events can't load — for example, if an ExpoPlatform token has expired. For server errors there's a Try Again button; for credential errors the message tells the admin to reconnect the integration instead.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The ExpoPlatform (and other integration) guides should document that the Event Mappings step shows an inline error alert when events fail to load, explain the difference between retryable (5xx/network) and non-retryable (4xx) errors, and note that the Try Again button only appears for retryable failures.",
+          "why_use_it": "null",
+          "at": "2026-10-26T12:53:07.893Z",
+          "permissions_to_confirm": [
+            "org.integrations: read"
+          ]
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1140"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    }
+  ]
+}
