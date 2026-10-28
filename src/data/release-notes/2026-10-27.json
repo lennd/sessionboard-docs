@@ -744,20 +744,16 @@
     },
     {
       "id": "evaluator-assignment-import-multi-submission-subsession",
-      "title": "Evaluator and Assignment imports now accept multiple submission IDs and sub-session IDs in one cell",
-      "summary": "The **Submission ID** column in the **Import Evaluators** and **Import Assignments** spreadsheets now accepts a comma-, semicolon-, pipe-, or newline-separated list of IDs in a single cell, so one row can assign an evaluator to several submissions at once. Sub-session IDs (e.g. `SESS-1977-2`) are also now resolved correctly, matching the behaviour of the sessions import. A single bad ID in a list fails only that row with a clear error message; no partial writes occur.",
-      "article": "/evaluations/setting-up-round-based-evaluations#step-4-assignments",
+      "title": "Evaluator and Assignment imports accept several submission IDs per row, and sub-session IDs",
+      "summary": "The **Submission ID** column of the **Import Evaluators** and **Import Assignments** spreadsheets now takes several IDs in one cell, separated by commas, semicolons or pipes, so one row can assign an evaluator to many submissions. Sub-session IDs such as `SESS-1977-2` now work too. A wrong or unknown ID skips that row with an error naming the ID, instead of failing with a database error.",
+      "article": "/evaluations/setting-up-round-based-evaluations#import-assignments-from-a-spreadsheet",
       "related": [
         "/evaluations/evaluation-plans",
-        "/settings/importing-data",
-        "/faq/common-csv-xlsx-import-issues-and-how-to-fix-them"
+        "/settings/importing-data"
       ],
-      "kind": "improved",
+      "kind": "fixed",
       "module": "Program",
-      "features": [
-        "sessionboard_imports",
-        "sessions_v2"
-      ],
+      "features": [],
       "availability": "everyone",
       "enable": {
         "how": "default_on",
@@ -774,17 +770,17 @@
       "audience": [
         "organizer"
       ],
-      "use_case": "Events with large reviewer pools can now bulk-assign one evaluator to many submissions in a single import row instead of repeating the evaluator's details on every line. Programs that use sub-sessions as review targets — common in abstract-heavy conferences — can reference those sub-sessions directly by their ID without workarounds.",
+      "use_case": "An admin can assign one evaluator to a whole stack of submissions from a single spreadsheet row, and can target sub-sessions (common for abstracts) by the ID they see in the grid, instead of getting an error.",
       "internal": {
         "cs_action": {
           "kind": "none",
           "note": null
         },
-        "when_to_bring_up": "When a customer asks how to assign one reviewer to multiple submissions at once, or reports that sub-session IDs fail in the evaluator/assignment import.",
-        "who_should_get_it": "Any customer running round-based evaluations with sub-sessions or large reviewer pools.",
+        "when_to_bring_up": "When a customer asks how to assign one reviewer to many submissions by import, or reports that the evaluator or assignment import fails on a list of IDs or on a sub-session ID like SESS-1977-2.",
+        "who_should_get_it": "Anyone using Evaluation Plan 2.0 imports, especially programs that review sub-sessions or abstracts.",
         "staff_path": "Evaluation Plans → Plan → Plan Options → Import Evaluators / Import Assignments",
-        "gotchas": "One invalid ID in a multi-ID cell fails the entire row with no partial write. The Submission ID column max length is now 4000 characters (was 255), so existing templates downloaded before this change may show the old limit — advise customers to re-download the template. Import undo correctly removes all assignments created by a multi-ID row; runs recorded before this change (single assignment_id) are still undone correctly.",
-        "talk_track": "You can now put a comma-separated list of submission IDs — including sub-session IDs like SESS-1977-2 — in the Submission ID column of the evaluator or assignment import. One row, many assignments. If any ID in the list is invalid or not found, the whole row is rejected with a clear error so nothing is half-applied.",
+        "gotchas": "A cell with commas must be quoted in a CSV; Excel and Google Sheets do this automatically when saving, hand-written CSVs may not. One bad ID skips the whole row. Lists of more than about six UUIDs may hit the CSVBox widget's own column limit if its dashboard sheet still sets 255 characters; friendly IDs (SESS-123) fit easily. One-submission-per-row files work exactly as before.",
+        "talk_track": "Put the submission IDs in one cell separated by commas, like SESS-101, SESS-102, SESS-123-2, and that evaluator gets all of them. Sub-session IDs work as shown in the grid. If one ID is wrong, that row is skipped and the error tells you which ID to fix.",
         "draft": {
           "by": "release-intake",
           "model": "claude-sonnet-4-6",
@@ -809,8 +805,7 @@
         "emailed_at": null
       },
       "ideas": [],
-      "media": [],
-      "gated": "feature:sessionboard_imports (limited_release)"
+      "media": []
     },
     {
       "id": "swapcard-map-session-privacy",
