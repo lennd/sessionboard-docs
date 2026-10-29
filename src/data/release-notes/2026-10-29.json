@@ -53,6 +53,2560 @@
       "media": [
         "/images/kb/apps/slack-slash-command-answer.png"
       ]
+    },
+    {
+      "id": "attend-find-my-events",
+      "title": "Find my events: sign in to every event with one code in the Attend app",
+      "summary": "Attendees and speakers who don't have their event code can tap **Find my events** in the Attend mobile app, enter their email address or phone number, and receive a single 6-digit code. After entering the code they see every event they are registered for — across all regions — and can open any of them with one tap, without a second sign-in step. Organizers' **My Profile** page now also accepts a phone number, which is used to match the person across events via SMS.",
+      "article": "/attend/mobile-app",
+      "related": [
+        "/attend/overview",
+        "/attend"
+      ],
+      "kind": "new",
+      "module": "Apps",
+      "features": [
+        "attend_app"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Attend mobile app → sign-in screen → Find my events"
+      },
+      "permissions": [],
+      "audience": [
+        "participant",
+        "speaker"
+      ],
+      "use_case": "Attendees and speakers who arrive at an event without their event code or invitation email can identify themselves with just an email or phone number and get straight into the app — no organizer intervention needed.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "The feature is server-side only in this PR; the mobile app UI ships separately. Confirm the Attend app client release is live before telling customers. Also confirm Doppler env vars (ATTEND_IDENTITY_PEERS, ATTEND_IDENTITY_SERVICE_PRIVATE_KEY/PUBLIC_KEY) are set in prod-us, prod-eu and prod-me — without them each region answers for itself only and cross-region event lists won't appear."
+        },
+        "when_to_bring_up": "Any event using the Attend app where attendees or speakers frequently contact support because they can't find their event code or sign-in link.",
+        "who_should_get_it": "All Attend Mobile App customers, especially large conferences with attendees across multiple events or regions.",
+        "staff_path": null,
+        "gotchas": "Speakers with no attendee registration row get a null grant with reason 'no_registration' — they will see the event listed but cannot tap into it until they have a registration. Events requiring SSO show 'sso_required' and also cannot be opened via this flow. Phone numbers are deduplicated by most-recent login; a shared number goes to the account that signed in most recently.",
+        "talk_track": "Attendees no longer need to hunt for their event code. They type their email or phone, get one code, and see every event they're part of — all in a few seconds.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The /attend/mobile-app guide should add a section explaining the Find my events sign-in flow from the attendee perspective, including what happens when a grant is unavailable (no registration or SSO required).",
+          "why_use_it": "The Attend mobile app puts the full event experience — agenda, networking, session check-in, Q&A and more — in attendees' and speakers' hands. Find my events removes the last barrier to getting in: anyone who is already registered or assigned to a session can reach every event they belong to by verifying their identity once, even across multiple events or regions.",
+          "at": "2026-10-29T16:53:51.984Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4888"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "onsite-security-hardening-badge-checkin-advocacy",
+      "title": "Onsite check-in, badge formats, and Advocacy join page get security-hardened UI",
+      "summary": "Several onsite and marketing surfaces now enforce tighter security defaults. **Badge Formats**: a format that the system has switched off now shows **\"Turned off\"** instead of appearing selectable. **Print Station**: the claim-attempt token is passed back on the PDF URL and the done screen only when the server returns it, preventing stale claim data. **Advocacy join page**: the post-join screen now instructs members to confirm from the email they received; an expired-verification link shows a clear **\"?verify=expired\"** notice (available in English, German, French, and Spanish). **Companion / company links**: posting directly to LinkedIn is disabled on company links; clips share through LinkedIn's native share dialog instead.",
+      "article": "/onsite/checkin-and-badges",
+      "related": [
+        "/marketing/advocacy",
+        "/registration/badges"
+      ],
+      "kind": "improved",
+      "module": "Event team",
+      "features": [
+        "marketing_advocacy",
+        "gathering_badges"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Registration → Onsite → Badge Formats; Registration → Onsite → Print Station; Marketing → Advocacy (join page); Marketing → Create → Companion / company links"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Organizers running onsite check-in get clearer feedback when a badge format is unavailable, and claim data is only surfaced when the server confirms it — reducing the risk of incorrect badge prints. Advocacy members joining through a group link now see actionable guidance when their verification link has expired.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer reports confusion about disabled badge formats or stale claim data at the print station, or when Advocacy members report unclear join-confirmation messaging.",
+        "who_should_get_it": "Any customer using onsite badge printing or Advocacy group join links.",
+        "staff_path": "Registration → Onsite → Badge Formats; Marketing → Advocacy",
+        "gotchas": "These changes are safe to deploy before the companion API PR (web-api #4887) ships — all new response fields are optional and nothing new is sent to an API that did not return it. The LinkedIn direct-post change on company links may surprise customers who expected that path to work.",
+        "talk_track": "The print station and badge format UI now stay in sync with what the server actually supports, so your desk staff see 'Turned off' instead of a broken format, and claim tokens only appear when the server confirms them.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The onsite check-in guide should add a note explaining the \"Turned off\" badge format state and how claim-attempt tokens appear on the print station done screen.",
+          "why_use_it": "Sessionboard's onsite check-in and badge printing tools let event teams process arrivals quickly and accurately at the desk. Badge format controls, print-station claim tracking, and Advocacy join flows are designed to surface only what the server has confirmed, so staff and attendees always act on accurate information.",
+          "at": "2026-10-29T16:17:42.090Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1287"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "feature:gathering_badges (beta)"
+    },
+    {
+      "id": "account-phone-hint-one-account-rule",
+      "title": "Account phone hint clarified to state the one-account rule only",
+      "summary": "The hint text beneath the **Phone** field in **Account Settings** now reads \"Include the country code. A number can be on only one account.\" The previous wording implied the phone number could be used to find events; that is no longer the case. Updated in English, German, Spanish, and French.",
+      "article": "/get-started/how-to-set-up-two-factor-authentication-2fa-on-your-sessionboard-account",
+      "kind": "fixed",
+      "module": "Settings",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Account Settings → Phone"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "reviewer",
+        "speaker",
+        "participant"
+      ],
+      "use_case": "Users who read the old hint and expected their phone number to help them locate events will no longer be misled; the hint now accurately describes what the field does.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "Only if a customer reports confusion about phone-number behaviour after the related API change (web-api#4888).",
+        "who_should_get_it": "All users — the hint is visible to anyone who opens Account Settings.",
+        "staff_path": "Account Settings → Phone",
+        "gotchas": "A companion API change (web-api#4888) removed the ability for an unconfirmed account phone to find Attend events; this copy fix aligns the UI with that behaviour.",
+        "talk_track": null,
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The account-settings phone field and its one-account constraint are not documented in any current guide; a short note in the 2FA or account-settings article would help users understand why a number can only appear on one account.",
+          "why_use_it": "null",
+          "at": "2026-10-29T15:22:33.803Z"
+        }
+      },
+      "related": [],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1289"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "recon-recipe-based-agenda-crawling",
+      "title": "Speaker Prospects agenda crawls are more accurate and now capture job title, company, photo and profile links",
+      "summary": "The **Recon** crawler that pulls sessions and speakers from external agenda pages now learns each agenda's layout once and replays that knowledge on every subsequent crawl — no AI on repeat runs. Speakers discovered on the page now include job title, company, photo and profile links when the page shows them. Paginated agendas are followed page by page; a crawl that cannot load every page is marked **partial** and never removes existing sessions. Failed crawls explain why they failed.",
+      "article": "/speaker-crm/overview",
+      "related": [
+        "/speaker-crm/pipeline"
+      ],
+      "kind": "improved",
+      "module": "CRM",
+      "features": [
+        "speaker_prospects"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Speaker CRM → Prospects → External Events → Agenda tab → Run now"
+      },
+      "permissions": [
+        "org.prospects.read",
+        "org.prospects.update"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Teams prospecting speakers from competitor or partner events get richer, more reliable data — including speaker bios, photos and company — without manual copy-paste, and without losing previously found sessions if a crawl hits a pagination limit.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "The crawl engine is fully replaced. Recipes are stored per external event; the first crawl after deploy triggers an AI investigation run (Anthropic API key and RECON_* env vars must be set in Doppler, plus 2 DB migrations). Crawls that cannot generate a valid recipe fail gracefully and keep existing data."
+        },
+        "when_to_bring_up": "Any customer using Speaker Prospects / Recon who has complained about missed sessions, stale speaker data, or crawl failures on JavaScript-heavy agenda pages.",
+        "who_should_get_it": "Customers on the speaker_prospects beta who actively monitor external events for speaker sourcing.",
+        "staff_path": "Speaker CRM → Prospects → External Events",
+        "gotchas": "First crawl per external event now costs up to ~US$4 in Anthropic API calls to generate the recipe. If the agenda tool (Sched, Bizzabo, Swoogo, etc.) changes its layout, a new investigation run is triggered. A daily spend cap and back-off are in place. Paginated agendas that exceed the page cap are marked 'partial' — sessions are never removed on a partial crawl.",
+        "talk_track": "Recon now learns each agenda site's structure once and replays it instantly on every future crawl — so your prospect list stays current, speakers come in with their full profile details, and you never lose data from a partial crawl.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The Speaker Prospects guide should document the recipe-based crawl lifecycle (investigate → verify → replay), the 'partial' crawl status, the richer speaker fields now captured, and what a crawl failure message looks like.",
+          "why_use_it": "Speaker Prospects lets you monitor external event agendas and automatically pull in sessions and speakers as potential candidates for your own program. It keeps your prospect pipeline fresh without manual research, surfaces speaker details like job title, company and headshot directly from the source page, and flags crawl issues so you always know the state of your data.",
+          "at": "2026-10-29T15:13:50.490Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4729"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "account-settings-phone-validation",
+      "title": "Account Settings now validates phone numbers and prevents duplicates across accounts",
+      "summary": "The **Phone** field in **Account Settings** now shows inline validation errors: \"This number is already on another account.\" when a number is taken, and \"That doesn't look like a phone number.\" when the format is invalid. A hint under the field reminds users to include the country code, explains that each number can belong to only one account, and notes that the phone number is used to find your events in the Attend app. A bug is also fixed where a taken phone number would incorrectly report the email address as already in use.",
+      "article": "/get-started/how-to-set-up-two-factor-authentication-2fa-on-your-sessionboard-account",
+      "kind": "improved",
+      "module": "Settings",
+      "features": [
+        "attend_app"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Account Settings → Phone"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "reviewer",
+        "speaker",
+        "participant"
+      ],
+      "use_case": "Any user who enters a phone number in their account settings gets immediate, specific feedback if the number is already taken or formatted incorrectly, preventing silent failures and confusion — especially important for speakers and attendees who rely on their phone number to find their events in the Attend app.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a speaker or attendee reports they cannot find their events in the Attend app, or when a user is confused by an error message on Account Settings.",
+        "who_should_get_it": "All users; no action needed — this is on by default once the paired API change (web-api#4888) is deployed.",
+        "staff_path": null,
+        "gotchas": "The new error codes (phone_taken, phone_invalid) only appear once the API PR lennd/sessionboard-web-api#4888 is live; before that, the UI behaves as before. Also fixes a pre-existing bug where a taken phone number would incorrectly surface as an email conflict.",
+        "talk_track": "If a speaker says they can't find their events in Attend, check that their phone number is saved correctly in Account Settings — the field now tells them immediately if the number is already on another account or formatted wrong.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The Account Settings page (phone number field, Attend app lookup behaviour, and one-account-per-number rule) is not covered by any existing guide; the closest article is the 2FA settings page. A short section or standalone guide on managing account profile settings — including phone number requirements for the Attend app — should be added.",
+          "why_use_it": "Your phone number is how the Attend app locates your events — keeping it accurate and unique to your account ensures you always find the right events when you sign in. Clear inline errors mean you know exactly what to fix without guessing.",
+          "at": "2026-10-29T15:00:04.953Z"
+        }
+      },
+      "related": [
+        "/attend",
+        "/attend/mobile-app",
+        "/participants/attend-app"
+      ],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1288"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "feature:attend_app (beta)"
+    },
+    {
+      "id": "slack-direct-install-and-uninstall",
+      "title": "Connect Slack directly from the Slack Marketplace, and automatic revocation on uninstall",
+      "summary": "Organizers can now start a Slack connection from the Slack App Directory without first being inside Sessionboard. After authorizing in Slack, they land on the **Apps → Slack → Connect** page, where they choose which organization to link the workspace to and complete the install. When a Slack workspace uninstalls the app or revokes the bot token, every connection for that workspace is automatically marked revoked and the token is removed — no manual cleanup needed.",
+      "article": "/integrations/overview",
+      "related": [
+        "/integrations/overview"
+      ],
+      "kind": "improved",
+      "module": "Apps",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "self_serve",
+        "path": "Apps → Slack → Connect (or install from the Slack App Directory, then complete on the Apps → Slack → Connect page)"
+      },
+      "where": {
+        "scope": "org",
+        "path": "Apps → Slack"
+      },
+      "permissions": [
+        "org.settings.manage_app_connections"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Teams who discover the Sessionboard Slack app in the Slack Marketplace can install it without switching to Sessionboard first. When a workspace admin removes the app from Slack, the connection is cleaned up automatically so stale or revoked tokens never linger.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "No manual steps required. The Slack app settings for the production app (A0BDH69PSMC) must have the Direct Install URL set and bot events subscribed — this is a post-deploy ops task, not a customer action."
+        },
+        "when_to_bring_up": "When a customer asks how to install the Sessionboard Slack app from the Slack App Directory, or when they report a stale Slack connection after uninstalling the app from their workspace.",
+        "who_should_get_it": "Any organization using the Slack integration, especially those who manage app installs centrally through the Slack Admin console.",
+        "staff_path": "Apps → Slack",
+        "gotchas": "A Slack workspace already connected to another Sessionboard organization cannot be claimed by a second org — the claim step will refuse it. The pending install token expires in 30 minutes; if the user takes longer to complete the flow they will need to restart from Slack.",
+        "talk_track": "Your team can now find and install the Sessionboard Slack app straight from the Slack App Directory. If a workspace admin ever removes it, the connection clears itself automatically — no orphaned tokens.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The App Marketplace guide has no section covering the Slack direct-install flow or the automatic revocation behaviour on uninstall; a dedicated Slack integration guide (similar to the Zoom or Docusign guides) should document both paths.",
+          "why_use_it": "Connecting Sessionboard to Slack lets your team receive notifications and updates in the channels where they already work. The direct-install flow means anyone who finds the app in the Slack Marketplace can authorize it immediately and then pick the right Sessionboard organization — no need to start from inside Sessionboard. Automatic revocation keeps your connected apps list accurate when a workspace admin removes the integration from the Slack side.",
+          "at": "2026-10-29T14:22:54.433Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4881"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "registration-privacy-gdpr",
+      "title": "Registration privacy: consent management, DSAR export, anonymisation and retention",
+      "summary": "A new **Privacy** panel under **Registration › Settings › Privacy** lets organizers choose between **Basic** and **Full GDPR** privacy modes. **Full GDPR** mode adds Data Protection Officer fields, a versioned data-processing consent text, and a configurable retention rule that anonymises registrants N months after the event ends. Both modes support adding, editing and removing consent questions (each versioned automatically when wording changes). **Full GDPR** mode also unlocks privacy tools — **Consent log**, **History**, per-person **Export data** and **Anonymise**, and a retention **Preview / Run now** workflow — all gated behind the new **Export and anonymise registrant data** permission. In the registrant drawer, a **Consent** section lists each consent with its version and answer; an **Anonymised** banner appears on anonymised records. On the registrants list, **More → Anonymise…** lets admins bulk-anonymise selected registrations after a dry-run preview and a typed confirmation.",
+      "article": "/registration/privacy",
+      "related": [
+        "/registration/registrants",
+        "/registration/roles-and-permissions",
+        "/registration/overview"
+      ],
+      "kind": "new",
+      "module": "Program",
+      "features": [
+        "registration"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Registration › Settings › Privacy; Registration › Registrants (drawer Consent section and Anonymised banner; More → Anonymise…)"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Events operating under GDPR or similar privacy regulations can capture versioned consent at registration, respond to data subject access requests with a one-click JSON export, and automatically anonymise registrant records on a configurable schedule — all without leaving Sessionboard.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "This UI depends on web-api lennd/sessionboard-web-api#4884. Until that API is live the Privacy panel reads defaults and shows a 'needs the latest API' message. Confirm the API PR is merged and deployed before pointing any customer at this feature."
+        },
+        "when_to_bring_up": "Any customer who mentions GDPR compliance, consent capture, data subject access requests, or a need to purge registrant PII after an event.",
+        "who_should_get_it": "Events with European attendees or any org with a formal data-retention policy; particularly associations, medical societies and enterprise customers.",
+        "staff_path": "Registration › Settings › Privacy",
+        "gotchas": "The 'Export and anonymise registrant data' permission is new and not yet in the standard permission slugs list — confirm the exact slug with engineering before documenting it. Anonymisation is irreversible; the dry-run step and typed confirmation (ANONYMISE) are the only safeguards. Order totals are preserved after anonymisation.",
+        "talk_track": "You can now collect versioned consent on your registration form, export a registrant's full data record in one click for a DSAR, and set a retention rule that automatically anonymises records after the event — all audited and logged inside Sessionboard.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The linked guide /registration/privacy appears to already exist in the article index and covers this feature; confirm the guide is published and includes the exact permission name for 'Export and anonymise registrant data' and the typed-confirmation word (ANONYMISE vs ANONYMIZE) that the UI requires.",
+          "why_use_it": "Registration privacy gives you a structured way to collect, version and audit registrant consent, respond to data subject access requests, and remove personal data on a schedule that matches your retention policy. Use Basic mode for lightweight consent questions, or switch to Full GDPR mode to add a Data Protection Officer, a versioned processing statement, per-person export and anonymisation tools, and an automated retention run. Every consent answer is logged with its version, timestamp and source IP so you have a complete audit trail if a regulator asks.",
+          "at": "2026-10-29T14:10:44.560Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1285"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "registration-privacy-consent-anonymisation-retention",
+      "title": "Registration privacy: consent management, DSAR export, anonymisation and retention",
+      "summary": "A new **Settings › Privacy** section for Registration events lets organizers choose a privacy mode, collect and version custom consent questions, and view an append-only **Consent Log**. In **Full GDPR** mode, a required data-processing consent checkbox and DPO contact appear on the public form and in registration emails. Registrants can withdraw individual consents from their manage link or the attendee portal. A new **privacy_manage** permission gates three additional tools: **Export** (one JSON document of everything the event holds on a person), **Anonymise** (irreversibly removes PII while keeping financial and tax records intact, with a dry-run option), and **Retention** (schedules automatic anonymisation N months after the event ends). Existing GDPR-request and Pathways person-delete paths now anonymise Registration rows instead of deleting them.",
+      "article": "/registration/privacy",
+      "related": [
+        "/registration/roles-and-permissions",
+        "/registration/registrants",
+        "/registration/forms",
+        "/registration/orders-and-invoices"
+      ],
+      "kind": "new",
+      "module": "Settings",
+      "features": [
+        "registration"
+      ],
+      "availability": "preview",
+      "enable": {
+        "how": "self_serve",
+        "path": "Get started → Early Access → Preview → Registration; then Settings › Privacy"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Settings › Privacy"
+      },
+      "permissions": [
+        "event.settings.update"
+      ],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Events that must comply with GDPR or similar privacy regulations can capture explicit, versioned consent at checkout, give registrants a self-serve withdrawal path, and respond to data-subject access requests with a single export — all without leaving Sessionboard. Retention automation removes PII on a schedule so organizers do not have to remember to act after the event closes.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Feature is behind the Registration Early Access gate. Full GDPR mode changes the public checkout form (adds a required consent checkbox and DPO line) and registration emails (adds {{dpo_line}} merge tag). Review with customers before enabling Full GDPR mode on a live event. The new privacy_manage permission is seeded to every role that already holds settings_manage, so day-one reach is unchanged — but customers may want to restrict it to their DPO only."
+        },
+        "when_to_bring_up": "Any Registration customer who has asked about GDPR compliance, data-subject requests, or post-event data deletion.",
+        "who_should_get_it": "Events subject to GDPR or similar privacy laws, especially those in the EU/UK or handling medical/professional data; any org with a dedicated DPO.",
+        "staff_path": "Event → Settings › Privacy",
+        "gotchas": "Full GDPR mode adds a required, unticked consent checkbox to the public checkout — enabling it on a live form will immediately affect registrations in progress. Anonymisation is irreversible; the dry-run option should always be demonstrated first. Retention runs daily at 04:17 UTC by default; the first run after the due date anonymises all eligible rows. Spreedly stored-payment redaction happens after the DB commit and is async.",
+        "talk_track": "If you need to show auditors exactly what each registrant consented to, respond to a GDPR erasure request in minutes, or automatically clean up PII after your event, Registration Privacy handles all three — with a consent log that is append-only and an anonymisation that keeps your financial records intact.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The linked guide /registration/privacy is listed in the article index and appears to be the correct destination; confirm the guide covers the privacy_manage permission, the Full GDPR checkout flow, the {{dpo_line}} email merge tag, and the retention dry-run vs. live-run distinction.",
+          "why_use_it": "Registration Privacy gives you a complete, auditable record of what each registrant agreed to and when, so you can demonstrate compliance without spreadsheets or manual tracking. Registrants can withdraw specific consents at any time from their manage link, and those withdrawals flow immediately into email, SMS, Pathways and CRM. When a data-subject access or erasure request arrives, a single export or anonymisation covers registrations, orders, answers, consent history and more — with financial and tax records preserved. Retention lets you set a policy once and have anonymisation run automatically after the event ends.",
+          "at": "2026-10-29T14:11:19.797Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4884"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:preview"
+    },
+    {
+      "id": "team-lead-registration-builder",
+      "title": "Set up registration with Team Lead: attendee types, tickets, forms, payments and emails",
+      "summary": "**Team Lead** can now walk an organizer through building a registration setup end-to-end. It reads the current state of **Registration** (attendee types, tickets, member pricing, date tiers, forms, payment gateway, sender, confirmation email) and makes changes on the organizer's behalf — creating or updating attendee types, ticket types, registration forms (always saved as **Draft**), the **From** name and address on registration emails, and the confirmation email subject, preview, body and button. Selecting a payment gateway requires the organizer's existing Spreedly gateway nickname and the same merchant-manager permission and recent second-factor check that the **Registration › Settings › Payments** page enforces. Team Lead also answers questions about registration performance — funnel (views → checkouts → completions), waitlist, orders, payments, capacity and member counts — using the same numbers shown on the **Registration Overview**.",
+      "article": "/registration/team-lead",
+      "related": [
+        "/registration/overview",
+        "/registration/tickets-and-pricing",
+        "/registration/forms",
+        "/registration/payments",
+        "/registration/emails-and-reminders",
+        "/registration/member-pricing",
+        "/agents/team-lead"
+      ],
+      "kind": "new",
+      "module": "Agents",
+      "features": [
+        "coordinators",
+        "registration"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "self_serve",
+        "path": "Get started → Early Access → Preview → Registration; Team Lead is available in the Agent window once Registration Early Access is on."
+      },
+      "where": {
+        "scope": "event",
+        "path": "Agent window → Team Lead; Registration → Overview, Forms, Tickets, Settings"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who are setting up registration for the first time — or reconfiguring it before a new event — can describe what they want in plain language and let Team Lead build the draft structure, then review and approve each change before anything goes live.",
+      "internal": {
+        "cs_action": {
+          "kind": "must_enable",
+          "note": "Registration Early Access must be on for the event before Team Lead's registration tools appear. The payment-gateway tool reuses the existing merchant-manager permission and second-factor check — SSO-only admins without local 2FA enrollment will get an error and must set the gateway manually in Registration › Settings › Payments (known limitation, follow-up story)."
+        },
+        "when_to_bring_up": "Any customer who has Registration and is configuring a new event, or who asks how to check registration funnel numbers without building a custom report.",
+        "who_should_get_it": "Events with Registration (beta) enabled; especially customers new to the module or running multiple events who want to replicate a setup quickly.",
+        "staff_path": "Event sidebar → Agent window → Team Lead",
+        "gotchas": "Forms created or updated by Team Lead are always saved as Draft; Team Lead cannot publish a form live. Payment gateway selection requires the exact gateway nickname and a fresh second factor — SSO-only admins will hit a two_factor_enrollment_required error and must use the UI instead.",
+        "talk_track": "Instead of clicking through every Registration settings page, tell Team Lead what your attendee types and ticket prices should be, and it builds the draft. Then ask it how your funnel is performing mid-event — same numbers, no report to build.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The /registration/team-lead article exists but should document each builder tool (attendee types, ticket types, forms, payment gateway, sender, confirmation email), the draft-only constraint on forms, the second-factor requirement for gateway changes, and the funnel/waitlist/capacity read capabilities with example prompts.",
+          "why_use_it": "Team Lead lets you set up and interrogate registration through a conversation instead of navigating every settings page yourself. Describe your attendee types, ticket prices, member eligibility rules and email copy, and Team Lead drafts the configuration for your approval. Ask how registration is performing — funnel drop-off, waitlist depth, capacity headroom — and get the same numbers the Overview shows, without building a report.",
+          "at": "2026-10-29T14:11:50.269Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4885"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "registration-seating-and-external-vendor-access",
+      "title": "Seat registrants at tables, print table tents, and control which vendor registrations count",
+      "summary": "**Registration › Seating** is a new page where organizers build seating plans, add numbered tables with seats, drag registrants onto tables or auto-seat by group/company/name, and print table tents (Letter or A4), place cards (folded or flat on Avery 5392 / 4×3), seating charts, per-table PDF lists, and CSV exports. Each plan can be limited to holders of chosen tickets or add-ons, and a toggle lets registrants see their table in the attendee portal. Under **Integrations & API**, a new **Who counts as registered** panel lets organizers choose whether every registration counts or only Sessionboard registrations and/or specific connected-app registrant types. **Content Galleries** on an event now offer a **Registrants only** access option.",
+      "article": "/registration/seating",
+      "related": [
+        "/registration/integrations-and-api",
+        "/registration/tickets-and-pricing",
+        "/site/content-galleries"
+      ],
+      "kind": "new",
+      "module": "Program",
+      "features": [
+        "registration",
+        "content_galleries"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "self_serve",
+        "path": "Get started → Early Access → Preview → Registration"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Registration → Seating; Registration → Integrations & API → Who counts as registered; Content Galleries → Access"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Use Seating to assign gala dinner or workshop tables without leaving Sessionboard, then hand printed table tents and place cards to your venue team. Use the vendor-registration filter to ensure your attendance counts and gated content reflect only the registrant types that matter to your event.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Registration is in beta; confirm the customer has Registration enabled before demoing Seating. The external-vendor 'Who counts as registered' panel is also new — review with customers who use a connected registration platform so they understand how changing this setting affects attendee-portal access and content-gallery gating."
+        },
+        "when_to_bring_up": "Any customer running a gala, awards dinner, workshop, or seated meal alongside their event, or any customer whose registration lives in an external platform and who wants to gate content galleries to registrants.",
+        "who_should_get_it": "Customers with Registration (beta) enabled, especially those with seated meal functions or who use a connected registration platform such as Cvent, Swoogo, or Bizzabo.",
+        "staff_path": "Registration → Seating (event sidebar)",
+        "gotchas": "Seating is scoped to the event and requires Registration beta. The 'Registrants only' gallery access option only appears on galleries that belong to an event, not org-level galleries. The vendor-registration panel lists vendors with no attendee sync — customers should review that list before changing the 'Who counts as registered' setting.",
+        "talk_track": "You can now seat your gala dinner directly in Sessionboard — drag people onto tables, auto-group by company, and print table tents without touching a spreadsheet. And if your registrations live in Cvent or another platform, you can now tell Sessionboard exactly which registrant types should unlock the attendee portal and gated content galleries.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The /registration/integrations-and-api guide should document the new \"Who counts as registered\" panel, including how to select Sessionboard vs. connected-app registrations and how to filter by vendor registrant type.",
+          "why_use_it": "Seating lets you manage table assignments for meals, workshops, or any seated event directly alongside your registration data — no spreadsheet hand-off required. Drag individuals onto tables, let the auto-seat engine group people by company or order, and produce print-ready table tents and place cards in one step. Registrants can see their table assignment in the attendee portal, reducing day-of questions at the door.",
+          "at": "2026-10-29T14:12:21.854Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1280"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "registration-notifications-sms",
+      "title": "Registration gets admin notification rules and a full SMS panel",
+      "summary": "Two new panels are available in Registration. **Registration › Settings › Notifications** lets organizers create rules that fire on chosen triggers (ticket type, registrant type, form) and route alerts to email addresses or connected Slack channels, either instantly or as a daily digest with a configurable hour; each destination has a **Test Send** button and a **Recent Deliveries** log. **Registration › Emails & SMS** replaces the previous placeholder with a live **SMS** panel: an opt-in toggle, consent text, registrant counts, an **Onsite Notice** that can be sent to checked-in or all opted-in registrants, a **Do Not Text** list, and a warning when no SMS provider is configured. Reminder emails gain an **Also text it** option with a custom SMS body when the event's API reports SMS reminder support.",
+      "article": "/registration/emails-and-reminders",
+      "related": [
+        "/registration/registrants",
+        "/registration/overview"
+      ],
+      "kind": "new",
+      "module": "Communications",
+      "features": [
+        "registration",
+        "notifications"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Registration → Settings → Notifications; Registration → Emails & SMS"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who need their team or Slack channel alerted the moment a specific ticket type is purchased — or who want to text checked-in attendees an onsite notice — can now configure both without leaving Registration.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "SMS panel requires an SMS provider to be configured at the org level; a warning is shown when none is set. The Notifications panel falls back to an empty state until the companion API PR (sessionboard-web-api#4818) is live — confirm API is deployed before demoing."
+        },
+        "when_to_bring_up": "Any Registration customer asking about real-time purchase alerts, Slack notifications for registrations, or texting attendees onsite.",
+        "who_should_get_it": "Registration (beta) customers, especially those running onsite events who want SMS check-in notices or need team Slack alerts for specific ticket types.",
+        "staff_path": "Registration → Settings → Notifications; Registration → Emails & SMS → SMS tab",
+        "gotchas": "SMS panel shows 'Not available yet' on older API versions (404 response). 'Also text it' on reminders only appears when the API returns sms.reminders keys — older API deployments will not show it. Confirm API PR #4818 is merged and live before customer demos.",
+        "talk_track": "You can now get a Slack ping the moment a speaker or VIP ticket is purchased, and send a quick text to everyone who checked in when the keynote room changes — all from inside Registration.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should add a dedicated section covering the Notifications rules panel (triggers, filters, Slack channel setup, digest vs. instant, test send, delivery log) and the SMS panel (opt-in flow, consent text, Onsite Notice, Do Not Text list, and the \"Also text it\" reminder option).",
+          "why_use_it": "Registration notifications and SMS let you close the loop between a registration event and the people who need to act on it. Rule-based admin notifications mean the right team member hears about a VIP ticket purchase or a specific form submission immediately, in email or Slack, without polling the registrant list. SMS reaches attendees directly on their phones for time-sensitive onsite messages, opt-in reminders, and last-minute notices — all managed from the same Registration module where you built the event.",
+          "at": "2026-10-29T14:12:49.592Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1228"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "registration-international-validation-housing-handoff",
+      "title": "Registration forms validate international phone numbers and addresses, and the confirmation page links to hotel booking",
+      "summary": "Phone questions on registration forms now accept a country code and local number, validated in E.164 format. Address questions adapt to the selected country — showing the correct field labels (state, province, prefecture, postcode), the relevant region list, and hiding fields the country does not use. Name fields support any script and include an **\"I go by one name\"** option for mononyms. Validation messages appear in English, Spanish, French, Arabic, German, and Portuguese. The confirmation page now shows a **\"Where are you staying?\"** card with a **Book your hotel** link when a housing provider has been configured.",
+      "article": "/registration/housing",
+      "related": [
+        "/registration/forms",
+        "/registration/overview",
+        "/registration/emails-and-reminders"
+      ],
+      "kind": "improved",
+      "module": "Program",
+      "features": [
+        "registration"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Registration → Forms (public registration form and confirmation page)"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Events with international attendees can now collect properly formatted phone numbers and country-aware addresses without manual cleanup. Once housing is configured, registrants see the hotel booking link immediately after completing registration, reducing the chance they miss it.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Both changes are default-on for events using Registration (beta). The housing card only appears when a booking link has been set up under Registration → Housing."
+        },
+        "when_to_bring_up": "Any customer running Registration who has international attendees or a hotel room block.",
+        "who_should_get_it": "All Registration (beta) customers, especially those with global audiences or a housing partner.",
+        "staff_path": "Registration → Housing (to configure the booking link); Registration → Forms (to see address/phone questions).",
+        "gotchas": "The housing card renders only https booking links; http links are silently suppressed. Address region lists are available for US, CA, AU, MX, BR, and IN — other countries show a free-text region field.",
+        "talk_track": "Your international attendees now get phone and address fields that match their country, so the data comes in clean. And right after they register, they see your hotel link — no separate email needed.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The housing guide should document the new confirmation-page card and note that only https booking links are displayed to registrants.",
+          "why_use_it": "Registration collects the contact details your team and downstream systems rely on. International phone and address validation means the data arrives clean — no reformatting, no missing postal codes, no ambiguous region names. The housing card on the confirmation page puts the hotel booking link in front of registrants at exactly the right moment, while the event is top of mind.",
+          "at": "2026-10-29T14:13:43.060Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-org-portal#246"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "registrant-void-merge-view-as",
+      "title": "Void, merge duplicate, and view-as actions in the registrant drawer",
+      "summary": "Three new actions are available in the registrant drawer. **Void** cancels a registration with an optional reason and shows a banner explaining it is not a refund; if money was collected, a toast directs you to **Orders** to issue the refund. **Merge duplicate** lets you search for the registration to keep, previews exactly what moves (orders, payments, answers, workshop picks, seats, check-in, scans, staff notes, badge history, credits, saved payment methods, member ID), then voids the duplicate and opens the surviving record. **View as registrant** opens the read-only attendee portal in a new tab and logs the action in History. Voided registrations show a banner with the void date, reason, and a link to the record they were merged into, and all other actions are disabled. A **Voided** status filter is also added to the Registrants list.",
+      "article": "/registration/registrants",
+      "related": [
+        "/registration/orders-and-invoices",
+        "/registration/overview"
+      ],
+      "kind": "new",
+      "module": "Program",
+      "features": [
+        "registration"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Registration → Registrants → open a registrant drawer → Void / Merge duplicate / View as registrant"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Use Void to cancel a registration that should no longer count without deleting its history, and use Merge duplicate to consolidate two records for the same person — moving all orders, payments, answers, and check-in data to one clean record — without charging or refunding anything. Use View as registrant to confirm exactly what the attendee portal shows before a registrant calls in with a question.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Feature is behind the existing feature--registration gate (Registration beta). Void is not a refund — if an order has a paid balance, the organizer must go to Orders to refund it separately. Merge is irreversible: the duplicate record is voided and the survivor keeps all data. View-as is logged in History."
+        },
+        "when_to_bring_up": "Any Registration beta customer who has duplicate registrant records or needs to cancel a registration without a full refund.",
+        "who_should_get_it": "All Registration beta customers automatically — no additional flag needed.",
+        "staff_path": "Registration → Registrants → open a registrant drawer",
+        "gotchas": "Void does not issue a refund; CSMs should remind customers to refund from Orders first if money was collected. Merge cannot be undone — the voided duplicate record shows a banner linking to the survivor but cannot be restored.",
+        "talk_track": "If you end up with two records for the same person, Merge duplicate moves everything — payments, answers, check-in, badges — to the record you want to keep and voids the other one, with nothing charged or refunded. Void lets you cancel a registration and keep the audit trail intact.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The /registration/registrants guide should add a \"Void or merge a duplicate\" section and a \"View as a registrant\" section covering the new drawer actions, the voided-registration banner, and the Voided status filter.",
+          "why_use_it": "The Registrants drawer gives organizers a single place to act on individual registrations without leaving the list. Voiding, merging duplicates, and impersonating a registrant's portal view are all available inline, so you can resolve data problems and verify the attendee experience without switching tools or contacting support.",
+          "at": "2026-10-29T14:14:09.869Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1227"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "registration-addon-rules-linked-fees",
+      "title": "Control who sees each add-on and automatically apply linked fees in Tickets",
+      "summary": "**Tickets › Add-ons** now supports **Who is offered this** — up to five conditions (registrant type, ticket, member status/category/level, group order, or a form answer) that together determine which registrants see the add-on. The rule is displayed as a plain sentence beneath the add-on row (e.g. \"Offered only when the registrant is a member and the member level is Gold.\"). A new **Linked fees** panel lets organizers define fees that are added automatically to every qualifying order — scoped by ticket, add-on, or registrant type — charged once per order, per registrant, or per item, with optional promo-code bypass, price tiers, GL code, and tax rate.",
+      "article": "/registration/tickets-and-pricing",
+      "related": [
+        "/registration/member-pricing",
+        "/registration/promo-codes",
+        "/registration/payments"
+      ],
+      "kind": "new",
+      "module": "Program",
+      "features": [
+        "registration"
+      ],
+      "availability": "preview",
+      "enable": {
+        "how": "self_serve",
+        "path": "Get started → Early Access → Preview → Registration (Tickets page only)"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Registration → Tickets → Add-ons (Who is offered this); Registration → Tickets → Linked fees"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Use add-on rules to surface member-only extras or workshop upgrades only to the registrants who qualify, reducing confusion at checkout. Use linked fees to automatically collect mandatory charges — such as a facility fee or processing surcharge — without relying on registrants to add them manually.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Both features depend on the companion API PR (sessionboard-web-api#4814) being live first — do not surface to customers until both are deployed."
+        },
+        "when_to_bring_up": "When a customer asks how to restrict add-ons to members or specific ticket holders, or needs to enforce a mandatory surcharge on every order.",
+        "who_should_get_it": "Events with tiered membership pricing, mandatory facility or processing fees, or add-ons that should only appear for certain registrant types.",
+        "staff_path": "Registration → Tickets (requires Registration Early Access gate to be on for the event).",
+        "gotchas": "This UI requires the API PR (sessionboard-web-api#4814) to be merged and deployed first; the UI sends settings.showIf / settings.linked and type: 'linked_fee' which the API only accepts from that PR.",
+        "talk_track": "You can now tell Sessionboard exactly who should see each add-on — members only, Gold-level members, specific ticket holders — and set fees that attach automatically to every qualifying order, so nothing gets missed and the checkout stays clean for everyone else.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should add a section covering add-on eligibility rules (conditions, sentence preview, save behaviour) and the new Linked fees panel (scope options, per-order/per-registrant/per-item charging, promo-code bypass toggle).",
+          "why_use_it": "Tickets lets you define every fee, add-on, and surcharge in one place so your registration form presents the right options to the right people. Add-on rules keep irrelevant choices off the screen for registrants who do not qualify, and linked fees ensure mandatory charges are applied consistently across every order without extra steps for the registrant or your team.",
+          "at": "2026-10-29T14:14:37.172Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1226"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:preview"
+    },
+    {
+      "id": "registration-addon-rules-linked-fees-2",
+      "title": "Control which add-ons registrants see, and automatically attach fees to orders",
+      "summary": "Two new capabilities for registration add-ons and fees. **Add-on visibility rules** let organizers show or hide an add-on based on registrant type, ticket type, membership status/category/level, group status, or a custom attendee question — up to five conditions that must all hold. A hidden add-on cannot be purchased through the public checkout or the attendee portal; staff placing orders on behalf of registrants are not restricted. **Linked fees** are a new ticket type (**Linked fee**) that the server automatically adds to qualifying orders — by order, seat, or item — without the buyer being able to add or remove them. Linked fees appear as their own order line with their own GL code, tax class, capacity, and count tiers; payment plans, invoices, and promo codes treat them like any other line (unless the fee opts out of discounts).",
+      "article": "/registration/tickets-and-pricing",
+      "related": [
+        "/registration/orders-and-invoices",
+        "/registration/payments",
+        "/registration/member-pricing",
+        "/registration/promo-codes"
+      ],
+      "kind": "new",
+      "module": "Program",
+      "features": [
+        "registration"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Registration → Tickets & Pricing → Add-ons (visibility rules); Registration → Tickets & Pricing → Linked fees"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Use add-on visibility rules to surface member-only extras only to members, or workshop seats only to certain registrant types — keeping the checkout clean for everyone else. Use linked fees to automatically attach mandatory processing charges, per-seat levies, or association dues to the right orders without relying on registrants to add them manually.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Both features are part of the Registration beta (wave 1, agent 2). Confirm the customer's Registration feature flag is on before walking through setup. Linked fees require a ticket type of type 'linked_fee' to be configured; they are not surfaced through the standard ticket UI yet — confirm UI availability before demoing."
+        },
+        "when_to_bring_up": "Any Registration beta customer who needs member-only add-ons, conditional extras, or mandatory fees that must attach automatically to orders.",
+        "who_should_get_it": "Organizations on the Registration beta with complex pricing rules — associations with membership tiers, events with mandatory levies, or multi-track events with type-specific workshops.",
+        "staff_path": "Registration → Tickets & Pricing",
+        "gotchas": "Staff on-behalf orders bypass add-on visibility rules (by design, matching form-window behaviour). Linked fees cannot be added or removed by the buyer; posting one as a regular add-on returns a 409. Add-on orders placed after initial registration carry 'with_items' linked fees only — fees already charged on the first order are not re-applied. Integration tests show 12 of 15 failing on main at merge time — confirm stability before customer demos.",
+        "talk_track": "You set the rule once on the add-on or fee, and the checkout enforces it automatically — members see member pricing, mandatory charges attach without the registrant touching them, and your finance team gets clean line items with the right GL codes.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The /registration/tickets-and-pricing guide should add sections covering how to configure add-on visibility rules (conditions, operators, and the up-to-five-condition limit) and how to create and configure a Linked fee ticket type (applies/per settings, discountability, and how it appears on invoices and payment plans).",
+          "why_use_it": "Registration add-on rules and linked fees give organizers precise control over what each registrant sees and what they are charged. Visibility rules reduce checkout confusion by showing add-ons only to the people eligible for them, while linked fees ensure mandatory charges — such as processing levies, per-seat surcharges, or association dues — are applied consistently and cannot be skipped. Together they let you model complex pricing structures without manual intervention on every order.",
+          "at": "2026-10-29T14:15:08.795Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4814"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "registration-finance-orders-payments-invoices-refunds",
+      "title": "Registration: orders, payments, invoices, refunds, credits, payment plans, cancellation policy and finance reports",
+      "summary": "Adds a full financial layer to Registration (Early Access). Organizers can **Charge Card** on behalf of a registrant, record offline payments (check, cash, wire, money order, PO), issue and void **Credits**, set up **Payment Plans** with automatic installment billing, define a **Cancellation Policy** with deadlines, penalties and credit offers, process gateway or offline **Refunds**, track **Refunds to Issue** for check/PO payers, let registrants self-cancel from the manage link or Site, change or substitute a ticket (with re-pricing and a difference charge or refund), and download seven **Finance Reports** (failed transactions, GL transactions, reconciliation, AR aging, PO, promo-code usage, GL summary) as JSON or CSV. Tax settings gain a per-fee **Tax Class**, optional **VAT ID** capture with format validation, EU reverse-charge support, and VAT facts frozen on printed invoices and statements.",
+      "article": "/registration/orders-and-invoices",
+      "related": [
+        "/registration/payments",
+        "/registration/overview",
+        "/registration/forms",
+        "/registration/roles-and-permissions",
+        "/participants/attendee-portal"
+      ],
+      "kind": "new",
+      "module": "Program",
+      "features": [
+        "registration"
+      ],
+      "availability": "preview",
+      "enable": {
+        "how": "self_serve",
+        "path": "Get started → Early Access → Preview → Registration"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Registration → Orders; Registration → Finance; Registration → Settings → Payments"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Events that collect registration fees need to charge cards on behalf of attendees, handle installment billing, issue refunds through their payment gateway, and produce reconciliation-ready finance reports — all without leaving Sessionboard. Cancellation policies and self-service cancellation reduce manual work when attendees need to cancel or transfer their registration.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "All functionality sits behind the Registration Early Access gate. Avalara is listed as unavailable and cannot be selected — do not promise it. Payment permissions (who may charge or refund) are not yet scoped per role; any event member can charge or refund (wave 3, SB-10163/SB-10194)."
+        },
+        "when_to_bring_up": "Any Registration Early Access customer who collects fees, needs installment billing, or has asked for cancellation policies or finance exports.",
+        "who_should_get_it": "Events charging registration fees, especially those with complex tax requirements (VAT/EU), instalment plans, or finance teams needing GL-level exports.",
+        "staff_path": "Registration → Orders (Charge Card, Credits, Refunds); Registration → Finance (Reports, Refunds to Issue); Registration → Settings → Payments (Payment Plans, Cancellation Policy, Tax/VAT).",
+        "gotchas": "Avalara adapter is built but blocked (no account) — it appears as unavailable in the UI and is never called. Permission scoping for charge/refund is wave 3; currently any event member can perform financial actions. ACH payments via Spreedly bank-account tokens remain pending until the webhook settles. Idempotency keys on charges mean replaying a failed request returns the recorded attempt rather than re-charging.",
+        "talk_track": "Registration now handles the full payment lifecycle: charge a card on behalf of a registrant, set up a payment plan with automatic retries, apply your cancellation policy automatically, and pull a reconciliation or GL report at month-end — all on the order record.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should document all seven finance report types, the cancellation-policy configuration steps, the payment-plan admin panel (charge now / autopay / replace method), VAT ID capture modes, EU reverse charge, the Refunds to Issue workflow for check/PO payers, and the ticket-change / move-to-another-event flows introduced by this release.",
+          "why_use_it": "Registration finance keeps every charge, refund, credit and installment on the order record so your team always has a single source of truth. Payment plans let attendees spread the cost of attendance while the platform handles retries and redaction automatically. Cancellation policies enforce your rules consistently and give attendees a clear, self-service path to cancel or transfer, reducing support requests. Finance reports export GL-split transactions, AR aging and reconciliation data in the format your accounting team needs.",
+          "at": "2026-10-29T14:15:44.018Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1213"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:preview"
+    },
+    {
+      "id": "registration-orders-payments-invoices-refunds-finance",
+      "title": "Registration: orders, payments, invoices, refunds, credits, payment plans, cancellation policy, ticket changes and finance reports",
+      "summary": "A full payment and order-management layer is now available inside Registration (Early Access). Organizers can **Charge a Card** on behalf of a registrant, record offline payments (check, cash, wire, money order, PO), issue and void **Credits**, set up **Payment Plans** with automatic installment billing, define a **Cancellation Policy** with deadlines and penalties, let registrants self-cancel from the manage link or Site, change or substitute a ticket (with re-pricing and a charge or refund of the difference), and move a registration to another event of the same organisation. **Finance Reports** cover failed transactions, a GL-split transaction log, reconciliation, AR aging, PO orders, promo-code usage and a GL summary — all exportable as JSON or CSV. Tax settings include a per-fee **Tax Class**, optional **VAT ID** capture (off / optional / required with format validation), EU reverse-charge support, and VAT facts frozen on every invoice PDF. Statements are available as admin JSON/PDF and as a registrant-facing PDF from the manage link and Site.",
+      "article": "/registration/orders-and-invoices",
+      "related": [
+        "/registration/payments",
+        "/registration/forms",
+        "/registration/overview",
+        "/participants/attendee-portal"
+      ],
+      "kind": "new",
+      "module": "Program",
+      "features": [
+        "registration"
+      ],
+      "availability": "preview",
+      "enable": {
+        "how": "self_serve",
+        "path": "Get started → Early Access → Preview → Registration"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Registration → Orders; Registration → Finance Reports; Registration → Settings → Payments"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Use this when you need to collect and reconcile registration revenue end-to-end inside Sessionboard — charging cards on behalf of registrants, offering payment plans, enforcing a cancellation policy, handling ticket changes with automatic repricing, and pulling finance reports without exporting to a spreadsheet.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Everything sits behind the Registration Early Access gate. Avalara is listed as unavailable and cannot be selected — do not promise it. Any event without the new payment settings behaves exactly as before. The finance role (Registration Finance) controls who can charge, refund and view reports — review SB-10163/SB-10194 (wave 3) before telling customers about permission granularity."
+        },
+        "when_to_bring_up": "When a Registration Early Access customer asks about taking payments, issuing refunds, payment plans, cancellation policies or finance reporting.",
+        "who_should_get_it": "Events already in Registration Early Access that need to collect and reconcile revenue inside Sessionboard.",
+        "staff_path": "Registration → Orders; Registration → Finance Reports; Registration → Settings → Payments / Tax / Cancellation Policy",
+        "gotchas": "Avalara tax integration is built but blocked (no account) and cannot be selected. ACH payments via Spreedly are pending until the webhook settles. Who may charge or refund is not yet role-restricted (any event member can, same as mark-paid today) — granular permissions come in wave 3.",
+        "talk_track": "Your registration revenue, invoices, payment plans and refunds now live right next to your program data. Organizers can charge cards on behalf of registrants, set up installment plans, enforce a cancellation policy automatically, and pull a GL-split transaction report — all without leaving Sessionboard.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The /registration/orders-and-invoices guide should be expanded to cover payment plans, the cancellation policy workflow, self-cancel from the manage link and Site, ticket changes and substitutions, credits, VAT/tax settings, and each of the new Finance Reports with their export formats.",
+          "why_use_it": "Registration payments, refunds, credits and finance reporting live on the same platform as your program, so every order, invoice and transaction is tied directly to the registrant record. Payment plans let registrants spread the cost over time while installments are collected automatically. The cancellation policy, ticket-change workflow and credit system give you consistent, auditable rules for every money movement — from the first charge through to reconciliation.",
+          "at": "2026-10-29T14:16:18.233Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4798"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:preview"
+    },
+    {
+      "id": "registration-package-d-admin-ui",
+      "title": "Registration: decline reasons, reminder schedules, member pricing, CSV import, overview insights and CRM push",
+      "summary": "A set of admin capabilities for the **Registration** module is now available. **Approvals**: decline a registrant with a preset reason from **More → Decline with a reason…**; configure presets under **Settings › Approval › Decline reasons**; staff notes and the decline reason appear in the registrant drawer. **Emails & SMS**: schedule reminders by days-before under **Emails & SMS › Reminders**, choose tickets/types, save or **Send due now**. **Confirmation email**: edit the confirmation text per ticket type and manage **Settings › Confirmation attachments**; the drawer's **Edit** action includes **Email the registrant what changed**. **Member pricing**: connect an AMS source (shown as not connected when blocked), configure member id / category / level attributes and rules, set a join page, and test lookup with the member list panel including CSV preview and import. The registrant drawer shows **Member id** and **Transactions**; **Search all events** is available from the registrant list. **Import**: a new **Import CSV** menu covers registrations, comps and bulk update with a preview step. **Overview**: goals editor, year-over-year comparison, funnel and no-show metrics on the **Overview** page. **Integrations & API**: a **CRM** panel lets you push registrant data to your CRM.",
+      "article": "/registration/registrants",
+      "related": [
+        "/registration/approvals",
+        "/registration/emails-and-reminders",
+        "/registration/member-pricing",
+        "/registration/overview",
+        "/registration/integrations-and-api"
+      ],
+      "kind": "new",
+      "module": "Program",
+      "features": [
+        "registration",
+        "approvals"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "self_serve",
+        "path": "Get started → Early Access → Preview → Registration"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Registration → Registrants; Registration → Emails & SMS; Registration → Overview; Registration → Settings; Registration → Integrations & API"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Event teams that need to manage approvals with structured decline reasons, automate reminder cadences, enforce member pricing through an AMS, bulk-import registrant lists, and push registrant data to their CRM can now do all of this from within Registration without leaving Sessionboard.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Registration is in beta (Early Access). Confirm the customer's AMS is supported before demoing member pricing — blocked AMS connections display as 'not connected'. CRM push panel on Integrations & API requires a connected CRM."
+        },
+        "when_to_bring_up": "Any customer asking about approval workflows, member/non-member pricing, automated reminders, bulk registrant imports, or pushing registration data to their CRM.",
+        "who_should_get_it": "Associations and conferences already using Registration beta who need approval queues, AMS-gated pricing, or CRM sync.",
+        "staff_path": "Registration → Settings › Approval › Decline reasons; Registration → Emails & SMS › Reminders; Registration → Integrations & API → CRM panel",
+        "gotchas": "AMS member pricing source shows 'not connected' when the AMS integration is not yet linked — do not promise live AMS lookup until the integration is confirmed. CSV import has a preview step; walk customers through the mapping before a live import.",
+        "talk_track": "You can now decline registrants with a reason your team pre-configured, send automated reminders on a schedule you control, enforce member pricing against your AMS, and import registrant lists in bulk — all from the Registration module.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The /registration/registrants guide should document the new Staff notes field, the Transactions tab, Member id in the drawer, Search all events, and the Import CSV menu (registrations, comps, bulk update). The /registration/approvals guide should cover decline reasons presets and the Decline with a reason flow. The /registration/member-pricing guide should cover the member list test lookup panel and CSV import/clear/trace steps. The /registration/overview guide should document the goals editor, year-over-year, funnel and no-shows widgets.",
+          "why_use_it": "Registration gives you a single place to collect, approve, and communicate with registrants for your event. You can gate ticket types by membership status, automate reminder emails and SMS by days before the event, and import or bulk-update registrant records from a CSV — all without switching tools. The overview page tracks goals, year-over-year trends, funnel conversion and no-shows so you always know where registration stands.",
+          "at": "2026-10-29T14:16:52.705Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1224"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "registration-public-api-read-endpoints",
+      "title": "Read registration data — payments, members, capacity pools and more — through the Public API",
+      "summary": "The Public API now exposes read endpoints for **Registration** data under `/v1/event/:eventId`: **registration/summary**, **payments** (list and individual), **registration/members** (including lookup by query, number or email), **registration/capacity-pools**, **registration/fee-groups**, **registration/donation-funds**, **registration/workshop-rules**, and **badge-print-jobs**. All routes require a token scoped to `read:registrations` and are available under the Registration preview.",
+      "article": "/registration/integrations-and-api",
+      "related": [
+        "/registration/overview",
+        "/registration/orders-and-invoices",
+        "/registration/member-pricing",
+        "/integrations/api-tokens"
+      ],
+      "kind": "new",
+      "module": "Platform",
+      "features": [
+        "registration"
+      ],
+      "availability": "preview",
+      "enable": {
+        "how": "self_serve",
+        "path": "Get started → Early Access → Preview → Registration"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Public API — /v1/event/:eventId/registration/summary, /payments, /registration/members, /registration/capacity-pools, /registration/fee-groups, /registration/donation-funds, /registration/workshop-rules, /badge-print-jobs"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Pull registration summaries, payment records, member lookups and capacity data into your own systems or BI tools without manual exports. Useful for finance reconciliation, badge printing pipelines and member-pricing integrations.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Routes are gated behind the Registration preview feature; no action needed unless a customer asks about API access to registration data."
+        },
+        "when_to_bring_up": "When a customer using Registration asks about connecting payment or member data to an external system or BI tool.",
+        "who_should_get_it": "Customers on the Registration preview who have developers or use iPaaS tools like Zapier or custom integrations.",
+        "staff_path": null,
+        "gotchas": "The Registration feature gate remains in web-api; these routes only work for events where Registration is enabled. Tokens must carry the read:registrations scope — tokens scoped to other domains return 403.",
+        "talk_track": "Your registration payments, member records and capacity data are now readable through the API, so your finance or badge-printing system can pull live data instead of waiting for a manual export.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The guide should document the new read:registrations scope, list each new endpoint with its path and query parameters (q, number, email for member lookup), and show an example token setup for a registration integration.",
+          "why_use_it": "The Public API lets you connect Sessionboard Registration data to your own tools — finance systems, badge printing workflows, CRM platforms and custom dashboards — without manual exports. Tokens are scoped so each integration only accesses the data it needs, and every call is tied to a specific event for clean data separation.",
+          "at": "2026-10-29T14:17:14.668Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-public-api#187"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:preview"
+    },
+    {
+      "id": "registration-privacy-consent-questions-dpo-withdrawal",
+      "title": "Registration privacy: consent questions on the form, DPO contact, and consent withdrawal in the attendee portal",
+      "summary": "The registration review step now shows each of the event's configured consent questions as a checkbox; required questions keep **Next** disabled until ticked, and every answer (given or declined) is recorded in the consent log. In **Full GDPR** mode the form also displays the event's data-processing wording and a **\"Questions about your data? Contact our Data Protection Officer\"** line. After registering, a new **Your privacy** panel on the attendee portal **Home** tab lists each consent with its wording version and date; a **Withdraw** button appears on any consent still given, and withdrawing a consent (e.g. marketing or SMS) immediately stops the corresponding channel. The panel is hidden in staff view-as mode and for registrations managed by an external vendor.",
+      "article": "/registration/privacy",
+      "related": [
+        "/registration/forms",
+        "/participants/attendee-portal"
+      ],
+      "kind": "new",
+      "module": "Program",
+      "features": [
+        "registration"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "setting",
+        "path": "Event Settings → Privacy → Privacy Mode → Full GDPR; add consent questions and a DPO under Settings → Privacy"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Registration form (review step) and Attendee portal → Home → Your privacy"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Use this when your event must comply with GDPR or similar privacy regulations: registrants explicitly consent to each data-use purpose at the point of registration, and they can withdraw individual consents at any time from their attendee portal without contacting your team.",
+      "internal": {
+        "cs_action": {
+          "kind": "must_enable",
+          "note": "Consent questions and Full GDPR mode must be configured in Event Settings → Privacy before anything appears on the form or portal. The feature is gated behind the Registration beta; events on basic mode or without consent questions configured see no change."
+        },
+        "when_to_bring_up": "Any customer running registration who mentions GDPR, data privacy compliance, or consent management for email/SMS marketing.",
+        "who_should_get_it": "Events with EU attendees or any organization that needs a documented consent log per registrant; especially medical, legal, and association customers.",
+        "staff_path": "Event Settings → Privacy → Privacy Mode and Consent Questions",
+        "gotchas": "The Your privacy panel is hidden when the API returns no privacy block (older API or basic mode) and when the registration is managed by an external vendor. Staff view-as shows the panel as read-only with no Withdraw button.",
+        "talk_track": "Registrants tick each consent purpose on the form — marketing, SMS, data processing — and the log captures both given and declined. If someone changes their mind, they withdraw from their own portal and the channel stops immediately, with the log updated automatically.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The /registration/privacy guide should document the new consent questions setup steps, the DPO field, how the Your privacy panel appears in the attendee portal, and how registrants withdraw individual consents.",
+          "why_use_it": "Registration privacy gives registrants clear, granular control over how their data is used — at the moment they sign up and throughout the event lifecycle. Consent questions appear on the registration form so each purpose (marketing, SMS, data processing) is agreed to explicitly, and every answer is logged with its wording version. The attendee portal's **Your privacy** panel lets registrants review and withdraw individual consents on their own, keeping your consent log accurate without manual admin work.",
+          "at": "2026-10-29T13:59:18.166Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-org-portal#260"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "slack-connect-install-flow",
+      "title": "Complete a Slack workspace connection started from the Slack App Directory",
+      "summary": "When an organizer clicks **Add to Slack** in the Slack App Directory, they are now redirected to a dedicated **Connect Slack** page (`/apps/slack/connect`) where they pick the Sessionboard organization to attach the workspace to. After confirming, they land on **Apps > Slack** for that organization. If the install link has expired, the workspace is already connected to another organization, or no install ID is present, a clear error message is shown.",
+      "article": "/integrations/overview",
+      "related": [],
+      "kind": "new",
+      "module": "Apps",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Apps → Slack"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who discover Sessionboard's Slack app through the Slack App Directory can now complete the connection without leaving the install flow — they are dropped straight into the right organization's Slack settings page.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "No manual enablement needed; the route is live once the companion API PR (sessionboard-web-api#4881) is deployed. Until then the page shows an 'expired' state harmlessly."
+        },
+        "when_to_bring_up": "When a customer asks how to connect Slack or reports that the Slack App Directory install flow did not work.",
+        "who_should_get_it": "Any organization that uses or wants to use the Slack integration.",
+        "staff_path": "Apps → Slack",
+        "gotchas": "The page requires the API PR (sessionboard-web-api#4881) to be deployed before it functions correctly. Until then, all installs initiated from Slack will show an expired-install error. Nothing links to /apps/slack/connect from within the product yet.",
+        "talk_track": "If your team found Sessionboard's Slack app in the Slack directory and clicked 'Add to Slack', they can now finish the connection in one step — pick the organization and they're done.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The App Marketplace guide should add a section covering the Slack integration: how to connect a workspace, what the Slack App Directory install flow looks like, and what to do if the install link expires.",
+          "why_use_it": "Connecting Slack to Sessionboard lets your team receive notifications and updates in the channels where they already work. Starting the install from the Slack App Directory is the most common path for new users, and this page ensures that flow lands in the right place without extra steps.",
+          "at": "2026-10-29T13:04:39.294Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1282"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "org-contacts-bulk-edit-manage-permission",
+      "title": "Org contacts bulk Edit now enabled for Contacts MANAGE permission",
+      "summary": "In the org Contacts grid, the **Edit** bulk action is now enabled for roles that have the Contacts **Manage** permission, not only those with Contacts **Update**. Previously, a role with Manage but not Update could edit a contact's field inline but saw **Edit** greyed out in the bulk actions bar with a tooltip reading \"Update Contacts\". Roles with only Contacts **Read** still see **Edit** disabled.",
+      "article": "/settings/bulk-edit-fields#bulk-edit-organization-contacts",
+      "related": [
+        "/speaker-crm/overview",
+        "/speaker-crm/creating-crm-fields"
+      ],
+      "kind": "fixed",
+      "module": "CRM",
+      "features": [
+        "crm"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Contacts → select contacts → Edit (bulk actions bar)"
+      },
+      "permissions": [
+        "org.contacts.update",
+        "org.contacts.manage"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Teams that assign the Contacts Manage permission to roles like Program Manager can now bulk-edit org contact fields without also granting Contacts Update — matching the permission already applied to inline cell editing.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Behaviour change is automatic; no configuration needed. Roles with Manage-only and no Read still cannot see rows in the grid, so the practical impact is Manage+Read roles."
+        },
+        "when_to_bring_up": "When a customer reports that a role with Contacts Manage cannot use the bulk Edit action on org contacts, or when discussing org role permission design.",
+        "who_should_get_it": "Any org using custom roles that grant Contacts Manage without Contacts Update — common for Program Manager-style roles.",
+        "staff_path": "Org → Contacts grid → select contacts → bulk actions bar → Edit",
+        "gotchas": "A role with Contacts Manage but no Contacts Read cannot see any rows in the org Contacts grid (the grid endpoint requires Read), so the Edit button being enabled is only meaningful for Manage+Read roles. Roles with Read only still see Edit disabled.",
+        "talk_track": "If you have a role that can manage individual contact fields inline but couldn't bulk-edit, that inconsistency is now resolved — Manage permission unlocks bulk Edit just as it does inline editing.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The bulk-edit-fields guide should note that the org contacts bulk Edit action requires Contacts Update or Manage (not Update alone), and that selecting all matching records resolves to explicit record IDs rather than a query.",
+          "why_use_it": "Bulk editing lets you update a field across many org contacts at once without opening each record. Use it when you need to set a tier, flag, or custom attribute on a group of speakers or contacts after filtering or selecting them in the grid.",
+          "at": "2026-10-29T12:12:41.396Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1279"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "registration-roles-permissions-and-gateway-step-up",
+      "title": "Registration staff permissions and secure gateway management with step-up verification",
+      "summary": "Registration now enforces six granular permission slugs — **Money**, **Manage**, **Settings**, **Onsite**, **Finance Reports**, and a dedicated **Registration Finance** role — so event team members only see and act on what their role allows. Buttons for refunds, credits, charges, cancellations, badge design, print stations and more are disabled with a tooltip explaining the missing permission when a staff member lacks access. Payment gateway actions (**Add**, **Edit**, **Test Connection**, **Archive**) are restricted to users with **can_manage_gateways**; any sensitive gateway change — including saving a gateway assignment on **Registration Settings** — triggers a **step-up verification** dialog that requires a one-time code from an authenticator app or email before the action proceeds.",
+      "article": "/registration/roles-and-permissions",
+      "related": [
+        "/registration/payments",
+        "/registration/orders-and-invoices",
+        "/registration/overview",
+        "/get-started/how-to-set-up-two-factor-authentication-2fa-on-your-sessionboard-account"
+      ],
+      "kind": "new",
+      "module": "Settings",
+      "features": [
+        "registration"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Registration → Orders / Registrants / Finance / Onsite; Event Team → Permissions → Registration; Registration → Settings → Payment"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Use Registration roles to give finance staff access to refunds and credits without letting them change registration settings or badge designs, and to ensure that anyone who touches payment gateway configuration must verify their identity with a second factor — reducing the risk of accidental or unauthorized changes.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Permissions are UI-enforced now but the API gate (web-api#4878) must also be deployed before the UI restrictions are fully secure. Until the API is deployed, the UI ships ahead and everything stays enabled for all staff — the API remains the authoritative gate. Confirm API deployment status before telling customers the feature is live."
+        },
+        "when_to_bring_up": "Any Registration customer who has multiple staff members with different responsibilities — finance, onsite, settings — or who has asked about limiting who can issue refunds or change payment gateways.",
+        "who_should_get_it": "All Registration (beta) customers, especially those with larger event teams or strict financial controls.",
+        "staff_path": "Event Team → Permissions → Registration group; Registration Finance role appears automatically on Registration events.",
+        "gotchas": "The Registration Finance role and the six permission slugs only appear in the roles editor when the event has Registration enabled. Users without 2FA enrolled who trigger a gateway step-up are redirected to Account Settings to enroll before they can proceed.",
+        "talk_track": "You can now give your finance team access to refunds and credits without letting them touch gateway settings, and anyone who changes a payment gateway has to verify with a second factor — so your payment configuration is protected even if a password is compromised.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should document all six Registration permission slugs (Money, Manage, Settings, Onsite, Finance Reports) with a table of which actions each controls, explain the Registration Finance role defaults, and describe the step-up verification flow for gateway management including the 2FA enrollment requirement.",
+          "why_use_it": "Registration permissions let you scope each team member's access to exactly the actions their job requires — money operations, order management, settings, onsite tools, or finance reporting — without granting blanket admin rights. The dedicated Registration Finance role makes it straightforward to give finance staff the access they need while keeping gateway and settings controls in the hands of administrators. Step-up verification adds a second layer of protection for the most sensitive gateway actions, so a compromised session cannot silently redirect payments.",
+          "at": "2026-10-29T11:57:38.118Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1281"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "registration-roles-permissions-and-gateway-mfa",
+      "title": "Registration gets its own permission set, a Finance role, and MFA-gated payment gateway management",
+      "summary": "**Event Team › Permissions › Registration** now shows six granular permissions — **View registrations**, **Manage registrations**, **Take payments and issue refunds**, **View finance reports**, **Manage settings**, and **Manage onsite** — on any event with Registration turned on. A stock **Registration Finance** role (view + payments + finance reports) is seeded for every Registration event. A new org-level permission **Manage payment gateways** controls who can add, edit, archive, test-charge or test-connect a gateway; changing an event's gateway in Registration settings requires the same permission. Any action that touches a payment gateway also requires a **recent second factor** (verified within 15 minutes); admins without 2FA enrolled are prompted to set it up, and a new step-up flow lets enrolled admins re-verify without signing out.",
+      "article": "/registration/roles-and-permissions",
+      "related": [
+        "/registration/payments",
+        "/registration/orders-and-invoices",
+        "/registration/overview",
+        "/get-started/how-to-set-up-two-factor-authentication-2fa-on-your-sessionboard-account",
+        "/event-team/invite-manage-event-team-members"
+      ],
+      "kind": "new",
+      "module": "Event team",
+      "features": [
+        "registration"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Event Team → Permissions → Registration (per event); Organization Settings → Payments (gateway management)"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Give finance staff the ability to charge, refund and view reports without letting them change ticket types or badge templates. Lock down payment gateway changes to org admins who have recently verified a second factor, so credentials are never touched by accident or by a compromised session.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "All existing event roles were seeded with the permissions they already had in practice (most get view + manage + payments + finance reports; roles with Settings update also get settings + onsite; Evaluator and Portal User get none; Reporting Only Admin gets view + finance reports; Read-Only User gets view). Org Admins and any org role with Settings update get Manage payment gateways. No one loses access on deploy. Event-only admins can no longer pick the event's gateway — this is intentional and had zero real-world impact at deploy time (no live Registration events in US or EU). Review any customer who has event-only admins managing gateways."
+        },
+        "when_to_bring_up": "Any Registration customer who wants to give finance staff refund access without full admin rights, or who asks about locking down payment gateway changes.",
+        "who_should_get_it": "All Registration (beta) customers; especially those with separate finance, onsite, or settings teams.",
+        "staff_path": "Event Team → Permissions → Registration; Organization Settings → Payments → Gateways",
+        "gotchas": "The MFA step-up expires after 15 minutes. SSO users pass automatically (IdP owns the factor). Impersonation is blocked on all gateway and step-up routes. The Registration Finance role appears in permission profiles and event roles only on Registration events. CFP, Awards and Lessons gateway pickers are not yet gated by the new org permission — follow-up tickets exist.",
+        "talk_track": "You can now give your finance team exactly what they need — charge, refund, and report — without handing them the keys to your ticket setup or badge templates. And anyone who touches your payment gateway has to prove who they are with a fresh second factor every 15 minutes.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The article /registration/roles-and-permissions does not yet exist and should be created to document all six permissions, the Registration Finance stock role, the Manage payment gateways org permission, and the MFA step-up requirement for gateway actions.",
+          "why_use_it": "Registration permissions let you match each team member's access to their actual job: a finance coordinator can process refunds and pull revenue reports without touching event settings or badge designs, while an onsite manager can print badges without seeing payment data. The **Registration Finance** role is ready to assign the moment you turn Registration on, so you do not have to build it from scratch. Gateway management is separated from day-to-day registration work and protected by a step-up second factor, so payment credentials stay under the control of the people who own them.",
+          "at": "2026-10-29T11:55:28.104Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4878"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "attendee-portal-seating-external-registration-gate",
+      "title": "Attendee portal shows seating assignment and flags externally managed registrations",
+      "summary": "The attendee portal **Home** tab now displays a **Your table** panel showing the registrant's seating plan, room, table, seat number, sponsor and host — pulled from the seating plan when \"show in portal\" is enabled. Registrations held in another platform (such as Cvent) show a notice that the registration is managed externally and become read-only: the fieldset is disabled and **Cancel**, **Transfer** and **Add-ons** actions are hidden. Content Gallery items restricted to the new **Registrants only** access mode show a \"For registered attendees\" gate and a **Registrants only** lock label to non-registered visitors.",
+      "article": "/participants/attendee-portal",
+      "related": [
+        "/registration/seating",
+        "/registration/integrations-and-api",
+        "/site/content-galleries"
+      ],
+      "kind": "new",
+      "module": "Portals",
+      "features": [
+        "registration",
+        "content_galleries"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "setting",
+        "path": "Registration → Seating → [plan] → Show in portal (to surface the table panel); Content Galleries → Access → Registrants only (to gate gallery content)"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Attendee portal → Home tab (Your table panel); Content Gallery (Registrants only gate)"
+      },
+      "permissions": [],
+      "audience": [
+        "participant",
+        "organizer"
+      ],
+      "use_case": "Attendees can see exactly where they are sitting without contacting the event team. When registration is managed in Cvent or another platform, the portal surfaces the record read-only so attendees have their details without risking conflicting edits. Gating Content Gallery content to registered attendees lets organizers reward registration with exclusive session recordings or materials.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Three distinct changes ship together: the seating panel (requires 'show in portal' on the seating plan), the external-registration read-only notice (automatic when managed_in is set, e.g. Cvent), and the Content Gallery 'registrants' access mode gate. Confirm with customers using Cvent that the read-only behaviour matches their expectations before promoting."
+        },
+        "when_to_bring_up": "When talking to customers who use seating plans, sync registrations from Cvent or another platform, or want to gate Content Gallery content to registered attendees.",
+        "who_should_get_it": "Events using Registration (beta) with seating plans, Cvent or similar integrations, or Content Galleries with attendee-only content.",
+        "staff_path": "Registration → Seating → plan settings; Registration → Integrations; Content Galleries → Access",
+        "gotchas": "The seating panel is hidden when the plan's 'show in portal' toggle is off. The external-registration notice and read-only state are driven by the managed_in field on the registration record — this must be set by the integration sync. The API returns 409 managed_externally if a client attempts cancel, transfer or add-on actions on an externally managed registration.",
+        "talk_track": "Attendees see their table assignment right in the portal, and if their registration lives in Cvent we show it read-only so nothing gets out of sync. You can also lock down your Content Gallery recordings to registered attendees only.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The attendee-portal guide should document the Your table panel (what fields appear, the show-in-portal toggle), the externally-managed registration notice and its read-only behaviour, and the Registrants only Content Gallery access mode.",
+          "why_use_it": "The attendee portal gives registrants a single place to view their registration details, seating assignment, and event content — all without staff intervention. Use it to reduce inbound questions about table assignments, protect data integrity when a third-party platform owns the registration record, and deliver gated content only to people who have registered.",
+          "at": "2026-10-29T07:28:32.862Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-org-portal#259"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "registration-table-seating-and-external-vendors",
+      "title": "Seat registrants at tables, print table tents, and connect external registration vendors",
+      "summary": "Two new capabilities ship together under Registration. **Table Seating**: create a seating plan, add tables, and seat registrants manually or automatically (by group order, company, or name); voided or canceled registrants drop out automatically. Print **Table Tents**, folded place cards, flat place cards, a seating chart, per-table lists (PDF), and a CSV. Registrants see their table assignment in the attendee portal. **External Registration Vendors**: registrations held in Maritz RTS, Stova, Grip, Eventbrite, RainFocus, Brella, or ASP flow in through the Apps Engine and appear in the attendee portal as read-only records (labeled **Managed in [vendor]**); organizers control which sources count as live registrations via **Registration → Access**. A new **Content Gallery** access mode (**Registrants**) gates gallery viewing on a valid registration from any configured source.",
+      "article": "/registration/seating",
+      "related": [
+        "/registration/integrations-and-api",
+        "/registration/registrants",
+        "/registration/overview",
+        "/site/content-galleries",
+        "/participants/attendee-portal"
+      ],
+      "kind": "new",
+      "module": "Program",
+      "features": [
+        "registration",
+        "content_galleries"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "support",
+        "path": "Ask your Customer Success Manager to enable Registration; then Event → Registration → Seating for table plans, and Event → Registration → Access for vendor source rules."
+      },
+      "where": {
+        "scope": "event",
+        "path": "Registration → Seating; Registration → Access; Content Galleries → Access (Registrants mode); Attendee portal → My Registration (table assignment)"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Use table seating to assign and print place cards for gala dinners, award banquets, or any seated meal without leaving Sessionboard. Use the external-vendor access rules to give attendees registered in Maritz RTS, Stova, Eventbrite, or another supported platform a unified portal experience and gate content galleries on a valid registration from any source.",
+      "internal": {
+        "cs_action": {
+          "kind": "must_enable",
+          "note": "Both table seating and external-vendor access are behind feature--registration, which must be enabled per event. External vendor connectors also require the relevant Apps Engine connector to be set up and mapped."
+        },
+        "when_to_bring_up": "Any customer running a seated dinner, awards banquet, or gala alongside their conference, or any customer whose attendees register in Maritz RTS, Stova, Grip, Eventbrite, RainFocus, Brella, or ASP and who wants those attendees in the Sessionboard portal.",
+        "who_should_get_it": "Events with Registration enabled that have seated meal functions; events using a third-party registration platform that want a unified attendee portal or gated content galleries.",
+        "staff_path": "Event → Registration → Seating (table plans); Event → Registration → Access (vendor source rules).",
+        "gotchas": "External registrations are read-only in the portal — attendees cannot edit, cancel, transfer, or add on from Sessionboard. The Content Gallery Registrants access mode refuses to apply on galleries not tied to an event. Voided registrants lose their seat automatically; canceled registrants drop out of seat counts.",
+        "talk_track": "If your attendees register in another system, they can still get a Sessionboard portal experience and access gated content galleries — and for seated events, you can assign tables, auto-seat by company or name, and print place cards all in one place.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The /registration/seating guide should document the auto-seat options (by group order, company, and name), the FOLD_STOCKS place-card stock types, the seating chart and per-table PDF/CSV exports, and the attendee portal table-assignment display. The /registration/integrations-and-api guide should document the Registration → Access settings (mode: any vs. mode: rule), the list of supported external vendors, the managed_in read-only portal state, and the Content Gallery Registrants access mode.",
+          "why_use_it": "Registration brings attendee management — ticketing, seating, portal access, and content gating — into the same platform where you manage your program. Table seating lets you assign, move, and print place cards from a single plan that stays in sync as registrations change. External-vendor support means attendees registered anywhere can still sign in to the attendee portal and access gated content, so you are not forced to choose between your registration system and your event experience.",
+          "at": "2026-10-29T07:26:19.806Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4877"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "subsessions-summary-cell-style-escaping-fix",
+      "title": "Fix: `{{{subsessions_summary}}}` merge tag now renders cell padding, blank empty cells, and escaped titles correctly",
+      "summary": "The **`{{{subsessions_summary}}}`** email merge tag had three rendering bugs now corrected: table cells were missing their padding because the CSS `style` attribute was malformed (`style=\"style=…\"`); subsession ID cells printed `SB-100-null` or `undefined-100-1` when a friendly ID or record prefix was absent; and subsession titles from CFP submitters were inserted into the email body without HTML escaping, so characters like `&` or `<` could break the layout. All three are fixed — cells now have visible padding, missing IDs and times show as blank, and special characters in titles render literally.",
+      "article": "/communications/email-campaigns#merge-tags-reference",
+      "related": [
+        "/communications/create-send-emails",
+        "/sessions/create-a-subsession"
+      ],
+      "kind": "fixed",
+      "module": "Communications",
+      "features": [
+        "email_campaigns",
+        "sessions"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Sessions → select a session → Send Email; Email Campaigns → campaign body using {{{subsessions_summary}}}"
+      },
+      "permissions": [
+        "event.emails.create",
+        "event.emails.campaigns_read"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who send session emails or email campaigns containing a subsession summary table will now see correctly spaced rows, blank cells where data is missing, and safe rendering of any special characters in subsession titles — without any configuration change.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Fix is automatic — no action needed. All 103 previously sent emails that contained the broken style attribute will not be retroactively corrected, but any new send or campaign using {{{subsessions_summary}}} will render correctly."
+        },
+        "when_to_bring_up": "If a customer reports that their subsession summary table looks cramped, shows 'null' or 'undefined' in ID cells, or that HTML tags in a subsession title appear as raw text in emails.",
+        "who_should_get_it": "Any event using Send Email or Email Campaigns with the {{{subsessions_summary}}} merge tag — roughly 15 events/orgs across US and EU prod as of 2026-10-28.",
+        "staff_path": null,
+        "gotchas": "Previously sent emails (77 US + 26 EU campaign emails) already contain the broken markup and cannot be retroactively fixed. The column structure and data source are unchanged — only rendering correctness is affected.",
+        "talk_track": "The subsession summary table in your emails now shows proper cell spacing, leaves blank any missing IDs or times instead of printing 'null', and safely displays any special characters in subsession titles.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The email campaigns merge tags reference should document {{{subsessions_summary}}} explicitly, including what each column shows, how missing values appear, and how HTML in titles is handled.",
+          "why_use_it": "null",
+          "at": "2026-10-29T04:27:53.807Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4876"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "registration-portal-ux-fixes",
+      "title": "Registration portal: autopay placement, linked-fee payment prompt, substitution timing, and view-as error recovery",
+      "summary": "Several attendee-facing registration portal behaviours are corrected: the **Waitlist Autopay** panel now appears only on the Home page (not on every page); a failed autopay status load shows an error with a **Try again** option instead of silently hiding the panel; a registration type with a positive **linked fee** now correctly prompts for payment; the **Send to a colleague** substitution option is hidden while transfer terms are still loading; and the **View as** error page now shows **Exit view as** and **Try again** buttons when a view-as link has expired.",
+      "article": "/participants/attendee-portal",
+      "related": [
+        "/registration/payments",
+        "/registration/tickets-and-pricing",
+        "/registration/registrants"
+      ],
+      "kind": "fixed",
+      "module": "Portals",
+      "features": [
+        "registration",
+        "new_portals"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Attendee portal → Home; Registration flow → Payment step; Registration flow → Transfer / Send to a colleague"
+      },
+      "permissions": [],
+      "audience": [
+        "participant",
+        "organizer"
+      ],
+      "use_case": "Attendees registering or managing their registration see consistent, accurate prompts — they are not asked to pay when nothing is owed, not shown a substitution option before terms have loaded, and can recover cleanly when a view-as session expires.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer reports that autopay appears on multiple portal pages, that a linked-fee registration type does not trigger payment, or that the substitution option appears before terms load.",
+        "who_should_get_it": "Any event using registration with autopay, linked fees, or substitutions enabled.",
+        "staff_path": null,
+        "gotchas": "The view-as token expiry fix only applies to the org-portal web client; server-side token validation is unchanged.",
+        "talk_track": "A handful of edge cases in the attendee portal — duplicate autopay panels, a missing payment prompt on linked-fee types, a premature substitution option, and a dead-end error on expired view-as links — are all resolved in this release.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The attendee-portal guide should note that the Waitlist Autopay panel appears on the Home page only, and describe the recovery options (Exit view as / Try again) shown when a view-as link expires.",
+          "why_use_it": "The attendee portal lets registrants view their order, pay a balance, add workshops or extras, and transfer their registration to a colleague — all without contacting the event team. Keeping these flows accurate reduces support requests and gives attendees confidence that what they see reflects their real registration state.",
+          "at": "2026-10-29T04:21:51.683Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-org-portal#258"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "registration-sms-opt-in",
+      "title": "Registration form: SMS opt-in for registrants",
+      "summary": "When an event has SMS enabled, the registration form's review step now shows the organizer's consent text as an **SMS opt-in** checkbox. Checking it reveals a mobile number field (E.164 format); **Next** waits for a valid number before proceeding. The registrant's opt-in choice and phone number are submitted at checkout.",
+      "article": "/registration/forms",
+      "related": [
+        "/registration/emails-and-reminders",
+        "/communications/sms-messaging"
+      ],
+      "kind": "new",
+      "module": "Communications",
+      "features": [
+        "registration"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Registration → Forms → [form] → Review step"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Collect explicit SMS consent and a verified mobile number at the point of registration, so you can send text reminders and updates only to attendees who have opted in.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Appears automatically on the review step when the event has SMS enabled; no manual toggle required."
+        },
+        "when_to_bring_up": "When a customer asks how to grow their SMS opt-in list or wants to collect mobile numbers during registration.",
+        "who_should_get_it": "Any customer using Registration (beta) who also sends SMS communications to attendees.",
+        "staff_path": null,
+        "gotchas": "The opt-in checkbox and mobile field only render when the event's registration form returns sms: non-null from the API. Events without SMS configured will not see the field. The E.164 phone validator is a minimal inline check; a more robust library (SB-10133) is planned.",
+        "talk_track": "Attendees see your consent language as a checkbox at checkout and enter their mobile number right there — you get a clean, opted-in SMS list without any extra steps.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The Registration forms guide should document the SMS opt-in checkbox on the review step, including how to configure the consent text and what data is captured at checkout.",
+          "why_use_it": "The registration form's SMS opt-in lets attendees choose to receive text messages from your event at the moment they register, pairing consent with a validated mobile number in one step. This keeps your SMS list compliant and accurate without a separate follow-up form or manual data entry.",
+          "at": "2026-10-29T04:12:59.745Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-org-portal#247"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "registration-admin-notifications-sms",
+      "title": "Registration: organizer notifications for registration events and opt-in SMS for registrants",
+      "summary": "Organizers can now configure **Admin Notifications** (under Registration settings) to receive email or Slack alerts — instantly or as a daily digest — when registrations are created, changed, cancelled, voided, waitlisted, or pending approval, with optional filters by registrant type, ticket, and form. Registrants can opt in to SMS at checkout (**SMS Opt-In** + phone number in E.164 format); organizers can send SMS reminders and onsite notices to opted-in attendees, and Twilio STOP/START replies are handled automatically.",
+      "article": "/registration/emails-and-reminders",
+      "related": [
+        "/registration/overview",
+        "/registration/registrants",
+        "/communications/sms-messaging",
+        "/communications/email-sms-history"
+      ],
+      "kind": "new",
+      "module": "Communications",
+      "features": [
+        "registration",
+        "notifications"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "setting",
+        "path": "Registration → Settings → Notifications (for admin alerts); Registration → Settings → SMS (to enable opt-in SMS for registrants)"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Registration → Settings → Notifications; Registration → Settings → SMS; Registration → Registrants (SMS opt-in shown on registrant record)"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Keep your registration team informed in real time — or via a daily digest — without logging in to check the queue. Let registrants opt in to SMS so you can reach them with reminders and onsite notices directly on their phones.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "SMS requires Twilio number webhooks to be pointed at the API inbound endpoint and US A2P 10DLC campaign registration before production texting. Coordinate with engineering before enabling SMS for any customer. Admin notifications are self-serve once Registration is on."
+        },
+        "when_to_bring_up": "Any Registration customer who asks about real-time alerts, Slack notifications, or texting attendees before or during the event.",
+        "who_should_get_it": "Events with active registration teams monitoring sign-ups, waitlists, or approvals; events that want to send SMS reminders or onsite notices to attendees.",
+        "staff_path": "Registration → Settings → Notifications; Registration → Settings → SMS",
+        "gotchas": "SMS is gated behind Twilio number configuration and 10DLC campaign approval — do not promise SMS to customers until those deploy steps are confirmed. The SMS credit balance uses the Emails meter; monitor limits. Non-production environments only text @sessionboard.com / @lennd.com addresses. Daily SMS cap per event is 5,000.",
+        "talk_track": "Your team gets a Slack ping or email the moment someone registers, cancels, or hits the waitlist — no more checking the dashboard. And for attendees who opt in at checkout, you can text them reminders and day-of updates so nothing gets buried in their inbox.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should add a section covering the new Admin Notifications settings (triggers, filters, destinations, instant vs. digest delivery) and a section on SMS opt-in setup, the checkout experience, sending SMS reminders and onsite notices, and managing opt-outs.",
+          "why_use_it": "Registration admin notifications let your team react immediately to new sign-ups, cancellations, waitlist additions, and approvals without polling the registrant list. SMS opt-in gives registrants a way to receive reminders and onsite updates by text, reaching them even when email goes unread. Together they close the gap between what happens in registration and what your team and attendees know about it.",
+          "at": "2026-10-29T04:10:28.938Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4818"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "portal-weekly-summary-all-open-items",
+      "title": "Weekly portal summary email now sends when any item is open, not only required ones",
+      "summary": "The scheduled **Weekly digest email** (portal task summary) now keeps sending to a participant as long as they have **any** outstanding item — a task, an unsubmitted form, or an unsubmitted or denied file request — whether that item is marked required or optional. Previously, if a participant had completed all required items but still had optional items open, the email stopped. The **Run dry run** preview in **Portals → Weekly reminders** reflects the same logic, so the list of recipients shown there matches who will actually receive the next scheduled send.",
+      "article": "/portals/portals-101",
+      "related": [
+        "/portals/assign-tasks",
+        "/portals/collect-documents",
+        "/portals/create-assign-forms"
+      ],
+      "kind": "fixed",
+      "module": "Portals",
+      "features": [
+        "new_portals"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "setting",
+        "path": "Portals → [portal name] → Configuration → Weekly digest email → on"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Portals → Weekly reminders → Run dry run"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Participants who still have optional tasks, forms, or file requests outstanding will continue to receive weekly reminders until everything is done — so nothing slips through because it was not marked required.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Behaviour change ships automatically with the next API release. No configuration needed."
+        },
+        "when_to_bring_up": "Any customer asking why speakers with optional items open stopped receiving weekly reminders, or why the dry-run list seemed too short.",
+        "who_should_get_it": "All customers using the weekly portal digest email with a mix of required and optional portal items.",
+        "staff_path": "Portals → Weekly reminders → Run dry run (shows the updated recipient list)",
+        "gotchas": "The fix affects all three surfaces together: the Monday cron, the dry-run preview, and the per-contact dry-run 'Send now'. The targeted 'Send portal summary' from Contacts / Accounts always sends regardless of completion status — that is unchanged. Participants whose every item is complete, approved, or pending admin review are still skipped.",
+        "talk_track": "Before this fix, a participant who finished all their required items but still had an optional task or file request open would stop getting weekly reminders. Now the email keeps coming until everything is done, so optional items don't get forgotten.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should explain that the scheduled weekly digest email sends whenever a participant has any outstanding item (required or optional) — an open task, an unsubmitted form, or an unsubmitted or denied file request — and stops only when all items are complete, approved, or pending admin review; it should also note that a comment on the participant's sessions in the last 7 days triggers a send, and that the manual \"Send portal summary\" action always sends regardless of completion status.",
+          "why_use_it": "The weekly portal digest keeps participants moving through their to-do list without manual follow-up from the event team. It sends automatically each week to anyone with open items and stops only when a participant has nothing left to do — every task complete, every form submitted, and every file approved or pending review. Use it alongside tasks, forms, and file requests to drive completion rates without writing individual reminder emails.",
+          "at": "2026-10-29T03:52:43.707Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4823"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "sessions-summary-tag-empty-cells-and-padding",
+      "title": "Sessions summary email tag: empty cells no longer show \"undefined\" or \"null\", and cell padding now applies",
+      "summary": "Two display defects in the **{{{sessions_summary}}}** merge tag table are fixed. Sessions with no status or no speakers now render a blank cell instead of the words \"undefined\" or \"null\". Cell padding (`5px 10px`) and font size now apply correctly in every email client, so the table is visibly spaced rather than cramped.",
+      "article": "/communications/create-send-emails",
+      "related": [
+        "/communications/email-campaigns",
+        "/faq/how-to-email-moderators-chairpersons"
+      ],
+      "kind": "fixed",
+      "module": "Communications",
+      "features": [
+        "email_campaigns"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Contacts → Send Email (body: {{{sessions_summary}}}); Email Campaigns → campaign body"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who email speakers or contacts a summary of their sessions no longer need to worry about \"undefined\" or \"null\" appearing in the Status or Speakers columns when a session has no value set for those fields.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "If a customer reports seeing 'undefined' or 'null' in a sessions summary email, or notices the table has no visible padding — both are fixed automatically.",
+        "who_should_get_it": "Any organizer using the {{{sessions_summary}}} merge tag in Send Email or Email Campaigns.",
+        "staff_path": null,
+        "gotchas": "The subsessions-summary tag has the same style bug and is not fixed in this PR; a follow-up is planned.",
+        "talk_track": "The sessions summary table in emails now shows blank cells for missing status or speakers, and the padding renders correctly in all email clients including Outlook.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that empty session fields (status, speakers) render as blank cells in the summary table, and mention that inline styles are used for email-client compatibility.",
+          "why_use_it": "null",
+          "at": "2026-10-29T03:50:42.080Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4819"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "registration-housing-admin-panel",
+      "title": "Configure hotel housing hand-off and see who booked from Registration",
+      "summary": "A **Housing** panel in **Registration › Integrations & API** lets organizers connect a hotel booking provider (Passkey, Orchid, onPeak, or custom), set a booking link with merge fields, customize button text, toggle confirmation page and email prompts, and copy a signed webhook URL with **Show secret** / **Make a new secret** controls. Once a provider sends a status back, a **Housing** line (status, hotel, dates, reference) appears on each registrant's drawer and the **Who booked** table shows booked, cancelled, and not-yet counts per registrant.",
+      "article": "/registration/housing",
+      "related": [
+        "/registration/integrations-and-api",
+        "/registration/registrants"
+      ],
+      "kind": "new",
+      "module": "Program",
+      "features": [
+        "registration"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Registration → Integrations & API → Housing; Registration → Registrants (drawer → Housing)"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Events that block hotel rooms through Passkey, Orchid, onPeak, or a custom provider can now send registrants directly to the booking link and track who has booked, cancelled, or not yet acted — all without leaving Registration.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Feature is part of Registration (beta). Confirm the customer's housing provider is one of the four supported options (Passkey, Orchid, onPeak, custom) before walking them through setup. The webhook secret must be shared with the provider — use Show secret / Make a new secret in the panel."
+        },
+        "when_to_bring_up": "Any Registration beta customer whose event has a contracted hotel block or uses a housing bureau.",
+        "who_should_get_it": "Conferences and association events that manage room blocks through Passkey, Orchid, or onPeak.",
+        "staff_path": "Registration → Integrations & API → Housing",
+        "gotchas": "Status updates only appear on the registrant drawer after the housing provider has sent at least one webhook payload. The public form and confirmation-page side of this feature shipped in a companion PR (lennd/sessionboard-web-org-portal#246); both sides are needed for the full flow.",
+        "talk_track": "Registrants get a one-click path to your hotel block, and you can see at a glance who has booked, who cancelled, and who still needs a nudge — all inside Registration.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The /registration/housing guide should document the four supported providers, how to configure merge fields in the booking link, how to set up and rotate the webhook secret, and what the registrant-facing confirmation page and email switches control.",
+          "why_use_it": "Housing hand-off connects your registration flow to your contracted hotel block so registrants reach the booking page in one click, pre-identified by merge fields. The admin side shows live booking status for every registrant — booked, cancelled, or not yet — so your team can follow up without exporting data to a spreadsheet. Webhook-based status updates from the housing provider flow back automatically and appear on each registrant's record.",
+          "at": "2026-10-29T02:57:31.399Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1229"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "registration-housing-handoff-intl-validation",
+      "title": "Send registrants to your hotel booking partner and validate international addresses and phone numbers at checkout",
+      "summary": "Two new capabilities for Registration. **Housing hand-off**: configure a hotel booking link (Passkey, Orchid, onPeak, or a custom URL) under **Registration → Housing**; confirmed registrants see a **Book your hotel** button on their confirmation page and in their confirmation email, with merge fields pre-filled from their registration record. **International validation**: phone numbers are stored in E.164 format, postal codes and regions are checked against the registrant's country, address fields that do not exist for a country (e.g. UK state, UAE postal code) are never required, and single-word or non-Latin-script names are accepted; validation error messages appear in the language of the registration form (English, Spanish, French, Arabic, German, Portuguese).",
+      "article": "/registration/housing",
+      "related": [
+        "/registration/forms",
+        "/registration/registrants",
+        "/registration/emails-and-reminders",
+        "/registration/overview"
+      ],
+      "kind": "new",
+      "module": "Event team",
+      "features": [
+        "attend",
+        "registration"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Registration → Housing (settings); Registration → Registrants (housing status column and drawer)"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "For events with a room block, connect registrants directly to your hotel partner at the moment of confirmation — with their name, email, and registration details pre-filled — so they book in your block rather than on a third-party site. International validation means attendees from outside the US see relevant address fields and get error messages in their own language, reducing checkout abandonment and support tickets.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Housing hand-off is new infrastructure. Passkey, Orchid and onPeak do not yet publish attendee prefill parameters or a status webhook format, so all three use generic query parameters and the generic signed JSON webhook. Advise customers that provider-specific deep-link prefill is not yet certified. Secret rotation is available via POST …/housing/secret with { rotate: true } and is audited."
+        },
+        "when_to_bring_up": "Any event with a contracted room block or a hotel partner (Passkey, Orchid, onPeak, or custom booking page), and any event with significant international attendance.",
+        "who_should_get_it": "Events using Registration (beta) that have a hotel room block or international attendees.",
+        "staff_path": "Registration → Housing",
+        "gotchas": "Provider-specific prefill (e.g. Passkey RegLink/RegExpress) requires partner credentials not yet integrated — all providers fall back to generic query parameters. Housing booking status flows back via a signed webhook; the per-event secret is derived and never stored, so rotation voids the old secret immediately. International validation only applies to values written in a new request; existing stored phone numbers are not migrated.",
+        "talk_track": "After a registrant confirms, they see a 'Book your hotel' button pre-filled with their details — no copy-paste, no re-entry. And for your international attendees, the checkout now speaks their language and only asks for address fields that actually exist in their country.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The /registration/housing guide should document: how to configure the URL template and available merge fields, how the webhook signature verification works (X-Sessionboard-Signature header, 5-minute window), how to rotate the signing secret, and the current limitation that Passkey/Orchid/onPeak use generic parameters pending partner certification.",
+          "why_use_it": "Registration's housing hand-off lets you point confirmed registrants to your contracted hotel partner immediately after they register, with their details pre-filled in the booking URL so they do not have to re-enter information. International address and phone validation ensures that registrants worldwide see only the fields relevant to their country, receive error messages in their language, and have their phone numbers stored in a consistent format — making your registrant data cleaner and your checkout experience smoother for a global audience.",
+          "at": "2026-10-29T02:55:22.954Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4817"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "registration-view-as-registrant-read-only",
+      "title": "Staff can view the attendee portal as a registrant in read-only mode",
+      "summary": "When a staff member uses **View as registrant**, the attendee portal opens in a fully read-only state: a sticky amber banner identifies whose registration is being viewed and when the session expires, and every button and input is disabled so no changes can be made on the registrant's behalf. An expired or voided view-as link shows its own message. Closing the tab signs the staff member out of the view-as session without affecting the registrant's own portal access.",
+      "article": "/registration/registrants#view-as-a-registrant",
+      "related": [
+        "/participants/attendee-portal"
+      ],
+      "kind": "new",
+      "module": "Program",
+      "features": [
+        "registration"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Registration → Registrants → open a registrant → View as registrant"
+      },
+      "permissions": [
+        "event.portals.impersonate"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Support staff can open exactly what a registrant sees in their portal — including their order, payment plan, and add-ons — without risking accidental edits, making it faster to diagnose access or display issues during registration support calls.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "Any customer using Registration who fields support requests from attendees about what they see in their portal.",
+        "who_should_get_it": "Events using the Registration (beta) feature where staff regularly assist registrants with portal navigation or payment issues.",
+        "staff_path": "Registration → Registrants → open a registrant record → View as registrant button (shipped in lennd/sessionboard-web-ui-v2#1227)",
+        "gotchas": "The view-as token is stored in tab-only session storage under its own key, completely separate from the registrant's own portal token — opening the link in a new tab will not bleed into an existing staff session. The API also enforces read-only at the server (non-GET requests return 403), so the client-side fieldset disabled is a second layer of protection.",
+        "talk_track": "Your support team can open a registrant's exact portal view — banner, balance, add-ons and all — in a time-limited read-only session, so they can see what the attendee sees without any risk of making changes.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The /registration/registrants guide should add a \"View as a registrant\" section explaining how to open the view-as session, what the amber banner shows, the read-only enforcement, and how the session expires.",
+          "why_use_it": "The attendee portal is what registrants use to pay balances, manage add-ons, and review their registration. Being able to open that exact view as a staff member lets your team confirm what a registrant sees, reproduce reported issues, and walk someone through their portal over the phone — all without touching their record.",
+          "at": "2026-10-29T01:43:28.032Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-org-portal#244"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "registration-void-merge-view-as",
+      "title": "Void registrations, merge duplicates, and view the portal as a registrant",
+      "summary": "Three new actions are available from the registrant record. **Void** removes a registration from all live counts, capacity, check-in, badge printing, and automated emails without issuing a refund — the response surfaces paid amounts so you can refund from the order if needed. **Merge duplicate** moves orders, form answers, workshop seats, check-in scans, staff notes, credits, and membership from a duplicate record onto a survivor, then voids the duplicate; a **Merge preview** shows exactly what will move before you confirm. **View as registrant** mints a 30-minute read-only session so you can open the attendee portal exactly as that person sees it — every action is audited and the token cannot be used to make changes.",
+      "article": "/registration/registrants#void-or-merge-a-duplicate",
+      "related": [
+        "/registration/orders-and-invoices",
+        "/registration/overview",
+        "/registration/badges"
+      ],
+      "kind": "new",
+      "module": "Program",
+      "features": [
+        "attend",
+        "registration"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Registration → Registrants → [open a registrant] → Void / Merge duplicate / View as registrant"
+      },
+      "permissions": [
+        "event.contacts.delete",
+        "event.portals.impersonate"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Use Void to cleanly remove a test, cancelled, or fraudulent registration without touching gateway records, and use Merge to consolidate a duplicate registrant — carrying over their orders, answers, and history — so your counts, capacity, and finance reports stay accurate. Use View as registrant to troubleshoot portal issues or confirm what an attendee sees without sharing credentials.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Void requires event Contacts delete permission — reporting-only admins get a 403. View as registrant requires the Portals impersonate permission. Confirm customer role configurations include these permissions for the team members who will use these actions. A void never triggers a refund; CS should remind customers to refund from the order separately if money was collected."
+        },
+        "when_to_bring_up": "Any customer dealing with duplicate registrants, test records in production, or support tickets where an organizer needs to see exactly what an attendee sees in the portal.",
+        "who_should_get_it": "Events using Registration (beta) with active registrant lists, especially those running paid registration where duplicate or voided records affect revenue reporting.",
+        "staff_path": "Registration → Registrants → open a registrant record → action menu",
+        "gotchas": "Void does not refund — paid_cents is returned in the API response so the UI can prompt the organizer to refund from the order. A voided registration cannot be used with View as registrant (returns 409). Merge preview and merge share the same plan, so what the preview lists is exactly what moves. Group orders keep reporting while any seat on them is live.",
+        "talk_track": "If you have duplicate registrants or need to retire a test record, you can now void or merge directly from the registrant record — your counts, capacity, and finance reports update immediately. And if an attendee says their portal looks wrong, you can open it as them in read-only mode to see exactly what they see.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The /registration/registrants guide should add a dedicated section covering void (what it removes, what it keeps, the no-refund behaviour), merge (preview, what moves, money is never re-charged), and view as registrant (30-minute token, read-only, audit trail, 409 conditions) with the required permissions for each action.",
+          "why_use_it": "Registration records sometimes need to be retired or consolidated: a registrant submits twice, a test record slips into production, or two contacts turn out to be the same person. Voiding removes a record from every live surface — counts, capacity, check-in, badge queues, and emails — while keeping it visible in finance reconciliation. Merging carries the full history of a duplicate onto the record you want to keep, so nothing is lost. Viewing as a registrant lets you see the attendee portal through their eyes, read-only and fully audited, without needing their password.",
+          "at": "2026-10-29T01:41:33.770Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4815"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "registration-wave1-addon-rules-linked-fees-waitlist-autopay",
+      "title": "Registration: add-on eligibility rules, linked fees on the cart, and waitlist autopay",
+      "summary": "Three improvements to the registration flow. (1) **Add-ons** are now filtered by eligibility — only add-ons the registrant's seat is offered (based on registrant type, ticket, group order, form answers, and membership) appear in the add-ons step; the same rules are enforced at checkout. (2) The add-ons step and quote now show any fees that will be added automatically (e.g. \"Added automatically: Shipping ($15.00)\") as **linked fees**. (3) Waitlisted registrants with a paid registration can opt in to **Pay automatically when a place opens** from the attendee portal (manage link): save a card in the payment window, swap it, or turn it off; if a charge is declined the usual manual offer is sent instead.",
+      "article": "/registration/tickets-and-pricing",
+      "related": [
+        "/registration/overview",
+        "/registration/payments",
+        "/registration/orders-and-invoices",
+        "/participants/attendee-portal"
+      ],
+      "kind": "improved",
+      "module": "Portals",
+      "features": [
+        "registration"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Registration → public form (add-ons step) and Registration → attendee portal (manage link)"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Organizers running paid registrations with tiered add-ons or membership-gated extras no longer need to rely on registrants self-selecting correctly — ineligible add-ons are hidden automatically and blocked at checkout. Waitlisted attendees can save a card so they are charged the moment a spot opens, reducing drop-off from manual follow-up.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Add-on eligibility rules (show_if) and linked fees require that add-ons and fees are configured correctly in the fee schedule; misconfigured rules will silently hide add-ons. Waitlist autopay requires a Spreedly gateway connection — confirm the gateway is live before promoting this to customers."
+        },
+        "when_to_bring_up": "Any customer using paid registration with add-ons, membership pricing, or a waitlist on high-demand events.",
+        "who_should_get_it": "Customers on the Registration beta who have add-ons with eligibility conditions or who run waitlisted paid events.",
+        "staff_path": "Registration → Tickets & Pricing (add-ons and linked fees config); Registration → Registrants (waitlist queue)",
+        "gotchas": "An add-on already in the cart before a registrant type or membership change is NOT automatically removed — it stays in the cart and is only blocked at checkout (409 addon_unavailable). Waitlist autopay card removal happens at Spreedly on opt-out; confirm gateway supports card vault operations.",
+        "talk_track": "Your add-ons step now only shows what each registrant can actually buy, and the total they see includes any automatic fees — no surprises at checkout. Waitlisted attendees can save a card so they are charged instantly when a spot opens, instead of waiting for a manual email.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The tickets-and-pricing guide should add a section on add-on eligibility rules (show_if conditions), how linked fees appear in the cart and quote, and how to configure waitlist autopay for paid registrations.",
+          "why_use_it": "Registration lets you sell tickets, add-ons, and workshops with pricing rules tied to registrant type, membership, and form answers. Eligibility filtering keeps the cart clean by showing each registrant only what they qualify for, linked fees make the total transparent before checkout, and waitlist autopay converts waitlisted attendees into confirmed registrants without manual intervention.",
+          "at": "2026-10-29T01:38:17.904Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-org-portal#245"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "advocacy-generate-content-speaker-gallery-fixes",
+      "title": "Advocacy Generate Content: speaker attribution, gallery filtering and job status now work correctly",
+      "summary": "Four bugs in **Marketing → Transcriptions → Generate Content** are fixed. Speaker names and contact links now appear on quote cards. The **Gallery** correctly filters by session. A job where every requested step fails is now reported as failed rather than completed, so the error is visible immediately instead of being buried in the job result.",
+      "article": "/marketing/recaps",
+      "kind": "fixed",
+      "module": "Marketing",
+      "features": [
+        "marketing_advocacy",
+        "marketing_quotes",
+        "marketing_transcribe"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Marketing → Transcriptions → Gallery / Generate Content"
+      },
+      "permissions": [
+        "event.marketing.advocacy_read",
+        "event.marketing.advocacy_create"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who generate quote cards and recaps from session transcripts can now trust that speaker names appear on quote cards, the gallery filters correctly by session, and any generation failure surfaces immediately as an error status rather than a silent false-positive completion.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "All four defects are fixed server-side with no configuration required. The Amplify_Artifacts table had 0 rows in all regions before the migration ran, so no existing gallery content is affected."
+        },
+        "when_to_bring_up": "Any customer who tried Generate Content and saw an empty gallery or jobs that appeared to complete successfully but produced nothing.",
+        "who_should_get_it": "Any event using Marketing Transcriptions / Generate Content (Advocacy).",
+        "staff_path": "Marketing → Transcriptions → Gallery",
+        "gotchas": "The contact_id column was migrated to UUID with USING NULL, so any pre-existing rows would have lost their contact link — but the table was confirmed empty in US, EU and ME before the migration ran. The session UUID filter fix means any gallery links or API calls that previously passed integer session IDs will now need to pass the correct UUID.",
+        "talk_track": "Generate Content now correctly attributes quote cards to the right speakers and lets you filter the gallery by session — and if something goes wrong during generation you will see a clear error instead of an empty gallery with a 'completed' status.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The Recaps guide should note that Generate Content attributes quote cards to named speakers and that the Gallery can be filtered by session.",
+          "why_use_it": "null",
+          "at": "2026-10-29T01:35:09.876Z"
+        }
+      },
+      "related": [
+        "/marketing/quotes",
+        "/marketing/what-is-sessionboard-marketing"
+      ],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4811"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "feature:marketing_quotes (limited_release)"
     }
   ]
 }
