@@ -1,4 +1,6 @@
-# Sessionboard walkthrough video pipeline
+# Sessionboard walkthrough video pipeline (RETIRED)
+
+> **Retired 2026-10-29. Do not make new videos here.** Every Help Center and product video is a chapter in `sessionboard-tam/training-videos`, embedded with `<TrainingVideo>` (chapter rail, transcript, captions, and the same video in the product). `npm run check:style` fails any page that embeds `<Walkthrough>`. See `AGENTS.md`.
 
 Auto-generated, voice-narrated, captioned micro-walkthroughs for the docs — driven by the **real app** so they update with the product instead of rotting.
 

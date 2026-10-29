@@ -51,8 +51,21 @@ const add = (file, rule, msg) => problems.push({ file: file.replace(`${DOCS}/`, 
 
 const norm = (s) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
 
+// Every product video is a chapter in sessionboard-tam/training-videos, embedded as
+// <TrainingVideo> by `npm run docs -- --docs` there: chapter rail, transcript, captions, and the
+// same video in the product's Training page and Team Lead. A one-off <Walkthrough> mp4 reaches
+// none of those (Josh, 2026-10-28 and again 2026-10-29). Pages listed here are waiting on their
+// chapter; remove the entry when it lands, never add one without a dated reason.
+const WALKTHROUGH_PENDING = {
+  'integrations/connect-ai-assistants.mdx': 'chapter 69 waits on the ChatGPT app clearing OpenAI review (2026-10-29)',
+  'speaker-crm/send-via-docusign.mdx': 'real-envelope demo below chapter 67; fold into 67 or delete (2026-10-29)',
+};
+
 for (const file of files) {
   const raw = readFileSync(file, 'utf8');
+  if (/<Walkthrough\b/.test(raw) && !WALKTHROUGH_PENDING[file.replace(`${DOCS}/`, '')]) {
+    add(file, 'video', 'one-off <Walkthrough> video: make it a training-videos chapter and embed it with <TrainingVideo> (sessionboard-tam/training-videos, `npm run docs -- --docs`)');
+  }
   const fmMatch = raw.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
   if (!fmMatch) {
     add(file, 'frontmatter', 'no frontmatter block');

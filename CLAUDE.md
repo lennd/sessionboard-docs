@@ -21,6 +21,10 @@ Two generators keep this honest, and both are gated in CI:
 - `npm run contract:pull` → `src/data/product-contract.json`, which is what makes
   `<IfFeature>` / `<IfSetting>` / `<IfPermission>` / `app:` markers valid. Then `npm run markers:check`.
 
+## Videos are training chapters — never a one-off mp4
+
+Every video in an article (or in the product) is a chapter in `sessionboard-tam/training-videos`, embedded by `npm run docs -- --docs <this repo>` as `<TrainingVideo>` with the chapter rail and transcript. Never add `<Walkthrough>` or files under `public/media/walkthroughs/` — `npm run check:style` fails the page (Josh, 2026-10-29, after it happened twice). Procedure: `AGENTS.md` ("No standalone video pages") and `.cursor/rules/training-videos-regen.mdc` at the workspace root.
+
 ## Screenshots (`public/images/kb/`)
 
 UI chrome is 1x JPEG-compressed in the article if you capture it wrong — text goes muddy and tabpanels look like a tall empty card. Do this every time:
