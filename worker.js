@@ -205,11 +205,11 @@ const INTERNAL_REDIRECTS = {
   // article it was scripted from. Each page goes to the article that hosts the
   // chapter covering the same ground (sessionboard-tam/training-videos/audits/
   // 2026-09-28/help-center-embeds.md §1d); the Docusign walkthrough moved into
-  // the Contracts guide; the Loom import video is covered by chapter 09.
+  // Send via Docusign (speaker-crm/send-via-docusign); the Loom import video is covered by chapter 09.
   '/videos/overview': '/get-started/overview#training-00-platform-overview',
   '/videos/decline-sessions': '/sessions/accept-decline',
   '/videos/video-agenda-building': '/sessions/agenda#training-06-sessions-agenda',
-  '/videos/video-contracts-docusign': '/speaker-crm/contracts#watch-it-end-to-end',
+  '/videos/video-contracts-docusign': '/speaker-crm/send-via-docusign#watch-a-real-envelope-get-signed',
   '/videos/video-create-a-contact': '/contacts/add-delete-a-contact',
   '/videos/video-create-a-session': '/sessions/agenda#training-06-sessions-agenda',
   '/videos/video-creating-sending-emails': '/communications/create-send-emails#training-02-communications-emails',
