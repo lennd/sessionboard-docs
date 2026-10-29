@@ -1,0 +1,116 @@
+---
+title: "Send registrants to your hotel booking"
+sidebar:
+  label: "Hotel booking"
+description: "Show “Book your hotel” after someone registers, with their details filled in on your housing provider's booking page, and see who booked from the provider's status updates."
+features: ["registration"]
+enable_path: "Event → Preview → Registration → Request access"
+reviewed: "2026-10-29"
+---
+
+import { Note, Steps } from '@compat';
+
+Sessionboard does not book hotel rooms. Your housing provider does: Passkey, Orchid, onPeak, or any booking page you use. Sessionboard sends registrants there with their details already filled in, and records the bookings the provider reports back.
+
+## Why use it
+
+Registrants book a room right after they register, while the event is on their mind, without typing their name and email again. You see in one list who has booked, who cancelled and who has not booked yet, next to each registration.
+
+## Set up the booking link
+
+<Steps>
+1. Go to **Registration → Integrations & API** and find **Housing**.
+2. Under **Housing provider**, choose **Passkey (Cvent)**, **Orchid Event Solutions**, **onPeak** or **Another booking page**. A starting link appears under **Booking link**.
+3. Replace the address with your event's booking page, and keep the merge fields that fill in the registrant's details.
+4. Optionally change the **Button text** (it reads **Book your hotel** by default).
+5. Click **Save housing**, then switch on **Show “Book your hotel” after registering**.
+</Steps>
+
+Use **On the confirmation page** and **In the confirmation email** to choose where the button appears. It shows only for confirmed registrations, not for requests waiting for approval.
+
+### Merge fields
+
+The booking link can use these merge fields. Each is filled in for the registrant and made safe for a web address.
+
+| Merge field | Filled in with |
+| --- | --- |
+| `{first_name}`, `{last_name}`, `{full_name}` | The registrant's name |
+| `{email}` | Their email |
+| `{company}`, `{job_title}` | Their organization and title |
+| `{phone}` | Their phone, in international format |
+| `{country}` | Their address country, as a two-letter code |
+| `{registration_id}` | The registration's ID. Pass it to the provider as its reference, so bookings match back |
+| `{order_number}` | The order number |
+| `{registrant_type}` | The registration type |
+| `{event_id}` | The event's ID |
+
+The link must start with `https://`.
+
+<Note>
+Passkey, Orchid and onPeak do not publish the names of the fields their booking pages fill in, so the starting link uses generic ones (`first_name`, `last_name`, `email`, `company`, `reference`). Ask your provider's account manager which names your booking page accepts, and change the link to match.
+</Note>
+
+## See who booked
+
+Your provider sends Sessionboard a message each time a room is booked, changed or cancelled. Under **Housing**, **Who booked** counts the registrations that booked, cancelled or have not booked yet, and lists each booking with the hotel, dates and the provider's reference. The same status shows as **Housing** in the registrant's drawer under **Registration → Registrants**.
+
+If a message names no registration Sessionboard knows, **Housing** says how many did not match. Check the reference or the email the provider sends.
+
+### Give your provider the webhook
+
+<Steps>
+1. Under **Booking status from your provider**, copy the webhook address.
+2. Click **Show secret** and copy the secret.
+3. Send both to your provider's technical contact, with the message format below.
+</Steps>
+
+**Make a new secret** replaces the secret at once: messages signed with the old one are refused, so send the new one to your provider straight away.
+
+The provider posts JSON to the webhook address:
+
+```json
+{
+  "id": "unique-id-of-this-message",
+  "status": "booked",
+  "registration_id": "the {registration_id} from the booking link",
+  "email": "registrant@example.org",
+  "hotel": "Hotel name",
+  "check_in": "2027-03-01",
+  "check_out": "2027-03-04",
+  "booking_reference": "ABC123",
+  "occurred_at": "2027-01-15T10:00:00Z"
+}
+```
+
+- `status` is `booked`, `modified` or `cancelled`.
+- `id` must be different for every message. A message sent again with the same `id` is ignored, so a provider can safely retry.
+- `registration_id` or `email` says whose booking it is. The ID is the more reliable of the two.
+- The latest message by `occurred_at` decides the status shown, even when messages arrive out of order.
+
+Each message is signed. The provider sends the time as Unix seconds in the `X-Sessionboard-Timestamp` header, and `sha256=` followed by the HMAC-SHA256 of `<timestamp>.<message body>`, made with the secret and written as lowercase hexadecimal, in the `X-Sessionboard-Signature` header. The signature covers the exact bytes of the body that is sent. Messages without a valid signature, or more than five minutes old, are refused.
+
+For example, in Node.js:
+
+```js
+const crypto = require('crypto');
+const body = JSON.stringify(message); // send exactly this string
+const timestamp = Math.floor(Date.now() / 1000).toString();
+const signature = 'sha256=' + crypto
+  .createHmac('sha256', secret)
+  .update(`${timestamp}.${body}`)
+  .digest('hex');
+// POST body with headers:
+//   Content-Type: application/json
+//   X-Sessionboard-Timestamp: <timestamp>
+//   X-Sessionboard-Signature: <signature>
+```
+
+<Note>
+This is a generic format. Passkey, Orchid and onPeak do not yet send it on their own; each provider has to set it up for your event.
+</Note>
+
+## Related
+
+- [Integrations & API](/registration/integrations-and-api)
+- [Registration forms](/registration/forms)
+- [Registrants](/registration/registrants)
