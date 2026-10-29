@@ -87,7 +87,23 @@ The provider posts JSON to the webhook address:
 - `registration_id` or `email` says whose booking it is. The ID is the more reliable of the two.
 - The latest message by `occurred_at` decides the status shown, even when messages arrive out of order.
 
-Each message is signed. The provider sends the time as Unix seconds in the `X-Sessionboard-Timestamp` header, and `sha256=` followed by the HMAC-SHA256 of `<timestamp>.<message body>`, made with the secret, in the `X-Sessionboard-Signature` header. Messages without a valid signature, or more than five minutes old, are refused.
+Each message is signed. The provider sends the time as Unix seconds in the `X-Sessionboard-Timestamp` header, and `sha256=` followed by the HMAC-SHA256 of `<timestamp>.<message body>`, made with the secret and written as lowercase hexadecimal, in the `X-Sessionboard-Signature` header. The signature covers the exact bytes of the body that is sent. Messages without a valid signature, or more than five minutes old, are refused.
+
+For example, in Node.js:
+
+```js
+const crypto = require('crypto');
+const body = JSON.stringify(message); // send exactly this string
+const timestamp = Math.floor(Date.now() / 1000).toString();
+const signature = 'sha256=' + crypto
+  .createHmac('sha256', secret)
+  .update(`${timestamp}.${body}`)
+  .digest('hex');
+// POST body with headers:
+//   Content-Type: application/json
+//   X-Sessionboard-Timestamp: <timestamp>
+//   X-Sessionboard-Signature: <signature>
+```
 
 <Note>
 This is a generic format. Passkey, Orchid and onPeak do not yet send it on their own; each provider has to set it up for your event.
