@@ -50,7 +50,7 @@ Tickets, bundles and session fees are listed under **Tickets**; add-ons and dona
 - **Capacity** — leave blank for unlimited. Registrations waiting for approval and seats held during checkout count toward it, so a ticket cannot oversell.
 - **Max per order**.
 - **Date tiers** — early bird, standard, onsite. Each price applies through its end date in the event's time zone, and the base price applies after the last tier. Prices roll automatically.
-- **Count tiers** — a price for the first seats sold: "first 100 at 495, the next 100 at 595". Each row covers seats up to its count; after the last row the date tiers and base price apply. The form shows how many seats are left at today's price. A registrant type with its own price is not counted, and a group buying several seats at once pays the tier of its first seat.
+- **Count tiers** — a price for the first seats sold: "first 100 at 495, the next 100 at 595". Each row covers seats up to its count; after the last row the date tiers and base price apply. The form shows how many seats are left at today's price. A registrant type with its own price is not counted, and a group buying several seats at once pays the tier of its first seat. If another order takes the last seat at a tier while someone is checking out, their checkout stops and shows the new total, so nobody is charged a price they did not see.
 - **Price by registrant type** — a different price for each type. Leave a type blank to use the ticket's price.
 - **Who can buy** — **Anyone**, **With an access code** (enter the **Access code**) or **Hidden (admin only)**.
 - **On sale from** / **Until** — the sales window.
@@ -122,6 +122,7 @@ Instead of a list of forms, the registration page can ask one question — "Whic
 - A row matches a ticket by `ticket_id`, else by its exact name. A new name creates the ticket from its base row (a row with no tier and no registrant type).
 - A ticket with tier rows in the file gets exactly those tiers. `through` is the tier's last day.
 - Session fees are created from **Workshops**, not imported.
+- A ticket priced by **date windows** (a start and end per price) cannot be imported over yet, because the file does not carry window start times. Its rows are refused with a reason; edit those prices in the ticket instead.
 
 Click **Start from the current data** to edit what is there, **Dry run** to see each row's result, then **Apply**.
 
@@ -178,6 +179,10 @@ Under **Self-service changes**, turn on **Registrants change paid workshops**, a
 - When it costs less, or they drop it, the difference goes back to the card they paid with, through your gateway.
 - When the workshop was paid by invoice, check or cash, they are asked to contact you; refund it from the order.
 
+One change per registration runs at a time. While a change is waiting for its payment or refund, another change is refused until the first one finishes.
+
 ### Move people in bulk
 
 **Bulk assign** adds or removes many people at once. Paste or upload CSV rows of `registration_id,workshop,action` (the workshop is the session id or its exact title; action is `add` or `remove`, add if blank). Click **Dry run** to see which rows would work, then **Apply**. Capacity is enforced unless you tick **Allow over capacity**; overlaps are shown as warnings.
+
+A free workshop with a capacity counts a pick from a card checkout that has not been paid yet, for as long as that checkout's hold lasts (15 minutes). If the payment does not come through, the place opens again.
