@@ -29,7 +29,12 @@ function attr(attrs, name) {
   return m ? (m[1] ?? m[2]) : null;
 }
 
-/** Same slugger GitHub/Starlight use for heading ids, close enough for anchors. */
+/**
+ * Same slugger GitHub/Starlight use for heading ids, close enough for anchors.
+ * Every space becomes a hyphen, as in github-slugger: "Site URL & branding"
+ * renders as `site-url--branding` (the `&` goes, both spaces stay), so a
+ * release link must keep the double hyphen to land on the heading.
+ */
 export function slugify(text) {
   return String(text)
     .toLowerCase()
@@ -37,7 +42,7 @@ export function slugify(text) {
     .replace(/[*_`~]/g, '')
     .replace(/[^\p{L}\p{N}\s-]/gu, '')
     .trim()
-    .replace(/\s+/g, '-');
+    .replace(/\s/g, '-');
 }
 
 function stripFences(src) {
