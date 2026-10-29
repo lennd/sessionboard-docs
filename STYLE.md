@@ -72,7 +72,7 @@ Decision table:
 | Two alternative paths (e.g. org vs event) | `<Tabs><TabItem label="...">` | Duplicated sections |
 | A set of navigation links | `<CardGrid>` + `<LinkCard>` | Bullet lists of links |
 | Collapsible FAQ answers | `<Accordion title="...">` | Nested headings |
-| An auto-generated video clip | `<Walkthrough src title captions />` | Raw `<video>`/iframe |
+| A video | A training chapter in `sessionboard-tam/training-videos`, injected as `<TrainingVideo>` by `npm run docs` (see AGENTS.md, "No standalone video pages") | `<Walkthrough>`, raw `<video>`/iframe, files under `public/media/walkthroughs/` (`check:style` fails them) |
 
 Component sources: [src/components/compat/](src/components/compat/).
 
