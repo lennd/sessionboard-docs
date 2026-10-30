@@ -1,0 +1,671 @@
+{
+  "date": "2026-10-30",
+  "entries": [
+    {
+      "id": "registration-sold-out-error-message",
+      "title": "Sold-out refusals show a clear message instead of a sticky error toast",
+      "summary": "When staff apply a credit, record an offline payment, or change a ticket on a registration that is refused because a ticket or pool is sold out, a plain inline message now appears instead of a persistent red **\"Request failed\"** support toast. When the refusal is caused by an expired hold, the message reads: \"Last seat is sold out: this order's hold ran out and the place was sold to someone else. Nothing was charged or recorded; cancel the order or move the registration to another ticket.\"",
+      "article": "/registration/orders-and-invoices",
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "registration"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Registration → Orders → [order] → Apply credit / Record a payment; Registration → Registrants → [registrant] → Change ticket"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Staff managing orders at or near capacity no longer see a confusing technical error banner when a seat sells out between steps. The actionable message tells them exactly what happened and what to do next — cancel the order or move the registration to another ticket — without needing to contact support.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer reports seeing a sticky red 'Request failed' toast on Apply credit or Record a payment, or asks why the error message referenced the wrong action after retrying.",
+        "who_should_get_it": "Any customer using Registration (beta) with paid tickets or shared capacity pools.",
+        "staff_path": "Registration → Orders → [order] → Apply credit / Record a payment; Registration → Registrants → [registrant] → Change ticket",
+        "gotchas": "The fix only suppresses the support toast for 409/422 responses that carry a structured error code (e.g. sold_out). 500s, network failures, and uncoded errors still show the support toast as before.",
+        "talk_track": "If a ticket sells out between when a staff member opens an order and when they try to apply a credit or record a payment, they now see a clear plain message explaining what happened and what to do — no more sticky red banner that blocks subsequent error messages.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that sold-out refusals on Apply credit, Record a payment, and Change ticket surface a plain message (not a support toast), and explain the hold-expired variant of the sold-out message.",
+          "why_use_it": "null",
+          "at": "2026-10-30T03:43:36.944Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1308"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "related-sessions-submitter-role",
+      "title": "Contacts' Related Sessions now includes sessions where the contact is the Submitter",
+      "summary": "In a contacts table, **Related → Sessions** now surfaces sessions where the contact is set as the **Submitter** (`submitted_by_contact_id`), not only sessions where they hold a participant seat. A contact who both submitted and speaks on a session receives a combined **Submitter** badge alongside their participant role (e.g. **Speaker, Submitter**). The chevron count and the related-records export reflect the Submitter role as well. Filtering by participant status (e.g. **Accepted**) correctly excludes submitter-only sessions.",
+      "article": "/contacts/create-assign-a-session-submitter",
+      "kind": "fixed",
+      "module": "CRM",
+      "features": [
+        "sessions"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Contacts → [contact row] → Related → Sessions"
+      },
+      "permissions": [
+        "event.contacts.read",
+        "event.sessions.read"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "When a contact submitted a session on behalf of a speaker but is not listed as a participant, their Related Sessions panel previously showed nothing — making it look like they had no connection to the session. With this fix, organizers can see every session a contact is tied to, whether as a participant or as the person who submitted it.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer reports that a contact's Related Sessions panel is missing sessions they know the contact submitted, or when they ask why the submitter shown in the session sidebar does not appear in the contact's related records.",
+        "who_should_get_it": "Any customer who uses the Submitter field on sessions and relies on the Related Sessions view on contacts to track involvement.",
+        "staff_path": "Contacts → [contact row] → Related → Sessions",
+        "gotchas": "A submitter-only row carries no participant status and no role ID, so filtering by participant status (e.g. Accepted) will drop submitter-only sessions from the list — this is intentional and correct behaviour. The 'Submitters' section in the session sidebar lists record owners (Module_Record_Owners / users), which is a separate concept and is not affected by this change.",
+        "talk_track": "If a contact submitted a session but isn't a speaker or chair on it, their Related Sessions tab now shows that session with a Submitter badge, and the count in the chevron includes it.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that the Submitter (submitted_by_contact_id) appears in the contact's Related Sessions view with a Submitter badge, explain that submitter-only rows carry no participant status, and clarify the difference between the session Submitter field and the Submitters section in the session sidebar (which lists record owners).",
+          "why_use_it": "The session submitter is often a key contact — a department coordinator, a speaker manager, or the speaker themselves — and tracking which sessions they submitted is essential for follow-up and reporting. The Related Sessions view on a contact lets you see all sessions that person is connected to without leaving the contact record, so you can quickly understand their full involvement in the program.",
+          "at": "2026-10-30T03:44:01.181Z"
+        }
+      },
+      "related": [
+        "/concepts/participant-roles",
+        "/contacts/contact-profile",
+        "/reporting/dashboard-views"
+      ],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4916"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "related-records-role-column-refresh",
+      "title": "Related Sessions table shows Role column and updates immediately after Add to session",
+      "summary": "In the contacts table with **Related** turned on, the **Sessions (participant or submitter)** relation type now shows a **Role** column (replacing \"Relation\") that displays each contact's role badge on the session. After using **Add to session**, the related-sessions rows and chevron counts appear instantly — no 30-second wait for the cache to expire.",
+      "article": "/reporting/dashboard-views#related-records",
+      "related": [
+        "/contacts/contact-profile",
+        "/speakers/create-assign-speakers"
+      ],
+      "kind": "fixed",
+      "module": "CRM",
+      "features": [
+        "sessions"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Contacts → (contacts table) → Related → Sessions (participant or submitter)"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "When an organizer adds one or more contacts to a session, the related-sessions panel now reflects the change right away, so they can confirm the assignment without refreshing or waiting. The Role column also makes it clear at a glance whether each contact is a Speaker, Moderator, Chairperson, or another role on each session.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer reports that sessions don't appear under contacts after using Add to session, or asks why the column says 'Relation' instead of showing the role.",
+        "who_should_get_it": "Any customer using the Related Records panel on the contacts table with sessions configured.",
+        "staff_path": "Contacts → (contacts table) → Related → Sessions (participant or submitter)",
+        "gotchas": "The Submitter role badge will only appear once the companion API PR (#4916) ships; until then, only seat-based roles (Speaker, Moderator, etc.) show under Role. Other relation types (Submissions, Groups, Sponsors/Exhibitors) still show the Relation column header — that is intentional.",
+        "talk_track": "After adding contacts to a session, their session rows and counts now appear immediately in the Related panel. The column is also renamed Role so you can see each person's role on the session at a glance.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should document the Related Records panel in the contacts table, including the Sessions (participant or submitter) relation type, the Role column for participation relations, and how the panel refreshes after Add to session.",
+          "why_use_it": "null",
+          "at": "2026-10-30T03:44:53.556Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1301"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "toolkit-card-clickable",
+      "title": "Click anywhere on a toolkit card to open the tool or its setup page",
+      "summary": "On the event home **Your toolkit** section, the entire card is now clickable — not just the small footer link or button. Clicking an in-use tile opens the tool (same as **Open →**); clicking a ready tile opens its set-up page; clicking a gated (Beta/Preview/not in plan) tile opens the event's **Early Access** page. Footer buttons such as **Open**, set-up CTAs, and **Request beta** still work independently. Cards also gain an accent border and shadow on hover.",
+      "article": "/events/event-dashboard#your-toolkit",
+      "kind": "improved",
+      "module": "Event team",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event home → Today → Your toolkit"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers can now click anywhere on a toolkit card to jump straight to the tool or its setup page, reducing the precision needed to navigate from the event home dashboard.",
+      "related": [
+        "/get-started/early-access"
+      ],
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer mentions the event home feels hard to navigate or they didn't realise they could open tools from the toolkit section.",
+        "who_should_get_it": "All organizers — this is on by default for every event.",
+        "staff_path": "Event home → Today → Your toolkit",
+        "gotchas": "Footer buttons (Open, Request beta, Join preview) still fire their own actions and are not overridden by the card link. Gated tiles navigate to Early Access, not the tool itself — some gated routes (e.g. Clips without Marketing) redirect further to a module overview.",
+        "talk_track": "You can now click anywhere on a toolkit card — not just the small footer link — to open the tool or start setup. Gated tiles take you straight to Early Access so you can turn on a preview or request a beta.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should document that the entire toolkit card is clickable and describe where each tile state (in-use, ready, gated) navigates to.",
+          "why_use_it": "The **Your toolkit** section on the event home gives organizers a single place to see every available tool, its status, and what to do next. Clicking a card takes you directly where you need to go — whether that is a live tool, a setup flow, or the Early Access catalogue — so you spend less time hunting through the sidebar and more time running your event.",
+          "at": "2026-10-30T03:45:13.873Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1300"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "ready-room-app-page",
+      "title": "Ready Room desktop app gets its own page in Apps",
+      "summary": "A dedicated **Apps → Ready Room** page is now available at both org and event scope. It shows macOS, Windows x64, and Windows ARM download buttons (led by the visitor's OS), a carousel of eleven in-app screens with captions, a **When to use it vs the browser console** comparison, a **Getting a room set up** section with a link to the event's **Live Transcribe → Invites**, and a **Watch the 4-minute walkthrough** button. A **Ready Room** tile also appears in **Your toolkit** on the event home with a \"Download the app\" prompt.",
+      "article": "/marketing/ready-room-desktop-app",
+      "related": [
+        "/marketing/live-transcribe",
+        "/marketing/live-transcribe-console",
+        "/events/event-dashboard"
+      ],
+      "kind": "new",
+      "module": "Apps",
+      "features": [
+        "marketing"
+      ],
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Apps → Ready Room; Event home → Your toolkit → Ready Room"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "AV and operations teams can find, download, and learn about the Ready Room desktop app without leaving Sessionboard — the page surfaces the right installer for their machine, walks through every screen, and links directly to the event's Live Transcribe invites so they can get a room running in one flow.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Download buttons only light up once the S3 bucket for releases is provisioned and a release is tagged. Until then the page shows a placeholder note instead of dead buttons — no customer-facing breakage."
+        },
+        "when_to_bring_up": "When a customer is setting up Live Transcribe and asks how their AV crew should run it from the room machine, or when they ask where to download Ready Room.",
+        "who_should_get_it": "Any customer using Live Transcribe with dedicated room machines or AV staff on-site.",
+        "staff_path": "Apps → Ready Room (org or event sidebar)",
+        "gotchas": "Download buttons are inactive until the S3_BUCKET_READY_ROOM_RELEASES environment variable is set and a release is published in the lennd/sessionboard-ready-room repo. The toolkit tile is passive — it never counts toward adoption metrics and is never surfaced as the next recommended setup step.",
+        "talk_track": "Ready Room now has its own page inside Sessionboard. Your AV team can download the right installer for their machine, watch a 4-minute walkthrough, and jump straight to Live Transcribe invites — all from Apps → Ready Room.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide exists but should confirm that the in-product page's OS-detection logic matches the install instructions, and add a note that the download buttons require a published release to be active.",
+          "why_use_it": "The Ready Room desktop app runs on the room machine and gives AV staff a dedicated station view for session files, live transcription, caption overlay, and Focus Mode — all without a browser. Install it on each room machine to keep the crew focused on what is happening in the room rather than managing a full browser console. It works offline when the network drops and syncs automatically when connectivity returns. Use it alongside the browser-based Live Transcribe Console when you need both a room-level station and a multi-room overview.",
+          "at": "2026-10-30T03:39:59.754Z",
+          "permissions_to_confirm": [
+            "event.ready_room: read"
+          ]
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1310"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "registration-cancel-drawer-promotes-waitlist",
+      "title": "Cancelling a registration from the drawer now promotes the waitlist",
+      "summary": "When a staff member cancels a registration using the **Cancel** button inside an open registrant record (**Registrants** › open a registration), the freed seat is now offered to the next person — or group — on the waitlist, exactly as the bulk status action already did. A primary registrant and their guests are promoted together or not at all.",
+      "article": "/registration/registrants",
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "attend",
+        "registration"
+      ],
+      "availability": "limited_release",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Registration → Registrants → open a registration → Cancel"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "When an event is at capacity and staff cancel a registration one at a time from the registrant drawer, waitlisted attendees are now automatically moved up — no need to use the bulk status action to trigger promotion.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer reports that cancelling from the registrant drawer left waitlisted people stuck even though seats were free.",
+        "who_should_get_it": "Any customer using Registration with ticket capacity limits and a waitlist.",
+        "staff_path": "Registration → Registrants → open a registration → Cancel",
+        "gotchas": "No cancellation email is sent to the cancelled registrant — this matches the previous behaviour and is intentional. Promotion emails, if configured, fire as normal. Concurrent cancellations by two staff members at the same time are handled safely.",
+        "talk_track": "Cancelling a single registration from the drawer now triggers waitlist promotion the same way the bulk action does, so you don't have to remember to run a separate step.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that the Cancel button inside an open registrant record triggers waitlist promotion (including promoting a primary and guests together), and that no cancellation email is sent to the cancelled registrant.",
+          "why_use_it": "Registration lets you cap ticket capacity and hold a waitlist so no seat goes to waste. When a confirmed registrant cancels, the next eligible person — or a primary registrant and their guests as a group — is automatically promoted to confirmed, keeping your event full without manual intervention.",
+          "at": "2026-10-30T03:30:02.871Z"
+        }
+      },
+      "related": [
+        "/registration/orders-and-invoices",
+        "/registration/tickets-and-pricing"
+      ],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4924"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:limited_release"
+    },
+    {
+      "id": "registration-declined-card-retry",
+      "title": "Retry payment with a new card after a declined or refused charge",
+      "summary": "After a declined card or a sold-out refusal, clicking **Pay $…** on the registration checkout now reopens the card entry form so the buyer can enter a different card. Previously, the form silently resubmitted the rejected card token, leaving the buyer stuck with no way to pay without reloading the page and losing their pending order.",
+      "article": "/registration/payments",
+      "kind": "fixed",
+      "module": "Portals",
+      "features": [
+        "registration",
+        "new_portals"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Registration checkout → Pay $… (public registration form and CFP fee payment)"
+      },
+      "permissions": [],
+      "audience": [
+        "participant"
+      ],
+      "use_case": "When a registrant's card is declined or their held seat sells out before payment completes, they can immediately enter a new card without reloading the page and losing their pending order — reducing abandoned checkouts caused by payment failures.",
+      "related": [
+        "/registration/forms",
+        "/registration/orders-and-invoices"
+      ],
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer reports that registrants are stuck after a declined card and have to reload the page to try again.",
+        "who_should_get_it": "Any customer using Registration with a Spreedly payment gateway (paid tickets or CFP fees).",
+        "staff_path": null,
+        "gotchas": "Affects both the public Registration GatewayPayButton and the SitePortal SpreedlyPaymentButton used for CFP submission fees. If a seat sells out between the hold and payment, the buyer sees a sold-out message after entering the new card — this is expected and correct behaviour.",
+        "talk_track": "If a registrant's card is declined, the card form now reopens automatically so they can try a different card right away — no page reload needed, and their pending order stays intact.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The payments guide should note that after a declined or refused charge the card form reopens automatically so registrants can try a different card without losing their pending order.",
+          "why_use_it": "null",
+          "at": "2026-10-30T03:04:36.608Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-org-portal#263"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "field-event-channels-luma-linkedin",
+      "title": "Publish field events and webinars to Luma and LinkedIn Events as distribution channels",
+      "summary": "Field events (gatherings) and webinars can now be published to **Luma** and **LinkedIn Events**. Connect either platform from the new **Event channels** category in **Apps**, then use the **Publish to** block on the field event or webinar form. Registrations from either channel flow back into Sessionboard as attendees: the field event **Overview** shows channel cards, a registration-source breakdown and items needing attention (Luma approvals, conflicts, reconnect prompts), and **People** gains a **Source** column and a channel filter. **Settings › Channels** holds sync controls, registration close/remove actions, a LinkedIn recreate flow, an activity log and a **Promote** panel for LinkedIn ad campaigns; LinkedIn promotion and Matched Audiences sit behind per-connection flags.",
+      "article": "/field-events/overview",
+      "related": [
+        "/field-events/registration-form",
+        "/integrations/overview",
+        "/field-events/checkin"
+      ],
+      "kind": "new",
+      "module": "Apps",
+      "features": [
+        "gatherings",
+        "webinars"
+      ],
+      "enable": {
+        "how": "support",
+        "path": "Organization → Preview → Field Events → Request access (our team sets it up with you); then connect Luma or LinkedIn Events from the App Marketplace and configure channels on the event"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Apps → Event channels → Luma / LinkedIn Events; field event or webinar form → Publish to; field event Overview → Channels; field event People → Source; field event Settings → Channels"
+      },
+      "permissions": [
+        "event.settings.manage_app_connections",
+        "org.settings.manage_app_connections"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Teams running field events or webinars who also promote on Luma or LinkedIn can publish directly from Sessionboard and have registrations from those platforms land automatically as Sessionboard attendees — no manual import needed. LinkedIn promotion and Matched Audiences let demand-gen teams run targeted ads and build retargeting segments from consented attendee emails without leaving the platform.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "LinkedIn promotion and Matched Audiences are behind per-connection feature flags — confirm with engineering which flags to enable before positioning these to a customer. Luma webhook approval and capacity-below-approved-count edge cases are not yet verified against live credentials. The UI is also gated on a superuser flag on top of the org's Field Events (gatherings) Early Access; official Luma and LinkedIn logos are placeholders."
+        },
+        "when_to_bring_up": "When a customer running field events or webinars asks how to avoid manually importing registrations from Luma or LinkedIn, or when a demand-gen team asks about LinkedIn ad targeting from Sessionboard attendee data.",
+        "who_should_get_it": "Customers on the Field Events (gatherings) or Webinars beta who actively use Luma or LinkedIn Events for promotion and registration.",
+        "staff_path": "Apps → Event channels → Luma / LinkedIn Events; field event Settings → Channels",
+        "gotchas": "Several Luma and LinkedIn behaviours were not verified against live credentials (ticket approval field, capacity below approved count, guest.updated on check-in, LinkedIn description/address shapes, Lead Sync field mapping, Share Statistics, event-ad objective, dmpSegment threshold, version 202610). Matched Audiences only add people — removals are not yet implemented. Full registration-form → Luma question mapping is incomplete. LinkedIn requires two separate OAuth consents (events app + pages app) plus a page picker before the channel is active. Env vars LINKEDIN_EVENTS_CLIENT_ID/_SECRET and LINKEDIN_PAGES_CLIENT_ID/_SECRET must be set in Doppler. Not browser-tested against a live backend as of merge. The LinkedIn recreate flow triggers on 409 linkedin_recreate_required, worth flagging to customers who reconnect LinkedIn pages.",
+        "talk_track": "You can now publish your field event or webinar to Luma and LinkedIn Events directly from Sessionboard. Registrations from either platform come back automatically as attendees, and a Channel filter on the attendee list shows you where each person signed up.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The field-events overview guide should add a \"Channels\" section explaining how to connect Luma and LinkedIn Events, how registrations sync back, how to use the Channel filter on the attendee list, and the LinkedIn promotion and Matched Audiences options.",
+          "why_use_it": "Field events and webinars often live on multiple platforms at once, forcing teams to reconcile attendee lists by hand after each event. Channels let you publish a single event record to Luma and LinkedIn Events and receive registrations from both back into Sessionboard automatically, so your attendee list is always complete. The Channel filter on the attendee list shows exactly where each person registered, and LinkedIn promotion tools let you run ads and build Matched Audiences from the same workflow.",
+          "at": "2026-10-30T01:49:53.190Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4913",
+          "lennd/sessionboard-web-ui-v2#1297"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "session-builds-export-and-custom-statuses",
+      "title": "Export the Builds list and label builds with custom admin statuses",
+      "summary": "On a review plan's **Builds** tab you can now export the builds the **Status** filter shows to CSV or XLSX, one row per presenter or alternate, and label builds with your own **build statuses**: admin-only labels under Submitted, Approved or Declined that team leads never see. Manage them under **Program Settings → Build statuses**, also reached from **Manage statuses** on the Builds tab.",
+      "article": "/evaluations/setting-up-round-based-evaluations#the-builds-tab",
+      "related": [
+        "/evaluations/evaluation-plans",
+        "/reporting/exporting-data",
+        "/sessions/program-settings#build-statuses"
+      ],
+      "kind": "new",
+      "module": "Program",
+      "features": [
+        "sessions_v2"
+      ],
+      "availability": "add_on",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Program → Evaluation → (Review plan) → Builds → Options → Export .CSV / .XLSX; Program → Settings → Build statuses (custom status management)"
+      },
+      "permissions": [
+        "event.evaluation_plans.export",
+        "event.evaluation_plans.update"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Program teams that need to report on build progress can export the full Builds list — with scores, reasons and timing — directly to a spreadsheet. Custom build statuses let admins track internal workflow states (such as \"Needs contract\" or \"Confirmed\") on top of the standard lifecycle without exposing those labels to team leads.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Nothing to turn on: both are there for any review plan round with Enable Reviewer Session Builds on."
+        },
+        "when_to_bring_up": "When a customer asks how to report on build progress, share build data with stakeholders, or track internal workflow states on builds without exposing them to team leads.",
+        "who_should_get_it": "Customers using Sessions 2.0 Review plans with session builds enabled.",
+        "staff_path": "Program → Evaluation → (Review plan) → Builds → Options → Export .CSV / .XLSX; Program → Settings → Build statuses (custom status management)",
+        "gotchas": "A label can only be set on a build in its own status (Submitted, Approved or Declined) and comes off when the build is approved, declined, returned or resubmitted; it never changes the build's status. A status's category can't change while builds use it; archiving it removes the label. Build statuses only appears in Program Settings once a review plan in the event has Build turned on. Export needs the review plan export permission, setting a label needs edit, and the Builds tab needs view.",
+        "talk_track": "You can now export the full Builds list to a spreadsheet — with scores, timing and any custom labels — and use custom build statuses to track internal workflow states on builds without your team leads ever seeing them.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should add a section covering session builds: the Builds tab, the Export action and its column schema, and how to create and apply custom build statuses at the event level.",
+          "why_use_it": "Session builds let your program team assemble speaker lineups from reviewed abstracts and move them through a structured approval lifecycle. Custom build statuses give admins a private layer of labels — scoped to submitted, approved or declined — so internal workflow states stay visible to the program team without surfacing to team leads or reviewers. The export brings every build, its members, scores, timing and labels into a spreadsheet so you can report on progress, share data with stakeholders or reconcile decisions outside Sessionboard.",
+          "at": "2026-10-30T01:40:48.013Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4915",
+          "lennd/sessionboard-web-ui-v2#1299"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "registration-inventory-concurrency-fix",
+      "title": "Registration tickets and workshops can no longer be oversold under concurrent checkouts",
+      "summary": "Concurrent registrations can no longer exceed ticket, shared-capacity-pool, or free-workshop seat limits. A buyer who returns to pay after their 15-minute hold lapsed and the seat was resold now receives a **Sold out** error before any payment is attempted, rather than being charged into an oversold event. Waitlist auto-promotion also respects capacity under concurrency.",
+      "article": "/registration/tickets-and-pricing#shared-capacity",
+      "related": [
+        "/registration/orders-and-invoices",
+        "/registration/overview"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "registration",
+        "attend"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Registration → Overview; Registration → Tickets & Pricing; public checkout"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Events with high-demand tickets or shared capacity pools (e.g. two fee types drawing from one seat count) can now open registration to large audiences without risking oversold inventory. Buyers who sit on a lapsed hold are turned away cleanly before their card is charged.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Buyers whose 15-minute hold lapsed and whose seat was resold now get a 409 sold_out before any charge instead of a successful charge. web-ui-v2#1291 (Add a registration sends an Idempotency-Key per attempt) belongs to the same hardening set and is listed in shipped.prs, so the entry goes live only when both are deployed."
+        },
+        "when_to_bring_up": "When a customer reports oversold tickets after a busy registration open, or asks about shared capacity pool reliability under load.",
+        "who_should_get_it": "Any customer using Registration (beta) with capacity-limited tickets, shared capacity pools, free workshops, or waitlist auto-promotion.",
+        "staff_path": "Registration → Tickets & Pricing → capacity fields; Registration → Registrants (check confirmed count vs. capacity)",
+        "gotchas": "Companion PRs #4901 (idempotency) and #4902 (webhooks) plus web-ui-v2#1291 are part of the same hardening set. A charge left pending (ACH, or a card result the gateway has not confirmed) keeps its seats counted while it is in flight; the payment reconciler (web-api #4912) escalates it to Needs review and releases those seats 240 hours (10 days) after the attempt for ACH, 24 hours for cards. Admin 'Offer a place' and bulk status → confirmed remain intentional overrides and are not blocked by this fix.",
+        "talk_track": "Ticket and workshop capacity is now enforced even when hundreds of buyers check out at the same moment. If someone's hold expires and the seat sells to someone else, they see a sold-out message before their card is charged — no more oversold events.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The shared-capacity section of the Tickets & Pricing guide should document that all fee types sharing a pool are locked together during checkout, and explain the sold-out behaviour when a hold lapses and the seat is resold before payment.",
+          "why_use_it": "Registration enforces seat limits atomically so that simultaneous checkouts, shared-pool fees, free workshops, and waitlist promotions all respect the capacity you set. When a ticket sells out, buyers receive a clear sold-out response rather than a successful charge into an oversold event.",
+          "at": "2026-10-30T00:02:16.116Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4900",
+          "lennd/sessionboard-web-ui-v2#1291"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    }
+  ]
+}
