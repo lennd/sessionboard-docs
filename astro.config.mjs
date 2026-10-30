@@ -7,6 +7,7 @@ import sitemap from '@astrojs/sitemap';
 import sidebar from './src/sidebar.json' with { type: 'json' };
 import site from './site.json' with { type: 'json' };
 import rehypeAppLinks from './plugins/rehype-app-links.mjs';
+import { isStaffOnlyHref, staffOnlyGlobs } from './src/lib/staff-only.mjs';
 
 // The staff-only enablement section (src/pages/<internalPrefix>/) is unlisted.
 // Starlight adds @astrojs/sitemap itself unless one is configured here, so
@@ -28,7 +29,14 @@ export default defineConfig({
     rehypePlugins: [rehypeAppLinks],
   },
   integrations: [
-    sitemap({ filter: (page) => page !== INTERNAL && !page.startsWith(`${INTERNAL}/`) && !UNLISTED.has(page.replace(/\.html$/, '')) }),
+    // Staff-only sections (site.json `staffOnly`, src/lib/staff-only.mjs) stay out too.
+    sitemap({
+      filter: (page) =>
+        page !== INTERNAL &&
+        !page.startsWith(`${INTERNAL}/`) &&
+        !UNLISTED.has(page.replace(/\.html$/, '')) &&
+        !isStaffOnlyHref(page, site),
+    }),
     starlight({
       title: 'Sessionboard Help Center',
       logo: {
@@ -48,7 +56,13 @@ export default defineConfig({
         SocialIcons: './src/components/SocialIcons.astro',
       },
       sidebar,
-      plugins: [starlightLlmsTxt(), starlightLinksValidator({ errorOnRelativeLinks: false })],
+      // Keeps staff-only pages out of the Pagefind index.
+      routeMiddleware: './src/route-data.ts',
+      plugins: [
+        starlightLlmsTxt({ exclude: staffOnlyGlobs(site) }),
+        // /_staff/sign-in (the 404 page's staff link) is a Worker route, not a page.
+        starlightLinksValidator({ errorOnRelativeLinks: false, exclude: ['/_staff/**'] }),
+      ],
       pagination: true,
       lastUpdated: false,
       social: [{ icon: 'external', label: 'sessionboard.com', href: 'https://www.sessionboard.com' }],

@@ -7,10 +7,16 @@
  * Sidebar.astro is overridden to render this copy. Re-copy from
  * node_modules/@astrojs/starlight/components/SidebarSublist.astro when
  * Starlight is upgraded, then re-apply the data-group line.
+ *
+ * Second addition: an entry whose pages are all staff-only (site.json
+ * `staffOnly`) carries data-staff-only, and worker.js removes it from the HTML
+ * anyone without a staff session gets.
  */
 import { Badge, Icon } from '@astrojs/starlight/components';
 import SidebarRestorePoint from '@astrojs/starlight/components/SidebarRestorePoint.astro';
 import type { StarlightRouteData } from '@astrojs/starlight/route-data';
+import { isStaffOnlyHref } from '../lib/staff-only.mjs';
+import site from '../../site.json';
 
 type SidebarEntry = StarlightRouteData['sidebar'][number];
 type SidebarLink = Extract<SidebarEntry, { type: 'link' }>;
@@ -26,12 +32,17 @@ interface Props {
 }
 
 const { sublist, nested } = Astro.props;
+
+const staffOnly = (entry: SidebarEntry) => {
+	const links = entry.type === 'group' ? flattenSidebar(entry.entries) : [entry];
+	return links.length > 0 && links.every((link) => isStaffOnlyHref(link.href, site));
+};
 ---
 
 <ul class:list={{ 'top-level': !nested }}>
 	{
 		sublist.map((entry) => (
-			<li data-group={entry.type === 'group' ? entry.label : undefined}>
+			<li data-group={entry.type === 'group' ? entry.label : undefined} data-staff-only={staffOnly(entry) ? '' : undefined}>
 				{entry.type === 'link' ? (
 					<a
 						href={entry.href}

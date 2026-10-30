@@ -11,6 +11,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import breadcrumbs from '../breadcrumbs.json';
 import site from '../../site.json';
+import { isStaffOnlySlug } from '../lib/staff-only.mjs';
 
 const SITE = `https://${site.canonicalHost}`;
 const WWW = 'https://www.sessionboard.com';
@@ -41,8 +42,13 @@ const canonical = slug ? `${SITE}/${slug}` : `${SITE}/`;
 const INTERNAL_PREFIX = String((site as { internalPrefix?: string }).internalPrefix || 'enablement').replace(/^\/|\/$/g, '');
 // `unlisted: true` in frontmatter gets the same in-document treatment for a
 // public page nobody should find by search (an email outcome page).
+// Staff-only sections (site.json `staffOnly`) too: the Worker 404s them for
+// everyone else, and a staff reader's copy must not be indexed or tracked.
 const isInternal =
-  slug === INTERNAL_PREFIX || slug.startsWith(`${INTERNAL_PREFIX}/`) || Boolean((entry.data as { unlisted?: boolean }).unlisted);
+  slug === INTERNAL_PREFIX ||
+  slug.startsWith(`${INTERNAL_PREFIX}/`) ||
+  Boolean((entry.data as { unlisted?: boolean }).unlisted) ||
+  isStaffOnlySlug(slug, site);
 const title = entry.data.title;
 const description = entry.data.description ?? '';
 const ogKey = slug === '' ? 'home' : slug.replace(/\//g, '--');

@@ -31,6 +31,7 @@ import { fileURLToPath } from 'node:url';
 
 import { absolutizeAssets } from '../src/lib/absolutize-assets.mjs';
 import { annotateImages, imageSize } from '../src/lib/annotate-images.mjs';
+import { isStaffOnlySlug } from '../src/lib/staff-only.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const DOCS = join(ROOT, 'src', 'content', 'docs');
@@ -366,6 +367,9 @@ const problems = [];
 for (const file of walk(DOCS).sort()) {
   const rel = relative(DOCS, file).replace(/\.mdx$/, '');
   if (EXCLUDE.has(rel)) continue;
+  // Staff-only sections (site.json `staffOnly`) are not public, and Team Lead
+  // answers customers: an answer citing them would link to a 404.
+  if (isStaffOnlySlug(rel.replace(/\/index$/, ''), site)) continue;
 
   // Starlight routes `<dir>/index.mdx` at `/<dir>` and, with build.format
   // 'file', writes it to dist/<dir>.html — only the site root stays index.html.

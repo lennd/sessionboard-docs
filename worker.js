@@ -13,6 +13,8 @@ import redirects from './redirects-map.json';
 import trainingRedirects from './training-redirects.json';
 import site from './site.json';
 import { isProductUpdatesPath, productUpdatesResponse } from './src/lib/product-updates-proxy.mjs';
+import { isStaffOnlyHref, isStaffOnlyPath } from './src/lib/staff-only.mjs';
+import { STAFF_PREFIX, isStaffRequest, staffResponse } from './src/lib/staff-session.mjs';
 
 // `/en/migrated/knowledge-base/…` is a live path prefix left over from an
 // earlier HubSpot migration; Google still has URLs under it.
@@ -159,6 +161,55 @@ async function internalResponse(request, url, env) {
   headers.set('Cache-Control', 'no-store');
   headers.set('X-Robots-Tag', 'noindex, nofollow');
   return new Response(asset.body, { status: 200, headers });
+}
+
+// ── Staff-only sections (Registration, Expo, Onsite) ────────────────────
+// Unlike the enablement section these are gated, not just unlisted (Josh,
+// 2026-10-30: "behind lock and key — can still publish, but should not be
+// publicly visible"). site.json `staffOnly` names them; src/lib/staff-only.mjs
+// lists every surface that honours it. Here: anyone without a staff session
+// gets the plain 404 for the page and its share card, and every HTML page they
+// get has the sections' sidebar groups removed and links into them unwrapped
+// to plain text. Staff get everything, marked private so no cache keeps a copy.
+
+/** Strip the staff-only sidebar groups, prev/next buttons and links from a public HTML page. */
+function hideStaffOnly(response) {
+  if (!(response.headers.get('Content-Type') ?? '').includes('text/html')) return response;
+  return new HTMLRewriter()
+    .on('[data-staff-only]', {
+      element(el) {
+        el.remove();
+      },
+    })
+    .on('a[href]', {
+      element(el) {
+        if (!isStaffOnlyHref(el.getAttribute('href'), site)) return;
+        if (/\b(?:prev|next)\b/.test(el.getAttribute('rel') ?? '')) el.remove();
+        else el.removeAndKeepContent();
+      },
+    })
+    .transform(response);
+}
+
+/** A staff reader's copy of any page: never stored by a shared cache; staff-only pages also never indexed. */
+function staffCopy(response, staffOnlyPage) {
+  const headers = new Headers(response.headers);
+  headers.set('Cache-Control', 'private, no-store');
+  headers.append('Vary', 'Cookie');
+  if (staffOnlyPage) {
+    headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive, nosnippet');
+    headers.set('Referrer-Policy', 'no-referrer');
+  }
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+}
+
+/** The ordinary 404 page — the same answer a path that never existed gets. */
+async function notFoundPage(url, env) {
+  const page = await env.ASSETS.fetch(new Request(`${url.origin}/404`));
+  const headers = new Headers(page.headers);
+  headers.set('Cache-Control', 'no-store');
+  headers.set('X-Robots-Tag', 'noindex');
+  return hideStaffOnly(new Response(page.body, { status: 404, headers }));
 }
 
 // HubSpot slugs sometimes appear with and without their numeric ID prefix
@@ -359,6 +410,11 @@ export default {
       return robotsResponse(isProd);
     }
 
+    // Staff sign-in from the product (src/lib/staff-session.mjs).
+    if (url.pathname.startsWith(STAFF_PREFIX)) {
+      return staffResponse(request, url, env, site);
+    }
+
     // Ahead of the crawler gate: this is a service-to-service call, and it must
     // not be judged by a User-Agent it does not set.
     if (url.pathname.startsWith(INTERNAL_PREFIX)) {
@@ -443,7 +499,12 @@ export default {
       if (asset.ok) return asset;
     }
 
-    const response = await env.ASSETS.fetch(request);
+    const staff = await isStaffRequest(request, env);
+    const staffOnlyPage = isStaffOnlyPath(url.pathname, site);
+    if (staffOnlyPage && !staff) return notFoundPage(url, env);
+
+    const asset = await env.ASSETS.fetch(request);
+    const response = staff ? staffCopy(asset, staffOnlyPage) : hideStaffOnly(asset);
 
     if (isEnablementPath(url.pathname)) {
       const headers = new Headers(response.headers);
