@@ -93,7 +93,7 @@ Set the window during which evaluators can complete reviews for the default roun
 ### Additional settings
   - **Enable Anonymized Review:** Hides submitter and participant identity from evaluators (applies to Round 1).
   - **Enable Weekly Reminders:** Evaluators get reminder emails for sessions pending in this round (applies to Round 1).
-  - **Include Uploaded Files:** Lets evaluators download files attached to sessions in this plan (applies to Round 1).
+  - **Include Uploaded Files:** Lets evaluators download files attached to sessions in this plan (applies to Round 1). Event plans only: on an [Interest Form plan](/speaker-crm/interest-form-evaluation-plans#what-reviewers-see), file questions are shown through **Visible submission fields** instead.
 - **Include Sub-Sessions:** When enabled, sub-sessions are included in the evaluation scope alongside their parent sessions. On a plan that evaluates subsessions this switch is replaced by **Include Parent Session**.
 - **Show Scores From Other Evaluators:** When enabled, evaluators can see other reviewers' scores for a submission while completing their own review.
 - **Keep reviews visible (read-only) after the deadline:** When the review period closes, evaluators can still open the round to see their assigned submissions and the scores and comments they gave, but can't change anything. Off by default; while it is off, a closed round disappears from their **My Reviews**. On a plan with several rounds, each round has this switch under its review dates. Reviewers can never change a review after the deadline, or once the plan is closed, whichever way this is set. Turning the switch on or off is recorded in the event's **History → Audit** log, with type **Evaluation plan**.
@@ -105,16 +105,37 @@ Each later round decides what its reviewers see of the rounds before it:
 - **Show scores from previous rounds:** reviewers see each earlier round's cumulative score, pinned at the top of the submission and in a **Prior round feedback** card above the scorecard.
 - **Share comments with later rounds** (set on the earlier round): selected free-text answers from that round appear for reviewers in later rounds.
 - **Anonymize prior-round reviewers:** hides the names of earlier rounds' reviewers on their scores and shared comments; they appear as **Anonymous (Evaluator N)**. An anonymized round does the same automatically.
+- **Show the returning speaker badge** (organizations with [Pathways](/pathways/overview)): team leads and event administrators see each returning speaker's past attendee ratings (out of 5, from session feedback surveys at your earlier events, never reviewer scores) in the prior-round panel, with a **Returning speaker** badge. On by default for named rounds and off for blind rounds, where the badge could hint at who the speaker is; blind rounds show totals only, never names or past sessions.
+- **Summarize previous round's reviewer feedback with the Reviewer agent:** off by default. See [Summarize the previous round with the Reviewer agent](#summarize-the-previous-round-with-the-reviewer-agent).
 
 Team leads on the round (evaluators with a session-build allocation) and event administrators also get a per-reviewer breakdown of each earlier round: every assigned reviewer's total score, shared comments, and whether they completed, abstained, or never finished. Plain reviewers never receive it, and abstain reasons are never shown.
 
 ![Additional settings](/images/kb/a1decf30-image-png-Jun-24-2026-09-40-02-7445-PM.png)
 
+### Summarize the previous round with the Reviewer agent
+
+On a later round, the [Reviewer agent](/agents/reviewer) can write a short summary of the comments reviewers shared in the round before it, so team leads start from the main points instead of reading every comment. It is off by default. Turn on **Summarize previous round's reviewer feedback with the Reviewer agent** in the round's settings, then choose:
+
+- **Who sees the summary** — **Team leaders only** (the default) or **Team leaders and reviewers**.
+- **An admin approves the summary before anyone else sees it** — on by default.
+- **Leave reviewer names out of the summary** — on by default. Blind rounds and rounds that anonymize prior-round reviewers always leave names out.
+
+The setting needs the event's Reviewer agent turned on under **Agents**, and **Share comments with later rounds** on in the previous round: the summary reads only the comments that round already shares with this one, never scores, titles, speakers or other submission fields. Without the agent, or with AI features off for your organization, no summary appears.
+
+How it works on a submission, in the review portal's prior-round panel:
+
+1. A team lead or event admin opens the **Agent summary** block and clicks **Generate summary**. A summary needs at least 2 shared comments from the previous round; with fewer, the block says so and offers nothing to generate. It is only written when someone asks, never on its own.
+2. With approval on, team leads see that **A new summary is waiting for admin approval**, without its text. An event admin reads it and clicks **Approve** or **Reject**. Without approval, the summary shows straight away as **Published … without approval**. A summary built from a comment that looks like an instruction to the agent always waits for approval.
+3. The approved summary shows its strengths and concerns, **Based on N reviews**, and **Approved by … on …**. **Read the verbatim comments** jumps to the comments it came from.
+4. **Regenerate** writes a new version. An event admin can **Roll back** the visible summary, which brings back the previous approved one, if there was one.
+
+The summary never changes a score, assignment, recommendation or decision. Each generate, approve, reject and roll back is recorded in the review plan's **History**.
+
 ### Scoring Method
 
 Configure how the plan measures overall evaluator scores. This is set in the Overview step under Scoring method:
 - **Percentage-based:** Normalizes scores to a percentage out of 100%, regardless of the number of scorecard questions or their individual point values.
-- **Points-based:** Displays scores as total accumulated points across all scorecard questions.
+- **Points-based:** Displays scores as total accumulated points across all scorecard questions, each question's points multiplied by its **Weight**.
 
 <Tip>
 Tip: Percentage mode makes it easier to compare submissions across rounds that use different scorecards with different total possible points.
@@ -323,6 +344,12 @@ Click + Add Question to choose from:
 - 1-10 Scale: Rate on a 1 to 10 scale.
 - **Numeric Score:** Custom min/max input for non-standard scoring ranges.
 - **Custom Dropdown:** Custom options with point values (e.g., "Accept = 3, Revise = 2, Reject = 1").
+
+Every scoring question has a **Weight** (×1 by default), in both scoring methods. In **Percentage based** plans the weight sets how much the question counts when the score is normalized to 100%; in **Points based** plans the question's points are multiplied by its weight before they are added up, so a weight of ×2 doubles the points it awards. Free text, file upload and separator questions never score, so they have no weight.
+
+#### Optional questions left unscored
+
+A question with **Required** off can be left unscored. When a reviewer leaves one unscored, even if they write a comment on it, the question is left out of that review: it adds nothing to the total and nothing to the maximum, so it does not pull the percentage down. The review's score, the submission's average, the prior-round average used to sort a later round, and the exports all count only the questions that were scored. In the Individual export and in custom reports, the unscored question's score reads **–**. A real score of 0 still counts as an answer, and a required question always counts.
 
 ### Input Fields
 - **Free Text:** Open comments and written feedback.

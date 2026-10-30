@@ -24,7 +24,7 @@ Speakers at an expo also need to exist in Visit, as visitors, with the right reg
 Visit is set up at the **organization**. Open it from **Settings > Integrations** or from **Apps**. Event **Settings > Integrations** no longer lists Visit.
 
 <Note>
-**Sessionboard adds Visit to your organization for you.** Email [support@sessionboard.com](mailto:support@sessionboard.com) to request it. The Visit card stays locked until then, and the steps below assume it is already available. Everything after that — the connection, the event mapping, and the field mapping — you do yourself.
+**You can add Visit yourself.** Open **Apps** and click **Visit**; opening it sets the app up for your organization (click **Set up Visit** if it asks). The connection, the event mapping, and the field mapping are all yours to manage, and you need your own Visit API key.
 </Note>
 
 <Steps>
@@ -38,7 +38,7 @@ Visit is set up at the **organization**. Open it from **Settings > Integrations*
     Click **Map events** on the connection. Choose the Sessionboard event and the **Visit Expo ID** from the lists — already mapped events and expos are hidden. Click **Save mapping**.
   </Step>
   <Step title="Set form, type, consent, and roles">
-    Open **Event Settings** for that mapping. Choose the **Registration form** and **Registration type** from the lists Sessionboard loads from that expo. The type list is visitor types only — Visit rejects Speaker, Chair, and other leader types on visitor create. Those roles attach later if you push sessions as activities.
+    Open **Event Settings** for that mapping. Choose the **Default registration form** and **Default registration type** from the lists Sessionboard loads from that expo. Both are required, and they apply to every contact who has no form or type of their own (see [Per-contact registration form and type](#per-contact-registration-form-and-type)). The type list is visitor types only — Visit rejects Speaker, Chair, and other leader types on visitor create. Those roles attach later if you push sessions as activities.
 
     **Consent field or task** is optional. The picker lists every updatable contact field on the event (portal-bound fields first), portal form submissions, Config Set tasks, and a form or task assigned to one contact rather than to a whole portal. "Forms" here means **contact forms** — the ones a person fills in about themselves. Session forms, including session forms assigned through a portal, are not listed, because a session submission says nothing about the person's consent. A participant is not pushed until that field is filled, that form is submitted, or that task is complete. To turn a saved gate off and sync on acceptance only, choose **None — do not require consent** at the top of the picker and save. Selecting the contact and clicking **Sync to Visit** still pushes them.
 
@@ -78,7 +78,7 @@ A contact who is deleted, or removed from the event, is not pushed — even if t
 | Sessionboard | Visit |
 | --- | --- |
 | First name, last name, email, company | Visitor |
-| Form and registration type from Event Settings | Applied to each visitor |
+| Form and registration type | The contact's own **Visit Registration Form** / **Visit Registration Type** when per-contact registration is on and the field is filled; otherwise the defaults from Event Settings |
 | Visit translation ID, from the contact field you map to Language | Visitor language, which decides the language of Visit's registration email |
 | Session track / room name (when activities are on) | Visit track / location, matched by name |
 | Visit visitor ID | Writes back to the contact field you mapped for Visit Registration ID |
@@ -92,11 +92,19 @@ If a participant leaves the accepted set, Sessionboard asks Visit to remove that
 
 Visit allows two API calls at a time, so large speaker lists sync in a steady stream rather than all at once.
 
+### Per-contact registration form and type
+
+When different people need different Visit registrations, for example VIP speakers on their own form, turn on **Allow per-contact registration form and type** in the mapping's **Event Settings** (off by default) and save. Sessionboard adds two dropdown contact fields to the event, **Visit Registration Form** and **Visit Registration Type**, with the expo's forms and visitor types as options. The options refresh every time you save the mapping and every sync.
+
+Fill them in on a contact like any other field: on the contact, by bulk edit, or in a CSV import. At the next sync, a contact with a value is created in Visit with that form or type; a blank field uses the default. Form and type are chosen independently, so a contact can have their own form and the default type. A value that is no longer on the expo falls back to the default.
+
+While the option is on, each visitor's line in the sync results says where the form and type came from, for example *Visit form VIP Registration (contact), type Visitor (event default)*. Turning the option off keeps the two fields and their values but ignores them; every contact then gets the defaults.
+
 ## Field mappings
 
 **Map Speaker Fields** and **Map Session Fields** apply only to the event mapping you have selected. Reinstalling Visit from the catalog does not wipe them.
 
-Visit needs a first name, last name, and email to create a visitor, and a title, start, and end to create an activity. Those rows stay on the mapping and cannot be removed. Form, registration type, and register time come from **Event Settings**, not from these maps.
+Visit needs a first name, last name, and email to create a visitor, and a title, start, and end to create an activity. Those rows stay on the mapping and cannot be removed. Form, registration type, and register time come from **Event Settings** (and, for form and type, the per-contact fields when that option is on), not from these maps.
 
 After you pick an expo, **Map Speaker Fields** also lists Visit contact fields (job function, phone, address) and the questions on that expo — GDPR checkboxes, dropdowns, radio questions, free-text questions, and any custom questions the organizer added. Map a Sessionboard contact field onto a question to send that answer with the visitor. Expo-level custom fields (Informa or Adobe configuration) are not visitor fields and do not appear here.
 
