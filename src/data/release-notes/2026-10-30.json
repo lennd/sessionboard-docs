@@ -6708,6 +6708,163 @@
         "gotchas": "Answers stored before this release are unchanged; an earlier out-of-range answer still counts until removed.",
         "talk_track": "Out-of-range answers can no longer reach your results."
       }
+    },
+    {
+      "related": [],
+      "ideas": [],
+      "media": [
+        "/images/kb/cfp-magic-link-sign-in.png"
+      ],
+      "permissions": [],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4987",
+          "lennd/sessionboard-web-ui-v2#1364"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "id": "cfp-magic-link-sign-in",
+      "title": "Submission forms sign people in by magic link when passwords are off",
+      "summary": "On an event that signs portal users in by **Magic link** with **Username & password** off, the submission form's account step now asks for an email and offers **Email me a sign-in link**. The link brings the person back to the form signed in; someone new gives their name first and their account is created when they open the link. Before, these forms showed only \"Insufficient event authentication methods detected\".",
+      "article": "/settings/portal-login-methods#submission-forms",
+      "kind": "fixed",
+      "module": "Settings",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Public submission form → Account step (when Settings → Portal Login has Username & password off and Magic link on)"
+      },
+      "audience": [
+        "organizer",
+        "speaker"
+      ],
+      "use_case": "Events that use passwordless sign-in can now take submissions without turning passwords back on: submitters get an emailed link that returns them to the form.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer on magic-link-only portal sign-in reports that their submission form says 'Insufficient event authentication methods detected'.",
+        "who_should_get_it": "Events with Username & password off and Magic link on (four live events on 2026-10-30, including ODA Annual Spring Meeting 2027).",
+        "staff_path": null,
+        "gotchas": "The link proves who the person is; portal access still comes with the submission. External-user validation (allowlists) still applies.",
+        "talk_track": null
+      }
+    },
+    {
+      "related": [],
+      "ideas": [],
+      "media": [
+        "/images/kb/portal-login-settings.png"
+      ],
+      "permissions": [],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4987",
+          "lennd/sessionboard-web-ui-v2#1364"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "id": "portal-signup-switch",
+      "title": "Turn portal account creation on or off yourself",
+      "summary": "**Settings → Portal Login** has a new switch, **New people can create an account**, for whether someone without an account may create one from the portal sign-in page. It used to need a request to Support.",
+      "article": "/settings/portal-login-methods#let-new-people-create-an-account",
+      "kind": "new",
+      "module": "Settings",
+      "enable": {
+        "how": "setting",
+        "path": "Event → Settings → Portal Login → New people can create an account"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event → Settings → Portal Login"
+      },
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Open events can let new speakers or contributors create their own portal account without waiting on Support; closed events keep it off.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer asks Support to turn on portal signup for an event.",
+        "who_should_get_it": "Organizers running open calls where new people should reach the portal on their own.",
+        "staff_path": "Same switch; staff no longer need a database change.",
+        "gotchas": "Off by default. It is not a sign-in method, so it does not count toward the one method that must stay on.",
+        "talk_track": null
+      }
+    },
+    {
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "permissions": [],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4987"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "id": "saml-audience-check",
+      "title": "SAML sign-in checks that the assertion is addressed to Sessionboard",
+      "summary": "Sessionboard now refuses a SAML assertion whose **Audience** is not the configuration's SP entity ID (**Issuer URL**, or the **Audience** override), even when its signature is valid. New SAML configurations check it from the first sign-in; existing ones are switched on once their provider's Audience is confirmed to match.",
+      "article": "/integrations/sso#the-assertions-audience",
+      "kind": "improved",
+      "module": "Settings",
+      "features": [
+        "sso"
+      ],
+      "where": {
+        "scope": "org",
+        "path": "Org Settings → Enterprise SSO → SAML configuration"
+      },
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Closes a gap a security review would flag: an assertion your identity provider signed for another application can no longer sign someone in to Sessionboard.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Existing IdPs are observed, not enforced; Engineering switches each on after its recorded audience matches."
+        },
+        "when_to_bring_up": "Security questionnaires about SAML assertion validation; a new SAML setup whose test sign-in fails with 'audience mismatch'.",
+        "who_should_get_it": "Every organization using SAML SSO.",
+        "staff_path": null,
+        "gotchas": "A new configuration whose IdP app has the wrong Audience URI fails sign-in with 'SAML assertion audience mismatch' (Sync Doctor: sso_audience_mismatch). Fix the Audience URI / SP Entity ID in the IdP app.",
+        "talk_track": null
+      },
+      "enable": {
+        "how": "default_on",
+        "path": "Org Settings → Enterprise SSO (new SAML configurations check it from the first sign-in)"
+      }
     }
   ]
 }

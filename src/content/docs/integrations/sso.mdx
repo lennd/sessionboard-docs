@@ -116,8 +116,14 @@ Optional settings cover the less common cases: **SLO URL** for single logout, **
 
 **Sessionboard provides:**
 
-- **ACS Endpoint URL** — receives the POST from your provider carrying the SAML assertion, and checks it against your certificate.
+- **ACS Endpoint URL** — receives the POST from your provider carrying the SAML assertion, checks it against your certificate, and checks that the assertion is addressed to this configuration.
 - **Issuer URL** — identifies Sessionboard as the service provider.
+
+### The assertion's Audience
+
+Each assertion names the service provider it is meant for in its **Audience**. Sessionboard signs a person in only when that Audience is this configuration's **Issuer URL** (its SP entity ID), or the **Audience** you set under the optional settings. An assertion your provider signed for another application is refused, even with a valid signature. In your identity provider, the field is usually called **Audience URI**, **SP Entity ID** or **Identifier (Entity ID)**: set it to the **Issuer URL** above.
+
+Configurations created from 31 October 2026 check the Audience from the first sign-in. Older configurations keep signing people in while Sessionboard records the Audience your provider sends, and are switched to the check once it matches. If yours does not match, Sessionboard Support will contact you before switching it.
 
 **Expected attributes:** `id` (the provider's user ID), `firstName`, `lastName`, `email` (used to sign in and for account email such as invitations and password resets), and `nameID` (also the email).
 
