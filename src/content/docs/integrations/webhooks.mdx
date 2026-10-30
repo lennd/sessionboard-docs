@@ -1,21 +1,41 @@
 ---
 title: "Webhooks"
-description: "Receive real-time notifications when your Sessionboard data changes."
+description: "Send a signed request to your own systems the moment sessions, contacts, sponsors or exhibitors change."
 features: ["webhooks"]
 ---
 
-import { Note } from '@compat';
+import { Note, Tip } from '@compat';
 
-A webhook (web callback or HTTP push) lets the Sessionboard API deliver real-time information to your integrated applications — you get an immediate notification when data changes, rather than polling for it.
+A webhook sends an HTTP request from Sessionboard to a URL you choose each time something changes, such as a session being updated or a contact being added. Your system hears about the change straight away instead of asking the API over and over.
 
-## Implement webhooks
+## Why use it
 
-1. Confirm you have the necessary prerequisites.
-2. Create a webhook.
-3. Test the webhook.
+- Keep a CRM, marketing tool or website in step with your program without scheduled exports or polling.
+- Trigger your own automations, for example notifying a team channel when a session is created.
+- Every request is signed, so your receiver can confirm it came from Sessionboard.
+
+## Where to set up webhooks
+
+- **One event:** open the event and go to **Settings › Integrations › Webhooks**. Endpoints here receive changes in that event only.
+- **Every event in the organization:** go to **Organization Settings › Webhooks**. Endpoints here receive changes in all of the organization's events, plus organization-level changes such as new contacts.
+
+## Add an endpoint
+
+1. Click **Add endpoint** and enter the URL that should receive the requests. It must be a public `https` address.
+2. Choose the event types to send, such as `session.updated` or `contact.created`. Leave them all clear to receive every event type, including ones added later.
+3. Add custom headers if your receiver expects them, for example an API key.
+4. Save, then copy the endpoint's **signing secret** and give it to whoever runs the receiver. They use it to verify each request.
 
 <Note>
-Webhook notifications are delivered in real time and are **not** subject to the API's 3-minute cache.
+Webhook requests are sent in real time and are **not** subject to the API's 3-minute cache.
 </Note>
 
-For full setup details, request/response schemas, and event types, see the [developer documentation](https://apidocs.sessionboard.com/introduction).
+## Check that it works
+
+- **Testing** sends an example of any event type to the endpoint, so you can confirm your receiver accepts it.
+- **Logs** lists every delivery with its status and response, and lets you resend a message.
+- Failed deliveries are retried automatically over about a day. An endpoint that keeps failing for several days is turned off; turn it back on once the receiver is fixed.
+
+<Tip>
+For the payload format, the full list of event types, and how to verify signatures in code, see the [developer documentation](https://apidocs.sessionboard.com/webhooks).
+</Tip>
