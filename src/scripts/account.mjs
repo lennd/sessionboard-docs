@@ -8,8 +8,8 @@
  *   - fills every AccountMenu.astro copy: name, avatar, the chosen event, and a
  *     panel with roles, where they signed in from, the org / event picker and
  *     sign-out;
- *   - reveals the sidebar's "For you" guides (ForYou.astro) for their roles,
- *     the one they signed in from first;
+ *   - reveals the sidebar's "For you" guides (ForYou.astro) for the role they
+ *     signed in from (speaker portal, reviewing, Ready Room; none for admin);
  *   - on an article written for someone else (`<meta name="sb-audience">`),
  *     says so and points at their guides;
  *   - with an event or org chosen, hydrates the article's personalization
@@ -352,7 +352,9 @@ function showForYou(reader) {
   for (const nav of document.querySelectorAll('[data-sb-for-you]')) {
     const sections = new Map([...nav.querySelectorAll('section[data-role]')].map((s) => [s.dataset.role, s]));
     let shown = 0;
-    for (const role of reader.roles) {
+    // Only the role they signed in from: an organizer reads the whole site, and
+    // someone who also speaks or reviews finds those guides in the sidebar.
+    for (const role of reader.roles.slice(0, 1)) {
       const section = sections.get(role);
       if (!section) continue;
       section.hidden = false;
