@@ -1,0 +1,213 @@
+---
+/**
+ * Header account menu. Signed out: "Sign in" (→ /_account/sign-in, the
+ * product hand-off). Signed in: avatar, name, the event or org the docs are
+ * personalized for, and a panel with roles, where they signed in from, the
+ * org / event picker and sign-out. Everything is filled in by
+ * src/scripts/account.mjs from /_account/me (src/lib/account-session.mjs);
+ * Starlight renders this twice (header and mobile menu), so it is keyed by
+ * data attributes, not ids.
+ */
+---
+
+<div class="sb-account" data-sb-account>
+  <a class="sb-account-signin" href="/_account/sign-in" data-sb-account-signin hidden>Sign in</a>
+  <div class="sb-account-in" data-sb-account-in hidden>
+    <button type="button" class="sb-account-button" aria-expanded="false" aria-haspopup="true" data-sb-account-toggle>
+      <span class="sb-avatar" aria-hidden="true" data-sb-account-avatar></span>
+      <span class="sb-account-label">
+        <span class="sb-account-name" data-sb-account-name></span>
+        <span class="sb-account-context" data-sb-account-context></span>
+      </span>
+    </button>
+    <div class="sb-account-panel" data-sb-account-panel hidden></div>
+  </div>
+</div>
+
+<script>
+  import '../scripts/account.mjs';
+</script>
+
+<style>
+  .sb-account {
+    position: relative;
+  }
+  /* The rules below set display, which would otherwise beat the hidden attribute. */
+  .sb-account [hidden],
+  .sb-account[hidden] {
+    display: none !important;
+  }
+  .sb-account-signin,
+  .sb-account-button {
+    font: inherit;
+    font-size: var(--sl-text-sm);
+    font-weight: 600;
+    color: var(--sl-color-gray-2);
+    text-decoration: none;
+    white-space: nowrap;
+    padding: 0.25rem 0.75rem 0.25rem 0.25rem;
+    border: 1px solid var(--sl-color-hairline);
+    border-radius: 999px;
+    background: transparent;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .sb-account-signin {
+    padding: 0.35rem 0.75rem;
+  }
+  .sb-account-signin:hover,
+  .sb-account-button:hover {
+    color: var(--sl-color-white);
+    border-color: var(--sl-color-gray-4);
+  }
+  .sb-account-button:focus-visible,
+  .sb-account-signin:focus-visible {
+    outline: 2px solid var(--sl-color-accent);
+    outline-offset: 2px;
+  }
+  .sb-avatar {
+    width: 1.6rem;
+    height: 1.6rem;
+    border-radius: 50%;
+    background: var(--sl-color-accent);
+    color: var(--sl-color-white);
+    font-size: 0.7rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex: none;
+  }
+  .sb-avatar :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .sb-account-label {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1.15;
+  }
+  .sb-account-context {
+    font-size: var(--sl-text-xs);
+    font-weight: 500;
+    color: var(--sl-color-gray-3);
+    max-width: 12rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .sb-account-context:empty {
+    display: none;
+  }
+  .sb-account-panel {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 0.5rem);
+    z-index: 30;
+    width: min(20rem, calc(100vw - 2rem));
+    padding: 1rem;
+    border: 1px solid var(--sl-color-hairline);
+    border-radius: 0.75rem;
+    background: var(--sl-color-bg-nav);
+    box-shadow: var(--sl-shadow-lg);
+    font-size: var(--sl-text-sm);
+    color: var(--sl-color-gray-2);
+  }
+  .sb-account-panel :global(.sb-acct-who) {
+    margin: 0;
+    font-weight: 700;
+    color: var(--sl-color-white);
+  }
+  .sb-account-panel :global(.sb-acct-muted) {
+    margin: 0.1rem 0 0;
+    color: var(--sl-color-gray-3);
+    font-size: var(--sl-text-xs);
+    overflow-wrap: anywhere;
+  }
+  .sb-account-panel :global(.sb-acct-roles) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin: 0.75rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .sb-account-panel :global(.sb-acct-roles li) {
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+    border: 1px solid var(--sl-color-hairline);
+    font-size: var(--sl-text-xs);
+    font-weight: 600;
+  }
+  .sb-account-panel :global(.sb-acct-roles li:first-child) {
+    border-color: var(--sl-color-accent);
+    color: var(--sl-color-accent-high);
+  }
+  .sb-account-panel :global(label) {
+    display: block;
+    margin-top: 0.75rem;
+    font-size: var(--sl-text-xs);
+    font-weight: 600;
+    color: var(--sl-color-gray-3);
+  }
+  .sb-account-panel :global(select) {
+    display: block;
+    width: 100%;
+    margin-top: 0.25rem;
+    padding: 0.35rem 0.5rem;
+    font: inherit;
+    font-size: var(--sl-text-sm);
+    color: var(--sl-color-white);
+    background: var(--sl-color-bg);
+    border: 1px solid var(--sl-color-hairline);
+    border-radius: 0.375rem;
+  }
+  .sb-account-panel :global(.sb-acct-section) {
+    margin: 0.75rem 0 0;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--sl-color-hairline);
+  }
+  .sb-account-panel :global(.sb-acct-section ul) {
+    margin: 0.25rem 0 0;
+    padding-left: 1rem;
+  }
+  .sb-account-panel :global(.sb-acct-actions) {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+  .sb-account-panel :global(.sb-acct-actions a),
+  .sb-account-panel :global(.sb-acct-actions button) {
+    font: inherit;
+    font-size: var(--sl-text-sm);
+    font-weight: 600;
+    color: var(--sl-color-accent-high);
+    background: none;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    text-decoration: none;
+  }
+  /* Mobile: the header copy is hidden; the mobile-menu copy shows. */
+  @media (max-width: 50rem) {
+    .sb-account-label {
+      display: none;
+    }
+    .sb-account-button {
+      padding: 0.15rem;
+    }
+    :global(.mobile-preferences) .sb-account-label {
+      display: inline-flex;
+    }
+    :global(.mobile-preferences) .sb-account-panel {
+      position: static;
+      width: auto;
+      margin-top: 0.5rem;
+    }
+  }
+</style>

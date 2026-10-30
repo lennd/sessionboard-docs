@@ -1,0 +1,100 @@
+---
+/**
+ * "For you" at the top of the sidebar: the guides for the role a signed-in
+ * reader came from (speaker portal, reviewing, Ready Room), from site.json
+ * `account.guides`. Rendered hidden on every page; src/scripts/account.mjs
+ * reveals the groups for the reader's roles, the one they signed in from
+ * first. Organizers read the whole site, so they get none.
+ */
+import { getCollection } from 'astro:content';
+import site from '../../site.json';
+import { isStaffOnlySlug } from '../lib/staff-only.mjs';
+
+const ROLE_LABELS: Record<string, string> = {
+  speaker: 'Speakers & presenters',
+  reviewer: 'Reviewers',
+  ready_room: 'Ready Room & Live Transcribe',
+};
+
+const docs = await getCollection('docs');
+const byId = new Map(docs.map((d) => [d.id, d]));
+const guides = ((site as { account?: { guides?: Record<string, string[]> } }).account?.guides ?? {}) as Record<string, string[]>;
+
+const groups = Object.entries(guides).map(([role, slugs]) => ({
+  role,
+  label: ROLE_LABELS[role] ?? role,
+  links: slugs.map((slug) => {
+    const doc = byId.get(slug);
+    // A renamed or removed page fails the build here, not silently in the sidebar.
+    if (!doc) throw new Error(`site.json account.guides.${role}: no page "${slug}"`);
+    if (isStaffOnlySlug(slug, site)) throw new Error(`site.json account.guides.${role}: "${slug}" is staff-only`);
+    return { href: `/${slug}`, label: doc.data.sidebar?.label ?? doc.data.title };
+  }),
+}));
+---
+
+<nav class="sb-for-you" aria-label="Guides for you" data-sb-for-you hidden>
+  {
+    groups.map((g) => (
+      <section data-role={g.role} hidden>
+        <p class="sb-for-you-title">
+          For you <span>· {g.label}</span>
+        </p>
+        <ul>
+          {g.links.map((l) => (
+            <li>
+              <a href={l.href}>{l.label}</a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    ))
+  }
+</nav>
+
+<style>
+  .sb-for-you[hidden],
+  .sb-for-you [hidden] {
+    display: none !important;
+  }
+  .sb-for-you {
+    margin: 0 0 1rem;
+    padding: 0.75rem 0.75rem 0.5rem;
+    border: 1px solid var(--sl-color-hairline);
+    border-radius: 0.5rem;
+    background: var(--sl-color-gray-7, var(--sl-color-black));
+  }
+  .sb-for-you section + section {
+    margin-top: 0.75rem;
+  }
+  .sb-for-you-title {
+    margin: 0 0 0.35rem;
+    font-size: var(--sl-text-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--sl-color-accent-high);
+  }
+  .sb-for-you-title span {
+    color: var(--sl-color-gray-3);
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  .sb-for-you ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .sb-for-you a {
+    display: block;
+    padding: 0.2rem 0;
+    font-size: var(--sl-text-sm);
+    color: var(--sl-color-gray-2);
+    text-decoration: none;
+  }
+  .sb-for-you a:hover,
+  .sb-for-you a[aria-current='page'] {
+    color: var(--sl-color-white);
+  }
+</style>

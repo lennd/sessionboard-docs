@@ -8,8 +8,8 @@
  *
  *   worker.js            404s the page and its share card for everyone else, and
  *                        strips its sidebar group and every link to it from the
- *                        HTML the public gets (src/lib/staff-session.mjs signs
- *                        staff in);
+ *                        HTML the public gets (src/lib/account-session.mjs
+ *                        signs staff in);
  *   src/route-data.ts    keeps it out of the Pagefind search index;
  *   astro.config.mjs     keeps it out of sitemap.xml and the llms*.txt exports;
  *   Head.astro           noindex, no share card, no analytics;

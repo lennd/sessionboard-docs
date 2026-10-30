@@ -60,8 +60,8 @@ export default defineConfig({
       routeMiddleware: './src/route-data.ts',
       plugins: [
         starlightLlmsTxt({ exclude: staffOnlyGlobs(site) }),
-        // /_staff/sign-in (the 404 page's staff link) is a Worker route, not a page.
-        starlightLinksValidator({ errorOnRelativeLinks: false, exclude: ['/_staff/**'] }),
+        // /_account/sign-in (the 404 page's sign-in link) is a Worker route, not a page.
+        starlightLinksValidator({ errorOnRelativeLinks: false, exclude: ['/_account/**'] }),
       ],
       pagination: true,
       lastUpdated: false,

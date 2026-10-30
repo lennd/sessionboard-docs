@@ -14,7 +14,7 @@ import trainingRedirects from './training-redirects.json';
 import site from './site.json';
 import { isProductUpdatesPath, productUpdatesResponse } from './src/lib/product-updates-proxy.mjs';
 import { isStaffOnlyHref, isStaffOnlyPath } from './src/lib/staff-only.mjs';
-import { STAFF_PREFIX, isStaffRequest, staffResponse } from './src/lib/staff-session.mjs';
+import { ACCOUNT_PREFIX, accountResponse, isStaffRequest } from './src/lib/account-session.mjs';
 
 // `/en/migrated/knowledge-base/…` is a live path prefix left over from an
 // earlier HubSpot migration; Google still has URLs under it.
@@ -410,9 +410,10 @@ export default {
       return robotsResponse(isProd);
     }
 
-    // Staff sign-in from the product (src/lib/staff-session.mjs).
-    if (url.pathname.startsWith(STAFF_PREFIX)) {
-      return staffResponse(request, url, env, site);
+    // Signed-in readers: the product's hand-off, and the header's reads
+    // (src/lib/account-session.mjs).
+    if (url.pathname.startsWith(ACCOUNT_PREFIX)) {
+      return accountResponse(request, url, env, site);
     }
 
     // Ahead of the crawler gate: this is a service-to-service call, and it must

@@ -5,12 +5,32 @@
   "retiredFeedbackHosts": ["feedback.sessionboard.com"],
   "//internalPrefix": "URL prefix of the staff-only enablement section (src/pages/<internalPrefix>/). Unlisted: noindex header + meta, excluded from sitemap, search, llms.txt and robots.txt, never linked from a public page (scripts/check-internal.mjs). Must match the directory name under src/pages/.",
   "internalPrefix": "enablement",
-  "//staffOnly": "Sections built and deployed like any page but visible only to signed-in Sessionboard staff (super users) — Registration, Expo and Onsite are not public yet. `prefixes` are route-slug prefixes, `pages` single slugs. Everyone else gets a 404 and no sidebar entry, link, search hit, sitemap/llms entry or Team Lead chunk (src/lib/staff-only.mjs lists every surface). The product signs staff in: web-ui-v2 POSTs its token to /_staff/session from one of `appOrigins`, and the Worker checks it against GET /user/me on one of `apiOrigins` (src/lib/staff-session.mjs). `signInUrl` is where the 404 page's staff link sends people. Remove a section from here to make it public.",
+  "//staffOnly": "Sections built and deployed like any page but visible only to signed-in Sessionboard staff (super users) — Registration, Expo and Onsite are not public yet. `prefixes` are route-slug prefixes, `pages` single slugs. Everyone else gets a 404 and no sidebar entry, link, search hit, sitemap/llms entry or Team Lead chunk (src/lib/staff-only.mjs lists every surface). Remove a section from here to make it public.",
   "staffOnly": {
     "prefixes": ["registration", "expo", "onsite"],
-    "pages": ["participants/register-for-an-event", "participants/attendee-portal", "participants/expo-exhibitor-portal"],
-    "appOrigins": ["https://appv2.sessionboard.com", "https://appv2-eu.sessionboard.com", "https://appv2-me.sessionboard.com"],
-    "apiOrigins": ["https://api.sessionboard.com", "https://api-eu.sessionboard.com", "https://api-me.sessionboard.com"],
-    "signInUrl": "https://appv2.sessionboard.com/help-center/staff-sign-in"
+    "pages": ["participants/register-for-an-event", "participants/attendee-portal", "participants/expo-exhibitor-portal"]
+  },
+  "//account": "Signed-in readers (src/lib/account-session.mjs). The product (admin app, speaker portal, Ready Room) mints a read-only Help Center token from its region's API and POSTs it to /_account/session from one of the `regions` app origins; the Worker keeps it in an HttpOnly cookie and reads who the reader is, their roles and their orgs/events through it. `signInPath` is the product page that does that hand-off. `guides` are the pages the header's \"For you\" list shows for each role, in order (src/components/ForYou.astro); organizers read the whole site.",
+  "account": {
+    "regions": [
+      { "id": "us", "api": "https://api.sessionboard.com", "app": "https://appv2.sessionboard.com" },
+      { "id": "eu", "api": "https://api-eu.sessionboard.com", "app": "https://appv2-eu.sessionboard.com" },
+      { "id": "me", "api": "https://api-me.sessionboard.com", "app": "https://appv2-me.sessionboard.com" }
+    ],
+    "signInPath": "/help-center/sign-in",
+    "guides": {
+      "speaker": [
+        "participants/overview",
+        "participants/access-portal",
+        "participants/upload-files",
+        "participants/edit-submission",
+        "participants/how-to-add-of-edit-speaker-information-for-an-accepted-session",
+        "participants/sign-a-contract",
+        "participants/speaker-headshot-dos-and-donts",
+        "participants/pp-how-to-access-additional-event-portals-you-are-associated-with"
+      ],
+      "reviewer": ["evaluations/how-to-evaluate-sessions", "evaluations/evaluators-how-to-evaluate-sessions"],
+      "ready_room": ["marketing/live-transcribe-console", "marketing/ready-room-desktop-app", "marketing/live-transcribe"]
+    }
   }
 }
