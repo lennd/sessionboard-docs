@@ -2276,6 +2276,2053 @@
       },
       "ideas": [],
       "media": []
+    },
+    {
+      "id": "related-records-all-admins",
+      "title": "Related records are now available to all admins, not just super-users",
+      "summary": "The **Related** toolbar button, the **Related** settings tab, expandable chevrons, and nested rows on Contacts, Groups, and Sessions tables are now visible to every admin who has read access to the table — no super-user flag required. Saved views that include **Related Records** configuration are also saved and restored for all admins.",
+      "article": "/reporting/dashboard-views#related-records",
+      "related": [
+        "/contacts/contact-profile",
+        "/sessions/create-a-session"
+      ],
+      "kind": "improved",
+      "module": "CRM",
+      "features": [
+        "sessions"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Contacts → [any contacts or groups view] → Related; Sessions → [sessions view] → Related"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Any event admin can now expand a contact, group, or session row to see its linked records inline — no need to request elevated access. Teams that rely on nested views to cross-reference speakers with their sessions or groups with their members can use the feature without involving a super-user.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer asks why the Related button or nested rows are missing for a non-super-user admin, or when onboarding a team that wants to cross-reference contacts and sessions in one view.",
+        "who_should_get_it": "All customers using Contacts, Groups, or Sessions tables — no action needed, it is on by default.",
+        "staff_path": "Contacts → [any contacts or groups view] → Related; Sessions → [sessions view] → Related",
+        "gotchas": "Additional Contacts views intentionally do not get a related parent type and remain excluded. The API still enforces each table's READ permission and session-manager scope on rows, counts, and exports — no data is exposed beyond what the admin could already see.",
+        "talk_track": "Previously only super-users could see the Related button and nested rows on Contacts, Groups, and Sessions. Now every admin with read access to the table gets the full Related experience, including saved views that remember the configuration.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should add a section explaining the Related records panel — how to open it, what the chevrons and nested rows show, and how saved views preserve the Related Records configuration.",
+          "why_use_it": "Related records let you expand any row in the Contacts, Groups, or Sessions table to see linked records inline without leaving the list. Use it to review a speaker's sessions alongside their contact details, check which contacts belong to a group, or scan session participants — all from a single view. Filters, sorts, and saved views carry the related-records configuration so your team always opens the table the way they set it up.",
+          "at": "2026-10-30T05:29:16.409Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1314"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "team-member-filter-resave-400",
+      "title": "Re-saving a team member with record filters no longer fails, and clearing filters now works",
+      "summary": "Admins who tried to save a team member that already had a session filter or Contact access rule received a **400** error and could not save any changes. Separately, switching a member to a role with no filter step and saving did not remove their existing filters. Both issues are resolved: re-saving a filtered member works without error, and sending an empty filter list now clears the member's filters as expected.",
+      "article": "/event-team/invite-manage-event-team-members",
+      "kind": "fixed",
+      "module": "Event team",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event Team → [team member] → Edit"
+      },
+      "permissions": [
+        "event.settings.manage_users"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Admins managing scoped team members — for example, a vendor limited to specific sessions or a staff member with a Contact access rule — can now update any other setting on that member and save without hitting an error. Changing a member's role to one without a filter step also correctly removes their old scope restrictions.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer reports a 400 error or 'cannot save' when editing a team member who has session filters or Contact access rules applied.",
+        "who_should_get_it": "Any customer using scoped team member roles with session filters or Contact access rules.",
+        "staff_path": "Event Team → [team member] → Edit",
+        "gotchas": "The legacy UI only knows the six built-in session filter types; a legacy re-save of a filtered role already dropped Contact access / custom-field rows before this fix — that behaviour is unchanged.",
+        "talk_track": "If a team member had any record filter applied, admins were blocked from saving any further changes to that member. That 400 error is now fixed, and clearing filters by switching roles also works correctly.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that session filters and Contact access rules on a team member are cleared when the member is saved with an empty filter list (e.g. by switching to a role that has no filter step).",
+          "why_use_it": "null",
+          "at": "2026-10-30T05:32:44.013Z"
+        }
+      },
+      "related": [],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4928"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "approval-notifications-registration-exhibitor-names",
+      "title": "Approval notifications correctly name registrations and exhibitor applications",
+      "summary": "Bell, Slack, and email notifications for registration and exhibitor-application approvals now show the subject's name — for example, **\"Registration from Jane Doe — Registration review\"** or **\"Exhibitor application from Acme Corp — Registration review\"** — instead of a blank quoted string. File approvals are unchanged and continue to read **\"Sam Speaker uploaded slides.pdf for 'Opening Keynote' — Review\"**.",
+      "article": "/sessions/file-approvals#notifications",
+      "kind": "fixed",
+      "module": "Communications",
+      "features": [
+        "approvals",
+        "notifications"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Notification bell; Slack notifications; system email — Approval requested"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "reviewer"
+      ],
+      "use_case": "Reviewers and organizers who receive approval notifications for registrations or exhibitor applications can now immediately tell which record needs attention from the notification itself, without having to open the approval queue to figure out what the blank-quoted entry referred to.",
+      "related": [
+        "/registration/approvals",
+        "/communications/notifications"
+      ],
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer reports that their approval bell or Slack notifications show a blank quoted string for registration or exhibitor-application approvals.",
+        "who_should_get_it": "Any customer using the Approvals (beta) feature with registration or exhibitor-application approval workflows.",
+        "staff_path": "Notification bell → approval notification; Slack #channel → approval message; system email Approval requested",
+        "gotchas": "The fix applies retroactively via a DB migration that updates notification-type body templates only if they still match the original shipped default — customised bodies are left untouched. Production US had 9 registration and 4 booth-application approvals affected; event 5881 (approval dd96ae67…) had the empty-quote entries.",
+        "talk_track": "Approval notifications for registrations and exhibitor applications now show the person or company name in the notification subject line, so reviewers know exactly what needs their attention without opening the queue.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The Notifications section of the file-approvals guide should note that approval notifications for registrations and exhibitor applications display the submitter's name (e.g. \"Registration from Jane Doe\") rather than a session title, and that the uploader lead-in (\"uploaded a file for\") only appears for file-type approvals.",
+          "why_use_it": "null",
+          "at": "2026-10-30T05:51:56.865Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4936"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "report-workbench-participants-messages-columns",
+      "title": "Add \"Participants by role\" and \"Messages\" columns to the report workbench",
+      "summary": "A new **Add people or messages** button in the report workbench's Columns pane lets staff add two new column types to Session and Abstract reports. **Participants by role** puts everyone in a chosen role (Submitter, Speaker, Author/Co-Author, or any custom role) into a single cell, with control over display format (**Full Name (Company)**, **Full Name**, or **Full Name (Email)**) and separator (comma, semicolon, vertical bar, or new line). **Messages** puts a review plan's message thread (Reviewer messages, Organizer messages, or All messages) into a single cell. Long or multi-line cell values appear in full on hover, in both the workbench preview and the public share-link table.",
+      "article": "/reporting/report-builder",
+      "related": [
+        "/reporting/custom-reports",
+        "/evaluations/evaluation-plans"
+      ],
+      "kind": "new",
+      "module": "Reporting",
+      "features": [
+        "ai_reports"
+      ],
+      "availability": "limited_release",
+      "enable": {
+        "how": "support",
+        "path": "Ask your Customer Success Manager to enable access; then Reports → [Session or Abstract report] → Workbench → Columns → Add people or messages"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Reports → [Session or Abstract report] → Workbench → Columns → Add people or messages"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Program teams that export session rosters or review correspondence no longer need to pivot or join data outside Sessionboard — one report column can list every speaker (or every reviewer message) for each session in a single cell, ready to copy into a programme book or share with a partner system.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "The Add people or messages button is staff-only (superuser flag). Existing reports that already contain these columns continue to run for all users, but the authoring UI is gated. Coordinate with the team before promoting to a customer."
+        },
+        "when_to_bring_up": "When a customer asks how to get a one-row-per-session export that includes all speakers or reviewer notes in a single column, or when they are manually joining session and contact exports in Excel.",
+        "who_should_get_it": "Customers running large programmes who regularly export session rosters or need to share reviewer message threads with programme committees.",
+        "staff_path": "Reports → [Session or Abstract report] → Workbench → Columns → Add people or messages (visible only to superusers)",
+        "gotchas": "The button appears only on event-scoped Session or Abstract reports, not on Contact reports or org-level reports. The API PR (web-api#4944) must be live in prod before this UI does anything — confirm both are deployed before demoing.",
+        "talk_track": "Instead of exporting speakers and sessions separately and joining them in a spreadsheet, you can add a Speakers column directly in the report workbench. Each row shows one session; the cell lists every speaker in the format and separator you choose. The same goes for reviewer messages — one column, one cell per session, full thread.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should document the new \"Add people or messages\" button, the Participants by role options (roles, display formats, separators), the Messages options (Reviewer, Organizer, All), the hover-to-expand behaviour in the preview and share-link table, and the staff-only gating of the authoring UI.",
+          "why_use_it": "The report workbench lets you build custom session and abstract reports with exactly the columns your workflow needs. Participants-by-role columns collapse an entire role's roster into one cell per session, so a single export carries speaker names, submitters, and co-authors without extra joins. Messages columns capture the full review conversation alongside the session record, making it straightforward to audit reviewer feedback or share it with programme committees.",
+          "at": "2026-10-30T08:26:39.688Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1328"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:limited_release"
+    },
+    {
+      "id": "copy-from-saved-views",
+      "title": "Copy saved views from another event into Contacts, Submissions, and Agenda",
+      "summary": "A new **Saved Views** asset type in **Copy From** lets organizers copy column layouts, filters, sort orders, and groupings from any source event into the current event's Contacts, Submissions, or Agenda module. Before committing, a **Review copy** preview names every view and reports which columns, filters, sort keys, or grouping could not be matched in the destination — and whether dropped filters would cause the view to return more or fewer records than in the source. Views that were already copied are flagged **Already copied** and skipped on re-run.",
+      "article": "/reporting/dashboard-views#saved-views",
+      "related": [
+        "/sessions/copy-sessions-from-another-event",
+        "/faq/clone-an-event"
+      ],
+      "kind": "new",
+      "module": "Reporting",
+      "features": [
+        "sessions"
+      ],
+      "availability": "limited_release",
+      "enable": {
+        "how": "support",
+        "path": "Ask your Customer Success Manager to enable Saved Views Copy From; then Contacts → Saved Views → Copy views from another event… or Sessions → Submissions / Agenda → Saved Views → Copy views from another event…"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Contacts → Saved Views → Copy views from another event…; Sessions → Submissions → Saved Views → Copy views from another event…; Sessions → Agenda → Saved Views → Copy views from another event…"
+      },
+      "permissions": [
+        "event.sessions.create_views",
+        "event.contacts.read"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Recurring-event teams that maintain identical or near-identical saved views across years no longer need to rebuild column sets, filters, and sort orders by hand in each new event. The preview step shows exactly what will transfer and flags any fields or filter values that exist only in the source event, so organizers can decide whether a partial copy is still useful before committing.",
+      "internal": {
+        "cs_action": {
+          "kind": "must_enable",
+          "note": "Feature is super-user gated on the UI side (web-ui-v2 #1334 required). Confirm both API and UI PRs are deployed before enabling for a customer."
+        },
+        "when_to_bring_up": "When a customer runs recurring events and complains about rebuilding saved views each year, or when they ask whether Copy From supports views.",
+        "who_should_get_it": "Customers with recurring events who use saved views heavily in Contacts, Submissions, or Agenda — especially large programs like Tahaluf (ME) or Advertising Week (US).",
+        "staff_path": "Contacts → Saved Views → Copy views from another event…; Sessions → Submissions / Agenda → Saved Views → Copy views from another event…",
+        "gotchas": "Sessions views are shared between Submissions and Agenda pages — copying once covers both. Event-only custom fields match by internal name and type, not just org-library membership; fields that truly don't exist in the destination are skipped and named in the preview. A user without Sessions 'Can create views' permission sees no menu item and gets a 403. The source event's views are never modified.",
+        "talk_track": "If your team spends time recreating the same column layouts and filters every year, Copy From now includes saved views. Pick the source event, choose which views to bring over, review the preview to see any partial matches, and copy — the views appear in the menu immediately.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The saved-views guide should add a section explaining how to copy views from another event using Copy From, including the preview step, partial-match outcomes (full / partial / skipped / already_copied), how dropped filters affect record counts (more / fewer / different), and the re-run safety behaviour.",
+          "why_use_it": "Saved views let every team member open a pre-configured table — the right columns, filters, sort, and grouping already applied — without touching the view settings themselves. Copying views from a previous event carries that institutional knowledge forward automatically, including partial matches where most of a view transfers even if a source-event-only field cannot be found in the destination. The preview report tells you which filters were dropped and whether that means the view returns more or fewer records, so you stay in control of what your team sees.",
+          "at": "2026-10-30T10:58:22.346Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4949"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:limited_release"
+    },
+    {
+      "id": "copy-saved-views-from-another-event",
+      "title": "Copy saved views from a previous event into Contacts, Submissions, or Agenda",
+      "summary": "A **Copy views from another event…** option now appears in the saved-views menu on the **Contacts**, **Submissions**, and **Agenda** pages. Selecting it opens the Copy From sheet; clicking **Review copy** runs a dry-run that shows each view's outcome — **Copies in full**, **Copies partially**, **Will not be copied**, or **Already copied** — along with which columns, filters, sorts, or groupings will be dropped because the fields don't exist in the target event. **Copy N views** completes the import; **Cancel** copies nothing.",
+      "article": "/reporting/dashboard-views#saved-views",
+      "related": [
+        "/sessions/copy-sessions-from-another-event",
+        "/contacts/add-a-moderator-chairperson"
+      ],
+      "kind": "new",
+      "module": "Program",
+      "features": [
+        "sessions"
+      ],
+      "availability": "limited_release",
+      "enable": {
+        "how": "support",
+        "path": "Ask your Customer Success Manager to enable saved-view copying; then Contacts → Saved Views menu → Copy views from another event… (or Sessions → Submissions / Agenda → Saved Views menu → Copy views from another event…)"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Contacts → Saved Views menu; Sessions → Submissions → Saved Views menu; Sessions → Agenda → Saved Views menu"
+      },
+      "permissions": [
+        "event.sessions.create_views"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who run recurring events no longer need to rebuild their saved views from scratch each year. They can copy views from a previous event and see exactly which filters or columns will be dropped before committing, so the target event's views are ready to use in minutes.",
+      "internal": {
+        "cs_action": {
+          "kind": "must_enable",
+          "note": "Feature is gated behind a super-user flag (useCopySavedViewsAvailable checks is_super_user AND a successful saved_views catalog probe). Remove the is_super_user check in useCopySavedViewsAvailable.ts once QA passes to promote to general availability."
+        },
+        "when_to_bring_up": "When a customer asks how to reuse their table views across events, or complains about rebuilding filters and column sets every year.",
+        "who_should_get_it": "Recurring-event organizers who maintain consistent saved views for Contacts, Submissions, or Agenda across event editions — especially large programmes like Tahaluf ME.",
+        "staff_path": "Contacts → Saved Views menu → Copy views from another event…; Sessions → Submissions → Saved Views menu → Copy views from another event…; Sessions → Agenda → Saved Views menu → Copy views from another event…",
+        "gotchas": "Submissions and Agenda share the same saved-views store; copying from either page copies the shared Sessions views set. The menu item is hidden entirely for non-super users and on older API versions (400/404 on the saved_views catalog probe — no retry, cached for the session). The 'Can create views' permission (event.sessions.create_views) is required on the Sessions pages; Contacts uses its own dropdown without that gate.",
+        "talk_track": "If your team rebuilds the same saved views every event cycle, this feature lets you pick a previous event, preview exactly which views and view components will transfer, and copy them in one click — columns, filters, sorts, and groupings all come across where the fields exist in the new event.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The saved-views guide should document the Copy views from another event entry point, the dry-run preview dialog (outcome labels, the partial-copy sentence, and the amber warning about filter-dropped views showing more records), and note that Submissions and Agenda share a single saved-views set.",
+          "why_use_it": "Saved views let you slice your contacts, submissions, and agenda exactly the way your team works — specific columns, filters, sorts, and groupings saved under a name. Copying them from a previous event means your standard operating views are available the moment a new event is created, without manual rebuilding. The preview step shows you which parts of each view transfer cleanly and which are dropped because a field doesn't exist yet, so you stay in control of what lands in the new event.",
+          "at": "2026-10-30T11:00:43.691Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1334"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:limited_release"
+    },
+    {
+      "id": "submission-pdf-email-description-fix",
+      "title": "Submission PDF setting description now correctly states the PDF is emailed, not saved to the session",
+      "summary": "In the submission form builder's **Form Settings** step, the description under **Generate a submission PDF** previously said \"The file is stored on the session and excluded from integration sync.\" It now reads that the PDF is sent with the confirmation email and is not saved to the submission's files, accurately reflecting how the feature works.",
+      "article": "/sessions/submission-forms",
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "sessions"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Sessions → Submission Forms → [form] → Form Settings → Generate a submission PDF"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers configuring submission forms will no longer be misled into thinking the PDF is stored on the session record. The corrected description makes it clear the PDF goes out with the confirmation email only, so they can set expectations with submitters accurately.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "If a customer reports that submission PDFs are missing from session files or asks why the PDF isn't showing up under session files.",
+        "who_should_get_it": "Any customer using submission forms with the Generate a submission PDF option enabled.",
+        "staff_path": "Sessions → Submission Forms → [form] → Form Settings → Generate a submission PDF",
+        "gotchas": "The underlying behaviour changed in a prior API PR (sessionboard-web-api#4940); this PR only corrects the UI description to match.",
+        "talk_track": "The submission PDF has always been sent with the confirmation email — the setting description now says so clearly, so organizers won't go looking for it in session files.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should confirm that when \"Generate a submission PDF\" is enabled, the PDF is attached to the submitter's confirmation email and is not stored as a session file.",
+          "why_use_it": "null",
+          "at": "2026-10-30T11:17:48.801Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1335"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "registration-money-qa-sweep",
+      "title": "Registration invoices, refunds, GL codes, cancellations and transfers fixed across six areas",
+      "summary": "Six bugs in the registration money flow are resolved: **Resend invoice** keeps the original invoice number and sends the balance-due email correctly; **GL finance reports** now attribute charges and refunds to the ticket type that was active at payment time (not the current ticket after a change), and CSV date columns are plain ISO text; **cancellation credits** include the configured bonus percentage when staff issue a credit instead of a refund; **self-service cancellation** via a manage link now shows the policy and quote before cancelling a paid Registration seat; **refund ledger balances** no longer show a refunded amount as still owed; and **transfer/substitute** clears the previous holder's job title, company, member id and membership from the new holder and emails the new holder their registration with their own manage link.",
+      "article": "/registration/orders-and-invoices",
+      "related": [
+        "/registration/payments",
+        "/registration/registrants",
+        "/registration/reports"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "registration"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Registration → Orders; Registration → Registrants; Registration → Reports → Finance reports"
+      },
+      "permissions": [
+        "event.registration.manage",
+        "event.registration.finance_reports",
+        "event.registration.money"
+      ],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Organizers running paid events can now resend invoices without triggering a 500 error, trust that GL finance reports reflect the ticket type at the time of payment even after a ticket change, and rely on cancellation credits to include the bonus they configured. Registrants cancelling via their manage link see the policy and refund amount before confirming, and the new holder of a transferred registration receives their own confirmation email with a working manage link.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Multiple fixes ship together. Review each area with customers who have reported invoice resend errors, incorrect GL reports after ticket changes, or wrong credit amounts before proactively announcing."
+        },
+        "when_to_bring_up": "When a customer reports a 500 on invoice resend, asks why GL shows 'unassigned' after a ticket change, notices a cancellation credit missing the bonus, or sees a non-zero balance after a refund.",
+        "who_should_get_it": "Any customer using Registration (beta) with paid tickets, cancellation policies, GL finance reporting, or transfer/substitute workflows.",
+        "staff_path": "Registration → Orders → [order] → Resend invoice; Registration → Reports → Finance reports → GL summary; Registration → Orders → [order] → Cancel / Credit; Registration → Registrants → [registrant] → Transfer / Substitute",
+        "gotchas": "The GL fix is read-side only — existing orders report correctly without any data migration. The self-service cancel change means registrants with a paid Registration seat who click 'I can no longer come' on their manage link will now see the policy quote page first (409 use_policy_cancel) rather than being cancelled immediately; the plain cancel path is preserved for Gathering and webinar links. Mark-issued for check/wire/money-order refunds now requires a reference number before it can be submitted.",
+        "talk_track": "Six money-related bugs in Registration are fixed in this release: invoice resend no longer errors or changes the invoice number; GL reports correctly attribute revenue to the ticket type at payment time; cancellation credits now include the bonus percentage you set; the registrant manage-link cancel shows the policy before confirming; refund balances net to zero on the ledger; and transferred registrations clear the old holder's profile data and email the new holder.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should document: (1) that Resend invoice preserves the invoice number and sends the Balance reminder email; (2) that GL finance reports use the ticket type active at payment time, not the current ticket; (3) that cancellation credits include the bonus percentage; (4) that self-service cancel via manage link shows the policy quote before confirming for Registration seats; (5) that Mark issued for offline refunds requires a reference number; and (6) that transfer/substitute clears the previous holder's profile fields and emails the new holder.",
+          "why_use_it": "Registration's order and finance tools let you collect payments, issue invoices, process refunds and credits, and transfer registrations — all without leaving Sessionboard. The GL finance reports give your finance team a line-by-line breakdown of revenue by GL code, and the cancellation policy engine automates fee retention and credit issuance so you spend less time on manual adjustments.",
+          "at": "2026-10-30T12:57:50.284Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4932"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "registration-attendee-portal-fixes",
+      "title": "Attendee portal shows clearer errors, hides missing exhibitor tabs, and lets registrants edit all form questions",
+      "summary": "Three fixes to the attendee registration portal: (1) Signing in with an email that has no registration now shows **No registration for this email** with a **Sign in with another email** button instead of a misleading \"link expired\" message. (2) When an event has no exhibitor directory, the **Exhibitors** tab and home **Browse exhibitors** link are hidden; a direct visit shows \"This event has no exhibitor directory.\" (3) **Edit registration** now lists all registrant-facing form questions with saved answers — not just name, organisation, badge name and dietary — and saves any changes on submit. The badge card in staff **View as** also explains why the check-in QR code is not yet visible.",
+      "article": "/participants/attendee-portal",
+      "related": [
+        "/registration/registrants",
+        "/registration/forms"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "registration"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Attendee portal → (sign-in page / home / Edit registration / badge card)"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Registrants who sign in with the wrong email address now get a clear recovery path instead of a dead end. Organizers who do not use an exhibitor directory no longer see broken tabs, and registrants can update any question on their registration — not just a handful of standard fields — without contacting the event team.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer reports that attendees are stuck on a 'link expired' error after signing in, that the Exhibitors tab shows a load error on events without an exhibitor directory, or that Edit registration only shows a few fields.",
+        "who_should_get_it": "Any customer using Registration (beta) with an attendee portal.",
+        "staff_path": "Attendee portal sign-in → error state; Attendee portal home → Exhibitors tab; Attendee portal → Edit registration; Registration → Registrants → View as → badge card",
+        "gotchas": "The expanded Edit registration questions exclude file-upload questions; those still cannot be edited in the portal. The 'No registration for this email' screen only appears for 403/404 responses in Site mode — token-based expired links still show the original 'expired' message.",
+        "talk_track": "Attendees who land on the portal with the wrong email now see a clear message and a one-click way to switch accounts. Events without an exhibitor directory no longer show a broken tab. And registrants can now edit every question on their registration form directly from the portal, reducing inbound support requests to the event team.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should document the \"No registration for this email\" error state and the Sign in with another email recovery flow, note that the Exhibitors tab is hidden when no exhibitor directory exists, and explain that Edit registration now surfaces all registrant-facing form questions (excluding file questions).",
+          "why_use_it": "The attendee portal gives registrants a single place to view their registration, pay balances, add workshops, and keep their details up to date. Registrants reach for it whenever they need to check what they signed up for, update an answer, or transfer their spot to a colleague — all without involving event staff.",
+          "at": "2026-10-30T13:00:15.435Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-org-portal#266"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "registration-drawer-email-translations-rule-sentences",
+      "title": "Registration drawer shows all form questions, rule sentences name countries, and email translations cover every form language",
+      "summary": "Three fixes to the Registration forms experience: (1) The **Edit registration** drawer now lists every single-value question on the form — including unanswered and **staff only** questions — so staff can fill them without reopening the public form. (2) Conditional-logic rule sentences now display the country name instead of a numeric code (e.g. \"Shown when Country is **Argentina**\" instead of \"Shown when Country is 032\"). (3) **Registration → Settings → Email translations** now offers every language used across all forms on the event, not just the event's default languages, so confirmation emails can be translated and reviewed for every language a form supports.",
+      "article": "/registration/forms",
+      "related": [
+        "/registration/registrants",
+        "/registration/emails-and-reminders"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "registration"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Registration → Registrants → [registrant] → Edit; Registration → Forms → [form] → Rules; Registration → Settings → Email translations"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Staff who need to fill in a staff-only question after a registrant has already submitted no longer have to work around the drawer's missing inputs. Teams running multilingual events can now translate and review confirmation emails for every language their forms support, ensuring registrants receive communications in their own language.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer reports that staff-only questions are missing from the Edit registration drawer, that country rule sentences show numeric codes, or that they cannot translate confirmation emails into a language their form supports.",
+        "who_should_get_it": "Any customer using Registration (beta) with multilingual forms, staff-only questions, or country-based conditional logic.",
+        "staff_path": "Registration → Registrants → [registrant] → Edit; Registration → Forms → [form] → Rules; Registration → Settings → Email translations",
+        "gotchas": "The drawer improvement requires the updated API (GET …/registrations/:id returning questions[]); events on the older API will see the previous drawer behaviour. Multi-choice, yes/no, country, and file questions are still edited on the public form, not in the drawer.",
+        "talk_track": "Staff can now fill in any question — including staff-only ones — directly from the registrant drawer without needing the registrant to resubmit. Country rules now read naturally. And if a form offers German or French, the email translations panel will show those languages so the confirmation email goes out in the registrant's language.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should document: (1) that the Edit registration drawer surfaces all single-value questions (including unanswered and staff-only ones) and sends only changed answers on save; (2) that country-based conditional rules display the country name rather than a numeric code; and (3) that Email translations includes languages from all forms on the event, not just the event's configured languages.",
+          "why_use_it": "null",
+          "at": "2026-10-30T13:02:43.924Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1321"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "registration-multi-type-ticket-pairs-and-translated-checkout",
+      "title": "Registration forms with multiple registrant types now show correct tickets and prices, and the checkout flow follows the registrant's language",
+      "summary": "When a registration form has two or more registrant types and two or more tickets, each choice is now shown as a **(type, ticket)** pair with the correct price for that combination — previously every card showed $0 and always purchased the first ticket. A `?type=` landing link pre-filters to that type's tickets. Code-only tickets unlocked by a promo code appear under every type once the code is applied. Separately, about 45 strings across the checkout flow and confirmation page — including **\"Signed in as / Continue as\"**, **\"Have a code? / Apply\"**, **\"Page 1 of 2\"**, the Review block, and the full confirmation screen (**\"Thank you\"**, **\"Add to calendar\"**, **\"Invoice (PDF)\"**, **\"Print receipt\"**, **\"What's next\"**) — now render in the registrant's chosen language (Spanish, French, Arabic, German, Portuguese). The page `lang` and `dir` attributes also update when the language picker changes, enabling correct right-to-left layout for Arabic.",
+      "article": "/registration/forms",
+      "related": [
+        "/registration/tickets-and-pricing",
+        "/registration/member-pricing"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "registration"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Registration → Forms → [form] → share link; Registration → Forms → [form] → confirmation page"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Events with tiered pricing — for example a Member rate and a Student rate each with Free and VIP ticket options — now show registrants the right price for their type and ticket combination, and the order records both the correct type and ticket. Multilingual events no longer strand registrants in English partway through checkout; the entire flow from sign-in through the confirmation receipt stays in their chosen language.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer reports that all registrant-type cards show $0, that orders always land on the wrong ticket, or that a code-only ticket never appears when the form has multiple registrant types. Also when a customer asks about multilingual checkout or reports that confirmation emails or the review screen stay in English despite a language picker.",
+        "who_should_get_it": "Any customer using Registration (beta) with two or more registrant types and two or more tickets on the same form, or any customer running a multilingual registration form.",
+        "staff_path": "Registration → Forms → [form] → share link (registrant-facing)",
+        "gotchas": "Forms with only one ticket or only one registrant type are unchanged — the fix only activates when both counts are 2+. The availability (sold-out / not-on-sale) overlay for the new (type, ticket) pair map is not yet applied; that will land once the pricing group's #264 is merged.",
+        "talk_track": "If a customer has been seeing $0 on all their registrant-type cards or finding that every order ends up on the free ticket regardless of what the registrant picked, this fix resolves it. The same release also makes the full checkout and confirmation screen respect the registrant's language choice end-to-end.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should document that forms with 2+ registrant types and 2+ tickets display (type, ticket) pairs with per-type pricing, explain how the ?type= landing link pre-filters the type step, and note that promo-code-unlocked tickets appear under every type once a code is applied. It should also note that the checkout flow and confirmation page are fully translated for the supported languages (es, fr, ar, de, pt) including RTL layout for Arabic.",
+          "why_use_it": "Registration forms let you collect attendee information, sell tickets, and apply promo codes in a single branded flow. When your event has multiple registrant types — such as members, students, or general attendees — each with their own ticket prices, the form surfaces every valid (type, ticket) combination so registrants always see and pay the right amount. Language support means registrants who prefer Spanish, French, Arabic, German, or Portuguese move through the entire checkout and confirmation experience in their language without switching back to English.",
+          "at": "2026-10-30T13:08:34.709Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-org-portal#268"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "expo-exhibit-page-exhibitor-portal-fixes",
+      "title": "Exhibit page and exhibitor portal: five accuracy and reliability fixes",
+      "summary": "Five bugs on the exhibit purchase page and the exhibitor portal are resolved: (1) The staff cut-off date notice now formats the date in the event's time zone instead of UTC, so the date shown matches the intended deadline. (2) A signed-in purchase no longer drops the contact details typed on the page. (3) In application mode (direct purchase off), picking a booth no longer triggers a hold or shows a false \"just taken\" message — the pick is treated as a preference and carries through to **Review**; when a booth really is taken in direct-purchase mode, the buyer is returned to the map with the correct message. (4) The **Review** total now matches the order total — the package price is shown at the booth price with the package listed as included, not added on top. (5) On the exhibitor portal **Staff & badges** tab, adding a staff member sends one request, the **Lead retrieval user** tick is honoured, the new row appears immediately from the API response, a row with no name shows the email address, and a clear message appears when no lead-retrieval seat could be assigned.",
+      "article": "/expo/exhibitor-portal",
+      "related": [
+        "/expo/booth-sales",
+        "/participants/expo-exhibitor-portal"
+      ],
+      "kind": "fixed",
+      "module": "Portals",
+      "features": [
+        "expo",
+        "floor_maps"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Expo → Exhibit page (booth purchase flow); Exhibitor portal → Staff & badges"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Exhibitors completing a booth purchase or managing their team in the portal now see accurate totals, correct dates, and reliable staff additions — reducing confusion and support requests during the sales and onboarding process.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer reports that exhibitors saw wrong cut-off dates, incorrect order totals on Review, duplicate staff-add requests, or a false 'booth just taken' message in application mode.",
+        "who_should_get_it": "Any customer using Expo (beta) with the exhibit purchase page or the exhibitor portal staff management tab.",
+        "staff_path": "Expo → Exhibit page; Exhibitor portal → Staff & badges",
+        "gotchas": "The cut-off date fix does not require the companion API release (lennd/sessionboard-web-api#4934); the other four fixes do. Confirm the API release is deployed before telling customers all five issues are resolved.",
+        "talk_track": "Five accuracy bugs in the booth purchase flow and the exhibitor portal staff tab are fixed: dates now respect the event time zone, the Review total matches what is charged, application-mode booth picks no longer show a false conflict message, signed-in purchases keep the contact details entered, and adding a staff member with lead retrieval works in one click.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should document the application-mode booth-pick behaviour (preference vs. hold), explain the cut-off date time-zone formatting, and describe the lead-retrieval seat feedback message on the Staff & badges tab.",
+          "why_use_it": "The exhibitor portal gives exhibiting companies a self-serve space to book booths, manage their team, and track deadlines without organizer intervention. It reduces back-and-forth between exhibitors and event staff by surfacing the right information — booth picks, order totals, cut-off dates, and staff seat assignments — directly to the people who need it.",
+          "at": "2026-10-30T13:18:02.231Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-org-portal#265"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "registration-onsite-badge-desk-scanning-fixes",
+      "title": "Four onsite registration fixes: badge saves, station pause, desk scanner formats, and held-badge display",
+      "summary": "Four bugs in the Registration onsite flow are resolved. (1) **New badge** now saves as a new design (POST) instead of overwriting the existing default; QR elements on new badges bind to the correct check-in code field. (2) **Pause** in station mode persists across page reloads — badges queued while paused print in order only after **Start printing** is clicked. (3) The web desk camera now accepts printed `SBB1:` badge QR codes and any custom badge formats configured for the event, in addition to `sb-checkin:` codes; unrecognised codes still show \"That is not a check-in code.\" (4) A checked-in registrant whose badge is on hold now shows **\"Badge held until paid\"** with no **Print** button; the button returns once payment is recorded. The attendance upload summary also correctly labels future arrival times instead of showing \"could not read\".",
+      "article": "/onsite/checkin-and-badges",
+      "related": [
+        "/registration/badges",
+        "/registration/orders-and-invoices"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "registration",
+        "gathering_badges"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Registration → Badges; Registration → Check-in desk → Station mode; Registration → Check-in desk → Camera scanner"
+      },
+      "permissions": [
+        "event.registration.onsite"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Onsite registration staff can now create multiple badge designs without accidentally overwriting the default, trust that pausing a print station actually stops printing until they resume it, scan any badge QR code (including those printed by Sessionboard or matched by the event's custom formats) at the web desk, and see a clear status instead of a misleading Print button for registrants whose badge is held pending payment.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer reports that creating a new badge design overwrote their existing one, that their print station resumed unexpectedly after a pause, that the desk camera rejected printed badge QRs or custom-format codes, or that a held-badge row showed a confusing Print button.",
+        "who_should_get_it": "Any customer using Registration (beta) with onsite check-in and badge printing enabled.",
+        "staff_path": "Registration → Badges; Registration → Check-in desk",
+        "gotchas": "Fix 3 (scanner formats) only applies to Registration desks — a gathering desk (Field Events without Registration) is unchanged and still accepts only sb-checkin: codes. Custom badge formats must be configured in the event's Badge Formats panel for the scanner to recognise them.",
+        "talk_track": "Four quiet but impactful fixes for the onsite desk: badge designs are now safe to add without risk of overwriting the default, the Pause button on a print station truly holds the queue across reloads, the desk camera reads any QR on a printed badge or a custom-format code, and staff see a clear 'Badge held until paid' status instead of a Print button that appeared to do nothing.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should document: (1) that New badge saves as a separate design and does not overwrite the default; (2) that Pause in station mode persists across reloads via sessionStorage; (3) that the desk camera accepts SBB1: badge QR codes and event-configured custom formats in addition to sb-checkin: codes, and that this behaviour is Registration-only; (4) that held-badge rows show \"Badge held until paid\" with no Print button until payment is recorded; and (5) that the attendance upload summary labels future arrival times correctly.",
+          "why_use_it": "The onsite check-in and badge tools let registration staff manage arrivals, print name badges, and run self-service kiosks from a browser — no dedicated app required. Desk links and station mode keep the print queue moving even across reloads, and the camera scanner handles QR codes from multiple sources so staff are not blocked by format mismatches. Held-badge indicators keep the desk accurate when payment is still outstanding.",
+          "at": "2026-10-30T13:21:29.918Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1316"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "expo-booth-package-price-label",
+      "title": "Booth package cards show \"Included\" when the booth already has its own price",
+      "summary": "On the exhibit page, package cards for a booth that carries its own price now display **Included** instead of an additive price (e.g. \"+$1,200\"). The **Review** step total and the order charged to the exhibitor now always match.",
+      "article": "/expo/booth-sales",
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "expo",
+        "floor_maps"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Expo → Exhibit page → Package step → Review"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Exhibitors selecting a booth with its own price no longer see a confusing extra package charge on the package selection cards or a mismatch between the Review total and the amount actually charged on their order.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer reports that the package price shown during booth selection does not match the total on the Review step or the order charged.",
+        "who_should_get_it": "Any customer using Expo (beta) with booths that have their own price and associated packages.",
+        "staff_path": "Expo → Exhibit page → Package step → Review",
+        "gotchas": "The fix applies only when a booth has its own price set. Booths without a price, and space requests, still show the package's price (without a '+' prefix) as before.",
+        "talk_track": "When an exhibitor picks a priced booth, the package is now shown as 'Included' on the package cards, and the Review total matches exactly what gets charged — no more confusing double-counting.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that when a booth has its own price, its associated package is displayed as \"Included\" on the Package step cards, and that the Review total always reflects the final order amount.",
+          "why_use_it": "null",
+          "at": "2026-10-30T13:37:57.832Z"
+        }
+      },
+      "related": [
+        "/expo/sponsorships",
+        "/expo/overview"
+      ],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-org-portal#274"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "swapcard-custom-role-group-assignment",
+      "title": "Contacts with Sessions 2.0 custom roles now sync to both their role group and the Speakers group in Swapcard",
+      "summary": "When the **Sync contact type to groups** setting is on, a contact assigned a Sessions 2.0 custom role (for example, Panelist) is now placed in both that role's group and the default **Speakers** group during a Swapcard sync. Previously, the contact was added only to the custom role group, leaving them out of the Speakers group.",
+      "article": "/apps/swapcard-integration",
+      "kind": "fixed",
+      "module": "Apps",
+      "features": [
+        "sessions_v2"
+      ],
+      "availability": "add_on",
+      "enable": {
+        "how": "setting",
+        "path": "Apps → Swapcard → [event mapping] → Event Settings → Sync contact type to groups"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Apps → Swapcard → [event mapping] → Sync"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Events using Sessions 2.0 custom roles (such as Panelist or Discussant) can now rely on Swapcard automatically grouping those contacts under both their specific role group and the broader Speakers group, so networking and app features that target speakers work correctly for all participant types.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer using Sessions 2.0 custom roles reports that Panelists, Discussants, or other custom-role contacts are missing from the Speakers group in Swapcard after a sync.",
+        "who_should_get_it": "Customers using the Swapcard integration with Sessions 2.0 add-on and custom participant roles.",
+        "staff_path": "Apps → Swapcard → [event mapping] → Event Settings → Sync contact type to groups",
+        "gotchas": "The fix only applies when 'Sync contact type to groups' is enabled. With the setting off, no groups are sent and Swapcard places new people in its default Attendees group — that behaviour is unchanged.",
+        "talk_track": "If you use custom roles like Panelist in Sessions 2.0, those contacts now correctly appear in both their custom role group and the Speakers group in Swapcard after a sync, so all speaker-targeted features in the app reach them.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The guide should note that when 'Sync contact type to groups' is on, contacts with Sessions 2.0 custom roles are placed in both their role's group and the Speakers group, and clarify what happens when the setting is off.",
+          "why_use_it": "The Swapcard integration keeps your session and speaker data in sync between Sessionboard and your event app, so attendees always see accurate speaker profiles and networking features work as expected. Group assignments in Swapcard control which app features and networking pools each person belongs to, making correct group placement essential for a smooth attendee experience.",
+          "at": "2026-10-30T13:48:58.213Z",
+          "permissions_to_confirm": [
+            "event.integrations: sync"
+          ]
+        }
+      },
+      "related": [
+        "/apps/swapcard-integration#tree-structure-in-swapcard",
+        "/concepts/participant-roles"
+      ],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4905"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "ready-room-download-history-filter",
+      "title": "Ready Room installer downloads are logged to History, and History filter includes Ready Room event types",
+      "summary": "Every click on a Ready Room desktop installer or checksums link — from the **Capture** card, the **Apps → Ready Room** panel, or the Live Transcribe Console home — is now recorded as a download event. The **History** audit filter's **Access & security** section lists three new subject types: **Ready Room download**, **Ready Room sign-in**, and **Ready Room station**, so admins can search and filter all Ready Room activity in one place.",
+      "article": "/communications/email-sms-history#audit",
+      "related": [
+        "/marketing/ready-room-desktop-app",
+        "/marketing/live-transcribe-console"
+      ],
+      "kind": "improved",
+      "module": "Apps",
+      "features": [
+        "marketing_transcribe"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "History → Audit → Access & security filter; Apps → Ready Room; Capture → [event] → Capture card"
+      },
+      "permissions": [
+        "event.history.read",
+        "org.history.read"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Event technology managers can now see exactly who downloaded the Ready Room desktop app, from which surface, and on which platform — useful for auditing AV crew onboarding or troubleshooting a station that was set up with the wrong installer version.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer asks how to audit Ready Room station setup or wants to know who downloaded the desktop app and when.",
+        "who_should_get_it": "Any customer using Ready Room / Live Transcribe with AV crews or multiple room stations.",
+        "staff_path": "History → Audit → Access & security; Apps → Ready Room panel; Capture → Capture card",
+        "gotchas": "The download log call is fire-and-forget — if the API pair PR (sessionboard-web-api#4951) is not yet deployed, clicks are silently swallowed with no user-facing error. The three new filter labels (Ready Room download, Ready Room sign-in, Ready Room station) only appear once the API enum migration is live.",
+        "talk_track": "Every time someone clicks to download the Ready Room desktop app — whether from the Capture card, the Apps panel, or the Live Transcribe Console — that action now shows up in History. You can filter by Ready Room download, sign-in, or station to get a clean audit trail of your AV crew's setup activity.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The History guide's Audit section should note the three Ready Room subject types (Ready Room download, Ready Room sign-in, Ready Room station) and explain that installer clicks from the Capture card, Apps panel, and Live Transcribe Console are all captured.",
+          "why_use_it": "The History audit log gives organizers a tamper-evident record of security-relevant actions across their event. Filtering by Ready Room subject types lets AV and IT teams quickly confirm which stations were installed, signed in, or active without digging through broader access logs.",
+          "at": "2026-10-30T13:55:00.665Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1337"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "attendee-portal-edit-registration-page-rules",
+      "title": "Edit registration respects conditional pages and dietary follow-up questions",
+      "summary": "In the attendee portal's **Edit registration** flow, questions on a page the registrant skipped (for example, a Meal question on a declined Dinner page) are now hidden and not required. A required follow-up question tied to a dietary option (for example, \"Which allergy?\") appears only when that option is selected, and disappears — removing the requirement — when the registrant switches back to a neutral option.",
+      "article": "/participants/attendee-portal",
+      "kind": "fixed",
+      "module": "Portals",
+      "features": [
+        "registration",
+        "gatherings_registration"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Attendee portal → Edit registration"
+      },
+      "permissions": [],
+      "audience": [
+        "participant"
+      ],
+      "use_case": "Registrants who declined an optional session (such as a dinner) no longer see or get blocked by questions that belong to that skipped page. Conditional dietary follow-ups enforce themselves only when the relevant option is chosen, so the form saves cleanly without false validation errors.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Depends on web-api #4931 being deployed first; until then the editor behaves as before (no page rules, membership from the registration record). Confirm both PRs are live before telling customers."
+        },
+        "when_to_bring_up": "When a customer reports that registrants editing their registration are blocked by questions on pages they skipped, or that dietary follow-up questions are required even when the triggering option is not selected.",
+        "who_should_get_it": "Any customer using Registration (beta) with conditional-page forms or dietary/follow-up question logic.",
+        "staff_path": "Attendee portal → Edit registration",
+        "gotchas": "This fix requires the companion API change (web-api #4931) that returns form.pages and seat_context.member_status. Without it, the editor falls back to the old behaviour — no page filtering, membership from the registration record.",
+        "talk_track": "Registrants editing their registration now see only the questions that apply to their choices. If they declined dinner, the Meal question is hidden and won't block Save. If they pick an allergy option, the follow-up appears and is required; switch back to None and it disappears.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that Edit registration honours conditional page rules and dietary follow-up question logic, so registrants are shown and required to answer only the questions relevant to their current selections.",
+          "why_use_it": "The attendee portal lets registrants review and update their own registration details without contacting event staff. Conditional pages and follow-up questions keep the form concise by showing each person only what is relevant to their choices, and the edit flow honours those same rules so registrants are never blocked by questions that do not apply to them.",
+          "at": "2026-10-30T13:57:30.701Z"
+        }
+      },
+      "related": [
+        "/registration/forms",
+        "/faq/does-sessionboard-offer-conditional-logic"
+      ],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-org-portal#276"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "registration-transfer-clears-address-mobile",
+      "title": "Transferred and substituted registrations no longer show the previous holder's address and mobile number",
+      "summary": "When a registration is transferred or substituted, the previous holder's postal address (line 1/2, city, state, zip, country) and mobile number are now removed from the record. The new holder's portal and registrant view show those fields as blank rather than pre-filled with someone else's personal details.",
+      "article": "/registration/registrants",
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "registration"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Registration → Registrants → [registrant] → Transfer / Substitute"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Events that allow transfers or substitutions can be confident that the incoming registrant's portal will not expose the previous holder's home address or mobile number — important for privacy compliance and a clean handoff experience.",
+      "related": [
+        "/registration/payments"
+      ],
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer reports that a transferred or substituted registrant can see a previous holder's address or phone number in their portal.",
+        "who_should_get_it": "Any customer using Registration (beta) who allows transfers or substitutions.",
+        "staff_path": "Registration → Registrants → [registrant] → Transfer / Substitute",
+        "gotchas": "The fix covers both the Transfer and Substitute flows because substitution routes through the same applyTransfer code path. Name, email, company, and title were already cleared before this fix; only address and mobile were missed.",
+        "talk_track": "After a transfer or substitution, the new holder's portal now shows blank address and mobile fields instead of the previous registrant's personal details — no data leaks between holders.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that a transfer or substitution clears the previous holder's address fields and mobile number so the new holder starts with a clean record.",
+          "why_use_it": "null",
+          "at": "2026-10-30T14:08:15.680Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4955"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "expo-booth-sales-qa-sweep",
+      "title": "Booth sales: inline agreement errors, sponsor-only orders, time-zone-safe due dates, and corrected Rebook copy",
+      "summary": "Four fixes to the **Booth sales** workflow: (1) when **Send** agreement is refused, the reason now appears inline under the button instead of only in a toast; (2) applications that contain sponsorships but no package can now be ordered — the **Order** buttons are enabled after approval, the drawer lists **Sponsorships**, and the **Package** column names the sponsorships instead of \"—\"; (3) deadline, manual-section, and shop **Order by** dates are now stored as end-of-day in the event's time zone, so admins in different browser time zones all see the same date; (4) the **Rebook** tab description and empty state now correctly describe what the tab shows — accounts that bought a booth at another event in the same organization — rather than referring to an \"event series\".",
+      "article": "/expo/booth-sales",
+      "related": [
+        "/expo/deadlines",
+        "/expo/shop",
+        "/expo/sponsorships"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "expo",
+        "floor_maps"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Expo → Booth sales; Expo → Deadlines; Expo → Shop"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Event teams managing exhibit hall sales no longer hit silent failures when sending agreements or placing orders for sponsor-only applicants, and due dates set by admins in one time zone are now seen correctly by colleagues in any other time zone.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer reports that the Send agreement button gives no feedback, that Order buttons stay disabled on sponsor-only applications, or that deadline dates shift depending on the admin's location.",
+        "who_should_get_it": "Any customer using Expo (beta) with booth sales, sponsorship-only applications, or multi-timezone admin teams.",
+        "staff_path": "Expo → Booth sales → [application drawer] → Send; Expo → Booth sales → [application drawer] → Order; Expo → Deadlines; Expo → Shop",
+        "gotchas": "The agreement send error display requires the companion API fix in web-api #4934 to be deployed before the send itself will succeed; the inline error message is visible immediately after this UI release.",
+        "talk_track": "Four quiet papercut fixes in Booth sales: agreement errors now show inline so staff know exactly why a send failed; sponsor-only deals can finally be ordered; due dates no longer drift when admins are in different time zones; and the Rebook tab now explains itself correctly.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should document that (1) Send agreement errors appear inline under the button, (2) applications with sponsorships but no package are orderable after approval and show a Sponsorships line in the drawer, (3) all due dates (Deadlines, manual sections, Shop Order by) are stored in the event's time zone, and (4) the Rebook tab lists accounts that bought a booth at any other event in the same organization.",
+          "why_use_it": "Expo's Booth sales module lets you manage the full exhibit hall sales cycle — applications, approvals, agreements, and orders — from one place. Use it to track which exhibitors have applied, send booth agreements for e-signature, and convert approved applications into invoices or orders without leaving Sessionboard.",
+          "at": "2026-10-30T14:15:46.880Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1320"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "registration-pricing-group-qa-fixes",
+      "title": "Registration pricing fixes: ticket sales dates, promo code edits and \"Prices as of\" on orders",
+      "summary": "Three date and data accuracy fixes in the Registration pricing group. **Ticket sales windows** now save and reopen with the correct start and end dates instead of shifting one day forward in US time zones. **Promo code** edits no longer drop the registrant-type or form scope, the **Valid until** date no longer advances by one day on reopen, and the **Applies to** label now correctly names fee groups (e.g. \"Fee group meals\") instead of showing \"All tickets\". **Orders** that were priced as of a past date now display a **\"Prices as of \\<date\\>\"** label in the order drawer so staff can see which price snapshot was used.",
+      "article": "/registration/tickets-and-pricing",
+      "related": [
+        "/registration/promo-codes",
+        "/registration/orders-and-invoices"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "registration"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Registration → Tickets; Registration → Promo codes; Registration → Orders → [order]"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Teams managing paid registration no longer need to manually correct sales-window dates after saving a ticket or promo code, and staff who price orders as of a past date can confirm at a glance which snapshot was applied — reducing billing disputes and re-work.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer reports that ticket sales dates or promo code expiry dates shift by one day after saving, or that editing a promo code loses its registrant-type or form scope.",
+        "who_should_get_it": "Any customer using Registration (beta) with date-bounded ticket sales windows, promo codes scoped to registrant types or forms, or staff-priced orders.",
+        "staff_path": "Registration → Tickets → [ticket] → edit; Registration → Promo codes → [code] → edit; Registration → Orders → [order] drawer",
+        "gotchas": "The date-shift bug only affected users in time zones behind UTC (e.g. US time zones); customers in UTC+ regions may not have noticed it. The API fix (lennd/sessionboard-web-api#4933) is required alongside this UI change.",
+        "talk_track": "If a customer has been manually correcting sales dates or promo code expiry dates after every save, these fixes eliminate that step. The new 'Prices as of' label on orders also gives finance teams a clear audit trail when staff use historical pricing.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The promo-codes guide should note that the Applies to field names fee groups by name (e.g. \"Fee group meals\"), and the orders-and-invoices guide should document the \"Prices as of <date>\" label that appears when an order was priced as of a past date.",
+          "why_use_it": "null",
+          "at": "2026-10-30T14:16:10.632Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1318"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "registration-finance-qa-sweep",
+      "title": "Registration cancellation, card charging and gateway label fixes",
+      "summary": "Five money-related fixes for Registration: (1) The **Cancel** dialog now shows the correct credit amount when a cancellation policy includes a bonus percentage (e.g. 10% bonus on a $50 order shows **$44.00**, not $40). (2) The **I can no longer come** manage-link page now reads the cancellation policy and shows the refund amount, fee kept, and credit option before confirming; paid registrants without self-service see a message to contact the organizers instead of a cancel button. (3) **Charge a card** in the order drawer no longer closes when clicking into the Spreedly card form, and the **Send the confirmation email** switch resets to ON each time the dialog opens. (4) **Change ticket** no longer triggers a red error toast after a successful change. (5) **Settings → Payments → Gateway** now shows \"Automatic — [gateway name]\" when one gateway is selected automatically, rather than \"None — free registration only\".",
+      "article": "/registration/orders-and-invoices",
+      "related": [
+        "/registration/payments",
+        "/registration/registrants"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "registration"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Registration → Orders → [order] → Cancel; Registration → Registrants → [registrant] → Change ticket; Registration → Registrants → [registrant] → Charge a card; Registration → Settings → Payments → Gateway; /rsvp manage link → I can no longer come"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Organizers managing paid registrations get accurate credit amounts in the cancel dialog and a working card-charge flow, so they can process cancellations and payments without manual recalculation or workarounds. Registrants using the self-service manage link now see the full cancellation policy — refund, fee and credit option — before they confirm, reducing confusion and support requests.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer reports that the cancel dialog showed the wrong credit amount, that the Spreedly card form closed the drawer, that Change ticket showed a red error toast, or that the gateway setting said 'None' even though payments were processing.",
+        "who_should_get_it": "Any customer using Registration (beta) with paid tickets and a cancellation policy, or using Spreedly for card charging.",
+        "staff_path": "Registration → Orders → [order] → Cancel; Registration → Settings → Payments; /rsvp/<token> → I can no longer come",
+        "gotchas": "The self-service cancel flow change only applies to Registration events — Gathering and Webinar manage links are unchanged. The 'Mark issued' button for check/wire/money-order refunds now stays disabled until a reference number is entered.",
+        "talk_track": "Several small but impactful money-flow bugs in Registration have been fixed: credit amounts in the cancel dialog now match the policy bonus, the Spreedly card form stays open in the drawer, Change ticket no longer throws a false error, and the gateway label accurately reflects which gateway will be used.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should document: (1) how the cancel dialog calculates the credit amount when a bonus percentage is configured; (2) what the self-service /rsvp manage-link cancel flow shows to paid registrants (policy text, refund, fee, credit checkbox) and what they see when self-service is off; (3) that the gateway label reads \"Automatic — [gateway name]\" when a single gateway is auto-selected for the event currency.",
+          "why_use_it": "null",
+          "at": "2026-10-30T14:16:39.161Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1319"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "registration-embed-language-attribute",
+      "title": "Registration embed now accepts the `language` attribute and all 31 supported form languages",
+      "summary": "The `<sessionboard-registration>` embed now accepts **`language`** as an alias for **`lang`**, matching the attribute name used by agenda embeds. Previously only `lang` was read, and only English, Spanish, French, and Arabic were forwarded — any other code was silently dropped. Now any well-formed language code the form offers (e.g. `de`, `pt_BR`, `zh_Hans`) is passed through, and the form opens in that language if it has been reviewed for it, otherwise falling back to English.",
+      "article": "/sessions/embeds#embed-languages",
+      "related": [
+        "/registration/forms"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "embeds_v2",
+        "languages"
+      ],
+      "availability": "on_request",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Sessions → Embeds → Registration embed (host page HTML)"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Organizers embedding registration on a multilingual website can now set `language=\"de\"` (or any of the 31 supported codes) and have the form open in the correct language automatically, without needing to maintain separate embed snippets per language.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer reports that their embedded registration form ignores the language they set, or that only English/Spanish/French/Arabic work while other languages are silently dropped.",
+        "who_should_get_it": "Any customer using the registration embed on a multilingual website or with a form that has reviewed language variants beyond en/es/fr/ar.",
+        "staff_path": "Sessions → Embeds → Registration embed snippet on the host page",
+        "gotchas": "The fix is in the embed JS bundle; PROD publish is manual and separate from the merge. Confirm the PROD bundle has been republished before telling customers the fix is live. Also: `lang` still wins when both `lang` and `language` are set on the same tag.",
+        "talk_track": "If a customer has a German or Portuguese registration form and their embed was ignoring the language attribute, this fix makes it work. They just need to use `language=\"de\"` (or `lang=\"de\"`) in their embed tag and ensure the form has a reviewed German variant.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The Embeds guide's \"Embed Languages\" section should note that `<sessionboard-registration>` accepts both `language` and `lang` (with `lang` taking precedence when both are present), list the full set of supported language codes, and clarify the fallback-to-English behaviour when a requested language has not been reviewed for that form.",
+          "why_use_it": "The registration embed lets you drop a Sessionboard registration form directly onto any webpage with a single HTML tag. Setting the `language` attribute tells the embed which reviewed language variant to display, so visitors see the form in their preferred language without any redirect or extra configuration. When the requested language is not available for that form, the embed falls back to English gracefully.",
+          "at": "2026-10-30T14:17:02.907Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-embeds#125"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "registration-invitation-pass-promo-code-and-group-thankyou",
+      "title": "Personal invitation links now apply their discount automatically, and group checkout thanks the buyer correctly",
+      "summary": "Two fixes to the public registration flow: (1) When an invitee opens a personal invitation link (e.g. from a **Sales & Invitations** email), the nomination code is now carried through quote and checkout so the invited discount is applied automatically — the invitee no longer sees full price. The invitation code takes priority over any promo code typed manually. (2) After a group checkout, the thank-you page now addresses the buyer and explains that an order confirmation was sent to them and that each person in the group receives their own confirmation separately.",
+      "article": "/registration/sales-and-invitations",
+      "related": [
+        "/registration/forms",
+        "/registration/orders-and-invoices"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "registration"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Registration → [public form] → checkout; Registration → [public form] → thank-you page"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Organizers who use Sales & Invitations to send personal invite links with a complimentary or discounted ticket can now trust that the invitee lands on checkout with the correct price — no manual promo code entry needed. Group buyers also get a clearer post-purchase experience that sets expectations about individual confirmation emails.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer reports that invited guests are seeing full price at checkout, or that the group thank-you page was confusing buyers about who received a confirmation email.",
+        "who_should_get_it": "Any customer using Registration (beta) with Sales & Invitations passes or group (buyer) checkout.",
+        "staff_path": "Registration → Sales & Invitations → Invite → open the Register link from the invitation email",
+        "gotchas": "The nomination code wins over any promo code the invitee types manually. If an invitee shares their personal link with someone else, that person will also get the invited discount.",
+        "talk_track": "If you send personal invite links through Sales & Invitations, invited guests now land on checkout with their discount already applied — no promo code box needed. And after a group purchase, the buyer sees a thank-you that clearly explains they got the order confirmation and each registrant gets their own.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that the nomination code in a personal invitation link is applied automatically at checkout (taking priority over a manually entered promo code), and describe what the group-buyer thank-you page says about individual confirmation emails.",
+          "why_use_it": "Sales & Invitations lets you nominate specific people and send them a personal registration link that unlocks a reserved pass or a discounted ticket. The invitation code travels with the link so the invitee moves straight from email to a pre-discounted checkout without any extra steps. Use it when you want to give VIPs, speakers, or sponsored guests a frictionless path to registration at a price that differs from the public rate.",
+          "at": "2026-10-30T14:17:26.860Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-org-portal#269"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "registration-deposit-follows-event-setting",
+      "title": "Deposit option on the registration form now follows the event-level deposit percentage",
+      "summary": "When **Settings › Invoices & deposits → Deposit %** is blank, the registration form's payment step no longer shows a deposit option. When a percentage is set, the form shows **\"Pay a deposit now (X%)\"** using exactly that percentage — not a hard-coded 25%.",
+      "article": "/registration/payments#invoices-and-deposits",
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "registration"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Registration → [form] → Checkout → Payment step"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Organizers who leave the deposit percentage blank no longer accidentally offer registrants a deposit option. Those who set a custom percentage (e.g. 40%) see that exact figure reflected on the public checkout page, keeping the quoted amount consistent with what will actually be charged.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer reports that registrants were offered a deposit option they did not intend to enable, or that the deposit percentage shown at checkout did not match their configured rate.",
+        "who_should_get_it": "Any customer using Registration (beta) with the deposit feature enabled.",
+        "staff_path": "Registration → Settings → Invoices & deposits → Deposit %",
+        "gotchas": "The fix requires the paired API change (web-api #4932) to be deployed; the front-end alone will not correct the behaviour.",
+        "talk_track": "Previously, leaving the deposit percentage blank could still show a '25%' deposit option to registrants due to a hard-coded fallback. Now the checkout form only offers a deposit when the event has a percentage configured, and it always shows the exact percentage the organizer set.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that the deposit option on the public checkout form appears only when a Deposit % is configured in Settings › Invoices & deposits, and that the percentage shown to registrants matches that setting exactly.",
+          "why_use_it": "null",
+          "at": "2026-10-30T14:17:45.299Z"
+        }
+      },
+      "related": [
+        "/registration/orders-and-invoices",
+        "/registration/forms"
+      ],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-org-portal#267"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "registration-pricing-group-qa-sweep",
+      "title": "Registration form correctly handles sold-out tickets, seat counts, workshop overlaps, member pricing, and membership return links",
+      "summary": "Five fixes to the public registration form: **Sold out** and **Not on sale** tickets are now disabled and unselectable; a full ticket on a waitlist-enabled form stays choosable and shows \"Sold out · you join the waitlist\". The seat count label reads **\"1 seat left\"** (not \"1 seats left\") in all six supported languages. Same-time workshops now respect the **Picking rules** overlap mode — Off keeps both selected, Warn keeps both and names them, Block refuses the second with a message naming both sessions; an empty Workshops step shows a \"nothing to pick\" notice. Workshop prices shown to members now reflect the registrant-type price instead of the non-member price. The **Join or renew** link from the member lookup now carries the form slug so the return link lands back on the correct registration form.",
+      "article": "/registration/tickets-and-pricing",
+      "related": [
+        "/registration/forms",
+        "/registration/member-pricing"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "registration"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "self_serve",
+        "path": "Get started → Early Access → Preview → Registration"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Registration → Forms → [form] → public registration form"
+      },
+      "permissions": [],
+      "audience": [
+        "participant",
+        "organizer"
+      ],
+      "use_case": "Registrants no longer see misleading ticket choices — sold-out and not-yet-on-sale tickets are clearly disabled, workshop conflicts are caught before checkout, and members see their correct discounted workshop price. Organizers running AMS-gated events can trust that the Join or renew flow returns registrants to the right form.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer reports that sold-out tickets were still selectable, that workshop conflicts were not enforced, that members saw the wrong workshop price, or that the AMS Join or renew link returned a 404.",
+        "who_should_get_it": "Any customer using Registration (beta) with shared-capacity pools, workshop sessions, member pricing, or AMS integration.",
+        "staff_path": "Registration → Forms → [form] → public registration form",
+        "gotchas": "Waitlist behaviour for paid tickets depends on whether the form's waitlist is configured to accept paid seats; a full paid ticket stays disabled unless that setting is on. The overlap Block mode names both conflicting sessions by title in the refusal message.",
+        "talk_track": "The registration form now enforces ticket availability and workshop scheduling rules in real time — registrants see clear labels when a ticket is sold out or not yet on sale, get warned or blocked when they pick overlapping workshops, and always see their member-discounted price. The AMS membership return link also works correctly now.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should document how sold-out and not-on-sale ticket states appear on the public form (disabled cards with labels), how the waitlist interacts with sold-out tickets, the three workshop overlap modes (Off / Warn / Block) and their on-form behaviour, and how member pricing is applied per registrant type on the Workshops step.",
+          "why_use_it": "null",
+          "at": "2026-10-30T14:18:12.119Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-org-portal#264"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "registration-drawer-form-answers-multiday-when",
+      "title": "Registrant drawer shows form answers and questions; confirmation email shows correct multi-day date range",
+      "summary": "Two fixes for Registration (beta). **1. Registrant drawer answers:** opening a registrant in **Registration → Registrants** now displays the answers they submitted on a Registration form — including file uploads — and shows the form name. Staff-only questions (audience: **admin**) appear in the drawer for staff to fill or edit; they are not visible on the public form. **2. Multi-day confirmation email When line:** the **When** line in the registration confirmation email now reads the full date range (e.g. \"December 1, 2026 · 10:00 AM–December 3, 2026 5:00 PM\") when the event spans more than one day. Single-day events are unchanged.",
+      "article": "/registration/registrants",
+      "related": [
+        "/registration/forms",
+        "/registration/emails-and-reminders"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "registration"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Registration → Registrants → [registrant drawer]; Registration confirmation email → When line"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Organizers can now see and edit every form answer — including staff-only fields — directly in the registrant drawer without needing to cross-reference another view. Registrants at multi-day events receive a confirmation email that correctly shows the full event date range, reducing confusion about when the event ends.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer reports that the registrant drawer shows no answers or 'Form —', or that their multi-day event confirmation email shows only a single day in the When line.",
+        "who_should_get_it": "Any customer using Registration (beta) with a Registration form (not a field-event registration).",
+        "staff_path": "Registration → Registrants → [open any registrant on a Registration form]",
+        "gotchas": "Field-event registrations (no registration_form_id) are unaffected and keep their existing drawer shape. The multi-day When fix only applies to events where the end date is a later calendar day than the start date.",
+        "talk_track": "Staff can now open any registrant, see every answer they submitted on the form — including uploaded files — and fill or update staff-only questions right in the drawer. Registrants at multi-day events also get a confirmation email that clearly shows the full start-to-end date range.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The registrant guide should note that opening a registrant collected via a Registration form shows the form name, all submitted answers (including file uploads), and any staff-only questions that organizers can fill or edit; it should also note that field-event registrations retain their existing drawer shape. The emails-and-reminders guide should note that the When line in confirmation emails spans the full date range for multi-day events.",
+          "why_use_it": "null",
+          "at": "2026-10-30T14:18:35.230Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4937"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "registration-pricing-group-qa-fixes-2",
+      "title": "Registration pricing fixes: ticket sales dates, promo code edits, per-order limits, workshop capacity, member pricing, join-and-register, and VAT invoices",
+      "summary": "Several registration pricing and checkout issues are resolved in this release. **Ticket sales dates** (start and end) now save correctly when creating a new ticket. **Promo codes** with date ranges can be edited without a 400 error, and refusal messages now say specifically why a code was rejected (\"has expired\", \"is not active yet\", \"has been used the maximum number of times\"). **Per-order quantity limits** are enforced at quote time — ordering more than the maximum (e.g. 3 seats on a max-2 ticket) returns a clear error before checkout. **Workshop capacity** now counts staff-assigned seats, so a full workshop shows **Full** on the public form and blocks quoting. **Member workshop prices** appear on the registration form for each registrant type. **Join and register** correctly prices the purchaser as a member and charges membership dues only once. The **Join or renew** return link now opens the correct registration form. The order drawer shows **Prices as of \\<date\\>** when a staff member used the \"as of\" pricing option. Buyer VAT numbers now appear on invoice PDFs for reverse-charge orders.",
+      "article": "/registration/tickets-and-pricing",
+      "related": [
+        "/registration/promo-codes",
+        "/registration/member-pricing",
+        "/registration/orders-and-invoices",
+        "/registration/payments"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "registration"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Registration → Tickets; Registration → Promo Codes; Registration → Orders; public registration form"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Organizers running paid registration can now create tickets with sales date windows, edit promo codes with date ranges, and trust that per-order quantity caps and workshop seat limits are enforced before a registrant reaches checkout. Members who join and register in one flow are priced correctly and charged dues only once.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer reports errors saving ticket sales dates, editing promo codes with date ranges, unexpected checkout totals for members joining and registering, workshop seats not showing as full after staff assignment, or missing VAT numbers on invoice PDFs.",
+        "who_should_get_it": "Any customer using Registration (beta) with paid tickets, promo codes, workshops, or member pricing.",
+        "staff_path": "Registration → Tickets; Registration → Promo Codes; Registration → Orders; public registration form",
+        "gotchas": "The 27 Joi.date() offenders outside Registration (awards, session-form promo codes, disclosures, credits, lessons, scout) are baselined but not fixed in this PR — those endpoints may still 400 when a client sends an ISO date string. The group tier pricing rule (each seat priced at its own tier position) is intentional and unchanged; a group of 3 on 'first 1 at $30, then $60' pays $30 + $60 + $60.",
+        "talk_track": "A sweep of Registration pricing edge cases is resolved: ticket sales dates save on creation, promo code edits with date ranges work, per-order quantity caps are caught before checkout with a plain error, workshop seats assigned by staff count toward capacity so the public form shows Full correctly, members who join and register pay the right price with dues charged once, and buyer VAT numbers appear on reverse-charge invoice PDFs.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The tickets-and-pricing guide should document that staff-assigned workshop seats count against the fee capacity (not just sales), that per-order min/max limits are enforced at quote time with a clear error message, and that member-specific workshop prices appear on the public form per registrant type. The promo-codes guide should note the specific refusal messages (\"has expired\", \"is not active yet\", \"has been used the maximum number of times\"). The orders-and-invoices guide should note the \"Prices as of\" label in the order drawer and that buyer VAT numbers are shown on invoice PDFs for reverse-charge orders.",
+          "why_use_it": "null",
+          "at": "2026-10-30T14:19:05.583Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4933"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "bulk-add-to-session-duplicate-feedback",
+      "title": "Bulk \"Add to session\" now explains which contacts were already on the session, and event team members can be re-saved without errors",
+      "summary": "When bulk-adding contacts to a session, the confirmation message now distinguishes contacts that were already assigned from those that failed for other reasons — for example: **\"Added 2 of 5 to Session Name. Already on the session: 3\"** or **\"None added: all 3 contacts are already on Session Name.\"** Separately, saving an event team member's **Contact Access** settings no longer returns a 400 error on the second and subsequent saves, and switching a member to a role without a contact filter now correctly clears the filter scope.",
+      "article": "/speaker-crm/crm-add-contact-to-events",
+      "related": [
+        "/event-team/invite-manage-event-team-members"
+      ],
+      "kind": "fixed",
+      "module": "CRM",
+      "features": [
+        "sessions_v2"
+      ],
+      "availability": "add_on",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Contacts → [contact] → Program tab → Add to session (bulk); Event Team → [member] → Contact Access"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers bulk-adding speakers or contacts to a session no longer see a vague \"Not added\" message when some contacts are already assigned — the dialog now tells them exactly how many were already there. Admins managing event team members with contact record filters can save those members repeatedly without hitting a silent 400 error.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer reports confusing or missing feedback after bulk-adding contacts to a session, or when an event team admin says saving a member's Contact Access settings fails after the first save.",
+        "who_should_get_it": "Any customer using Sessions 2.0 who bulk-assigns contacts to sessions, or who manages event team members with contact record filters (Tahaluf and similar large-event customers).",
+        "staff_path": "Contacts → [contact] → Program tab → Add to session; Event Team → [member] → Contact Access",
+        "gotchas": "The 'already on the session' count only covers 403 responses coded as already-assigned. Other failure reasons still appear under 'Not added: names'. The event team fix requires the companion API PR #4928 to fully clear the filter scope when switching to a filterless role; on the current API it is a no-op (no longer a 400).",
+        "talk_track": "If you bulk-add a group of contacts to a session and some are already assigned, the dialog now tells you exactly how many were already there rather than lumping them in with failures. And if you manage team members with contact access filters, you can now save their settings as many times as you need without hitting an error.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that bulk Add to session reports already-assigned contacts separately from other failures, with three distinct outcome messages, and that the confirmation dialog stays accurate when zero new contacts are added.",
+          "why_use_it": "null",
+          "at": "2026-10-30T14:19:32.607Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1317"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "describe-items-html-escaping",
+      "title": "Task and file-request descriptions from Describe It preserve special characters and line breaks",
+      "summary": "When the Coordinator agent drafts task descriptions or file-request criteria using **Describe It**, text containing angle brackets (e.g. `Room <B12>`), ampersands, and multi-line content is now correctly escaped and formatted as HTML before being saved. Previously, characters like `<B12>` were stripped and line breaks collapsed when the description was rendered in the task panel or portal.",
+      "article": "/agents/coordinator",
+      "kind": "fixed",
+      "module": "Portals",
+      "features": [
+        "coordinators"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Portals → Tasks → [task] → Description; Portals → File Requests → [file request] → Criteria"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers using the Coordinator agent to draft task instructions no longer need to manually fix garbled descriptions after generation — room codes, HTML-like strings, and multi-paragraph text appear exactly as intended in the portal.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer reports that task descriptions generated by the Coordinator are missing text (especially anything in angle brackets) or have collapsed line breaks.",
+        "who_should_get_it": "Any customer using the Coordinator agent to draft portal tasks or file requests.",
+        "staff_path": "Portals → Tasks → [task] → Description; Portals → File Requests → [file request] → Criteria",
+        "gotchas": "This fix only applies to descriptions generated via Describe It going forward; any already-saved descriptions with stripped content will need to be regenerated or manually corrected.",
+        "talk_track": "If the Coordinator drafted a task description with room codes like '<B12>' or multi-line instructions and those showed up garbled in the portal, that is now fixed — the text is properly escaped before saving.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that task descriptions and file-request criteria drafted by the Coordinator are stored as rich text, so special characters and line breaks are preserved exactly as written.",
+          "why_use_it": "null",
+          "at": "2026-10-30T14:19:50.961Z"
+        }
+      },
+      "related": [
+        "/portals/assign-tasks",
+        "/portals/collect-documents"
+      ],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1313"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "channels-ga-field-events-orgs",
+      "title": "Luma and LinkedIn Events channels are now available to all Field Events customers",
+      "summary": "Organizers on a **Field Events** org with Early Access enabled can now see and use **Channels** — Luma and LinkedIn Events listings — without needing a staff account. This unlocks the **Publish to** block on the event, channel cards on the **Overview**, the **Source** column and filter in **People**, and **Settings › Channels** (including **Promote** and **Audiences**, once LinkedIn enables those products for the org).",
+      "article": "/field-events/overview",
+      "related": [
+        "/get-started/early-access"
+      ],
+      "kind": "improved",
+      "module": "Event team",
+      "features": [
+        "gatherings"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "self_serve",
+        "path": "Get started → Early Access → Field Events"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event Overview → Channels; People → Source; Settings → Channels"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Field Events customers can now publish and manage their Luma and LinkedIn Events listings directly from Sessionboard without needing to contact support. This keeps event distribution in one place alongside registration, check-in, and the program.",
+      "internal": {
+        "cs_action": {
+          "kind": "reach_out",
+          "note": "Proactively tell Field Events customers that Channels is now available to them — no staff unlock needed. They just need the gatherings Early Access flag."
+        },
+        "when_to_bring_up": "When talking to any customer who has Field Events Early Access and is asking how to promote their event on LinkedIn or Luma.",
+        "who_should_get_it": "Any org with the gatherings (Field Events) Early Access flag enabled.",
+        "staff_path": "Event Overview → Channels; People → Source; Settings → Channels",
+        "gotchas": "Promote and Audiences sections inside Settings › Channels are still gated by LinkedIn product approval — customers will see nothing there until LinkedIn enables ads/audiences for the org. Staff still see the 'waiting for LinkedIn approval' note. Managing channel listings also requires the canManageEventIntegrations permission.",
+        "talk_track": "You can now publish your field events and webinars to Luma and LinkedIn Events directly from Sessionboard. Head to Settings › Channels to connect, then use the Publish to block on the event overview to push your listing live. Attendee source is tracked automatically in People.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The Field Events overview guide should add a section covering Channels — how to connect Luma and LinkedIn Events, what the Publish to block does, how Source tracking works in People, and what Promote and Audiences unlock once LinkedIn approves them.",
+          "why_use_it": "Channels lets you publish a Field Event or webinar to external listing platforms — Luma and LinkedIn Events — and keep those listings in sync from a single place. When someone registers through a channel, their source is tracked in the People list so you can see where attendees came from. Promote and Audiences extend this by letting you run LinkedIn ad campaigns and build matched audiences directly from your event data.",
+          "at": "2026-10-30T14:20:14.999Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1315"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "floor-map-rotated-booth-print-fix",
+      "title": "Rotated booths print and export in the correct position on floor maps",
+      "summary": "When printing or downloading a floor map as a PNG, rotated rectangular booths now appear exactly where they are placed in the designer. Previously, rotated booths were offset because Print and Download PNG rotated them around a different pivot point than the designer used. Booth number labels also stay centred inside rotated booths in all exported outputs.",
+      "article": "/expo/floor-plan#publish-print-and-download",
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "floor_maps"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Expo → Floor Maps → [map] → Print / Download PNG"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who angle booths to follow a curved or diagonal hall can now hand exhibitors a printed map or PNG that matches what they see on screen — no more booths appearing shifted or misaligned in the exported output.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer reports that rotated booths look correct in the designer but are offset or misplaced on printed maps or PNG downloads.",
+        "who_should_get_it": "Any customer using Expo floor maps (beta) with rotated rectangular booths.",
+        "staff_path": "Expo → Floor Maps → [map] → Print / Download PNG",
+        "gotchas": "The attendee-side map fix is in a separate API PR (app-scene.js); this PR only covers Print, Download PNG, map-card thumbnails, and version-history previews.",
+        "talk_track": "If a customer has been avoiding rotating booths because the print output looked wrong, this fix means they can now angle booths freely and the exported map will match the designer exactly.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that Print, Download PNG, map-card thumbnails, and version-history previews all reflect booth rotations exactly as placed in the designer.",
+          "why_use_it": "The floor map designer lets you rotate booths to fit any hall shape, and Print and Download PNG let you share a polished, to-scale version of that layout with exhibitors, venue staff, and your team. Exported maps match the on-screen design exactly, so everyone works from the same picture of the hall.",
+          "at": "2026-10-30T14:24:08.327Z"
+        }
+      },
+      "related": [
+        "/expo/overview",
+        "/expo/booth-sales"
+      ],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1342"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
     }
   ]
 }
