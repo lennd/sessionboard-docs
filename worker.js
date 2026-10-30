@@ -233,6 +233,9 @@ for (const [slug, target] of Object.entries(redirects)) {
 // so they get their own map, checked before serving assets. Add a row here any
 // time an article is retired in favour of another.
 const INTERNAL_REDIRECTS = {
+  // The AI agent that pre-scores submissions is Screener, 2026-10-30
+  // (nomenclature standard: humans review, the agent screens; SB-10530).
+  '/agents/reviewer': '/agents/screener',
   // Provider-neutral rename, 2026-10-21 — the same variables fill Sessionboard
   // e-sign templates and Docusign text fields (SB-9820).
   '/speaker-crm/docusign-template-variables': '/speaker-crm/contract-template-variables',

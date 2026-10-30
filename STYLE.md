@@ -28,7 +28,8 @@ docs automatically. Automated PRs that don't follow this guide don't merge.
 | Participant | end user, attendee (in portal contexts) |
 | Event team | admins (when meaning invited team members) |
 | Reviewer | evaluator, judge (the person who scores submissions, in Program and Awards) |
-| Review, review plan (prose) | evaluation (prose; quote the UI label **Evaluation plan** in bold where the screen still says it) |
+| Review, review plan, Review summary, My reviews | evaluation, evaluation plan (the admin says Review since October 2026; quote the old word in bold only where a screen still shows it — some notification names, the reviewer invitation subject, review portal messages) |
+| Screener (the AI agent that pre-scores submissions) | Reviewer agent, Review Agent (except when quoting a label that still says it) |
 | Review portal | evaluator site, evaluator portal, reviewer site |
 | Survey (attendee feedback) | evaluation, evaluation survey, feedback form |
 | Attendee | participant, delegate (someone in the audience; "participant" is a session role) |
