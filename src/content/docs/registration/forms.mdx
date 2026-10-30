@@ -201,6 +201,33 @@ The registration page lives on the event's Site. Registrants who open it see eve
 
 The registration page shows the venue with a map link, and the confirmation page has share buttons so registrants can invite colleagues.
 
-<Tip>
-To embed the registration flow on your own website, use the registration embed. Ask your Customer Success Manager for the snippet for your event.
-</Tip>
+### Embed a form on your own website
+
+Put the registration flow on your own web page with the registration embed. Paste this where the form should appear, and replace the `src` with your form's link from **Registration › Forms**:
+
+```html
+<script src="https://embeds.sessionboard.com/v0/sessionboard-registration-embed.js"></script>
+<sessionboard-registration
+  src="https://sites.sessionboard.com/s/your-site/register/1234/your-form"
+  lang="es"
+  promo="EARLYBIRD">
+</sessionboard-registration>
+```
+
+The form resizes to fit as the registrant moves through the steps. These attributes are optional:
+
+- `lang` opens the form in one of its languages. A language the form does not offer opens in English.
+- `promo` applies a promo code or access code.
+- `code` fills an invitation code.
+
+Without them, the embed passes on the same options from your own page's link (`?lang=`, `?promo=`, `?code=`, `utm_source` and `utm_campaign`).
+
+When a registration is completed, the element sends a `sessionboard:registration-complete` event to your page. Its `detail` has the form and the outcome (`confirmed`, `pending_approval`, `waitlisted` or `awaiting_payment`), never the registrant's name or email:
+
+```js
+document.addEventListener('sessionboard:registration-complete', (e) => {
+  console.log(e.detail.form, e.detail.outcome);
+});
+```
+
+The checkout's bot check works inside the embed. Registrants see their attendee portal in a new tab, not inside your page.
