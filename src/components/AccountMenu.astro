@@ -8,9 +8,18 @@
  * Starlight renders this twice (header and mobile menu), so it is keyed by
  * data attributes, not ids.
  */
+import site from '../../site.json';
+
+// Where to run the silent sign-in for each region (src/scripts/account.mjs):
+// the app sets an `sb_app=<region>` cookie on .sessionboard.com while signed in.
+const account = (site as { account?: { regions?: { id: string; app: string }[]; signInPath?: string } }).account ?? {};
+const silent = JSON.stringify({
+  regions: Object.fromEntries((account.regions ?? []).map((r) => [r.id, r.app])),
+  signInPath: account.signInPath ?? '',
+});
 ---
 
-<div class="sb-account" data-sb-account>
+<div class="sb-account" data-sb-account data-sb-silent={silent}>
   <a class="sb-account-signin" href="/_account/sign-in" data-sb-account-signin hidden>Sign in</a>
   <div class="sb-account-in" data-sb-account-in hidden>
     <button type="button" class="sb-account-button" aria-expanded="false" aria-haspopup="true" data-sb-account-toggle>

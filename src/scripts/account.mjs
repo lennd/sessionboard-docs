@@ -22,6 +22,13 @@
 import { hydrateMarkers } from '../lib/marker-hydration.mjs';
 
 const HINT = 'sb_signed_in=1';
+/** Set by the product on .sessionboard.com while someone is signed in: `sb_app=<region id>`. Names a region, nothing else. */
+const APP_COOKIE = 'sb_app';
+const SILENT_KEY = 'sb-account-silent-at';
+/** Set by "Sign out of the Help Center", cleared by Sign in: a reader who signed out here stays out. */
+const OPTED_OUT_KEY = 'sb-account-signed-out';
+const SILENT_EVERY_MS = 30 * 60 * 1000;
+const SILENT_TIMEOUT_MS = 15000;
 const READER_CACHE = 'sb-account-reader';
 const READER_TTL_MS = 5 * 60 * 1000;
 const CONTEXT_KEY = 'sb-help-context';
@@ -75,6 +82,46 @@ const el = (tag, props = {}, children = []) => {
   for (const c of [].concat(children)) if (c) node.append(c);
   return node;
 };
+
+const cookieValue = (name) =>
+  document.cookie
+    .split('; ')
+    .find((c) => c.startsWith(`${name}=`))
+    ?.slice(name.length + 1) ?? null;
+
+/**
+ * Signed in to Sessionboard but not here yet (first visit, an expired or
+ * cleared session, signed out of the Help Center only): run the product's
+ * hand-off page in a hidden frame instead of asking for a click. Only when the
+ * product's `sb_app` cookie says someone is signed in, and at most every
+ * SILENT_EVERY_MS, so an anonymous reader never loads the app.
+ */
+async function silentSignIn() {
+  if (document.cookie.split('; ').includes(HINT)) return false;
+  if (readJson('localStorage', OPTED_OUT_KEY)) return false;
+  const region = cookieValue(APP_COOKIE);
+  const config = JSON.parse(document.querySelector('[data-sb-silent]')?.dataset.sbSilent ?? '{}');
+  const app = region && config.regions?.[region];
+  if (!app || !config.signInPath) return false;
+  const last = Number(readJson('localStorage', SILENT_KEY) ?? 0);
+  if (last && Date.now() - last < SILENT_EVERY_MS) return false;
+  writeJson('localStorage', SILENT_KEY, Date.now());
+
+  const frame = document.createElement('iframe');
+  frame.setAttribute('aria-hidden', 'true');
+  frame.tabIndex = -1;
+  frame.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;border:0;left:-9999px';
+  // Lands back on a tiny JSON route here, not a page that would run this script again.
+  frame.src = `${app}${config.signInPath}?silent=1&return=${encodeURIComponent(`${location.origin}/_account/me`)}`;
+  document.body.append(frame);
+  const started = Date.now();
+  while (Date.now() - started < SILENT_TIMEOUT_MS) {
+    await new Promise((r) => setTimeout(r, 500));
+    if (document.cookie.split('; ').includes(HINT)) break;
+  }
+  frame.remove();
+  return document.cookie.split('; ').includes(HINT);
+}
 
 async function loadReader() {
   if (!document.cookie.split('; ').includes(HINT)) {
@@ -235,6 +282,7 @@ function buildPanel(reader, ctx, onChoose) {
       await fetch('/_account/sign-out', { method: 'POST', credentials: 'same-origin' });
     } finally {
       writeJson('sessionStorage', READER_CACHE, null);
+      writeJson('localStorage', OPTED_OUT_KEY, true);
       location.reload();
     }
   });
@@ -274,6 +322,7 @@ function renderMenus(reader, ctx, onChoose) {
 
 function wireToggles() {
   for (const root of document.querySelectorAll('[data-sb-account]')) {
+    root.querySelector('[data-sb-account-signin]')?.addEventListener('click', () => writeJson('localStorage', OPTED_OUT_KEY, null));
     const button = root.querySelector('[data-sb-account-toggle]');
     const panel = root.querySelector('[data-sb-account-panel]');
     const close = () => {
@@ -341,7 +390,8 @@ function audienceNote(reader) {
 
 async function boot() {
   wireToggles();
-  const reader = await loadReader();
+  let reader = await loadReader();
+  if (!reader && (await silentSignIn())) reader = await loadReader();
   let ctx = reader ? savedContext(reader) : null;
 
   const choose = (choice) => {
