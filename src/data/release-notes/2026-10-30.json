@@ -461,8 +461,8 @@
     },
     {
       "id": "field-event-channels-luma-linkedin",
-      "title": "Publish field events and webinars to Luma and LinkedIn Events as distribution channels",
-      "summary": "Field events (gatherings) and webinars can now be published to **Luma** and **LinkedIn Events**. Connect either platform from the new **Event channels** category in **Apps**, then use the **Publish to** block on the field event or webinar form. Registrations from either channel flow back into Sessionboard as attendees: the field event **Overview** shows channel cards, a registration-source breakdown and items needing attention (Luma approvals, conflicts, reconnect prompts), and **People** gains a **Source** column and a channel filter. **Settings › Channels** holds sync controls, registration close/remove actions, a LinkedIn recreate flow, an activity log and a **Promote** panel for LinkedIn ad campaigns; LinkedIn promotion and Matched Audiences sit behind per-connection flags.",
+      "title": "Publish field events and webinars to Luma and LinkedIn Events",
+      "summary": "Field events and webinars can now be published to **Luma** and **LinkedIn Events**. Connect either one from the new **Event channels** category in **Apps**, then turn it on under **Publish to** in the event's settings. Registrations from Luma and LinkedIn come back as attendees in the same approval queue, and **People** gets a **Source** column and filter so you can see where each person signed up.",
       "article": "/field-events/overview",
       "related": [
         "/field-events/registration-form",
@@ -477,7 +477,7 @@
       ],
       "enable": {
         "how": "support",
-        "path": "Organization → Preview → Field Events → Request access (our team sets it up with you); then connect Luma or LinkedIn Events from the App Marketplace and configure channels on the event"
+        "path": "Organization → Preview → Field Events → Request access (our team sets it up with you); then Apps → Event channels → connect Luma (a Luma Plus calendar API key) or LinkedIn Events (sign in, pick your company page, allow posting as the page); then the event's Settings → Publish to"
       },
       "where": {
         "scope": "event",
@@ -490,25 +490,17 @@
       "audience": [
         "organizer"
       ],
-      "use_case": "Teams running field events or webinars who also promote on Luma or LinkedIn can publish directly from Sessionboard and have registrations from those platforms land automatically as Sessionboard attendees — no manual import needed. LinkedIn promotion and Matched Audiences let demand-gen teams run targeted ads and build retargeting segments from consented attendee emails without leaving the platform.",
+      "use_case": "Teams that also list field events or webinars on Luma or LinkedIn can publish once from Sessionboard, keep the listing in sync as details change, and get every registration back in one attendee list and approval queue, with no manual imports and no double-booked seats.",
       "internal": {
         "cs_action": {
           "kind": "review_before_customers_see",
-          "note": "LinkedIn promotion and Matched Audiences are behind per-connection feature flags — confirm with engineering which flags to enable before positioning these to a customer. Luma webhook approval and capacity-below-approved-count edge cases are not yet verified against live credentials. The UI is also gated on a superuser flag on top of the org's Field Events (gatherings) Early Access; official Luma and LinkedIn logos are placeholders."
+          "note": "Early Access and super-user only for now: the channels UI is visible to Sessionboard staff in orgs with Field Events Early Access. Luma needs the customer's calendar on Luma Plus. LinkedIn ads (Promote) and Matched Audiences are built but wait on LinkedIn approvals (Advertising API Standard, Matched Audiences); until then they show 'Waiting on LinkedIn approval'. The LinkedIn registration form needs staff to switch on 'Registration form' for the connection, then a reconnect."
         },
         "when_to_bring_up": "When a customer running field events or webinars asks how to avoid manually importing registrations from Luma or LinkedIn, or when a demand-gen team asks about LinkedIn ad targeting from Sessionboard attendee data.",
         "who_should_get_it": "Customers on the Field Events (gatherings) or Webinars beta who actively use Luma or LinkedIn Events for promotion and registration.",
         "staff_path": "Apps → Event channels → Luma / LinkedIn Events; field event Settings → Channels",
-        "gotchas": "Several Luma and LinkedIn behaviours were not verified against live credentials (ticket approval field, capacity below approved count, guest.updated on check-in, LinkedIn description/address shapes, Lead Sync field mapping, Share Statistics, event-ad objective, dmpSegment threshold, version 202610). Matched Audiences only add people — removals are not yet implemented. Full registration-form → Luma question mapping is incomplete. LinkedIn requires two separate OAuth consents (events app + pages app) plus a page picker before the channel is active. Env vars LINKEDIN_EVENTS_CLIENT_ID/_SECRET and LINKEDIN_PAGES_CLIENT_ID/_SECRET must be set in Doppler. Not browser-tested against a live backend as of merge. The LinkedIn recreate flow triggers on 409 linkedin_recreate_required, worth flagging to customers who reconnect LinkedIn pages.",
-        "talk_track": "You can now publish your field event or webinar to Luma and LinkedIn Events directly from Sessionboard. Registrations from either platform come back automatically as attendees, and a Channel filter on the attendee list shows you where each person signed up.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The field-events overview guide should add a \"Channels\" section explaining how to connect Luma and LinkedIn Events, how registrations sync back, how to use the Channel filter on the attendee list, and the LinkedIn promotion and Matched Audiences options.",
-          "why_use_it": "Field events and webinars often live on multiple platforms at once, forcing teams to reconcile attendee lists by hand after each event. Channels let you publish a single event record to Luma and LinkedIn Events and receive registrations from both back into Sessionboard automatically, so your attendee list is always complete. The Channel filter on the attendee list shows exactly where each person registered, and LinkedIn promotion tools let you run ads and build Matched Audiences from the same workflow.",
-          "at": "2026-10-30T01:49:53.190Z"
-        }
+        "gotchas": "LinkedIn freezes an event once it starts (later edits stay in Sessionboard), and changing in person ↔ online, the organizer page or the registration choice before the start means deleting and re-creating the LinkedIn event. LinkedIn can't decline an RSVP through the API, so a declined person may still show as attending on LinkedIn. Matched Audiences only add people (no removals yet). Registration-form → Luma question mapping is partial (consent and company). Tested locally and on dev without live Luma/LinkedIn accounts; QA on dev is tracked in SB-10435 / SB-10437 once SB-10701's setup is done.",
+        "talk_track": "You can publish your field event or webinar to Luma and LinkedIn Events straight from Sessionboard. It stays in sync as you edit, and anyone who registers on Luma or LinkedIn lands in your attendee list and approval queue, with a Source column showing where they came from."
       },
       "shipped": {
         "prs": [
@@ -526,8 +518,7 @@
         "emailed_at": null
       },
       "ideas": [],
-      "media": [],
-      "gated": "availability:beta"
+      "media": []
     },
     {
       "id": "session-builds-export-and-custom-statuses",
