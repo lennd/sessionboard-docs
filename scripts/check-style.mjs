@@ -58,7 +58,6 @@ const norm = (s) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
 // chapter; remove the entry when it lands, never add one without a dated reason.
 const WALKTHROUGH_PENDING = {
   'integrations/connect-ai-assistants.mdx': 'chapter 69 waits on the ChatGPT app clearing OpenAI review (2026-10-29)',
-  'speaker-crm/send-via-docusign.mdx': 'real-envelope demo below chapter 67; fold into 67 or delete (2026-10-29)',
 };
 
 for (const file of files) {
