@@ -3199,6 +3199,481 @@
         "announced_at": null,
         "emailed_at": null
       }
+    },
+    {
+      "id": "registration-reports-and-report-builder",
+      "title": "Registration Reports: 46 ready-made reports and the report builder",
+      "summary": "A new **Reports** page under **Registration** gives organizers 46 ready-made reports — registrations by status, ticket and form, revenue, payments, refunds, credits, invoices, workshop rosters, check-in, session attendance, badge prints, promo codes, waitlists, approvals, cancellations, transfers, SMS delivery, seating, answers and more — in a searchable catalog. Open any report to run it in a dialog (50 rows per page) and download it as **CSV** or **Excel**. **Build a report** or **Customize, save or schedule** opens the full report builder pre-seeded with the report's query, to add columns, filters, grouping and sorting, save it to the **Saved reports** list, share a link or schedule email delivery. Reports respect **View registrations and orders** and **View finance reports**: a report the viewer cannot run is shown locked with the permission named.",
+      "article": "/registration/reports",
+      "related": [
+        "/reporting/report-builder",
+        "/reporting/dashboards",
+        "/registration/orders-and-invoices",
+        "/registration/roles-and-permissions"
+      ],
+      "kind": "new",
+      "module": "Reporting",
+      "features": [
+        "registration",
+        "ai_reports"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Registration → Reports"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers can answer revenue, attendance and logistics questions — how much money came in today, which workshops are full, who hasn't checked in — without exporting raw data or building queries from scratch. Finance staff get their own permission-gated view of payment and invoice reports without exposing that data to the rest of the team. Anyone can save or schedule a customised version for recurring use.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Available on events with the Registration feature once both the API (web-api #4882) and the Reports page (web-ui-v2 #1284) are deployed; both are in shipped.prs. Finance reports are gated by the View finance reports permission — confirm the customer's finance team has that role before demoing revenue reports."
+        },
+        "when_to_bring_up": "Any Registration customer asking how to pull revenue summaries, workshop rosters, check-in numbers or transfer history without a data export.",
+        "who_should_get_it": "Events using Registration (beta). Finance-sensitive reports require the View finance reports permission to be assigned.",
+        "staff_path": "Registration → Reports",
+        "gotchas": "The Registration category and all 46 recipes are hidden on events without the Registration feature flag. Finance fields (revenue, payments, invoices, credits, refunds) are refused at compile time for users without the finance permission — they get a 403, not empty data. Anonymised registrants show status, ticket and amounts but personal columns read 'Anonymised'. Voided registrations and orders are excluded unless the query explicitly includes deleted records. Downloads larger than the report's row limit are refused with a 422 error. In the Reports page, reports the viewer lacks permission to run are shown locked with the required permission named. The ?sbql= workbench seed only applies when no queryId is present.",
+        "talk_track": "You already have the report builder for sessions and speakers — Registration Reports brings that same experience to your attendee and revenue data, with 46 pre-built reports ready to run on day one.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The linked guide /registration/reports exists in the article index but should document: how to navigate the Reports section, the full list of 46 ready-made report categories, how to use the report builder for registration data, permission requirements for finance reports, and how to schedule or export reports.",
+          "why_use_it": "Registration Reports brings the full Sessionboard report builder to your registration data, so you can slice registrations, orders, payments, workshops, check-ins and more the same way you already work with session and speaker data. Pick from 46 ready-made reports for the most common questions, or build your own with custom columns, filters, grouping and sorting. Save reports for your team, schedule them by email, and export to CSV or XLSX — all from one place inside Registration.",
+          "at": "2026-10-29T17:59:46.912Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4882",
+          "lennd/sessionboard-web-ui-v2#1284"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "registration-hardening-h2",
+      "title": "Registration checkout, waitlist, refunds and onsite desk are more reliable under concurrent load",
+      "summary": "A set of concurrency and correctness fixes across registration checkout, waitlist autopay, refunds, workshop changes, walk-up card pricing, expo allotments and the onsite desk. Key changes registrants and organizers will notice: a checkout that races another for the last seat in a shared capacity pool now receives a clear **409 – seat unavailable** instead of an oversell; a price-tier change that happens while a cart is open returns **409 – price changed** with the old and new totals; a waitlist offer that has expired or whose hold has lapsed returns **409 – offer expired**; autopay only runs against cards (other payment methods are skipped with a **card only** notice); a walk-up card payment that no longer matches the quoted price is refused before any charge is attempted; an expo badge allotment whose hold expired is re-checked before payment; and anonymised registrants are blocked at the staffed desk, door, badge print and sync.",
+      "article": "/registration/orders-and-invoices",
+      "related": [
+        "/registration/tickets-and-pricing",
+        "/registration/payments",
+        "/registration/registrants",
+        "/onsite/web-desk",
+        "/onsite/checkin-and-badges"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "registration",
+        "gatherings",
+        "expo",
+        "gathering_badges",
+        "gathering_paid_tickets"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Registration → Orders; Registration → Waitlist; Onsite → Desk; Onsite → Badges"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Events with high-demand ticket releases or shared capacity pools no longer risk overselling seats when multiple registrants check out simultaneously. Organizers running waitlists with autopay get accurate decline messaging and are protected from double-charges on expired offers.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Several new 409 error codes are now surfaced to registrants (price_changed, offer_expired, autopay_card_only, extra_badges_expired, change_in_progress, windows_mode_not_importable). Confirm that any custom registration confirmation flows or third-party integrations handle 409 responses gracefully before a high-traffic launch."
+        },
+        "when_to_bring_up": "When a customer reports oversells on shared-capacity tickets, double-charges on waitlist autopay, or asks why anonymised registrants were appearing at the onsite desk.",
+        "who_should_get_it": "Any customer using Registration with shared capacity pools, waitlist autopay, walk-up card payments, expo badge allotments, or the onsite staffed desk.",
+        "staff_path": "Registration → Orders; Registration → Waitlist; Onsite → Desk",
+        "gotchas": "Autopay now skips non-card payment methods entirely (logged as card_only) rather than attempting them. Payment-plan orders are excluded from autopay. Fee-schedule rows in windows mode are refused on both dry-run and apply imports. Copied speaker rules that don't match the target event's roles by slug or name are cleared and reported — check copy results after cloning registration.",
+        "talk_track": "We've hardened the registration engine so two people can't accidentally grab the same last seat, waitlist offers expire cleanly, and the onsite desk correctly blocks anonymised registrants. You'll see clearer error messages when something can't proceed rather than silent failures.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should document the new 409 error codes registrants may see during checkout (price_changed, offer_expired, autopay_card_only, extra_badges_expired) and explain what action to take for each.",
+          "why_use_it": "null",
+          "at": "2026-10-29T19:19:18.145Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4890"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "wcag-registration-checkin-a11y",
+      "title": "Keyboard and screen-reader improvements across Registration admin and the check-in desk",
+      "summary": "Several WCAG 2.2 AA accessibility fixes land across Registration and the check-in desk. In **Orders**, **Forms** and **Sales**, the view-filter tabs are replaced by labelled toggle buttons that screen readers announce correctly. In the **Badge designer**, badge elements are now focusable buttons that move with the arrow keys (hold Shift for larger steps), and new **From left** / **From top** number boxes let you place elements without a mouse or drag. On the **Check-in desk**, the status message (e.g. \"That code is not for this event.\") stays visible until the next search instead of disappearing after 2.5 seconds, and the full-screen QR scanner takes focus automatically and closes with Escape.",
+      "article": "/registration/badges#design-a-badge",
+      "related": [
+        "/onsite/checkin-and-badges",
+        "/registration/orders-and-invoices",
+        "/registration/forms"
+      ],
+      "kind": "fixed",
+      "module": "Event team",
+      "features": [
+        "registration",
+        "gathering_badges"
+      ],
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Registration → Orders / Forms / Sales (filter toggles); Registration → Badges → open a design (badge element keyboard controls); Check-in desk (/checkin/:token) (status message and QR scanner)"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Teams that rely on keyboards, switch devices or assistive technology — including onsite staff running the check-in desk — can now navigate Registration admin and badge design without a mouse, and screen readers announce filter controls and status messages correctly.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer mentions accessibility requirements, VPAT requests, or staff who use keyboard-only or assistive-technology workflows at the check-in desk or in Registration admin.",
+        "who_should_get_it": "Any customer subject to accessibility mandates (government, healthcare, higher education) or with onsite staff who rely on keyboards.",
+        "staff_path": "Registration → Badges → open a design; Registration → Orders / Forms / Sales; /checkin/:token",
+        "gotchas": "The filter toggle buttons look identical to the old Radix tabs — the change is semantic only. Badge arrow-key movement is 0.05 in per press, 0.25 in with Shift.",
+        "talk_track": "Registration admin and the check-in desk now meet WCAG 2.2 AA keyboard and screen-reader requirements — badge elements move with arrow keys, filter controls are announced correctly, and check-in status messages stay visible until the next action.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The badge designer guide should document the From left / From top position boxes and arrow-key nudging as the keyboard alternative to drag-and-drop placement.",
+          "why_use_it": "The badge designer lets you build and position every element on a badge from within the browser. The From left and From top boxes, combined with arrow-key nudging, give you precise placement without drag-and-drop. The check-in desk handles QR scanning and manual lookup in one view, with clear status feedback that stays on screen until you act on it.",
+          "at": "2026-10-29T19:32:21.211Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1293"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "wcag-22-aa-registration-portals",
+      "title": "Registration forms, attendee portal and exhibitor portal meet WCAG 2.2 AA",
+      "summary": "The public registration form (all steps), confirmation page, attendee portal, exhibitor portal and exhibit page now pass WCAG 2.2 AA. Specific improvements: form fields link their label, help text, error message and required indicator to the control; focus rings and selected-state colours remain visible against light or white event themes; busy and action buttons carry descriptive names (e.g. **Select workshop**, **Remove workshop**); file-upload progress and errors are announced to screen readers; step names are read aloud on narrow screens; the **Action required** portal indicator is now text rather than a colour-only dot; inline add/change/meeting panels are properly focusable regions; the floor-map scroll box accepts keyboard focus; each registration and portal page sets a unique document title; and the toast **Close** button has an accessible name with sufficient contrast.",
+      "article": "/registration/accessibility",
+      "related": [
+        "/participants/register-for-an-event",
+        "/participants/attendee-portal",
+        "/participants/expo-exhibitor-portal",
+        "/expo/exhibitor-portal"
+      ],
+      "kind": "improved",
+      "module": "Portals",
+      "features": [
+        "registration",
+        "expo"
+      ],
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Registration form (public) → all steps; Attendee portal → all tabs; Exhibitor portal → all tabs; Exhibit page"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Events with accessibility requirements or government procurement mandates can point to WCAG 2.2 AA conformance across the full registration and portal experience. Attendees who rely on screen readers, keyboard navigation or high-contrast displays can complete registration and manage their portal without workarounds.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Changes are automatic — no configuration needed. Useful talking point for customers with accessibility procurement requirements or VPATs."
+        },
+        "when_to_bring_up": "When a customer asks about ADA, Section 508, EN 301 549 or WCAG compliance for their registration or portal experience.",
+        "who_should_get_it": "Any customer whose attendees include people with disabilities, or who must provide a VPAT or accessibility statement.",
+        "staff_path": null,
+        "gotchas": "The fixes apply to the org-portal (public registration and participant portals). The organizer-side admin UI is a separate codebase and is not covered by this change. The full VPAT draft is in the sessionboard-tam PR.",
+        "talk_track": "Your registration form and attendee and exhibitor portals now meet WCAG 2.2 AA — screen readers, keyboard navigation and high-contrast themes all work correctly out of the box, with no setup required.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The /registration/accessibility guide should be expanded to list the specific WCAG 2.2 AA criteria now met (1.1.1, 1.3.1, 1.4.3, 1.4.11, 2.1.1, 2.4.2, 2.4.3, 2.4.6, 2.4.7, 3.3.1, 3.3.2, 4.1.2, 4.1.3) and describe what each means for organizers configuring their event theme and for participants using assistive technology.",
+          "why_use_it": "Sessionboard's registration forms and attendee portals are built to work for every registrant, including those who use screen readers, keyboard-only navigation or high-contrast display settings. Labels, errors and help text are programmatically linked to their controls so assistive technology reads the right context. Focus order, visible focus rings and sufficient colour contrast are maintained even when an event applies a light or white theme.",
+          "at": "2026-10-29T19:35:45.692Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-org-portal#261"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "insights-role-field-hidden-enforcement",
+      "title": "Insights reports now respect role-level field restrictions",
+      "summary": "Columns hidden for a team member's event role are now stripped from **Insights** report output. Previously, a bug caused the field-permission filter to always fail silently and return every column regardless of role restrictions.",
+      "article": "/reporting/report-builder",
+      "kind": "fixed",
+      "module": "Reporting",
+      "features": [
+        "ai_reports"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Reporting → Dashboards → (any Insights report)"
+      },
+      "permissions": [
+        "event.reports.read"
+      ],
+      "audience": [
+        "organizer",
+        "reviewer"
+      ],
+      "use_case": "Organizations that restrict sensitive fields (e.g. contact details, internal scores) for certain team roles can now trust that those fields will not appear in Insights report columns, even for users who build or view reports.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Users whose event role hides fields will now see fewer columns in Insights reports than before. This is the correct behavior, but it is a visible change for ~14 user-event pairs identified in US and ME production. Reach out proactively if any of those accounts are strategic."
+        },
+        "when_to_bring_up": "When a customer asks why a team member can suddenly no longer see certain columns in a report, or when discussing field-level permissions and data governance.",
+        "who_should_get_it": "Any customer using event role field restrictions (Role Field Settings) who also uses Insights reports — particularly those with reviewers or limited-access roles.",
+        "staff_path": "Event Team → Permissions → (role) → Fields → Contact Fields / Session Fields / Group Fields",
+        "gotchas": "The fix is enforced automatically with no toggle. Affected users will lose columns silently — the column simply disappears from report output. Standard field aliases (e.g. Contact city → address_city, Session status → display_status) are covered, but any newly added registry field that re-exposes a standard field will need a manual alias entry before it is enforced.",
+        "talk_track": "Field restrictions on team roles now apply consistently in Insights reports. If someone on a restricted role was previously seeing columns they should not have, those columns will no longer appear.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The report-builder guide should note that columns hidden by a team member's event role field permissions are automatically excluded from Insights report output.",
+          "why_use_it": "The Report & Dashboard Builder lets you query sessions, contacts, speakers and related data across your event and visualize the results as charts or tables. Field-level permissions on team roles control which columns each role is allowed to see, so sensitive data stays visible only to the people who need it.",
+          "at": "2026-10-29T19:43:29.276Z"
+        }
+      },
+      "related": [
+        "/event-team/invite-manage-event-team-members",
+        "/reporting/dashboards"
+      ],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4903"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "public-api-updated-at-fix",
+      "title": "Public API contact, exhibitor and sponsor writes now advance `updated_at` correctly",
+      "summary": "Writes to contacts, exhibitors and sponsors via the public API (`PUT /contacts/{id}`, bulk contact updates, exhibitor and sponsor PUT/bulk) now advance `updated_at` on the underlying record after each write. Contact `GET`, list and write responses return the record's own `updated_at` — the same column the concurrency check compares — so echoing it back on a subsequent `PUT` returns **200** instead of **409 STALE_UPDATE**. Delta syncs that poll on `updated_at` will now pick up records changed through the API.",
+      "article": "/integrations/api-tokens",
+      "kind": "fixed",
+      "module": "Platform",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Public API — PUT /contacts/{id}, POST /contacts/bulk, PUT /exhibitors/{id}, PUT /sponsors/{id} and their bulk equivalents"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "API integrations that write contacts, exhibitors or sponsors and then poll for changes — or that echo `updated_at` as a concurrency token — will now see accurate timestamps and stop receiving spurious 409 errors. Delta syncs will pick up records edited through the API on the next ETL run without requiring a manual admin touch.",
+      "internal": {
+        "cs_action": {
+          "kind": "reach_out",
+          "note": "Any API integration that delta-syncs on contact updated_at, or that echoes updated_at as a concurrency token on PUT, was broken since PR #4806 went live (2026-10-29 03:00 UTC). Those integrations will now start seeing contacts as changed on the next poll. Flag partners with write:contacts tokens — US: 64 orgs, EU: 9 orgs — so they are not surprised by a sudden wave of 'changed' records."
+        },
+        "when_to_bring_up": "When a customer reports 409 STALE_UPDATE on contact PUT, stale search results after API writes, or a delta sync that never picks up API-written contacts.",
+        "who_should_get_it": "Any org using the public API to write contacts, exhibitors or sponsors, especially those running delta syncs or two-way integrations.",
+        "staff_path": null,
+        "gotchas": "Integrations that diff on updated_at will now see API-written contacts as changed — including their own writes. This is correct behaviour but may surprise partners who relied on the old (broken) no-op. The field type and format are unchanged; only the value moves. Also note: the concurrency token on contact PUT and bulk update was 409-ing every echoed token since #4806 (2026-10-29 03:00 UTC) — all contacts written since then had mismatched stamps.",
+        "talk_track": "A bug introduced in a recent release caused contact PUT to return 409 on every echoed updated_at token, and API-written contacts never re-indexed for search. Both are fixed: the timestamp now advances on every write, and echoing it back works correctly.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The API tokens guide should add a section explaining how updated_at is used as a concurrency token on PUT and bulk-update endpoints, and how delta syncs should use it as a watermark.",
+          "why_use_it": "The public API lets you read and write contacts, exhibitors, sponsors and sessions from your own systems. Use it to push data from a registration platform, CRM or custom integration, and to pull changes back for downstream tools. The `updated_at` field on each record is the concurrency token for conflict detection and the watermark for delta syncs, so keeping it accurate is essential for reliable two-way integrations.",
+          "at": "2026-10-29T19:52:43.699Z"
+        }
+      },
+      "related": [
+        "/integrations/integration-readiness",
+        "/integrations/overview"
+      ],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4910"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "registration-pending-payment-reconciliation",
+      "title": "Pending registration payments now reconcile automatically, with a \"Needs review\" escalation path",
+      "summary": "A background reconciler now checks Spreedly every 5 minutes for registration charges left **pending** or **processing** — ACH / payment-plan charges, 3-D Secure holds, and walk-up or onsite card payments — and settles or fails them automatically. A charge still unresolved past a cutoff measured from the charge attempt (24 hours for cards, 240 hours — 10 days — for ACH), one the gateway has no record of, or one reported at a different amount becomes **Needs review**: its held seats are released and autopay is paused on the related installment. In the **Order drawer → Payments**, every unsettled payment shows a status badge, and a needs-review payment shows the reason and what to check in the gateway. **Registration → Orders → Finance reports → Failed transactions** gains a **Status** column and a **Show** filter (**All / Declined / No answer yet / Needs review**).",
+      "article": "/registration/orders-and-invoices#payments-that-need-review",
+      "related": [
+        "/registration/payments",
+        "/registration/reports"
+      ],
+      "kind": "new",
+      "module": "Program",
+      "features": [
+        "registration",
+        "gathering_paid_tickets",
+        "gathering_invoices"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Registration → Orders → Order drawer → Payments; Registration → Orders → Finance reports → Failed transactions"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Events using ACH payment plans, 3-D Secure, or walk-up card payments no longer need manual follow-up when a charge stalls: the system settles it automatically or flags it for review and releases the held seats so they go back on sale — preventing phantom holds from blocking inventory.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "The reconciler runs automatically; no enablement needed. However, customers using ACH or payment plans should be told that long-pending charges will now appear in Failed transactions as 'Needs review' after 240 hours / 10 days (ACH) or 24 hours (card) from the charge attempt; until then the pending charge keeps its seats. Staff must review those rows and decide — nothing is auto-refunded or auto-voided. A payment settled after 'Needs review' can oversell by one seat because holds were already released. Both halves (web-api #4912 reconciler, web-ui-v2 #1296 badge and filter) are in shipped.prs."
+        },
+        "when_to_bring_up": "When a customer reports that a registration payment is stuck pending, seats are held but not confirmed, or they ask why an ACH or payment-plan charge never settled.",
+        "who_should_get_it": "Any customer using Registration with ACH, payment plans, 3-D Secure, walk-up card, or onsite card payments.",
+        "staff_path": "Registration → Orders → Finance reports → Failed transactions (Status: Needs review)",
+        "gotchas": "Needs-review rows are not polled again — a human must act. A charge that settles after escalation will confirm seats even though holds were released, which can oversell by one. Autopay is paused on the related installment when escalated; staff must manually resume or void. The reconciler uses SKIP LOCKED so concurrent runs are safe, but a charge in its first 2 minutes is not claimed. The order drawer names the reason (not confirmed in time, no gateway record, amount mismatch); the orders guide's Payments that need review section says what to do for each.",
+        "talk_track": "Pending charges — ACH, payment plans, 3-D Secure, walk-up cards — now settle automatically. If one can't resolve within the cutoff, it shows up in Failed transactions as 'Needs review' with a reason, and the held seats go back on sale so you're not stuck waiting.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should add a section on the new \"Needs review\" payment status: what triggers it, what happens to held seats and autopay installments, where to find these charges in Failed transactions, and what actions staff should take to resolve them.",
+          "why_use_it": "Registration payments that go through ACH, payment plans, 3-D Secure, or onsite card readers can take time to settle at the gateway. The reconciler handles that wait automatically: it checks each pending charge, confirms the result with Spreedly, and either completes the order — sending confirmation emails and converting holds to confirmed seats — or escalates it so you can act. Charges that cannot be resolved within the cutoff window appear in Failed transactions with a reason, and their seats are released so you can resell them without manual intervention.",
+          "at": "2026-10-29T22:01:45.442Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#4912",
+          "lennd/sessionboard-web-ui-v2#1296"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
     }
   ]
 }
