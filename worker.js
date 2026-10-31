@@ -188,7 +188,8 @@ const isPublicPath = (pathname) => PUBLIC_EXACT.has(pathname) || PUBLIC_PREFIXES
 /** A signed-out request: pages go to the landing page (and come back after sign-in); anything else is a plain 404. */
 function signInRequired(request, url) {
   const accept = request.headers.get('Accept') ?? '';
-  const looksLikePage = request.method === 'GET' && (accept.includes('text/html') || !/\.[a-z0-9]+$/i.test(url.pathname));
+  const readsPage = request.method === 'GET' || request.method === 'HEAD';
+  const looksLikePage = readsPage && (accept.includes('text/html') || !/\.[a-z0-9]+$/i.test(url.pathname));
   const headers = { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow', Vary: 'Cookie' };
   if (!looksLikePage) return new Response('Not found\n', { status: 404, headers: { ...headers, 'Content-Type': 'text/plain; charset=utf-8' } });
   const back = `${url.pathname}${url.search}`;
