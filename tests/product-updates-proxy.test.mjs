@@ -75,6 +75,27 @@ test('subscribe relays the address with the shared secret and the visitor IP, JS
   assert.deepEqual(body, { email: 'a@b.co', website: '' });
 });
 
+test('a personal address is told release notes go to company emails only', async () => {
+  const fetchImpl = async () =>
+    new Response(JSON.stringify({ success: false, code: 'work_email_required' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+  const res = await run(
+    SUBSCRIBE_PATH,
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'pat@gmail.com', website: '', ...human() }) },
+    ENV,
+    fetchImpl,
+  );
+  assert.equal(res.status, 400);
+  assert.deepEqual(await res.json(), { ok: false, result: 'work_email' });
+
+  const form = await run(
+    SUBSCRIBE_PATH,
+    { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ email: 'pat@gmail.com', website: '' }).toString() },
+    ENV,
+    fetchImpl,
+  );
+  assert.equal(location(form).searchParams.get('result'), 'work_email');
+});
+
 test('subscribe from a plain form redirects to the outcome page', async () => {
   const form = new URLSearchParams({ email: 'a@b.co', website: '' });
   const res = await run(SUBSCRIBE_PATH, {

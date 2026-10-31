@@ -222,6 +222,9 @@ export async function productUpdatesResponse(request, url, env, fetchImpl = fetc
       fetchImpl,
     );
     const ok = api.status >= 200 && api.status < 300;
+    // Release notes go to company addresses only (web-api
+    // lib/email/company-email): a personal mailbox is told so.
+    if (api.status === 400 && api.body?.code === 'work_email_required') return answer(false, 'work_email', 400);
     // 404: the API build in front of us predates the route — the list is not
     // open yet, which is "unavailable", not an error on our side.
     const unavailable = api.status === 503 || api.status === 404;
