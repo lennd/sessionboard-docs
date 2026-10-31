@@ -81,6 +81,13 @@ export const collections = {
           .boolean()
           .optional()
           .describe('True when Sessionboard (support or the CSM) has to turn this on for the customer. Derived from availability when omitted.'),
+        included_with: z
+          .string()
+          .regex(/^[a-z0-9_]+$/, 'included_with is a product-contract feature slug, e.g. "crm"')
+          .optional()
+          .describe(
+            'Feature slug of the product this one ships inside, e.g. "crm" for Contracts (GA 2026-10-28). The box then reads "Included with CRM", turns on with that product, and drops the add-on and CSM lines.',
+          ),
         enable_path: z
           .string()
           .optional()

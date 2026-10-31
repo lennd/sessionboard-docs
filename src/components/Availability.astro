@@ -25,9 +25,11 @@ interface Props {
   cs_enabled?: boolean;
   enable_path?: string;
   permissions?: string[];
+  /** Product-contract slug this feature ships inside (`crm` for Contracts). */
+  included_with?: string;
 }
 
-const { features = [], where, availability, cs_enabled, enable_path, permissions = [] } = Astro.props;
+const { features = [], where, availability, cs_enabled, enable_path, included_with, permissions = [] } = Astro.props;
 
 const RANK: Record<string, number> = { everyone: 0, preview: 1, on_request: 2, beta: 3, limited_release: 4, add_on: 5, enterprise: 6 };
 const facts = features.map((f) => featureFacts(f, contract));
@@ -43,7 +45,14 @@ const scope = where || derivedWhere;
 const scopeLabel = { org: 'Organization', event: 'Event', both: 'Organization and event' }[scope as string] || null;
 
 const enableHow = facts.find((f) => f.availability === avail)?.enable_how || (avail === 'everyone' ? 'default_on' : 'csm');
-const sessionboardEnables = cs_enabled ?? ['beta', 'on_request', 'add_on', 'limited_release', 'enterprise'].includes(avail);
+// Included with another product (Contracts with CRM, GA 2026-10-28): it is on
+// wherever that product is on, so the add-on / CSM wording would be wrong.
+const includedName = included_with
+  ? (contract.featureNames as Record<string, string>)[included_with] || included_with
+  : null;
+const INCLUDED_LINKS: Record<string, string> = { crm: '/speaker-crm/overview' };
+const includedHref = included_with ? INCLUDED_LINKS[included_with] : undefined;
+const sessionboardEnables = includedName ? false : cs_enabled ?? ['beta', 'on_request', 'add_on', 'limited_release', 'enterprise'].includes(avail);
 
 const names = facts.map((f) => f.name);
 // "Settings · Update" exists at both scopes; qualify so the two read differently.
@@ -57,19 +66,30 @@ const permissionNames = [
     }),
   ),
 ];
-const show = features.length > 0 || where || availability || enable_path || permissions.length > 0;
+const show = features.length > 0 || where || availability || enable_path || included_with || permissions.length > 0;
 ---
 
 {show && (
-  <aside class="sb-availability" aria-label="Availability" data-sb-availability={features.join(' ') || undefined} data-availability={avail} data-pagefind-ignore>
+  <aside class="sb-availability" aria-label="Availability" data-sb-availability={features.join(' ') || undefined} data-availability={includedName ? 'included' : avail} data-included-with={included_with} data-pagefind-ignore>
     <dl>
       <div>
         <dt>Available with</dt>
-        <dd>
-          <strong>{AVAILABILITY[avail]?.label}</strong>
-          {names.length > 0 && <span class="sb-availability-names"> · {names.join(', ')}</span>}
-          <span class="sb-availability-sub">{AVAILABILITY[avail]?.short}</span>
-        </dd>
+        {includedName ? (
+          <dd>
+            <strong>Included with {includedName}</strong>
+            {names.length > 0 && <span class="sb-availability-names"> · {names.join(', ')}</span>}
+            <span class="sb-availability-sub">
+              Every organization with {includedName} has it; nothing extra to buy.
+              {includedHref && <> <a href={includedHref}>About {includedName}</a></>}
+            </span>
+          </dd>
+        ) : (
+          <dd>
+            <strong>{AVAILABILITY[avail]?.label}</strong>
+            {names.length > 0 && <span class="sb-availability-names"> · {names.join(', ')}</span>}
+            <span class="sb-availability-sub">{AVAILABILITY[avail]?.short}</span>
+          </dd>
+        )}
       </div>
       {scopeLabel && (
         <div>
@@ -80,7 +100,7 @@ const show = features.length > 0 || where || availability || enable_path || perm
       <div>
         <dt>Turn it on</dt>
         <dd>
-          {enable_path ? enable_path : ENABLE_HOW[enableHow]}
+          {enable_path ? enable_path : includedName ? `On whenever ${includedName} is on — nothing to turn on` : ENABLE_HOW[enableHow]}
           {sessionboardEnables && (
             <span class="sb-availability-sub">
               Sessionboard turns this on for you — ask your Customer Success Manager.
