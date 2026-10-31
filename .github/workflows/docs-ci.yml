@@ -154,19 +154,16 @@ jobs:
           set -euo pipefail
           base=https://learn.sessionboard.com
 
-          code=$(curl -s -o /dev/null -w '%{http_code}' --retry 3 --retry-delay 3 "$base/")
-          [ "$code" = 200 ] || { echo "::error::home returned $code"; exit 1; }
-
-          # The canonical host must never inherit the preview host's noindex.
-          # Headers are captured first rather than piped into grep: `grep -q`
-          # exits on the first match, curl takes SIGPIPE, and under pipefail that
-          # non-zero status would read as "no header found" — the check would
-          # pass precisely when it should fail.
-          headers=$(curl -sI --retry 3 --retry-delay 3 "$base/")
-          if grep -qi 'x-robots-tag' <<<"$headers"; then
-            echo "::error::canonical host is sending X-Robots-Tag — it would deindex the Help Center"
-            exit 1
-          fi
+          # Sign-in only (worker.js): a signed-out visitor is sent to the landing
+          # page, which is the one page anyone can open.
+          code=$(curl -s -o /dev/null -w '%{http_code}' --retry 3 --retry-delay 3 "$base/welcome")
+          [ "$code" = 200 ] || { echo "::error::/welcome returned $code"; exit 1; }
+          headers=$(curl -sI --retry 3 --retry-delay 3 "$base/sessions/accept-decline")
+          grep -qi '^location: /welcome?return=' <<<"$headers" || { echo "::error::a signed-out article request was not sent to /welcome — the Help Center is open"; exit 1; }
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$base/pagefind/pagefind-entry.json")
+          [ "$code" = 404 ] || { echo "::error::search index answered $code signed out, expected 404"; exit 1; }
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$base/sitemap.xml")
+          [ "$code" = 302 ] || [ "$code" = 404 ] || { echo "::error::sitemap answered $code signed out"; exit 1; }
 
           # The legacy KB host has to keep redirecting; 311 mapped URLs depend on it.
           code=$(curl -s -o /dev/null -w '%{http_code}' https://help.sessionboard.com/)
@@ -176,12 +173,6 @@ jobs:
           # an unknown path gets, so a regression here is a data leak, not a 500.
           code=$(curl -s -o /dev/null -w '%{http_code}' "$base/_internal/help-index.json")
           [ "$code" = 404 ] || { echo "::error::/_internal/ answered $code unauthenticated, expected 404"; exit 1; }
-
-          # The enablement section is open but must never be indexed or cached.
-          prefix=$(node -p "require('./site.json').internalPrefix")
-          headers=$(curl -sI --retry 3 --retry-delay 3 "$base/$prefix")
-          grep -qi '^x-robots-tag: noindex' <<<"$headers" || { echo "::error::/$prefix/ is missing X-Robots-Tag: noindex"; exit 1; }
-          grep -qi '^cache-control: private, no-store' <<<"$headers" || { echo "::error::/$prefix/ is cacheable"; exit 1; }
 
           echo "Published and smoke-tested $base"
 

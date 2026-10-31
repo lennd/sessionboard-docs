@@ -7,12 +7,14 @@ import {
   HINT_COOKIE,
   ME_PATH,
   READER_COOKIE,
+  SESSION_COOKIE,
   SESSION_PATH,
   SESSION_TTL_S,
   SIGN_IN_PATH,
   SIGN_OUT_PATH,
   STAFF_COOKIE,
   accountResponse,
+  isSignedInRequest,
   isStaffRequest,
   readReader,
   safeReturnPath,
@@ -84,11 +86,12 @@ test('llms globs list each section and page', () => {
   ]);
 });
 
-test('site.json gates Registration, Expo and Onsite', () => {
-  for (const slug of ['registration/overview', 'expo/floor-plan', 'onsite/kiosk']) {
+test('site.json gates Registration, Expo, Onsite, the Attend app and Enablement to staff', () => {
+  for (const slug of ['registration/overview', 'expo/floor-plan', 'onsite/kiosk', 'attend/overview', 'attend', 'participants/attend-app', 'enablement/releases/x']) {
     assert.equal(isStaffOnlySlug(slug, realSite), true, slug);
   }
-  assert.equal(isStaffOnlySlug('attend/overview', realSite), false);
+  assert.equal(isStaffOnlySlug('sessions/accept-decline', realSite), false);
+  assert.equal(isStaffOnlySlug('attendees/overview', realSite), false, 'a prefix is a whole segment');
   assert.ok(realSite.account.regions.every((r) => r.api.startsWith('https://') && r.app.startsWith('https://')));
 });
 
@@ -197,6 +200,7 @@ test('a reader token signs the reader in: reader + hint cookies, and staff when 
   assert.ok(hint.startsWith(`${HINT_COOKIE}=1;`) && !hint.includes('HttpOnly'), 'page script can see the hint');
 
   const jar = cookieJar(res);
+  assert.equal(await isSignedInRequest(new Request(`${ORIGIN}/`, { headers: { Cookie: jar } }), ENV), true, 'the sign-in gate opens');
   assert.equal(await isStaffRequest(new Request(`${ORIGIN}/`, { headers: { Cookie: jar } }), ENV), true);
   assert.equal(readReader(new Request(`${ORIGIN}/`, { headers: { Cookie: jar } }), SITE, ENV).token, TOKEN);
 });
@@ -243,17 +247,35 @@ test('local regions come from env only', async () => {
   assert.equal(res.status, 200);
 });
 
-test('without the staff secret readers sign in but nobody is staff', async () => {
+test('without the secret nobody passes the sign-in gate or is staff (fail closed)', async () => {
   const { res } = await post({ token: TOKEN, api: 'https://api.example.com' }, { env: {} });
-  assert.equal(res.status, 200);
   assert.ok(res.headers.getSetCookie().find((c) => c.startsWith(`${STAFF_COOKIE}=;`)));
+  assert.ok(!res.headers.getSetCookie().some((c) => c.startsWith(`${SESSION_COOKIE}=v1`)));
+  assert.equal(await isSignedInRequest(new Request(`${ORIGIN}/`, { headers: { Cookie: cookieJar(res) } }), {}), false);
+});
+
+test('a forged or missing gate cookie does not sign anyone in', async () => {
+  const req = (cookie) => new Request(`${ORIGIN}/`, { headers: { Cookie: cookie } });
+  assert.equal(await isSignedInRequest(req(''), ENV), false);
+  assert.equal(await isSignedInRequest(req(`${SESSION_COOKIE}=v1.9999999999.u1.AAAA`), ENV), false);
+  assert.equal(await isSignedInRequest(req(`${HINT_COOKIE}=1`), ENV), false, 'the readable hint is not a session');
+});
+
+test('/me re-issues the gate cookie for a good reader session that lacks it (sessions from before the gate)', async () => {
+  const jar = cookieJar((await post({ token: TOKEN, api: 'https://api.example.com' })).res)
+    .split('; ')
+    .filter((c) => !c.startsWith(`${SESSION_COOKIE}=`))
+    .join('; ');
+  const { res } = await call(ME_PATH, {}, { cookie: jar });
+  assert.equal(res.status, 200);
+  assert.ok(res.headers.getSetCookie().find((c) => c.startsWith(`${SESSION_COOKIE}=v1.`)));
 });
 
 test('DELETE from the product clears all three cookies; OPTIONS answers the preflight', async () => {
   const { res: del } = await call(SESSION_PATH, { method: 'DELETE', headers: { Origin: 'https://app.example.com' } });
   assert.equal(del.status, 200);
   const cleared = del.headers.getSetCookie();
-  for (const name of [READER_COOKIE, STAFF_COOKIE, HINT_COOKIE]) {
+  for (const name of [READER_COOKIE, SESSION_COOKIE, STAFF_COOKIE, HINT_COOKIE]) {
     assert.ok(cleared.find((c) => c.startsWith(`${name}=;`) && c.includes('Max-Age=0')), name);
   }
   const { res: pre } = await call(SESSION_PATH, { method: 'OPTIONS', headers: { Origin: 'https://app.example.com' } });
@@ -318,6 +340,13 @@ test('sign-out from a Help Center page clears the session; a cross-site form can
 });
 
 // ── /_account/sign-in ─────────────────────────────────────────────────
+
+test('sign-in goes through the chosen region\'s app', async () => {
+  const { res } = await call(`${SIGN_IN_PATH}?region=eu&return=/sessions`);
+  assert.equal(new URL(res.headers.get('Location')).origin, 'https://app-eu.example.com');
+  const { res: unknown } = await call(`${SIGN_IN_PATH}?region=mars`);
+  assert.equal(new URL(unknown.headers.get('Location')).origin, 'https://app.example.com');
+});
 
 test('sign-in sends the reader to the product hand-off with a same-host return URL', async () => {
   const { res } = await call(`${SIGN_IN_PATH}?return=/registration/overview`);

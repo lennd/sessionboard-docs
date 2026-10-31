@@ -1,0 +1,346 @@
+---
+/**
+ * The landing page: the only page of the Help Center anyone can open without
+ * a Sessionboard session (worker.js sends every other signed-out request here
+ * with `?return=<path>`). Standalone on purpose — no Starlight chrome, so no
+ * sidebar, search or titles of what is behind it.
+ *
+ * Someone already signed in to Sessionboard never sees it for long: the
+ * product keeps an `sb_app=<region>` cookie on .sessionboard.com, and the
+ * script below runs that region's /help-center/sign-in in a hidden frame and
+ * carries on to `return` (src/lib/account-session.mjs is the Worker half).
+ * Everyone else gets Sign in, per region.
+ */
+import '@fontsource/plus-jakarta-sans/400.css';
+import '@fontsource/plus-jakarta-sans/600.css';
+import '@fontsource/plus-jakarta-sans/700.css';
+import site from '../../site.json';
+import wordmarkLight from '../assets/wordmark-light.png';
+import wordmarkDark from '../assets/wordmark-dark.png';
+
+const account = (site as { account?: { regions?: { id: string; app: string }[]; signInPath?: string } }).account ?? {};
+const regions = account.regions ?? [];
+const REGION_LABELS: Record<string, string> = { us: 'United States', eu: 'Europe', me: 'Middle East' };
+const config = JSON.stringify({
+  regions: Object.fromEntries(regions.map((r) => [r.id, r.app])),
+  signInPath: account.signInPath ?? '',
+});
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sessionboard Help Center</title>
+    <meta name="description" content="Guides for Sessionboard customers. Sign in with your Sessionboard account to read them." />
+    <meta name="robots" content="index, nofollow" />
+    <link rel="canonical" href={`https://${site.canonicalHost}/welcome`} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon.png" type="image/png" />
+    <meta name="theme-color" content="#1e62d8" />
+  </head>
+  <body>
+    <main class="wrap" data-sb-welcome data-config={config}>
+      <img class="logo logo-light" src={wordmarkLight.src} alt="Sessionboard" height="28" />
+      <img class="logo logo-dark" src={wordmarkDark.src} alt="Sessionboard" height="28" />
+
+      <section class="card" aria-live="polite">
+        <p class="eyebrow">Help Center</p>
+        <h1>Guides for Sessionboard customers</h1>
+        <p class="lede">
+          Step-by-step help for organizers, speakers, reviewers and AV teams — personalized for your events. Sign in with
+          your Sessionboard account to read it.
+        </p>
+
+        <div class="checking" data-sb-checking hidden>
+          <span class="spinner" aria-hidden="true"></span>
+          <span>Signing you in…</span>
+        </div>
+
+        <div class="actions" data-sb-actions>
+          <a class="button primary" data-sb-signin data-region={regions[0]?.id ?? 'us'} href="/_account/sign-in">Sign in</a>
+          <p class="regions">
+            Your account is in another region?{' '}
+            {
+              regions.slice(1).map((r, i) => (
+                <>
+                  {i > 0 && ' · '}
+                  <a data-sb-signin data-region={r.id} href={`/_account/sign-in?region=${r.id}`}>
+                    {REGION_LABELS[r.id] ?? r.id}
+                  </a>
+                </>
+              ))
+            }
+          </p>
+        </div>
+
+        <ul class="who">
+          <li>
+            <strong>Organizers and event teams</strong>
+            <span>Sign in above with the account you use for Sessionboard.</span>
+          </li>
+          <li>
+            <strong>Speakers, presenters and reviewers</strong>
+            <span>Open your portal first — the Help Center signs you in from there.</span>
+          </li>
+          <li>
+            <strong>AV and Ready Room teams</strong>
+            <span>Open Ready Room or the Live Transcribe console first.</span>
+          </li>
+        </ul>
+      </section>
+
+      <p class="foot">
+        Not a customer yet? <a href="https://www.sessionboard.com">See what Sessionboard does</a>{' · '}<a
+          href="https://www.sessionboard.com/demo">Book a demo</a
+        >
+      </p>
+    </main>
+
+    <script>
+      const HINT = 'sb_signed_in=1';
+      const OPTED_OUT_KEY = 'sb-account-signed-out';
+      const SILENT_KEY = 'sb-account-silent-at';
+      const SILENT_EVERY_MS = 30 * 60 * 1000;
+      const TIMEOUT_MS = 15000;
+
+      const root = document.querySelector<HTMLElement>('[data-sb-welcome]')!;
+      const config = JSON.parse(root.dataset.config ?? '{}') as { regions: Record<string, string>; signInPath: string };
+      const params = new URLSearchParams(location.search);
+      const ret = (() => {
+        const r = params.get('return') ?? '/';
+        return r.startsWith('/') && !r.startsWith('//') && !r.startsWith('/\\') ? r : '/';
+      })();
+
+      const store = {
+        get: (k: string) => {
+          try {
+            return localStorage.getItem(k);
+          } catch {
+            return null;
+          }
+        },
+        set: (k: string, v: string | null) => {
+          try {
+            if (v == null) localStorage.removeItem(k);
+            else localStorage.setItem(k, v);
+          } catch {
+            /* storage blocked */
+          }
+        },
+      };
+      const cookie = (name: string) =>
+        document.cookie
+          .split('; ')
+          .find((c) => c.startsWith(`${name}=`))
+          ?.slice(name.length + 1) ?? null;
+      const signedIn = () => document.cookie.split('; ').includes(HINT);
+
+      // Sign in links come back to the page they were sent from.
+      for (const a of document.querySelectorAll<HTMLAnchorElement>('[data-sb-signin]')) {
+        a.href = `/_account/sign-in?region=${encodeURIComponent(a.dataset.region ?? 'us')}&return=${encodeURIComponent(ret)}`;
+        a.addEventListener('click', () => store.set(OPTED_OUT_KEY, null));
+      }
+
+      async function silentSignIn() {
+        const region = cookie('sb_app');
+        const app = region ? config.regions[region] : null;
+        if (!app || !config.signInPath || store.get(OPTED_OUT_KEY)) return false;
+        const last = Number(store.get(SILENT_KEY) ?? 0);
+        if (last && Date.now() - last < SILENT_EVERY_MS) return false;
+        store.set(SILENT_KEY, String(Date.now()));
+
+        const checking = root.querySelector<HTMLElement>('[data-sb-checking]')!;
+        const actions = root.querySelector<HTMLElement>('[data-sb-actions]')!;
+        checking.hidden = false;
+        actions.hidden = true;
+        const frame = document.createElement('iframe');
+        frame.setAttribute('aria-hidden', 'true');
+        frame.tabIndex = -1;
+        frame.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;border:0;left:-9999px';
+        frame.src = `${app}${config.signInPath}?silent=1&return=${encodeURIComponent(`${location.origin}/_account/me`)}`;
+        document.body.append(frame);
+        const started = Date.now();
+        while (Date.now() - started < TIMEOUT_MS && !signedIn()) await new Promise((r) => setTimeout(r, 300));
+        frame.remove();
+        if (signedIn()) return true;
+        checking.hidden = true;
+        actions.hidden = false;
+        return false;
+      }
+
+      (async () => {
+        // A session cookie the Worker no longer accepts (expired) still carries the
+        // hint; /me re-issues the gate cookie when the reader session is good.
+        if (signedIn()) {
+          const res = await fetch('/_account/me', { credentials: 'same-origin' }).catch(() => null);
+          if (res?.ok) return location.replace(ret);
+        }
+        if (await silentSignIn()) location.replace(ret);
+      })();
+    </script>
+
+    <style>
+      :root {
+        --bg: #f6f8fc;
+        --card: #ffffff;
+        --text: #0f172a;
+        --muted: #475569;
+        --line: #e2e8f0;
+        --accent: #1e62d8;
+        --accent-text: #ffffff;
+        color-scheme: light;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0b1220;
+          --card: #111a2e;
+          --text: #e6ebf5;
+          --muted: #9aa8c2;
+          --line: #22304d;
+          --accent: #3b7bf0;
+          color-scheme: dark;
+        }
+        .logo-light {
+          display: none;
+        }
+      }
+      @media (prefers-color-scheme: light) {
+        .logo-dark {
+          display: none;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--bg);
+        color: var(--text);
+        font-family: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+        line-height: 1.55;
+      }
+      .wrap {
+        max-width: 34rem;
+        margin: 0 auto;
+        padding: 3.5rem 1rem 2rem;
+      }
+      .logo {
+        height: 28px;
+        width: auto;
+        margin-bottom: 2rem;
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 1rem;
+        padding: 2rem;
+        box-shadow: 0 1px 2px rgb(15 23 42 / 0.04), 0 8px 24px rgb(15 23 42 / 0.06);
+      }
+      .eyebrow {
+        margin: 0 0 0.5rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+      h1 {
+        margin: 0 0 0.75rem;
+        font-size: clamp(1.6rem, 4vw, 2rem);
+        line-height: 1.2;
+        font-weight: 700;
+      }
+      .lede {
+        margin: 0 0 1.5rem;
+        color: var(--muted);
+      }
+      .actions {
+        display: grid;
+        gap: 0.75rem;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      .button {
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        padding: 0.75rem 1.25rem;
+        border-radius: 0.6rem;
+        font-weight: 600;
+        text-decoration: none;
+      }
+      .primary {
+        background: var(--accent);
+        color: var(--accent-text);
+      }
+      .primary:hover {
+        filter: brightness(1.08);
+      }
+      .primary:focus-visible,
+      a:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      .regions {
+        margin: 0;
+        font-size: 0.85rem;
+        color: var(--muted);
+      }
+      a {
+        color: var(--accent);
+      }
+      .checking {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.75rem 0;
+        color: var(--muted);
+        font-weight: 600;
+      }
+      .spinner {
+        width: 1.1rem;
+        height: 1.1rem;
+        border: 2px solid var(--line);
+        border-top-color: var(--accent);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .spinner {
+          animation: none;
+        }
+      }
+      .who {
+        list-style: none;
+        margin: 1.75rem 0 0;
+        padding: 1.25rem 0 0;
+        border-top: 1px solid var(--line);
+        display: grid;
+        gap: 0.9rem;
+      }
+      .who li {
+        display: grid;
+        gap: 0.1rem;
+        font-size: 0.9rem;
+      }
+      .who span {
+        color: var(--muted);
+      }
+      .foot {
+        margin: 1.5rem 0 0;
+        text-align: center;
+        font-size: 0.85rem;
+        color: var(--muted);
+      }
+    </style>
+  </body>
+</html>

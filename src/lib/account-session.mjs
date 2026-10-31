@@ -26,13 +26,14 @@
  *   POST    /_account/sign-out from a Help Center page → signed out
  *   GET     /_account/sign-in?return=/path  → 302 to the product's hand-off page
  *
- * Cookies: READER_COOKIE (HttpOnly; `<region id>.<reader token>`), STAFF_COOKIE
- * (HttpOnly; HMAC-signed with STAFF_SESSION_SECRET, which gates the staff-only
- * sections without an API call per page) and HINT_COOKIE (readable by page
- * script; only says "a session exists", so signed-out pages never call /me).
+ * Cookies: READER_COOKIE (HttpOnly; `<region id>.<reader token>`),
+ * SESSION_COOKIE (HttpOnly; HMAC-signed with STAFF_SESSION_SECRET — the Help
+ * Center is sign-in only, and this is what worker.js checks on every request
+ * without an API call), STAFF_COOKIE (same, for the staff-only sections) and
+ * HINT_COOKIE (readable by page script; only says "a session exists").
  *
- * Env: STAFF_SESSION_SECRET (secret). Without it readers still sign in, but
- * nobody is staff. STAFF_DEV_ORIGINS / STAFF_DEV_REGIONS add local origins for
+ * Env: STAFF_SESSION_SECRET (secret). Without it nobody is signed in, so the
+ * whole Help Center stays behind the landing page (fail closed). STAFF_DEV_ORIGINS / STAFF_DEV_REGIONS add local origins for
  * testing (`STAFF_DEV_REGIONS=dev=http://localhost:3001|http://localhost:8080`) —
  * never set them on the production Worker.
  */
@@ -46,6 +47,7 @@ export const SIGN_OUT_PATH = '/_account/sign-out';
 
 /** `__Host-`: Secure, Path=/, no Domain — only ever this host's. */
 export const READER_COOKIE = '__Host-sb_reader';
+export const SESSION_COOKIE = '__Host-sb_session';
 export const STAFF_COOKIE = '__Host-sb_staff';
 export const HINT_COOKIE = 'sb_signed_in';
 /** Matches the reader token's lifetime; the product refreshes both while it is in use. */
@@ -135,6 +137,11 @@ export function readCookie(request, name) {
   return null;
 }
 
+/** Is the reader of this request signed in to the Help Center (any Sessionboard user)? */
+export async function isSignedInRequest(request, env) {
+  return Boolean(await verifySession(env?.STAFF_SESSION_SECRET, readCookie(request, SESSION_COOKIE)));
+}
+
 /** Is the reader of this request signed-in Sessionboard staff? */
 export async function isStaffRequest(request, env) {
   return Boolean(await verifySession(env?.STAFF_SESSION_SECRET, readCookie(request, STAFF_COOKIE)));
@@ -160,6 +167,7 @@ const setCookie = (name, value, maxAge, { httpOnly = true } = {}) =>
 /** Set-Cookie headers that end every part of the session. */
 export const clearSessionCookies = () => [
   setCookie(READER_COOKIE, '', 0),
+  setCookie(SESSION_COOKIE, '', 0),
   setCookie(STAFF_COOKIE, '', 0),
   setCookie(HINT_COOKIE, '', 0, { httpOnly: false }),
 ];
@@ -220,6 +228,7 @@ async function sessionCookies(region, token, reader, env) {
     setCookie(HINT_COOKIE, '1', SESSION_TTL_S, { httpOnly: false }),
   ];
   const secret = env?.STAFF_SESSION_SECRET;
+  if (secret) cookies.push(setCookie(SESSION_COOKIE, await signSession(secret, reader.id ?? ''), SESSION_TTL_S));
   if (reader.staff === true && secret) {
     cookies.push(setCookie(STAFF_COOKIE, await signSession(secret, reader.id ?? ''), SESSION_TTL_S));
   } else {
@@ -235,7 +244,9 @@ export async function accountResponse(request, url, env, site, fetchImpl = fetch
   const { pathname } = url;
 
   if (pathname === SIGN_IN_PATH && request.method === 'GET') {
-    const home = regions(site, env)[0];
+    // `?region=eu` signs in through that region's app; the US app otherwise.
+    const all = regions(site, env);
+    const home = all.find((r) => r.id === url.searchParams.get('region')) ?? all[0];
     const signInPath = site?.account?.signInPath;
     if (!home || !signInPath) return new Response('Not found\n', { status: 404 });
     // The 404 page and the header link here without a `return`; the page they were on is the Referer.
@@ -279,6 +290,11 @@ export async function accountResponse(request, url, env, site, fetchImpl = fetch
     // the staff sections at the next page load rather than when the cookie ends.
     const staffCookie = await isStaffRequest(request, env);
     const cookies = [];
+    // Keep the sign-in gate in step with the reader session (e.g. after a deploy
+    // that first introduced it, or a cleared cookie).
+    if (env?.STAFF_SESSION_SECRET && !(await isSignedInRequest(request, env))) {
+      cookies.push(setCookie(SESSION_COOKIE, await signSession(env.STAFF_SESSION_SECRET, result.reader.id ?? ''), SESSION_TTL_S));
+    }
     if (result.reader.staff !== true && staffCookie) cookies.push(setCookie(STAFF_COOKIE, '', 0));
     if (result.reader.staff === true && !staffCookie && env?.STAFF_SESSION_SECRET) {
       cookies.push(setCookie(STAFF_COOKIE, await signSession(env.STAFF_SESSION_SECRET, result.reader.id ?? ''), SESSION_TTL_S));

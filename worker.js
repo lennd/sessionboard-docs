@@ -14,7 +14,8 @@ import trainingRedirects from './training-redirects.json';
 import site from './site.json';
 import { isProductUpdatesPath, productUpdatesResponse } from './src/lib/product-updates-proxy.mjs';
 import { isStaffOnlyHref, isStaffOnlyPath } from './src/lib/staff-only.mjs';
-import { ACCOUNT_PREFIX, accountResponse, isStaffRequest } from './src/lib/account-session.mjs';
+import { ACCOUNT_PREFIX, accountResponse, isSignedInRequest, isStaffRequest } from './src/lib/account-session.mjs';
+import { STATUS_PATH as RELEASE_EMAIL_STATUS_PATH } from './src/lib/product-updates-proxy.mjs';
 
 // `/en/migrated/knowledge-base/…` is a live path prefix left over from an
 // earlier HubSpot migration; Google still has URLs under it.
@@ -171,6 +172,38 @@ async function internalResponse(request, url, env) {
 // gets the plain 404 for the page and its share card, and every HTML page they
 // get has the sections' sidebar groups removed and links into them unwrapped
 // to plain text. Staff get everything, marked private so no cache keeps a copy.
+
+// ── Sign-in only ────────────────────────────────────────────────────────
+// The whole Help Center is for signed-in Sessionboard users (Josh,
+// 2026-10-30: "completely login only so no one can scrape them"). Anyone
+// without a session (src/lib/account-session.mjs SESSION_COOKIE) gets the
+// landing page (src/pages/welcome.astro), which signs them in silently when the
+// product says they are signed in, or offers Sign in. Only what the landing
+// page and the release-notes email links need stays public.
+const WELCOME_PATH = '/welcome';
+const PUBLIC_EXACT = new Set([WELCOME_PATH, '/favicon.png', '/favicon.svg', '/favicon.ico', RELEASE_EMAIL_STATUS_PATH]);
+const PUBLIC_PREFIXES = ['/_astro/'];
+const isPublicPath = (pathname) => PUBLIC_EXACT.has(pathname) || PUBLIC_PREFIXES.some((p) => pathname.startsWith(p));
+
+/** A signed-out request: pages go to the landing page (and come back after sign-in); anything else is a plain 404. */
+function signInRequired(request, url) {
+  const accept = request.headers.get('Accept') ?? '';
+  const looksLikePage = request.method === 'GET' && (accept.includes('text/html') || !/\.[a-z0-9]+$/i.test(url.pathname));
+  const headers = { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow', Vary: 'Cookie' };
+  if (!looksLikePage) return new Response('Not found\n', { status: 404, headers: { ...headers, 'Content-Type': 'text/plain; charset=utf-8' } });
+  const back = `${url.pathname}${url.search}`;
+  const target = back === '/' ? WELCOME_PATH : `${WELCOME_PATH}?return=${encodeURIComponent(back)}`;
+  return new Response(null, { status: 302, headers: { ...headers, Location: target } });
+}
+
+/** A signed-in reader's copy of a page: never stored by a shared cache, never indexed. */
+function signedInCopy(response) {
+  const headers = new Headers(response.headers);
+  headers.set('Cache-Control', 'private, no-store');
+  headers.set('X-Robots-Tag', 'noindex, nofollow');
+  headers.append('Vary', 'Cookie');
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+}
 
 /** Strip the staff-only sidebar groups, prev/next buttons and links from a public HTML page. */
 function hideStaffOnly(response) {
@@ -363,27 +396,19 @@ function robotsResponse(isProd) {
     return textResponse('User-agent: *\nDisallow: /\n');
   }
 
-  const disallowBulk = [...BULK_EXPORTS].map((p) => `Disallow: ${p}`).join('\n');
+  // Sign-in only since 2026-10-30: every page needs a Sessionboard session, so
+  // there is nothing for any crawler but the landing page. (ALLOWED_BOTS is the
+  // list from when the Help Center was a public growth surface.)
   const body = [
     '# Sessionboard Help Center',
-    '# Search engines and AI assistants that cite their sources are welcome.',
-    '# Crawlers that bulk-copy content or profile it for competitors are not.',
-    '',
-    ALLOWED_BOTS.map((b) => `User-agent: ${b}`).join('\n'),
-    'Allow: /',
-    disallowBulk,
+    '# The Help Center is for signed-in Sessionboard customers.',
     '',
     BLOCKED_BOTS.map((b) => `User-agent: ${b}`).join('\n'),
     'Disallow: /',
     '',
-    '# Unrecognised crawlers: pages are fair game, bulk exports are not.',
-    '# Abuse is handled at the edge, not here.',
     'User-agent: *',
-    'Allow: /',
-    disallowBulk,
-    'Crawl-delay: 10',
-    '',
-    `Sitemap: https://${PROD_HOST}/sitemap.xml`,
+    `Allow: ${WELCOME_PATH}$`,
+    'Disallow: /',
     '',
   ].join('\n');
 
@@ -497,10 +522,15 @@ export default {
       return Response.redirect(`${targetOrigin}${moved || clean || '/'}${url.search}`, 301);
     }
 
+    // Sign-in only: everything but the landing page and its assets.
+    const publicPath = isPublicPath(url.pathname);
+    const signedIn = publicPath ? false : await isSignedInRequest(request, env);
+    if (!publicPath && !signedIn) return signInRequired(request, url);
+
     // HubSpot KB sitemap path → Starlight sitemap
     if (url.pathname === '/sitemap.xml') {
       const asset = await env.ASSETS.fetch(new Request(`${url.origin}/sitemap-index.xml`, request));
-      if (asset.ok) return asset;
+      if (asset.ok) return signedInCopy(asset);
     }
 
     const staff = await isStaffRequest(request, env);
@@ -508,7 +538,9 @@ export default {
     if (staffOnlyPage && !staff) return notFoundPage(url, env);
 
     const asset = await env.ASSETS.fetch(request);
-    const response = staff ? staffCopy(asset, staffOnlyPage) : hideStaffOnly(asset);
+    const visible = staff ? staffCopy(asset, staffOnlyPage) : hideStaffOnly(asset);
+    // Static build assets stay cacheable; every page a signed-in reader gets is theirs alone.
+    const response = signedIn && !url.pathname.startsWith('/_astro/') ? signedInCopy(visible) : visible;
 
     if (isEnablementPath(url.pathname)) {
       const headers = new Headers(response.headers);

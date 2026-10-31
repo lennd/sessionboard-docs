@@ -6,6 +6,8 @@
  */
 import breadcrumbs from '../breadcrumbs.json';
 import Availability from './Availability.astro';
+import site from '../../site.json';
+import { isStaffOnlySlug } from '../lib/staff-only.mjs';
 
 const { entry, id } = Astro.locals.starlightRoute;
 const slug = id === 'index' ? '' : id;
@@ -33,6 +35,14 @@ const showAvailability = !slug.startsWith('enablement') && (features.length > 0 
   )
 }
 <h1 id="_top">{entry.data.title}</h1>
+{
+  isStaffOnlySlug(slug, site) && (
+    <p class="sb-staff-badge" aria-label="Sessionboard staff only">
+      <svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>
+      Staff only — customers can't see this page
+    </p>
+  )
+}
 {showAvailability && (
   <Availability
     features={features}
