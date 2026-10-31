@@ -4961,12 +4961,13 @@
         "when_to_bring_up": "When a customer or speaker says they find the Help Center hard to navigate or that articles feel generic — the personalised 'For you' section and role-aware content should reduce that friction.",
         "who_should_get_it": "All signed-in users on *.sessionboard.com — organizers, reviewers, speakers, and Ready Room users. Sessionboard staff additionally see staff-only documentation sections.",
         "staff_path": "learn.sessionboard.com — staff see Registration / Expo / Onsite staff-only sections automatically when signed in via an admin session.",
-        "gotchas": "The sign-in sync requires the companion API change (lennd/sessionboard-web-api#4971) to be live in production. Before that, the mint call 404s and the sync silently does nothing — no one gets signed in but nothing breaks. The sync is throttled to once every 6 hours per surface. It is refused under impersonation.",
+        "gotchas": "The sync is refused under impersonation. A reader who signed out of the Help Center on purpose stays signed out; otherwise an open Sessionboard session signs them in without a click (at most once every 30 minutes).",
         "talk_track": "When you click Help from the admin app, speaker portal, or Ready Room, the Help Center now knows who you are. It shows guides matched to your role and the surface you came from, so speakers see speaker guides and organizers see admin guides — no extra sign-in required."
       },
       "shipped": {
         "prs": [
-          "lennd/sessionboard-web-ui-v2#1346"
+          "lennd/sessionboard-web-ui-v2#1346",
+          "lennd/sessionboard-web-ui-v2#1350"
         ],
         "docs_only": false,
         "pending": null,
@@ -9127,210 +9128,6 @@
       }
     },
     {
-      "id": "learning-sites-academy",
-      "title": "Learning Sites (Academy) give participants a dedicated portal for courses, lessons and certificates",
-      "summary": "A new **Learning** site type (Academy) is now available as a portal destination. Participants see a **Home** page with a hero, a \"continue where you left off\" section, **My Learning**, and a showcase; they can open **Course** and **Certification** pages, work through a **Lesson** player (checkpoint video with no skip-ahead, task steps, and every quiz type — multiple choice, true/false, short answer, multi-select, ordering, matching, numeric), track progress on **My Progress**, and download or print certificates from **My Certificates**. A public **Verify** page lets anyone confirm a certificate. The site reuses the existing login, magic-link, SSO, and welcome flows.",
-      "article": "/site/site-builder",
-      "related": [
-        "/site/publishing-surfaces",
-        "/get-started/early-access"
-      ],
-      "kind": "new",
-      "module": "Learning",
-      "features": [
-        "lessons",
-        "lessons_catalog",
-        "lessons_paths",
-        "lessons_credits"
-      ],
-      "availability": "limited_release",
-      "enable": {
-        "how": "support",
-        "path": "Ask your Customer Success Manager to enable a Learning Site; then Sites → [site] → Site builder"
-      },
-      "where": {
-        "scope": "org",
-        "path": "Sites → [Learning site] → Home / Courses / Certifications / My Progress / My Certificates"
-      },
-      "permissions": [],
-      "audience": [
-        "organizer",
-        "participant"
-      ],
-      "use_case": "Organizations that want to deliver self-paced education — onboarding, continuing education, or certification programs — can now publish a branded Academy site where learners log in, complete courses with interactive quizzes and checkpoint videos, and download verified certificates, all without leaving Sessionboard.",
-      "internal": {
-        "cs_action": {
-          "kind": "must_enable",
-          "note": "A 'learning' Site type requires the API to create one; this feature is inert until the backend (web-api PR #4953) is in production. Coordinate with engineering before promising availability to customers."
-        },
-        "when_to_bring_up": "When a customer asks about self-paced learning, online courses, CE delivery outside of live events, or certificate programs.",
-        "who_should_get_it": "Customers with a Learning or Lessons add-on who want a standalone learner-facing portal rather than embedding courses inside an event portal.",
-        "staff_path": "Sites → [Learning site] → Site builder",
-        "gotchas": "The site is inert until the API PR (#4953) reaches production. The admin side (web-ui-v2 PR #1339) must also be merged. Learner pages are noindex — they will not appear in search engines.",
-        "talk_track": "With an Academy site, your learners get a dedicated login experience — complete with a home page, course catalog, interactive lesson player, and printable certificates — all under your branding. It works with your existing SSO and magic-link setup, so there is nothing new for learners to remember.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "medium",
-          "docs_gap": "The Site builder guide should document the 'learning' (Academy) site type, its unique pages (Home, Course, Certification, My Progress, My Certificates, public Verify), the lesson player capabilities (checkpoint video, quiz types), and how to create and publish a Learning Site.",
-          "why_use_it": "A Learning Site (Academy) gives your learners a single, branded destination to discover courses, work through structured lessons at their own pace, and earn certificates they can share or print. The built-in lesson player enforces checkpoint videos and supports every common quiz format, so you can build rigorous assessments alongside rich content. Progress tracking and a public certificate-verification page mean learners always know where they stand and third parties can confirm credentials instantly.",
-          "at": "2026-10-30T15:34:23.099Z"
-        }
-      },
-      "shipped": {
-        "prs": [
-          "lennd/sessionboard-web-org-portal#273"
-        ],
-        "docs_only": false,
-        "pending": null,
-        "live": {
-          "us": null,
-          "eu": null,
-          "me": null
-        },
-        "announced_at": null,
-        "emailed_at": null
-      },
-      "ideas": [],
-      "media": [],
-      "gated": "availability:limited_release"
-    },
-    {
-      "id": "academy-video-to-course-generator",
-      "title": "Turn any Media video into a structured course with AI-generated lessons, quizzes and clips",
-      "summary": "Organizers can now convert any webinar, recording, upload, or clip from the Media library into a full course draft — complete with clip-backed watch steps, AI-written lesson titles, summaries, readings, checkpoints, and quizzes — without leaving Sessionboard. From **Learning → Media**, select a video and choose **Create Course Draft**; the generator segments the video into 3–8 minute clips, writes lesson content using the video transcript as grounding, and produces a reviewable draft bundle. Drafts can be edited, previewed with signed clip URLs, and applied to publish the course and assign it in one step. **Team Lead** exposes the same workflow via `list_learning_media`, `draft_course_from_media`, `get_course_draft`, `update_course_draft`, and `apply_course_draft` tools, and the Public API surfaces all draft endpoints under `/v1/org/:orgId/learning/`.",
-      "article": "/marketing/media-library",
-      "related": [
-        "/agents/team-lead",
-        "/integrations/connect-ai-assistants"
-      ],
-      "kind": "new",
-      "module": "Learning",
-      "features": [
-        "lessons",
-        "marketing_media",
-        "marketing_clips",
-        "coordinators"
-      ],
-      "availability": "limited_release",
-      "enable": {
-        "how": "support",
-        "path": "Ask your Customer Success Manager to enable Academy course generation; then Learning → Media"
-      },
-      "where": {
-        "scope": "org",
-        "path": "Learning → Media → [video] → Create Course Draft; Learning → Course Drafts"
-      },
-      "permissions": [],
-      "audience": [
-        "organizer"
-      ],
-      "use_case": "Event teams with a library of recorded sessions or webinars can automatically convert those recordings into structured, quiz-bearing courses without manual editing — turning post-event content into ongoing learning assets in minutes. The AI grounds every question in the clip's transcript, so quizzes are accurate and reviewable before anything is published.",
-      "internal": {
-        "cs_action": {
-          "kind": "must_enable",
-          "note": "Academy Phase B (course generator + drafts API) is a new limited-release capability; CS must enable it per org. Real Claude calls (claude-opus-5-5) have not been validated against production data yet — the PR notes no real Claude call was made during testing."
-        },
-        "when_to_bring_up": "When a customer asks how to repurpose recorded sessions or webinars as on-demand learning content, or when they want to build a course catalog from existing Media library videos.",
-        "who_should_get_it": "Orgs already using Lessons (limited_release) that have a Media library with recordings, webinars, or clips and want to produce structured courses at scale.",
-        "staff_path": "Learning → Media → [video] → Create Course Draft; Learning → Course Drafts",
-        "gotchas": "Clip cutting relies on the MEDIA_CLIP_EXPORT worker; clips still being processed block apply unless allowPendingMedia is passed. Captions for generated clips are not yet produced. The AI model (claude-opus-5-5) has not been run against real production data — monitor first customer runs closely. A stale-draft 409 (COURSE_DRAFT_STALE) fires if two editors update the same draft concurrently.",
-        "talk_track": "If you have recordings from past events sitting in your Media library, the course generator can automatically segment them into lessons, write quiz questions grounded in the transcript, and produce a reviewable draft — all without manual authoring. You approve the draft before anything goes live.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "medium",
-          "docs_gap": "The Media library guide and any Learning/Lessons guide should document the Create Course Draft workflow: selecting a video, the generator job, reviewing and editing the draft bundle (including signed clip previews and diff), the stale-draft 409 conflict, the apply step that publishes and assigns the course, and the Team Lead and Public API surfaces for the same flow.",
-          "why_use_it": "The course generator lets you transform recorded sessions, webinars, and uploaded videos into structured learning experiences — complete with segmented clip lessons, readings, checkpoints, and graded quizzes — without writing content by hand. Each lesson is backed by a clip cut from the original video, and every quiz question is grounded in that clip's transcript so the content is accurate and auditable. You review and edit the draft before applying it, so nothing reaches learners until you approve it. Use it whenever you want to extend the life of event content or build a self-paced curriculum from existing recordings.",
-          "at": "2026-10-30T17:04:39.796Z",
-          "permissions_to_confirm": [
-            "org.lessons:create",
-            "org.lessons:update"
-          ]
-        }
-      },
-      "shipped": {
-        "prs": [
-          "lennd/sessionboard-web-api#4952"
-        ],
-        "docs_only": false,
-        "pending": null,
-        "live": {
-          "us": null,
-          "eu": null,
-          "me": null
-        },
-        "announced_at": null,
-        "emailed_at": null
-      },
-      "ideas": [],
-      "media": [],
-      "gated": "availability:limited_release"
-    },
-    {
-      "id": "help-center-silent-sign-in",
-      "title": "Help Center signs you in automatically when you're already signed in to Sessionboard",
-      "summary": "When you are signed in to Sessionboard (US, EU, or Middle East), visiting learn.sessionboard.com no longer shows a **Sign in** prompt — the Help Center detects your session and signs you in silently in the background, within a few seconds. This happens at most once every 30 minutes and only when you have an active Sessionboard session. Signing out of the Help Center explicitly keeps you signed out.",
-      "article": "/faq/who-can-i-contact-for-additional-assistance",
-      "kind": "improved",
-      "module": "Platform",
-      "features": [],
-      "availability": "everyone",
-      "enable": {
-        "how": "default_on",
-        "path": null
-      },
-      "where": {
-        "scope": "both",
-        "path": "learn.sessionboard.com (Help Center)"
-      },
-      "permissions": [],
-      "audience": [
-        "organizer",
-        "reviewer"
-      ],
-      "use_case": "Organizers and reviewers who visit the Help Center while working in Sessionboard no longer need to click Sign in — they land directly in an authenticated session, saving a step every time they look something up.",
-      "internal": {
-        "cs_action": {
-          "kind": "none",
-          "note": null
-        },
-        "when_to_bring_up": "When a customer mentions they keep having to sign in to the Help Center separately from the main app.",
-        "who_should_get_it": "All signed-in Sessionboard users on US, EU, and ME regions — no action needed.",
-        "staff_path": null,
-        "gotchas": "Silent sign-in is skipped if the reader has explicitly signed out of the Help Center, if no Sessionboard session cookie is present, or if the 30-minute cooldown has not elapsed. It fires at most once per 30 minutes per browser session.",
-        "talk_track": "If you're already logged in to Sessionboard and you open the Help Center, it now recognises you automatically — no extra sign-in click needed. If you deliberately sign out of the Help Center, it respects that choice and won't sign you back in.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The guide should note that signed-in Sessionboard users are automatically authenticated in the Help Center via silent sign-in, and explain when it does and does not apply (explicit Help Center sign-out, 30-minute cooldown, region-specific sessions).",
-          "why_use_it": "The Sessionboard Help Center at learn.sessionboard.com gives you searchable guides, how-to articles, and troubleshooting steps for every part of the platform. When you are signed in, you can access gated content and submit support requests without re-entering credentials. Silent sign-in means your Help Center session stays current as long as you are working in Sessionboard, so looking something up mid-task is frictionless.",
-          "at": "2026-10-30T18:35:43.958Z"
-        }
-      },
-      "related": [
-        "/faq/who-can-i-contact-for-additional-assistance"
-      ],
-      "shipped": {
-        "prs": [
-          "lennd/sessionboard-web-ui-v2#1350"
-        ],
-        "docs_only": false,
-        "pending": null,
-        "live": {
-          "us": null,
-          "eu": null,
-          "me": null
-        },
-        "announced_at": null,
-        "emailed_at": null
-      },
-      "ideas": [],
-      "media": [],
-      "gated": null
-    },
-    {
       "id": "registration-reports-schedule-tab-and-api-token-registrations-scope",
       "title": "API tokens can include a registrations scope, and saved Registration reports link directly to their Scheduled tab",
       "summary": "Two improvements to Registration workflows: (1) The **Create Token** dialog now lists **Registrations (read)** under **Opt-in** scopes. Ticking it grants the token access to registration endpoints; leaving it unticked keeps the token unchanged. The token list summary reflects the scope (e.g. \"All + Registrations\"). (2) On **Registration → Reports → Saved reports**, each row now has a **Schedule** action and the **Schedules** count is a link — both open the saved report directly on its **Scheduled** tab. If the schedule list fails to load, the tab shows \"Scheduled sends could not be loaded\" with a **Try again** button instead of a misleading empty state.",
@@ -9400,7 +9197,7 @@
       "id": "zapier-create-credentials-button",
       "title": "Apps → Zapier now lets you create credentials without leaving the page",
       "summary": "The **Apps → Zapier** page previously showed \"No credentials available. Configure webhooks first.\" with no way to provision credentials from that screen. A **Create credentials** button now appears when no Zapier credentials exist; clicking it provisions the event's Zapier App ID on the spot, the same action previously only available under **Settings → Integrations → Zapier**. The page also no longer renders a duplicate header when opened from the Apps shell, and the **Apps → Webhooks** page has the same double-header fix.",
-      "article": "/integrations/zapier",
+      "article": "/integrations/zapier#2-authenticate-your-sessionboard-account",
       "related": [
         "/integrations/webhooks"
       ],
@@ -9532,7 +9329,7 @@
       "id": "kiosk-accent-space-insensitive-lookup",
       "title": "Self check-in kiosk confirmation lookup ignores accents and extra spaces in last names",
       "summary": "The **Last name + confirmation number** lookup on self check-in kiosks now matches names regardless of accented characters and repeated spaces. For example, typing `Muller Two`, `MULLER TWO`, or `muller   two` all find a registrant whose last name is stored as `Müller Two`. Hyphens and apostrophes still count as distinct characters.",
-      "article": "/onsite/kiosk#kiosk-settings",
+      "article": "/onsite/kiosk#what-attendees-do",
       "kind": "fixed",
       "module": "Event team",
       "features": [
@@ -9630,7 +9427,7 @@
         "when_to_bring_up": "When a customer asks about WCAG compliance, reports that screen readers skip prices, complains that the Organization field blocks checkout without warning, or notices the form ignores their brand accent colour.",
         "who_should_get_it": "Any customer using Registration (beta), especially those with accessibility requirements or a required Company Name question on their form.",
         "staff_path": "Registration → Forms → [form] → public URL; Form editor → Page → Accent",
-        "gotchas": "Both QA25 test forms now have an explicit accent of #1d4ed8 saved; they will show blue rather than the Site primary until the accent is cleared. The floor-map a11y fix (SB-10196 minor) and RTL Arabic are not included in this PR.",
+        "gotchas": "A form with its own Page → Accent saved shows that colour instead of the Site primary until the accent is cleared. Floor-map accessibility and right-to-left Arabic are separate work.",
         "talk_track": "Four quiet but important fixes shipped together: screen readers now hear ticket prices, a required Company Name field no longer silently blocks checkout, the Page accent colour actually shows on the live form, and the HTML language tag follows the form's language rather than whatever the reviewer last used in the same browser.",
         "draft": {
           "by": "release-intake",
@@ -9663,7 +9460,7 @@
       "id": "registration-kiosk-revoke-dialog",
       "title": "Revoking a self check-in kiosk now opens an in-app confirmation dialog",
       "summary": "The **Revoke** action on **Onsite → Self check-in kiosks** previously opened the browser's native `confirm()` popup. It now opens an in-app dialog titled **Revoke &lt;name&gt;?** that explains the link and code will stop working and the action cannot be undone. **Cancel** closes the dialog without making any change; **Revoke kiosk** deletes the kiosk and shows a confirmation toast.",
-      "article": "/onsite/kiosk#kiosk-settings",
+      "article": "/onsite/kiosk#add-a-kiosk",
       "related": [
         "/onsite/checkin-and-badges"
       ],
@@ -9727,14 +9524,13 @@
     },
     {
       "id": "sso-email-conflict-relink",
-      "title": "SSO sign-in no longer blocks when the IdP email belongs to another account",
-      "summary": "When an SSO identity provider (SAML, OIDC, or WorkOS) presents an email address that already belongs to a different Sessionboard account, login no longer returns a **409 SSO_EMAIL_CONFLICT** error. Instead, the user is redirected to a **Link your account** page where a 6-digit verification code is sent to the IdP email. After entering the code, only the IdP link moves to the account that owns that email — no data is merged and no account is deleted. The same code flow applies when a CFP submitter marks themselves with **This is me** using an email they own under a different address: the submission resolves to the submitter's existing account rather than creating a duplicate user.",
-      "article": "/integrations/sso#saml-setup",
+      "title": "SSO sign-in confirms a changed email with a code, and CFP submitters can mark \"This is me\"",
+      "summary": "When your identity provider starts sending an email that already belongs to another Sessionboard account, sign-in no longer stops with an error: a **Link your account** page emails a one-time code to that address, and entering it moves only the SSO link to the account that owns the email. On a Call for Papers form, submitters can mark their own participant row with **This is me**, so the submission stays on their account instead of creating a second person.",
+      "article": "/integrations/sso#frequently-asked-questions",
       "related": [
-        "/sessions/submission-forms",
-        "/settings/portal-login-methods"
+        "/sessions/submission-forms"
       ],
-      "kind": "fixed",
+      "kind": "improved",
       "module": "Settings",
       "features": [
         "sso"
@@ -9745,8 +9541,8 @@
         "path": null
       },
       "where": {
-        "scope": "org",
-        "path": "SSO sign-in callback → Link your account page; Program → Call for Papers form → This is me"
+        "scope": "both",
+        "path": "SSO sign-in (Link your account page); Call for Papers form → Participants → This is me"
       },
       "permissions": [],
       "audience": [
@@ -9754,17 +9550,17 @@
         "speaker",
         "participant"
       ],
-      "use_case": "Organizations using SSO whose speakers or staff have changed their IdP email address — or who submitted a CFP with a secondary email — no longer get stuck with a conflict error or end up as two separate contacts. The code-based verification proves ownership and silently merges the IdP link to the right account, keeping all existing data intact.",
+      "use_case": "Speakers and staff whose company email changed in the identity provider can finish signing in themselves, and submitters who add themselves to a CFP no longer end up as two contacts.",
       "internal": {
         "cs_action": {
-          "kind": "review_before_customers_see",
-          "note": "The /sso/link page (web-ui-v2 #1294) and the WorkOS relay fix (web-ui #2341) must be deployed before this API release. If the link page is missing, affected SSO logins will get stuck on redirect. Confirm APPV2_URL is set on the v1 relay in every environment."
+          "kind": "none",
+          "note": null
         },
-        "when_to_bring_up": "When a customer reports a 409 SSO_EMAIL_CONFLICT error on login, duplicate user/contact records caused by SSO email drift, or a CFP submitter ending up as two contacts after using 'This is me'.",
-        "who_should_get_it": "Any customer using SAML, OIDC, or WorkOS SSO, especially those whose speakers or staff have changed IdP email addresses or who use CFP self-participant ('This is me') submissions.",
-        "staff_path": "Security Events log (sso.identity_relinked, sso.contact_link_completed) for audit; SSO trace logs for debugging.",
-        "gotchas": "A unique-violation race after the pre-check can still surface the old 409 in rare cases (noted as a follow-up). The org-portal SSO callback still uses the legacy path and does not offer the link challenge. The plain verification code remains in the Jobs payload until a follow-up scrub (security MEDIUM). There is no decline option — an unverified challenge stays pending until the 10-minute TTL expires.",
-        "talk_track": "If someone's company SSO email changed or they submitted a CFP under a different address, they used to get a hard conflict error and end up as two separate people in the system. Now they see a verification screen, enter a code sent to their IdP email, and the system quietly moves the SSO link to the right account — no duplicates, no support ticket needed.",
+        "when_to_bring_up": "When a customer reports someone stuck at SSO sign-in after an email change, or duplicate contacts after a CFP submission.",
+        "who_should_get_it": "Customers with SSO turned on, and any event with a Call for Papers that lists participants.",
+        "staff_path": "Security Events log (sso.identity_relinked) for the audit trail.",
+        "gotchas": "The \"This is me\" email is only a data link: it is never used to sign in, and sign-in always uses the account's own email. The Link your account page has no \"skip\" option; an unfinished code expires after 10 minutes. The org-portal SSO callback still uses the older path.",
+        "talk_track": "If someone's SSO email changed and now matches another Sessionboard account, they confirm it with a code we email them and carry on. Nothing is merged or deleted; only the SSO link moves.",
         "draft": {
           "by": "release-intake",
           "model": "claude-sonnet-4-6",
@@ -9776,73 +9572,7 @@
       },
       "shipped": {
         "prs": [
-          "lennd/sessionboard-web-api#4914"
-        ],
-        "docs_only": false,
-        "pending": null,
-        "live": {
-          "us": null,
-          "eu": null,
-          "me": null
-        },
-        "announced_at": null,
-        "emailed_at": null
-      },
-      "ideas": [],
-      "media": [],
-      "gated": null
-    },
-    {
-      "id": "cfp-this-is-me-sso-link-page",
-      "title": "CFP submitters can mark themselves on a participant row, and SSO sign-in now handles conflicting emails with a one-time code page",
-      "summary": "Two related changes ship together. First, the Call for Papers participant list now includes a **This is me** radio button on each row. Selecting it pre-fills the submitter's own email address (which stays editable), and only one row can be marked at a time; if the chosen email belongs to another account, an error appears on that row. Second, a new **/sso/link** page handles the case where an SSO sign-in must verify ownership of the identity-provider email: it shows the masked IdP address, sends a one-time code, and on success completes sign-in — with a warning when the action will replace an existing IdP link.",
-      "article": "/integrations/sso",
-      "related": [
-        "/sessions/submission-forms",
-        "/settings/portal-login-methods"
-      ],
-      "kind": "new",
-      "module": "Settings",
-      "features": [
-        "sso"
-      ],
-      "availability": "on_request",
-      "enable": {
-        "how": "default_on",
-        "path": null
-      },
-      "where": {
-        "scope": "event",
-        "path": "Call for Papers → [submission form] → Participants; /sso/link (public page reached automatically during SSO sign-in)"
-      },
-      "permissions": [],
-      "audience": [
-        "organizer",
-        "speaker",
-        "participant"
-      ],
-      "use_case": "When a submitter fills in a CFP form on behalf of a group, they can now flag which participant row is themselves so the system links the submission to their own account without creating a duplicate contact. For organizations using SSO, the new verification page prevents account conflicts when the identity provider email is already associated with a different Sessionboard account.",
-      "internal": {
-        "cs_action": {
-          "kind": "review_before_customers_see",
-          "note": "The /sso/link page is only reached after the companion web-api PR (lennd/sessionboard-web-api#4914) is deployed. Until that API change is live, the page exists but is never triggered. Coordinate deployment order: UI first, then API."
-        },
-        "when_to_bring_up": "When a customer using SSO reports duplicate contacts or sign-in failures caused by conflicting emails between their IdP and existing Sessionboard accounts.",
-        "who_should_get_it": "Any customer with SSO enabled (on_request) who has contacts that signed up directly before SSO was configured, or who uses CFP group submissions where the submitter is also a participant.",
-        "staff_path": "Call for Papers → [submission form] → Participants (This is me radio); /sso/link reached automatically during SSO callback",
-        "gotchas": "The /sso/link page has no decline or 'continue without linking' option — the user must complete the code verification to proceed. The relink flow also shows a warning that activity from the current account will not carry over to the other account. The API PR must be deployed after this UI PR or SSO logins that hit the redirect will get stuck.",
-        "talk_track": "If your speakers or attendees sign in via SSO and you have contacts who previously created accounts with a password, this update prevents them from getting stuck at sign-in. The new code-verification page walks them through proving they own the email so both identities merge automatically.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The SSO guide should document the /sso/link verification page — when it appears, what the masked-email + one-time code flow looks like, the relink warning message, and the error states (INVALID_CODE, CODE_EXPIRED, TOO_MANY_ATTEMPTS, etc.). It should also cover the CFP \"This is me\" radio and how it ties the submitter's account to a participant row.",
-          "why_use_it": "Single Sign-On lets attendees, speakers, and staff sign in to Sessionboard using your organization's existing identity provider — no separate password required. When an IdP email matches an account that was created a different way, Sessionboard guides the person through a one-time ownership check so the accounts merge cleanly. This keeps your contact records accurate and prevents duplicate profiles caused by mismatched login methods.",
-          "at": "2026-10-30T20:44:54.378Z"
-        }
-      },
-      "shipped": {
-        "prs": [
+          "lennd/sessionboard-web-api#4914",
           "lennd/sessionboard-web-ui-v2#1294"
         ],
         "docs_only": false,
@@ -10027,13 +9757,13 @@
       "use_case": "Exhibitors registering staff no longer see a payment option that isn't available for their event, and the badge count line gives an accurate breakdown of included vs. purchased badges. Organizers using member-gated registration types can trust that lapsed-member options are only accessible to lapsed members.",
       "internal": {
         "cs_action": {
-          "kind": "review_before_customers_see",
-          "note": "The invoice-button fix requires API PR #4995 to be live; until that ships, portal behaviour is unchanged. Confirm API deployment before telling customers the fix is active."
+          "kind": "none",
+          "note": null
         },
         "when_to_bring_up": "When a customer reports that exhibitors see an invoice button even though invoices are disabled, that badge counts look wrong for accounts with purchased badges, or that current members can select a lapsed-member registration type.",
         "who_should_get_it": "Any customer using the exhibitor portal with invoices disabled, purchased badge allotments, or member-gated registration types with a lapsed tier.",
         "staff_path": "Exhibitor Portal → Staff & badges; Exhibitor Portal → Shop; Registration flow → Type step",
-        "gotchas": "The invoice-button fix is gated on API #4995. On events where that API has not yet shipped, the portal behaves as before (button always shows). The lapsed-type fix also requires API #4995 for the server-side seat enforcement.",
+        "gotchas": "The invoice button and the lapsed-type rule both rely on lennd/sessionboard-web-api#4995, which shipped in the same release.",
         "talk_track": "If invoices are off for an event, exhibitors in the portal will no longer see an Add to my invoice button that leads nowhere. Badge counts now clearly show how many badges are included vs. purchased. And lapsed-member registration types are properly restricted so only lapsed members can select them.",
         "draft": {
           "by": "release-intake",
@@ -10046,7 +9776,8 @@
       },
       "shipped": {
         "prs": [
-          "lennd/sessionboard-web-org-portal#289"
+          "lennd/sessionboard-web-org-portal#289",
+          "lennd/sessionboard-web-api#4995"
         ],
         "docs_only": false,
         "pending": null,
