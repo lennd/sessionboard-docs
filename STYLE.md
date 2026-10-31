@@ -37,7 +37,7 @@ docs automatically. Automated PRs that don't follow this guide don't merge.
 | Early Access | Labs; "Preview" only for the self-serve stage or when quoting the sidebar row |
 | Organization | account, workspace (for the customer's tenant; "account" is a CRM company) |
 | Field Events | gatherings |
-| Team Lead | Ask, assistant, copilot, AI Mode (the admin agent) |
+| Ask (the admin agent's entry point; otherwise describe the outcome: "Drafted for you", "Changes made for you") | Team Lead (retired 2026-10-31), assistant, copilot, AI Mode. The full-screen surface stays **Agent window**; the attendee app's row is also **Ask**, so qualify ("attendee Ask") when both appear |
 
 The full table, with the reasoning and the terms for people, surfaces, awards and agents, is `sessionboard-tam/docs/product/nomenclature.md`. Change it there first.
 
