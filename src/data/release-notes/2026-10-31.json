@@ -719,6 +719,270 @@
       ],
       "ideas": [],
       "media": []
+    },
+    {
+      "id": "contracts-event-member-access-and-ready-room-download-log",
+      "title": "Contracts now accessible to event-only team members; Ready Room download log fixed",
+      "summary": "Event team members who belong to an event but not the full organization can now view and manage **Contracts** according to their event role's permissions (e.g. an **Admin User** role with contracts grants sees only that event's contracts; a **Read only** role without grants receives a 403). Previously, these users received a 403 on every Contracts route regardless of their role. Separately, clicking **Download** on the **Apps → Ready Room** page or the **Capture → Live Transcribe** card no longer returns a 400 error — the download is logged and appears in **Org History** under \"Ready Room download\".",
+      "article": "/speaker-crm/contracts-permissions",
+      "related": [
+        "/speaker-crm/contracts",
+        "/marketing/ready-room-desktop-app"
+      ],
+      "kind": "fixed",
+      "module": "CRM",
+      "features": [
+        "contracts"
+      ],
+      "availability": "add_on",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "CRM → Contracts (org); Event → Apps → Ready Room / Marketing → Capture"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Events that use dedicated per-event staff (who are not full org members) can now give those team members the correct level of Contracts access via their event role, rather than having them blocked entirely. AV and production staff who are event-only admins can also download the Ready Room desktop app from the event Apps page without hitting an error.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Contracts access for event-only users is now live by default. Verify that any customer using event-scoped roles for Contracts QAs correctly — event admins see only their event's contracts, read-only roles get 403."
+        },
+        "when_to_bring_up": "When a customer reports that event team members cannot access Contracts, or when setting up Contracts for an org that uses event-only staff.",
+        "who_should_get_it": "Any customer using the Contracts add-on who has team members assigned at the event level rather than the org level.",
+        "staff_path": "Event → Event Team → [user] → Role permissions → Contracts",
+        "gotchas": "Impersonation cannot be used to test Contracts for event-only users because org routes run as the impersonating admin — QA must sign in directly as the event-only user. The Ready Room download fix also extends access to event-team members of the specific event, not just org members.",
+        "talk_track": "Event-only staff with the right role grants can now open and manage contracts scoped to their event. The Ready Room download button on the event Apps page works for event admins too.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The contracts-permissions guide should note that event-only team members (those without an org-level seat) are admitted to Contracts routes and scoped to their event's contracts by their event role grants; it should also clarify that org-only actions (template writes, settings, DocuSign connection) still require an org membership row.",
+          "why_use_it": "null",
+          "at": "2026-10-31T14:04:24.757Z",
+          "permissions_to_confirm": [
+            "event.contracts: read, create, update, delete"
+          ]
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5008"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "registration-details-full-page-validation-and-localized-speaker-url-error",
+      "title": "Registration details: all pages validated on leave; speaker URL error now translated",
+      "summary": "When leaving the **Details** step of a registration form, every page is now checked in order — so a required question revealed on an earlier page (for example, a visa number uncovered by a travel answer) stops the registrant and shows the error on the correct page before they can proceed. Separately, the \"invalid URL\" error on a speaker question in a session submission form now appears in the portal's language (French, German, Spanish, etc.) instead of always showing in English.",
+      "article": "/registration/forms",
+      "related": [
+        "/sessions/submission-forms"
+      ],
+      "kind": "fixed",
+      "module": "Portals",
+      "features": [
+        "registration",
+        "new_portals"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Registration → (attendee-facing registration form) → Details step; Portals → (session submission form) → Speaker section"
+      },
+      "permissions": [],
+      "audience": [
+        "participant",
+        "speaker"
+      ],
+      "use_case": "Registrants with conditional required questions (such as a visa number revealed by a travel question) are now caught and guided back to the right page before checkout fails. Speakers filling a submission form in a non-English portal see URL validation errors in their own language.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer reports that registrants are hitting a 422 error at checkout despite filling out the form, or that non-English portals show English-only validation messages on speaker URL fields.",
+        "who_should_get_it": "Any customer using registration forms with conditional (revealed) required questions, or running multilingual portals with speaker URL questions.",
+        "staff_path": "Registration → (event registration form with conditional questions) → Details step",
+        "gotchas": "Only the URL error message on speaker questions is translated in this fix; other speaker validation messages (required, max length) remain English-only for now.",
+        "talk_track": "Conditional required questions on earlier registration pages are now enforced when a registrant tries to leave Details, preventing silent 422 failures at checkout. Non-English portals also show speaker URL errors in the correct language.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The registration forms guide should note that all Details pages — including those revealed by conditional answers — are validated before the registrant can advance past the Details step.",
+          "why_use_it": null,
+          "at": "2026-10-31T16:43:26.992Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-org-portal#295"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "feature:registration (beta)"
+    },
+    {
+      "id": "session-kept-on-network-error",
+      "title": "Stay signed in when a token refresh can't reach the server",
+      "summary": "Admins and speakers are no longer signed out when a token refresh fails because of a dropped connection, a 5xx error, or a laptop waking before Wi-Fi reconnects. Only an explicit server refusal (a 4xx that is not a timeout or rate-limit) ends the session. When the server is temporarily unreachable, a **\"Can't reach Sessionboard\"** notice appears with a **Try Again** button; the app recovers automatically when the connection returns.",
+      "article": "/faq/is-sessionboard-down",
+      "kind": "fixed",
+      "module": "Platform",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Any page — shown automatically when the server is unreachable"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "reviewer",
+        "speaker",
+        "participant"
+      ],
+      "use_case": "Organizers and speakers who open a laptop after it has been asleep, or who briefly lose Wi-Fi, no longer have to sign back in and lose their place — the app waits for the connection to return and picks up where they left off.",
+      "internal": {
+        "cs_action": {
+          "kind": "reach_out",
+          "note": "CTA (the contact on file, prod-us) reported admins being kicked out repeatedly. This fix is now live for all customers; proactively close the loop with CTA."
+        },
+        "when_to_bring_up": "When a customer reports being unexpectedly signed out, especially after waking a laptop or on an unstable network.",
+        "who_should_get_it": "All customers — this is a default-on bug fix.",
+        "staff_path": null,
+        "gotchas": "A genuine 4xx server refusal (e.g. a revoked session) still signs the user out immediately. Only transient network failures are preserved. The 'Connection error' toast appears on API calls during an outage unless the caller suppresses it.",
+        "talk_track": "Users on spotty Wi-Fi or who close and reopen their laptops will no longer be kicked to the login screen — the app shows a 'Can't reach Sessionboard' notice and recovers on its own when the connection returns.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that a temporary network outage shows a \"Can't reach Sessionboard\" notice with a Try Again button rather than redirecting to the login page, and that the session is preserved until the server explicitly refuses it.",
+          "why_use_it": "null",
+          "at": "2026-10-31T16:50:58.776Z"
+        }
+      },
+      "related": [
+        "/faq/unlock-event-users",
+        "/get-started/how-to-set-up-two-factor-authentication-2fa-on-your-sessionboard-account"
+      ],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1381"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "release-notes-email-company-addresses-only",
+      "title": "Release-notes email subscription requires a company email address",
+      "summary": "In **Community → What's New**, the **Release notes by email** toggle card is disabled for accounts with a personal email address (Gmail, Outlook, etc.) and explains that release notes are sent to company addresses only. Attempting to enable the toggle from a personal address shows an error instead of a false success confirmation.",
+      "article": "/help/community#release-notes-by-email",
+      "kind": "improved",
+      "module": "Platform",
+      "features": [
+        "community"
+      ],
+      "availability": "limited_release",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Community → What's New → Release notes by email"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers with a personal inbox no longer see a misleading success message when trying to subscribe to release-note emails; the card clearly explains that a company email address is required, so they know to sign in with their work account instead.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer asks why they cannot subscribe to release-note emails or why the toggle is greyed out.",
+        "who_should_get_it": "Any organizer using Community / What's New.",
+        "staff_path": "Community → What's New → Release notes by email",
+        "gotchas": "Users on competitor domains (Cvent, Swoogo, etc.) do not see the card at all — this is intentional and enforced by the API.",
+        "talk_track": "The toggle is disabled for personal mailboxes (Gmail, Outlook, etc.); the user needs to sign in with their company email to subscribe.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that the release-notes email toggle is disabled for personal email addresses and explain that a company address is required to subscribe.",
+          "why_use_it": "Release notes by email deliver a digest of new features and improvements directly to your inbox so your team stays current without checking the product manually. Subscribing takes one click from the What's New tab in Community, and emails go only to verified company addresses to keep delivery reliable.",
+          "at": "2026-10-31T17:28:31.654Z"
+        }
+      },
+      "related": [
+        "/get-started/early-access"
+      ],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1375"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:limited_release"
     }
   ]
 }
