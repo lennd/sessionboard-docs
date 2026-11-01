@@ -370,3 +370,64 @@ test('return paths cannot leave the host', () => {
   assert.equal(safeReturnPath('https://evil.example.net'), '/');
   assert.equal(safeReturnPath(null), '/');
 });
+
+// ── Guest links ────────────────────────────────────────────────────────
+
+import { GUEST_PATH, GUEST_LINK_TTL_S, signGuestLink, verifyGuestLink } from '../src/lib/account-session.mjs';
+
+const GUEST_ENV = { ...ENV, GUEST_LINK_SECRET: 'guest-secret' };
+const guestRequest = (token, extra = '') =>
+  new Request(`${ORIGIN}${GUEST_PATH}?t=${encodeURIComponent(token)}${extra}`, { headers: { Accept: 'text/html' } });
+const cookiesOf = (res) => res.headers.getSetCookie().map((c) => c.split(';')[0]);
+
+test('a guest link verifies, and fails once expired, relabelled or tampered', async () => {
+  const token = await signGuestLink('guest-secret', 'partner-pm', 60, 1000);
+  assert.deepEqual(await verifyGuestLink('guest-secret', token, 1001), { label: 'partner-pm', exp: 1060 });
+  assert.equal(await verifyGuestLink('guest-secret', token, 1060), null, 'expired');
+  assert.equal(await verifyGuestLink('other-secret', token, 1001), null, 'another secret');
+  const [v, exp, label, sig] = token.split('.');
+  assert.equal(await verifyGuestLink('guest-secret', [v, exp, 'someone-else', sig].join('.'), 1001), null, 'relabelled');
+  assert.equal(await verifyGuestLink('guest-secret', [v, exp, label, sig.slice(1)].join('.'), 1001), null, 'tampered');
+  assert.equal(await verifyGuestLink('guest-secret', await signSession('guest-secret', 'u1', 1000), 1001), null, 'a session is not a link');
+  assert.equal(GUEST_LINK_TTL_S, 180 * 24 * 60 * 60);
+});
+
+test('a guest link signs the visitor in through the gate only: no staff, no reader, no hint; and returns to a same-host path', async () => {
+  const token = await signGuestLink('guest-secret', 'partner-pm');
+  const res = await accountResponse(guestRequest(token, '&return=%2Fagents%2Foverview'), new URL(guestRequest(token, '&return=%2Fagents%2Foverview').url), GUEST_ENV, SITE);
+  assert.equal(res.status, 302);
+  assert.equal(res.headers.get('Location'), '/agents/overview');
+  assert.equal(res.headers.get('Cache-Control'), 'no-store');
+  const set = cookiesOf(res);
+  const session = set.find((c) => c.startsWith(`${SESSION_COOKIE}=`)).split('=')[1];
+  assert.deepEqual((await verifySession('test-secret', session))?.userId, 'guest-partner-pm');
+  assert.ok(set.includes(`${STAFF_COOKIE}=`), 'staff cookie cleared');
+  assert.ok(set.includes(`${READER_COOKIE}=`), 'reader cookie cleared');
+  assert.ok(set.includes(`${HINT_COOKIE}=`), 'hint cookie cleared');
+  const signedIn = new Request(ORIGIN, { headers: { Cookie: `${SESSION_COOKIE}=${session}` } });
+  assert.equal(await isSignedInRequest(signedIn, GUEST_ENV), true);
+  assert.equal(await isStaffRequest(signedIn, GUEST_ENV), false);
+});
+
+test('a guest link never redirects off this host', async () => {
+  const token = await signGuestLink('guest-secret', 'partner-pm');
+  const req = guestRequest(token, '&return=https%3A%2F%2Fevil.example.com%2F');
+  const res = await accountResponse(req, new URL(req.url), GUEST_ENV, SITE);
+  assert.equal(res.headers.get('Location'), '/');
+});
+
+test('a bad, expired or unsigned guest link is a plain 404, as is any link without the secrets', async () => {
+  const good = await signGuestLink('guest-secret', 'partner-pm');
+  for (const [env, token, why] of [
+    [GUEST_ENV, 'g1.1.partner-pm.nope', 'forged'],
+    [GUEST_ENV, await signGuestLink('guest-secret', 'partner-pm', 1, 1), 'expired'],
+    [GUEST_ENV, '', 'missing'],
+    [ENV, good, 'no guest secret configured'],
+    [{ GUEST_LINK_SECRET: 'guest-secret' }, good, 'no session secret: fail closed'],
+  ]) {
+    const req = guestRequest(token);
+    const res = await accountResponse(req, new URL(req.url), env, SITE);
+    assert.equal(res.status, 404, why);
+    assert.equal(res.headers.getSetCookie().length, 0, `${why}: no cookies`);
+  }
+});
