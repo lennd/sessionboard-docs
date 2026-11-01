@@ -25,6 +25,8 @@
  *   GET     /_account/context?eventId=|orgId=  personalization context for one of their scopes
  *   POST    /_account/sign-out from a Help Center page → signed out
  *   GET     /_account/sign-in?return=/path  → 302 to the product's hand-off page
+ *   GET     /_account/guest?t=<link>&return=/path  a signed guest link (scripts/guest-link.mjs)
+ *                              → 302 with a plain session cookie: signed in, never staff, no reader
  *
  * Cookies: READER_COOKIE (HttpOnly; `<region id>.<reader token>`),
  * SESSION_COOKIE (HttpOnly; HMAC-signed with STAFF_SESSION_SECRET — the Help
@@ -33,7 +35,13 @@
  * HINT_COOKIE (readable by page script; only says "a session exists").
  *
  * Env: STAFF_SESSION_SECRET (secret). Without it nobody is signed in, so the
- * whole Help Center stays behind the landing page (fail closed). STAFF_DEV_ORIGINS / STAFF_DEV_REGIONS add local origins for
+ * whole Help Center stays behind the landing page (fail closed).
+ * GUEST_LINK_SECRET (secret, separate on purpose): signs guest links for
+ * people outside Sessionboard who are given read access by hand — a partner
+ * product lead, say. A guest link opens the customer Help Center only: it
+ * never sets the staff cookie, so the staff-only sections stay hidden, and it
+ * sets no reader cookie, so the header shows no account. Rotating the secret
+ * revokes every link. Without the secret, /_account/guest is a 404. STAFF_DEV_ORIGINS / STAFF_DEV_REGIONS add local origins for
  * testing (`STAFF_DEV_REGIONS=dev=http://localhost:3001|http://localhost:8080`) —
  * never set them on the production Worker.
  */
@@ -44,6 +52,9 @@ export const ME_PATH = '/_account/me';
 export const CONTEXT_PATH = '/_account/context';
 export const SIGN_IN_PATH = '/_account/sign-in';
 export const SIGN_OUT_PATH = '/_account/sign-out';
+export const GUEST_PATH = '/_account/guest';
+/** How long a guest link itself stays valid; each visit mints a SESSION_TTL_S cookie. */
+export const GUEST_LINK_TTL_S = 180 * 24 * 60 * 60;
 
 /** `__Host-`: Secure, Path=/, no Domain — only ever this host's. */
 export const READER_COOKIE = '__Host-sb_reader';
@@ -126,6 +137,29 @@ export async function verifySession(secret, value, nowS = Math.floor(Date.now() 
   if (!/^\d+$/.test(exp) || Number(exp) <= nowS) return null;
   if (!sameString(sig, await hmac(secret, parts.slice(0, 3).join('.')))) return null;
   return { userId, exp: Number(exp) };
+}
+
+const GUEST_VERSION = 'g1';
+const guestLabel = (label) => String(label ?? '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 64);
+
+/** A guest link token `g1.<exp seconds>.<label>.<hmac>`, signed with GUEST_LINK_SECRET (never the session secret). */
+export async function signGuestLink(secret, label, ttlS = GUEST_LINK_TTL_S, nowS = Math.floor(Date.now() / 1000)) {
+  const name = guestLabel(label);
+  if (!secret || !name) throw new Error('guest link needs a secret and a label');
+  const body = `${GUEST_VERSION}.${nowS + ttlS}.${name}`;
+  return `${body}.${await hmac(secret, body)}`;
+}
+
+/** The verified guest link `{ label, exp }`, or null when absent, expired, forged, unsigned or not a guest token. */
+export async function verifyGuestLink(secret, value, nowS = Math.floor(Date.now() / 1000)) {
+  if (!secret || !value) return null;
+  const parts = String(value).split('.');
+  if (parts.length !== 4 || parts[0] !== GUEST_VERSION) return null;
+  const [, exp, label, sig] = parts;
+  if (!/^\d+$/.test(exp) || Number(exp) <= nowS) return null;
+  if (!label || label !== guestLabel(label)) return null;
+  if (!sameString(sig, await hmac(secret, parts.slice(0, 3).join('.')))) return null;
+  return { label, exp: Number(exp) };
 }
 
 export function readCookie(request, name) {
@@ -262,6 +296,31 @@ export async function accountResponse(request, url, env, site, fetchImpl = fetch
     const target = new URL(signInPath, home.app);
     target.searchParams.set('return', `${url.origin}${safeReturnPath(ret)}`);
     return new Response(null, { status: 302, headers: { Location: target.toString(), 'Cache-Control': 'no-store' } });
+  }
+
+  if (pathname === GUEST_PATH && request.method === 'GET') {
+    // A guest link: the customer Help Center for someone outside Sessionboard,
+    // by hand. Only the sign-in gate cookie is set — no staff cookie (the
+    // staff-only sections stay hidden), no reader cookie and no hint cookie
+    // (page scripts treat the visit as signed out and call no API). A bad or
+    // expired link is the same 404 as an unknown path; nothing says it exists.
+    const link = await verifyGuestLink(env?.GUEST_LINK_SECRET, url.searchParams.get('t'));
+    const secret = env?.STAFF_SESSION_SECRET;
+    if (!link || !secret) return new Response('Not found\n', { status: 404, headers: { 'Cache-Control': 'no-store' } });
+    const cookies = [
+      setCookie(SESSION_COOKIE, await signSession(secret, `guest-${link.label}`), SESSION_TTL_S),
+      setCookie(STAFF_COOKIE, '', 0),
+      setCookie(READER_COOKIE, '', 0),
+      setCookie(HINT_COOKIE, '', 0, { httpOnly: false }),
+    ];
+    const headers = new Headers({
+      Location: safeReturnPath(url.searchParams.get('return')),
+      'Cache-Control': 'no-store',
+      'X-Robots-Tag': 'noindex, nofollow',
+      Vary: 'Cookie',
+    });
+    for (const c of cookies) headers.append('Set-Cookie', c);
+    return new Response(null, { status: 302, headers });
   }
 
   if (pathname === SIGN_OUT_PATH) {
