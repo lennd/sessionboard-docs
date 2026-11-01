@@ -2280,6 +2280,410 @@
         "announced_at": null,
         "emailed_at": null
       }
+    },
+    {
+      "id": "webhooks-29-new-event-types",
+      "title": "Webhooks: 29 new event types across sessions, reviews, Interest Forms, Awards and Call for Reviewers",
+      "summary": "The webhook catalog grows from 30 to 59 event types. New types cover **session status** and **schedule** changes, **speaker status** changes, **review submitted** and **review round completed** (for both sessions and Interest Forms), **interest form submission** lifecycle (submitted, status changed, review submitted, round completed), **award submission** lifecycle (submitted, status changed, review submitted, winner selected, round completed), **Call for Reviewers** application and invite events (submitted, approved, rejected, accepted, declined), and restore/merge events for contacts, sessions, sponsors and exhibitors. Blind rounds and anonymized plans omit `reviewerId`; public-voting ballots and AI persona reviews send no review events.",
+      "article": "/integrations/webhooks",
+      "related": [
+        "/evaluations/evaluation-plans",
+        "/awards/managing-submissions-reviewers-rounds",
+        "/speaker-crm/speaker-crm-interest-forms",
+        "/evaluations/call-for-reviewers",
+        "/awards/call-for-reviewers"
+      ],
+      "kind": "improved",
+      "module": "Platform",
+      "features": [
+        "webhooks"
+      ],
+      "availability": "on_request",
+      "enable": {
+        "how": "support",
+        "path": "Ask your Customer Success Manager to enable Webhooks; then Organization or Event → Settings → Webhooks"
+      },
+      "where": {
+        "scope": "both",
+        "path": "Settings → Webhooks → Endpoints"
+      },
+      "permissions": [
+        "event.settings.manage_webhooks",
+        "org.settings.manage_webhooks"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Teams that pipe Sessionboard data into external systems — CRMs, Slack bots, data warehouses, or custom automations — can now react in real time to session scheduling changes, review completions, award winner selections, and Interest Form or Call for Reviewers activity without polling the API.",
+      "internal": {
+        "cs_action": {
+          "kind": "reach_out",
+          "note": "Customers already using webhooks may want to subscribe to the new types. Walk them through the expanded catalog and identify which new events map to their existing workflows."
+        },
+        "when_to_bring_up": "When a customer asks about real-time integrations, automation triggers, or keeping an external system in sync with session/review/awards status changes.",
+        "who_should_get_it": "Any customer using the Webhooks add-on, especially those with Awards, Interest Forms, or active review workflows.",
+        "staff_path": "Settings → Webhooks → Endpoints → Add endpoint → choose event types",
+        "gotchas": "Awards bulk-save has no completion state, so a review finished there sends no review event. v1 criteria-only plans never 'submit'. The winners route's static bulk accept does not fire the status hook (winner.selected covers it). Blind rounds and anonymized plans omit reviewerId from payloads.",
+        "talk_track": "The webhook catalog has nearly doubled. If you're automating anything around reviews, awards, or session scheduling, there's likely a new event type that removes a polling step or a manual handoff.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should list all 59 event types with their payload shapes, note which types are org-only (hidden from the event picker), and document the blind-round/anonymized-plan reviewerId omission behaviour.",
+          "why_use_it": "Webhooks let you push Sessionboard events to any external system the moment they happen — no polling required. Subscribe an endpoint to the event types you care about and your CRM, data warehouse, or custom automation receives a signed payload within seconds of a change. With nearly 60 event types spanning submissions, reviews, scheduling, awards, and portal activity, you can build integrations that stay in sync with your program in real time.",
+          "at": "2026-10-31T19:10:39.879Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5014"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "advocacy-exhibitor-card-booth-number",
+      "title": "Advocacy exhibitor share cards automatically show the booth number from the floor map",
+      "summary": "When an exhibitor account has a booth marked **Sold** or **Reserved** on the floor map, their Advocacy share card now displays the booth number automatically (e.g., \"Visit us at Booth 1214\"). Multiple booths are joined in order. A booth on **Hold** leaves the line blank.",
+      "article": "/marketing/advocacy#advocacy-for-exhibitors-and-sponsors",
+      "related": [
+        "/expo/floor-plan",
+        "/expo/booth-sales"
+      ],
+      "kind": "improved",
+      "module": "Marketing",
+      "features": [
+        "marketing_advocacy",
+        "floor_maps",
+        "exhibitors"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Marketing → Advocacy → Groups (exhibitor) campaign → Preview card"
+      },
+      "permissions": [
+        "event.marketing.advocacy_read"
+      ],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Exhibitors running an Advocacy campaign no longer need to type their booth number by hand — it pulls directly from the floor map so their share card always says exactly where attendees can find them.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer runs exhibitor Advocacy campaigns and also uses the Expo floor map with sold or reserved booths.",
+        "who_should_get_it": "Customers using both Advocacy (Groups/exhibitor campaigns) and the Expo floor map feature.",
+        "staff_path": "Marketing → Advocacy → select an exhibitor campaign → Preview as exhibitor",
+        "gotchas": "Booth number only appears when the booth status is Sold or Reserved on the floor map; Hold status leaves the field blank. The companion web-ui-v2 PR must also be deployed for the number to render on the card.",
+        "talk_track": "The booth number on the exhibitor share card now comes straight from the floor map — no manual entry, always accurate.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The Advocacy guide's exhibitor section should note that booth numbers are pulled automatically from the floor map when a booth is marked Sold or Reserved, and that multiple booths are displayed in order.",
+          "why_use_it": "Advocacy lets exhibitors and sponsors share branded cards that drive traffic to their booth. When the floor map already records which booth belongs to which exhibitor, the card can tell attendees exactly where to go — no manual data entry and no risk of the wrong number appearing on a shared post.",
+          "at": "2026-10-31T19:48:55.280Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5019"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "feature:floor_maps (beta)"
+    },
+    {
+      "id": "advocacy-share-cards-date-and-booth-fixes",
+      "title": "Advocacy share cards: correct event dates for Americas events and auto-fill exhibitor booth number",
+      "summary": "Two fixes for Advocacy share cards. (1) Event dates on **Quick Launch** share cards and the event sidebar now show the correct calendar dates for events in Americas time zones (e.g. America/Denver Apr 12–15 no longer prints as Apr 11–14). (2) Exhibitor still-card and video-card templates now automatically populate the **Visit us at Booth …** slot from the floor-map booth number when one is assigned, so exhibitors no longer need to type it by hand; a manually entered value still takes priority.",
+      "article": "/marketing/advocacy#advocacy-for-exhibitors-and-sponsors",
+      "related": [
+        "/expo/floor-plan",
+        "/marketing/brand-kits"
+      ],
+      "kind": "fixed",
+      "module": "Marketing",
+      "features": [
+        "marketing_advocacy",
+        "floor_maps",
+        "exhibitors"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Marketing → Advocacy → share cards / Quick Launch; event sidebar header"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "speaker"
+      ],
+      "use_case": "Organizers running events in North or South American time zones can trust that share cards and the event sidebar show the correct dates. Exhibitors with a floor-map booth assignment get their booth number on their share card automatically, saving manual entry and reducing errors.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Both fixes are default-on. The booth fix requires web-api #5019 to be deployed before booth numbers appear; until then, behaviour is unchanged."
+        },
+        "when_to_bring_up": "When a customer in an Americas time zone reports wrong dates on share cards, or when an exhibitor customer asks about automating booth info on their cards.",
+        "who_should_get_it": "All customers using Advocacy share cards, especially those with exhibitors on a floor map.",
+        "staff_path": "Marketing → Advocacy → share cards",
+        "gotchas": "The booth auto-fill only activates after web-api #5019 is deployed. Exhibitors with no floor-map booth see no change. A hand-typed booth value still overrides the floor-map value.",
+        "talk_track": "Event dates on share cards now match the event's calendar dates regardless of time zone, and exhibitor booth numbers flow in automatically from the floor map.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The Advocacy guide should note that exhibitor share cards auto-populate the booth number from the floor map when one is assigned, and that a manually entered value takes priority.",
+          "why_use_it": "Advocacy share cards let speakers, exhibitors, and sponsors promote the event on social media with branded visuals generated directly from your event data. Cards pull in event dates, session details, and exhibitor information so participants always have accurate, on-brand content to share without any design work.",
+          "at": "2026-10-31T19:51:30.519Z",
+          "permissions_to_confirm": [
+            "event.marketing: advocacy_read"
+          ]
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1384"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "feature:floor_maps (beta)"
+    },
+    {
+      "id": "team-lead-approval-card-reconnect",
+      "title": "Team Lead approval card stays visible after a reconnect or panel reopen",
+      "summary": "The **Team Lead** approval card no longer disappears when the browser reconnects, reloads, or the Ask panel is reopened. Previously, a pending approval card could vanish mid-review, leaving the agent waiting with no visible way to respond.",
+      "article": "/agents/team-lead",
+      "kind": "fixed",
+      "module": "Agents",
+      "features": [
+        "coordinators"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Ask panel → Team Lead approval card"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "When Ask is waiting for a Team Lead to approve a batch of changes (such as a multi-field CFP form update), the approval card now persists through any network interruption or panel reopen, so reviewers can always see and act on the pending request without having to ask the agent to resend it.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer reports that a Team Lead approval card disappeared mid-review or that they had to ask Ask to resend an approval.",
+        "who_should_get_it": "Any customer using Ask with Team Lead approvals enabled.",
+        "staff_path": "Ask panel → Team Lead approval card",
+        "gotchas": "A related backend fix (sessionboard-agents #180) addressed the 1-vs-10 decision error that could occur when a user typed decisions manually after the card vanished; both fixes should be live together for full resolution.",
+        "talk_track": "Approval cards now survive reconnects and panel reopens — no more lost approvals mid-review.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that approval cards persist across reconnects and panel reopens, and explain what happens when the agent is waiting for approval while the user is offline or navigates away.",
+          "why_use_it": "null",
+          "at": "2026-10-31T20:22:58.394Z"
+        }
+      },
+      "related": [],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1385"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "ask-replaces-team-lead-label",
+      "title": "The AI agent entry point is now called Ask everywhere in the admin UI",
+      "summary": "All admin-facing labels, buttons, badges, and descriptive copy that previously said **Team Lead** now say **Ask** (the entry point) or use plain descriptive phrasing. For example, **Set up with Team Lead** is now **Set up with Ask**, the agent window title is **Ask**, and passive descriptions such as \"Team Lead drafts the items\" are rewritten as \"The items are drafted for you.\" The rename applies across all four supported locales (English, German, Spanish, French).",
+      "article": "/agents/agent-window",
+      "related": [
+        "/agents/overview",
+        "/agents/team-lead",
+        "/registration/team-lead"
+      ],
+      "kind": "improved",
+      "module": "Agents",
+      "features": [
+        "coordinators"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Ask (header button) → Agent window; Setup rail; Portals → Customize; Event Dashboard; Training"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who were confused by the \"Team Lead\" label now see a consistent name — **Ask** — wherever they invoke the AI agent, making it easier to find and talk about the feature with their team.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "Any time a customer mentions 'Team Lead' — redirect them to the new name 'Ask'.",
+        "who_should_get_it": "All customers who use the AI agent features.",
+        "staff_path": "Header → Ask button",
+        "gotchas": "Internal code, feature flags, and i18n keys still use 'teamLead' identifiers — only the visible copy changed. The lowercase reviewer role 'team lead' in round session builds is also unchanged.",
+        "talk_track": "The AI agent entry point is now called Ask. Everything that used to say Team Lead in the UI now says Ask or uses plain descriptive language.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The /agents/agent-window guide and /agents/team-lead guide should be audited to replace any remaining \"Team Lead\" references with \"Ask\" and update screenshots of the header button and agent window title.",
+          "why_use_it": "Ask is the AI agent built into Sessionboard that helps organizers set up events, build portals, draft agendas, and answer questions about their program — all without leaving the platform. You open it from the **Ask** button in the header; it guides you through tasks step by step and waits for your approval before making any changes. The full-screen surface is called the **Agent window**, where you can chat, review proposed edits, and open records side by side.",
+          "at": "2026-10-31T21:25:57.335Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1388"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "reach-goals-page",
+      "title": "Marketing → Goals: set, track and manage marketing goals across events",
+      "summary": "A new **Goals** page appears under **Marketing** at both the org and event level. It lists goals grouped by **Initiative / Event / None**, shows progress against targets and deadlines, and lets staff start a **Recommended** goal with one click (**Start**) or open it prefilled (**Adjust first**). The **Goal Gallery** browses every goal type by area with accent-insensitive search. **Goal Setup** builds a plain-English sentence — **Get [target] [unit] for [event] by [date]** — and exposes **More options** for naming, grouping into an initiative, and setting guardrails. **Goal Detail** shows progress, the plan, autonomy controls (three levels), and actions to pause, resume, mark done, or delete.",
+      "article": "/marketing/what-is-sessionboard-marketing",
+      "related": [
+        "/agents/overview"
+      ],
+      "kind": "new",
+      "module": "Marketing",
+      "features": [
+        "marketing"
+      ],
+      "availability": "limited_release",
+      "enable": {
+        "how": "support",
+        "path": "Ask your Customer Success Manager to enable Reach; then Marketing → Goals"
+      },
+      "where": {
+        "scope": "both",
+        "path": "Marketing → Goals"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Teams that want to tie marketing activity to measurable outcomes can set a goal in one sentence, let the system run toward it autonomously, and track progress across every event from a single page.",
+      "internal": {
+        "cs_action": {
+          "kind": "must_enable",
+          "note": "Requires the org-level `reach` feature flag AND staff (superUser) access. The API (lennd/sessionboard-web-api#5035) must also be released before customers see data; a 403/404 from the API renders nothing, so the UI is safe to ship first."
+        },
+        "when_to_bring_up": "When a customer asks how to measure the impact of their marketing activity or wants to connect speaker/session content to registration or awareness targets.",
+        "who_should_get_it": "Orgs in the Reach pilot; staff-only until the flag is opened more broadly.",
+        "staff_path": "Marketing → Goals (org or event)",
+        "gotchas": "The page renders nothing for non-staff users or when the API is not yet live — no error state is shown, so customers will see a blank page if the API is not deployed. English-only copy for now; locale keys come when Reach leaves staff-only.",
+        "talk_track": "Set a goal in one sentence, pick how much runs on its own, and watch progress across every event from one page.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The Marketing overview guide should add a section describing the Goals page, the Goal Gallery, Goal Setup sentence builder, and Goal Detail autonomy controls introduced by Reach.",
+          "why_use_it": "Goals gives marketing teams a single place to define what success looks like — registrations, shares, views, or any other outcome — and connect that target to a concrete plan. You can start from a curated recommendation or browse the full gallery of goal types, then let the platform run the plan with as much or as little autonomy as you choose. Progress is visible at a glance across all events and initiatives, so you always know which goals are on track and which need attention.",
+          "at": "2026-10-31T22:07:25.938Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1391"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:limited_release"
     }
   ]
 }
