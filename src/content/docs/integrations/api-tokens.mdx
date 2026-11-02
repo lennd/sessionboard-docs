@@ -65,7 +65,6 @@ Click **Create Token**. You'll be asked for:
 
 - **A descriptive name** *(optional)*: e.g. "Tableau dashboard." This helps you identify the token later when reviewing or revoking it.
 - **Permissions:** see the next section.
-- **PII Obfuscation:** recommended. See the dedicated section below.
 - **Event restrictions** *(optional)*: limit the token to specific events instead of your whole organization.
 
 ![Event restrictions (optional)](/images/kb/31d4c602-image-png-May-05-2026-07-53-04-0808-PM.png)
@@ -105,23 +104,7 @@ For your security team's SIEM, check **Audit log export** (`read:audit_logs`) in
 **📌 Note:** If you don't know which scopes you need, start with the read scopes for the records you use and add write scopes only when you have a clear use case for them.
 </Note>
 
-### 5. PII Obfuscation (recommended for AI and third-party integrations)
-Sessionboard includes a **PII Obfuscation** switch that redacts personal contact data (emails, phone numbers, names) from AI and Insights/SbQL query results returned to the token.
-
-- **Enabled (recommended for AI assistants and third-party integrations):** Email addresses are returned as `j***@a***.com`, phone numbers as `***-***-4567`, and similar masking applies to other personal fields in query results.
-- **Disabled (default):** Full PII is returned.
-
-Note that connections made through the OAuth flow (Claude, ChatGPT, and other [AI assistant connections](/integrations/connect-ai-assistants)) always mask PII in query results regardless of any token setting.
-
-![Disabled: Full PII is returned in API responses](/images/kb/211f0e53-image-png-May-05-2026-07-58-28-2747-PM.png)
-
-<Warning>
-We **strongly recommend turning PII Obfuscation on** for tokens used by AI assistants or any third-party integration. It protects your speakers' and contacts' personal information from being exposed in logs, AI conversation histories, or downstream systems.
-
-You can set PII Obfuscation per token, so different integrations can have different obfuscation rules depending on what they need to do.
-</Warning>
-
-### 6. Copy the token immediately
+### 5. Copy the token immediately
 <Note>
 🔒 **Note: copy your token now.** When you click **Generate**, the full token value is displayed **only once**. After you close the dialog, the full token is hidden for security and cannot be retrieved again. Copy it immediately and store it in a secure location (a password manager, secrets vault, or environment variable). If you lose it, you'll need to generate a new one.
 </Note>
@@ -163,7 +146,7 @@ A token is for a script or integration that calls the public API directly, with 
 The hosted assistant URLs (`https://mcp.sessionboard.com/mcp` and the EU and Middle East hosts) accept the OAuth sign-in only. Pasting an API token into Claude or ChatGPT will not connect.
 
 ## Security and best practices
-- **Turn on PII Obfuscation.** Enable the PII Obfuscation switch unless your integration has a specific need for full personal data.
+- **Treat responses as personal data.** API responses, including report and SbQL query results, return contact details such as emails and phone numbers in full. Only give a token to an integration you trust with that data.
 - **Scope tokens narrowly.** Generate separate tokens for separate integrations and grant only the scopes each one actually needs. A read-only Tableau dashboard doesn't need write scopes; a sync job that only updates sessions doesn't need write access to contacts.
 - **Restrict to specific events when possible.** If a token only needs access to one event, scope it that way rather than giving it organization-wide access.
 - **Rotate tokens periodically** and revoke them as soon as an integration is decommissioned. A token stops working when the person who created it is removed from the organization or set to Inactive, and works again if they are reactivated, so create integration tokens under an account that will stay.
@@ -174,7 +157,7 @@ The hosted assistant URLs (`https://mcp.sessionboard.com/mcp` and the EU and Mid
 From the **Organization Settings → API Tokens** page you can:
 
 - Rename a token
-- Edit its scopes, event restrictions, and PII Obfuscation setting
+- Edit its scopes and event restrictions
 - Revoke a token immediately (any integration using it will stop working)
 
 Revoking a token cannot be undone. If you need to give the same integration access again, generate a new token and update the integration's configuration with the new value.
