@@ -9,6 +9,10 @@
  * between `training-video:start <id>` / `training-video:end` markers. Do not
  * hand-place: re-publish the chapter and re-run the generator.
  *
+ * `compact` is a section clip (`training-clip:start` blocks, chapters with
+ * `section_clips: true`): the same video with no rail or summary, opened at
+ * `start` and paused at `end` so it plays only the part the section covers.
+ *
  * A cross-origin <track> only loads with the media element in CORS mode, so
  * `crossorigin` is set whenever captions are present; the CDN
  * (static.sessionboard.com) answers with Access-Control-Allow-Origin.
@@ -33,20 +37,40 @@ interface Props {
   duration?: number;
   /** Seek here on first play (the marker scripted from this article). */
   start?: number;
+  /** Pause here; the next play starts the clip again from `start`. */
+  end?: number;
+  /** A section clip: one-line header, no rail. */
+  compact?: boolean;
 }
-const { id, title, summary, src, poster, captions, chapters = [], duration, start = 0 } = Astro.props;
+const { id, title, summary, src, poster, captions, chapters = [], duration, start = 0, end = 0, compact = false } = Astro.props;
 const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
-const markers = chapters.filter((c) => c.start_s > 0.5);
+const markers = compact ? [] : chapters.filter((c) => c.start_s > 0.5);
 ---
 
-<figure class="sb-training" id={id} data-start={start > 0 ? String(start) : undefined}>
-  <figcaption class="sb-training__head">
-    <span class="sb-training__eyebrow">
-      Training video{duration ? ` · ${clock(duration)}` : ''}
-    </span>
-    <strong class="sb-training__title">{title}</strong>
-    {summary && <span class="sb-training__summary">{summary}</span>}
-  </figcaption>
+<figure
+  class:list={['sb-training', compact && 'sb-training--compact']}
+  id={id}
+  data-start={start > 0 ? String(start) : undefined}
+  data-end={end > start ? String(end) : undefined}
+>
+  {
+    compact ? (
+      <figcaption class="sb-training__head">
+        <span class="sb-training__eyebrow">
+          Watch this part{end > start ? ` · ${clock(end - start)}` : ''}
+        </span>
+        <strong class="sb-training__title">{title}</strong>
+      </figcaption>
+    ) : (
+      <figcaption class="sb-training__head">
+        <span class="sb-training__eyebrow">
+          Training video{duration ? ` · ${clock(duration)}` : ''}
+        </span>
+        <strong class="sb-training__title">{title}</strong>
+        {summary && <span class="sb-training__summary">{summary}</span>}
+      </figcaption>
+    )
+  }
   <div class:list={['sb-training__body', markers.length > 0 && 'sb-training__body--rail']}>
     <div class="sb-training__stage">
       <video
@@ -118,6 +142,16 @@ const markers = chapters.filter((c) => c.start_s > 0.5);
         { once: true },
       );
     }
+    // A section clip stops at the next section and replays from its own start.
+    const end = Number(fig.dataset.end || 0);
+    if (end > 0) {
+      video.addEventListener('timeupdate', () => {
+        if (!video.paused && video.currentTime >= end) video.pause();
+      });
+      video.addEventListener('play', () => {
+        if (video.currentTime >= end - 0.2 || video.currentTime < start - 0.5) video.currentTime = start;
+      });
+    }
     video.addEventListener('timeupdate', () => highlight(video.currentTime));
     video.addEventListener('seeked', () => highlight(video.currentTime));
   }
@@ -130,6 +164,16 @@ const markers = chapters.filter((c) => c.start_s > 0.5);
     border-radius: 0.75rem;
     background: var(--sl-color-bg-nav);
     overflow: hidden;
+  }
+  .sb-training--compact {
+    max-width: 40rem;
+    margin: 0.75rem 0 1.25rem;
+  }
+  .sb-training--compact .sb-training__head {
+    padding-block: 0.6rem;
+  }
+  .sb-training--compact .sb-training__title {
+    font-size: var(--sl-text-sm);
   }
   .sb-training__head {
     display: flex;
