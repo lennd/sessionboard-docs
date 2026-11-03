@@ -267,6 +267,10 @@ for (const [slug, target] of Object.entries(redirects)) {
 // so they get their own map, checked before serving assets. Add a row here any
 // time an article is retired in favour of another.
 const INTERNAL_REDIRECTS = {
+  // Classic (v1) review plan guides retired, 2026-11-03: the docs cover the
+  // current round-based review plan only. Reviewers land on the current guide.
+  '/evaluations/evaluators-how-to-evaluate-sessions': '/evaluations/how-to-evaluate-sessions',
+  '/get-started/navigate-evaluation-plans': '/evaluations/how-to-evaluate-sessions',
   // The AI agent that pre-scores submissions is Screener, 2026-10-30
   // (nomenclature standard: humans review, the agent screens; SB-10530).
   '/agents/reviewer': '/agents/screener',
