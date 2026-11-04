@@ -110,6 +110,13 @@ test('a signed staff session verifies, and fails once expired, re-signed or tamp
   assert.equal(await verifySession('k', 'garbage', now), null);
 });
 
+test('a session minted by a removed guest link no longer signs anyone in', async () => {
+  const value = await signSession(ENV.STAFF_SESSION_SECRET, 'guest-partner-pm');
+  assert.equal(await verifySession(ENV.STAFF_SESSION_SECRET, value), null);
+  const req = new Request(`${ORIGIN}/`, { headers: { Cookie: `${SESSION_COOKIE}=${value}` } });
+  assert.equal(await isSignedInRequest(req, ENV), false);
+});
+
 test('isStaffRequest reads only the named cookie', async () => {
   const value = await signSession(ENV.STAFF_SESSION_SECRET, 'u1');
   const req = (cookie) => new Request(`${ORIGIN}/`, { headers: { Cookie: cookie } });
