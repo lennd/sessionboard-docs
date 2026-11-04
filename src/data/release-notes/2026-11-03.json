@@ -123,6 +123,1325 @@
           "lennd/sessionboard-web-ui-v2#1441"
         ]
       }
+    },
+    {
+      "id": "recon-people-tab-all-speakers",
+      "title": "Recon: People tab now lists every crawled speaker, with enrichment status badges",
+      "summary": "The **People** tab on an External Event now shows every speaker the Recon crawl found, not only those already enriched. Each card displays its enrichment state — **Enriching…**, **Enriched**, or **Agenda only** — and the tab updates automatically when enrichment progresses, with no page reload required. Speakers found only in the agenda (**Agenda only**) are read-only and have no Accept or Promote actions.",
+      "article": "/speaker-crm/pipeline",
+      "related": [
+        "/speaker-crm/overview",
+        "/speaker-crm/crm-advanced-search"
+      ],
+      "kind": "improved",
+      "module": "CRM",
+      "features": [
+        "speaker_prospects"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Speaker CRM → Prospects → External Events → [event] → People"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "When scouting speakers at a competitor or partner event, you can now see the full roster the crawl discovered — including people still being enriched — so you can start evaluating the pipeline immediately rather than waiting for enrichment to finish.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Requires the companion API PR (lennd/sessionboard-web-api#5072) to be live in all three regions (US, EU, ME) before the People tab works correctly. Merging the UI before the API is live causes the People tab to fail for all customers."
+        },
+        "when_to_bring_up": "When a customer using Speaker Prospects asks why they only see some speakers from a crawled event, or wants to start working leads before enrichment completes.",
+        "who_should_get_it": "Orgs with the Speaker Prospects (beta) feature enabled who actively use Recon to scout external events.",
+        "staff_path": "Speaker CRM → Prospects → External Events → [event] → People",
+        "gotchas": "Agenda-only cards are read-only — no open, Accept, or Promote actions are available. The tab refreshes via a WebSocket event (recon:people-updated) rather than polling; if the socket is unavailable, the count may lag until a manual reload. German, Spanish and French badge labels need a native-speaker review.",
+        "talk_track": "You can now see every speaker the crawl found the moment the crawl finishes — badges show you who is fully enriched and ready to promote versus who is still being processed, so your team can start working the list right away.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The Pipeline guide does not cover the External Event People tab, enrichment status badges, or the Agenda-only read-only state; a dedicated Recon / Speaker Prospects guide should document these concepts.",
+          "why_use_it": "Speaker Prospects lets you discover and evaluate speakers from external events that Recon has crawled, bringing their profiles, session history and enrichment data into your CRM pipeline. Use it when you want to identify potential speakers for an upcoming event without manually researching each person. Enrichment status badges tell you at a glance which profiles are complete and which are still being processed, so you can prioritise outreach to the most fully-formed leads first.",
+          "at": "2026-11-03T17:47:21.726Z",
+          "permissions_to_confirm": [
+            "org.prospects: read"
+          ]
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1420"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "recon-people-show-all-crawled-speakers",
+      "title": "Recon: all crawled speakers appear immediately, with live enrichment status",
+      "summary": "When Recon crawls an external event, every speaker extracted from the agenda now appears in the **People** tab right away — shown as **Enriching…** while profile enrichment runs, then updated to **Enriched** or **Agenda only** as each person settles. Previously, speakers were hidden until enrichment finished, so the list could show a small fraction of the actual count. The tab refreshes automatically without a page reload as enrichment progresses.",
+      "article": "/speaker-crm/pipeline",
+      "related": [
+        "/speaker-crm/overview",
+        "/speaker-crm/crm-advanced-search"
+      ],
+      "kind": "improved",
+      "module": "CRM",
+      "features": [
+        "speaker_prospects"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Speaker CRM → Prospects → External Events → [event] → People"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers using Recon to scout speakers from external events can now see the full speaker list the moment a crawl completes, rather than waiting for enrichment to finish — making it faster to spot and act on relevant prospects.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Behaviour change is automatic for all orgs using the Speaker Prospects (Recon) beta. No toggle required."
+        },
+        "when_to_bring_up": "When a customer reports that the People tab on an external event shows far fewer speakers than expected after a crawl.",
+        "who_should_get_it": "Orgs on the Speaker Prospects beta who use Recon to crawl external events.",
+        "staff_path": "Speaker CRM → Prospects → External Events → [event] → People",
+        "gotchas": "Speakers stuck in Enriching… for more than 24 hours automatically fall back to 'Agenda only'. A backfill script must be run per region (dry run first, then --apply) to populate the new table for events crawled before this release. The companion UI PR (lennd/sessionboard-web-ui-v2#1420) must be deployed after this API change is live in all regions.",
+        "talk_track": "After a Recon crawl you now see every speaker on the agenda immediately — the list fills in as enrichment runs, so you can start reviewing prospects right away instead of waiting for the full enrichment cycle to complete.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The Speaker Prospects / Pipeline guide does not cover the Recon external-event crawl workflow or the People tab enrichment statuses (Enriching…, Enriched, Agenda only); a dedicated section or guide should be added.",
+          "why_use_it": "Speaker Prospects lets you discover and track potential speakers by crawling external events and enriching each person's profile automatically. You see every speaker an event featured, review their enriched details, and move the best candidates into your pipeline — all without leaving Sessionboard.",
+          "at": "2026-11-03T17:42:17.841Z",
+          "permissions_to_confirm": [
+            "org.prospects: read"
+          ]
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5072"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "sites-landing-events-list-report-blocks",
+      "title": "Sites builder: Events list and Report blocks now appear in the landing page picker",
+      "summary": "On a Marketing Site's **landing** page, **Add section** now offers the **Events list** and **Report** blocks whenever the API has enabled them for your organization — the same blocks already available on custom and event pages. Previously these blocks were silently omitted from the landing page picker even when they were active.",
+      "article": "/awards/setting-up-your-sessionboard-site#landing-page",
+      "kind": "fixed",
+      "module": "Awards",
+      "features": [
+        "awards"
+      ],
+      "availability": "add_on",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Sites → a site → Site builder → Landing → Add section"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who want to showcase an events list or an embedded report on their site's landing page can now add those blocks directly from the landing page picker, without workarounds or custom pages.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Fix is automatic; no enablement needed. Blocks only appear when the API catalog lists them for the org."
+        },
+        "when_to_bring_up": "When a customer reports that Events list or Report blocks are missing from their landing page Add section menu.",
+        "who_should_get_it": "Any org using Awards Sites with the events_list or report block enabled on their account.",
+        "staff_path": "Sites → a site → Site builder → Landing → Add section",
+        "gotchas": "Blocks still only appear if the server-side block catalog lists them for the org — this fix ensures the landing picker respects that catalog, matching the behaviour of custom and event pages.",
+        "talk_track": "The landing page picker now shows the same API-gated blocks as the rest of the site builder, so customers can add an Events list or Report to their landing page without any workaround.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The landing page section of the guide should note that Events list and Report blocks are available on the landing page when enabled for the organization, and explain how they appear in Add section.",
+          "why_use_it": "The Site builder lets you compose a public-facing landing page from purpose-built blocks — hero banners, program listings, events lists, reports and more — without writing code. Use it to give prospective speakers, attendees and sponsors a single branded destination that reflects your program in real time.",
+          "at": "2026-11-03T15:21:39.141Z"
+        }
+      },
+      "related": [
+        "/site/site-builder"
+      ],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1440"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "training-catalog-chapter-69-ai-assistants",
+      "title": "New training chapter: Connect Claude or ChatGPT to Sessionboard",
+      "summary": "A new in-product training chapter walks through connecting Claude or ChatGPT to Sessionboard, replacing the previous one-off Help Center walkthrough. The chapter is available in the **Training** section of the Event Dashboard and covers both the published Sessionboard ChatGPT app and the Claude connector.",
+      "article": "/integrations/connect-ai-assistants",
+      "related": [
+        "/integrations/connect-chatgpt",
+        "/integrations/connect-claude",
+        "/events/event-dashboard"
+      ],
+      "kind": "new",
+      "module": "Platform",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Event Dashboard → Training"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who want to query Sessionboard data from ChatGPT or Claude can follow the guided video chapter to get connected quickly, without hunting through the Help Center.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer asks how to connect ChatGPT or Claude to their Sessionboard data, or when onboarding a team that wants to use AI assistants with event data.",
+        "who_should_get_it": "Any organizer already using or curious about AI assistant integrations.",
+        "staff_path": "Event Dashboard → Training → Chapter 69",
+        "gotchas": "The chapter covers the published Sessionboard ChatGPT app (US-hosted) and the Claude connector; EU/Middle East customers still need the manual connector path documented in the Help Center guides.",
+        "talk_track": "There is now a guided training video right inside the product that walks through connecting ChatGPT or Claude — no need to dig through the Help Center.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The /integrations/connect-ai-assistants guide should note that an in-product training chapter (chapter 69) is available in the Event Dashboard Training section for a guided walkthrough.",
+          "why_use_it": "Sessionboard's AI assistant integrations let you ask questions about your event data — sessions, speakers, contacts, and more — directly inside ChatGPT or Claude. You can pull summaries, spot gaps, and draft content without switching between tools. The training catalog gives your team a structured, step-by-step path to get each integration working, so the whole team can start using it the same day.",
+          "at": "2026-11-03T15:08:06.932Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5100"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "field-event-unconfirmed-date-display",
+      "title": "Field event pages show \"Month Year\" instead of a placeholder date when the date isn't confirmed",
+      "summary": "When a field event's date is not yet confirmed, the public event page now shows only the month and year (e.g. \"February 2027\") instead of a specific day and time that was never chosen. A **tentative** date adds \"· tentative\" to the label. For both statuses the hero drops the day stamp and the **Add to calendar** button, and the page description omits the time. Confirmed dates display exactly as before.",
+      "article": "/field-events/overview",
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "gatherings"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Field event public page → hero, key facts, register block"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Organizers planning field events months in advance can publish the event page early without misleading guests with a fabricated date and time. Guests see a clear month-only or tentative label and are not prompted to add a phantom time slot to their calendar.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Behaviour is automatic once the web-api companion change ships; no action needed."
+        },
+        "when_to_bring_up": "When a customer reports that their field event page showed a wrong date or time, or when they ask how to publish a page before the date is finalised.",
+        "who_should_get_it": "Any org using Field Events (beta) that plans events well in advance and publishes the event page early.",
+        "staff_path": "Field event public page",
+        "gotchas": "The date_status field comes from a companion web-api PR. Until that API change is live, all pages default to 'confirmed' and render as before — no regression.",
+        "talk_track": "If you publish a field event page before the date is set, guests now see 'February 2027' or 'February 2027 · tentative' instead of a made-up time, and the Add to calendar button stays hidden until the date is confirmed.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that field events support a date_status of confirmed, month, or tentative, and explain how each status affects what guests see on the public event page.",
+          "why_use_it": "Field Events lets you create and publish an event page before every detail is locked down. When the exact date is still being confirmed, the page communicates what is known — the month, and whether the date is tentative — so guests have accurate information from the moment you share the link.",
+          "at": "2026-11-03T14:09:40.862Z"
+        }
+      },
+      "related": [
+        "/field-events/registration-form"
+      ],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-org-portal#305"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "field-events-date-status-and-clean-slugs",
+      "title": "Field Events: mark a date as tentative or month-only, and keep parenthetical notes out of URLs",
+      "summary": "Two improvements for field events (gatherings). First, a new **Date Status** setting lets organizers mark an event date as **Tentative** or **Month only** instead of showing a specific date-time that has not been confirmed yet; the public page and admin header reflect the status rather than a made-up time. Second, when a field event is created or renamed, any trailing parenthetical note in the name — such as \"(tentative)\" or \"[draft]\" — is automatically stripped before the URL slug is generated, so the slug stays clean even after the status changes.",
+      "article": "/field-events/overview",
+      "related": [
+        "/field-events/registration-form"
+      ],
+      "kind": "new",
+      "module": "Program",
+      "features": [
+        "gatherings"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Field Events → a field event → Event Details"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Tour and roadshow organizers who know only the month or are still confirming a stop can set the date status to Tentative or Month only so the public page never shows a fabricated time. Once the date is locked, switching to Confirmed updates the display without changing the URL.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Both changes are default-on for all gatherings. Existing events are unaffected until an organizer sets Date Status; existing slugs are not rewritten."
+        },
+        "when_to_bring_up": "When a customer running a tour or roadshow asks how to list stops whose dates are not yet confirmed, or complains that a URL still says 'tentative' after a date was locked in.",
+        "who_should_get_it": "Any org using Field Events (gatherings) for multi-stop tours, roadshows, or meetup series.",
+        "staff_path": "Field Events → a field event → Event Details → Date Status",
+        "gotchas": "Slug cleanup only applies to newly created or renamed events; existing slugs (like event-content-lab-austin-june-2027-tentative) are not retroactively changed. A mid-name parenthetical is intentionally preserved — only trailing ones are stripped.",
+        "talk_track": "If you're planning stops you haven't confirmed yet, set the date to Tentative or Month only so your public page never shows a placeholder time. And when you name a stop with a note like '(tentative)', the URL will already be clean by the time you confirm it.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The /field-events/overview guide should document the Date Status field (confirmed / tentative / month-only), where it appears in the UI, how it affects the public event page and admin header, and explain that trailing parentheticals in event names are stripped from URL slugs automatically.",
+          "why_use_it": "Field Events lets you run a series of in-person stops — roadshows, tours, meetups — from a single organization. Each stop gets its own registration page, check-in flow, and public listing. Use it when your program spans multiple cities or venues and you need per-stop control over dates, registration, and attendee communications without spinning up a full conference event for each one.",
+          "at": "2026-11-03T14:10:06.585Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5095"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "sites-events-list-block",
+      "title": "Site builder: add an Events list block to any page",
+      "summary": "A new **Events list** block is available in the Site builder's block picker under **Program**. Add it to a landing page or any custom page to display the organization's upcoming field events, webinars, or both — each card links to its public event page. Configure the **Heading**, **Intro**, **Show** (Field events / Webinars / Both), **Layout** (Rows / Cards), **Include past events**, **Button text**, and an optional **Series** filter from the block's settings panel.",
+      "article": "/site/site-builder#blocks",
+      "related": [
+        "/awards/setting-up-your-sessionboard-site",
+        "/field-events/overview"
+      ],
+      "kind": "new",
+      "module": "Awards",
+      "features": [
+        "awards"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Sites → [a site] → Site builder → Add block → Program → Events list"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers running a marketing site for their organization can surface all upcoming field events and webinars in one place without hand-building or maintaining a list of links that go stale when event details change.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "The block appears in the picker only after the API's block catalog lists the 'events_list' kind (web-api PR #5094). Confirm both PRs are deployed before pointing customers to it. The public renderer ships in org-portal PR #304."
+        },
+        "when_to_bring_up": "When a customer asks how to keep an event directory on their program site current, or when they are hand-maintaining a list of event links on a custom page.",
+        "who_should_get_it": "Any org using Sites that runs multiple field events or webinars and wants a self-updating public listing.",
+        "staff_path": "Sites → [a site] → Site builder → Add block → Program → Events list",
+        "gotchas": "The Series filter is a plain ID field for now — a picker UI will follow when the Series feature ships. The block requires the API catalog to list the kind before it appears in the picker; if a customer reports not seeing it, confirm the API release is live.",
+        "talk_track": "Instead of updating a page of links every time you add or change an event, drop in the Events list block and it stays current on its own — each event links straight to registration.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The Site builder guide should document the Events list block: its config fields (Heading, Intro, Show, Layout, Include past events, Button text, Series), where it can be placed (landing page and custom pages, org-scoped sites), and how the block resolves live event data at publish time.",
+          "why_use_it": "The Site builder lets you compose public-facing pages for your organization or event without writing code. Blocks are the building units of every page — drop in a block, configure it in the side panel, and the canvas updates instantly. The Events list block keeps your site's event directory in sync automatically, so visitors always see current events with working registration links.",
+          "at": "2026-11-03T14:10:34.652Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1437"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "sites-events-list-block-2",
+      "title": "Sites: show a live list of field events and webinars on any page",
+      "summary": "A new **Events list** block is available in the Site builder. Add it to any page to display the organization's upcoming field events and webinars — each with its name, date, location (or **Online** for webinars), and a call-to-action button (**Register**, **Request a seat**, or **Join the waitlist**). Events that are full or closed show **View details** instead. Choose between a row layout or a **Cards** grid, and edit the **Heading** and **Intro** text inline on the canvas.",
+      "article": "/site/site-builder#blocks",
+      "related": [
+        "/field-events/overview",
+        "/site/publishing-surfaces"
+      ],
+      "kind": "new",
+      "module": "CMS",
+      "features": [
+        "gatherings",
+        "marketing"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Sites → Site builder → Add block → Events list"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Organizers running multiple field events or webinars can surface all upcoming gatherings on their marketing Site without maintaining a separate page — visitors see live registration status and can click straight through to register.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "The block appears automatically in the builder once the companion web-api release (lennd/sessionboard-web-api#5094) is live. Until that API ships, the block is not offered in the builder (requiresServerKind guard), so there is nothing to enable or disable early."
+        },
+        "when_to_bring_up": "When a customer asks how to list all their upcoming events or webinars on their organization's marketing site.",
+        "who_should_get_it": "Orgs using Field Events (gatherings) or webinars who also have a Sessionboard Site published.",
+        "staff_path": "Sites → Site builder → Add block → Events list",
+        "gotchas": "Requires the API-side release (lennd/sessionboard-web-api#5094) to be deployed first; merging this PR alone does not expose the block in production. The list is capped at 50 events. Rows without a name or a valid https URL are silently dropped.",
+        "talk_track": "Instead of manually updating a list of events on your website, the Events list block pulls your published field events and webinars automatically — with live registration status — so visitors always see what's open and can register in one click.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The Site builder guide should document the Events list block: how to add it, the row vs. cards layout toggle, inline heading/intro editing, how registration status (Waitlist / Full / Closed) affects the CTA, and the 50-event cap.",
+          "why_use_it": "The Site builder lets you publish a branded marketing site for your organization directly from Sessionboard, with no external CMS needed. Blocks pull live data — sessions, speakers, forms, and now events — so the page stays accurate without manual updates. Use it when you want a single destination that showcases your program and drives registrations across every event your organization runs.",
+          "at": "2026-11-03T14:11:02.846Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-org-portal#304"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "scheduler-last-run-score-persisted",
+      "title": "Scheduler: Last Run score survives a page reload",
+      "summary": "After reopening a Scheduler draft, the **Explain** tab's **Last Run** header now shows the score and solve time from the most recent generation run instead of displaying a false **0**. When no stored score is available, the header shows **—** rather than a misleading zero.",
+      "article": "/agents/scheduler#run-history",
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "sessions_v2"
+      ],
+      "availability": "add_on",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Sessions → Scheduler → a draft → Explain → Last Run"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who close and reopen a Scheduler draft can now trust the score shown in the Explain tab — it reflects the actual result of the last generation run, not a reset zero.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Fix is automatic once the companion API change (sessionboard-web-api#5075) is deployed; until then the header shows — instead of 0, which is safe."
+        },
+        "when_to_bring_up": "If a customer reports that the Scheduler's score always shows 0 after reopening a draft.",
+        "who_should_get_it": "Any org using the Scheduler agent (Sessions 2.0 add-on).",
+        "staff_path": "Sessions → Scheduler → open an existing draft → Explain tab",
+        "gotchas": "The fix requires the API release (sessionboard-web-api#5075) to return stored stats. Before that API is live, the header correctly shows — instead of 0.",
+        "talk_track": "The score the Scheduler calculated is now saved and shown every time you reopen the draft, so you can compare runs without having to regenerate.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that the Last Run score and solve time are persisted across sessions and visible on the Explain tab whenever a draft is reopened.",
+          "why_use_it": "null",
+          "at": "2026-11-03T14:11:20.250Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1423"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "contracts-permission-based-visibility",
+      "title": "Contracts sections and actions now follow each user's actual permissions",
+      "summary": "Every surface that shows Contracts — contact sidebars, group pages, the pipeline drawer, the event toolkit tile, Expo booth sales, the exhibitor portal, and the event download wizard — now checks the viewer's org or event role before rendering. Users without **Contracts** read see no section and no error card; **Add Contract**, **Resend**, **Void**, and **Delete** appear only when the viewer holds the matching create, update, or delete permission. Event-only team members who have Contracts access see contracts scoped to their event and get a toolkit tile that links to the event's speakers rather than the org directory.",
+      "article": "/speaker-crm/contracts-permissions",
+      "related": [
+        "/speaker-crm/contracts",
+        "/speaker-crm/contract-templates",
+        "/events/event-dashboard"
+      ],
+      "kind": "fixed",
+      "module": "CRM",
+      "features": [
+        "contracts"
+      ],
+      "availability": "add_on",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "CRM → Contacts / Groups / Accounts / Pipeline → a record → CRM tab → Contracts; Event Dashboard → Toolkit; Expo → Booth Sales; Event Downloads"
+      },
+      "permissions": [
+        "org.contracts.read",
+        "org.contracts.create",
+        "org.contracts.update",
+        "org.contracts.delete",
+        "event.contracts.read",
+        "event.contracts.create",
+        "event.contracts.update",
+        "event.contracts.delete"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Teams that use event-scoped roles (for example, a vendor or coordinator who manages only one event) can now access Contracts on that event's contacts and groups without seeing org-level pages they cannot open, and without hitting error cards. Org admins are unaffected — their existing access is unchanged.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Previously, Contracts sections showed to all org members (gated only on the feature flag) and API 403s surfaced as red error cards. After this change, sections are hidden rather than errored for users without permission. Verify that event-only team members at customer orgs have the correct Contracts permission on their event role, or they will lose visibility they may have relied on."
+        },
+        "when_to_bring_up": "When a customer reports that event-only staff saw Contracts they shouldn't, or couldn't see Contracts they should, or when setting up event-scoped roles for vendors or coordinators.",
+        "who_should_get_it": "Any org using Contracts with a mix of org-level and event-only team members.",
+        "staff_path": "Event Team → Roles → [role] → Contracts permissions; Org Settings → Team → Roles → Contracts permissions",
+        "gotchas": "Event-only users (no org row) never see the org Contracts directory or templates regardless of their event role — the org nav entry and org pages require an org-level Contracts read. The toolkit tile for an event-only reader links to the event's speakers list, not the org contracts directory. The 'Open templates' and 'Manage integration' links in Add Contract are hidden for event-only readers. Web-api PR #5049 is needed for the Event Downloads 'Speaker contracts' source to successfully build for event-role readers; confirm both PRs are deployed together.",
+        "talk_track": "Your event vendors and coordinators can now have Contracts access scoped to just their event — they see what they need, nothing more, and never hit an Access Denied page.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should document how org-level and event-level Contracts permissions combine, what each of the four permissions (read, create, update, delete) controls in the UI, and which surfaces (toolkit tile, Expo, downloads, Add Contract dialog) are affected by event-only vs. org roles.",
+          "why_use_it": "Contracts permissions let you control exactly who on your team can view, send, void, or delete agreements — separately at the organization level and at the individual event level. An event-only team member with Contracts access sees and acts on the contracts for their event without touching the org directory, while org-level staff retain full visibility across all events. This keeps sensitive agreement data visible only to the people who need it.",
+          "at": "2026-11-03T14:11:53.705Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1403"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "portal-user-excluded-from-role-notifications",
+      "title": "Portal User role no longer appears in notification settings",
+      "summary": "The **Portal User** role is no longer listed under **Event Team → Permissions → Notifications** (or the org-level event-role notification defaults). Settings saved for that role never took effect because Portal Users have no event-team row; removing the option prevents admins from configuring something that had no impact.",
+      "article": "/communications/notifications#set-an-organization-wide-policy",
+      "kind": "fixed",
+      "module": "Event team",
+      "features": [
+        "notifications"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Event Team → Permissions → Notifications"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Admins configuring per-role notification defaults will no longer see a Portal User option that silently ignored any changes they made, reducing confusion when troubleshooting why portal users were not receiving expected notifications.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "No action needed. The Portal User role was never a valid target for role-based notification policy; zero production rows held that role. The UI tab and API endpoints for Portal User notifications are now hidden/blocked."
+        },
+        "when_to_bring_up": "If a customer reports confusion about Portal User notification settings or asks why changes to that role's notifications had no effect.",
+        "who_should_get_it": "Any org that had been attempting to configure Portal User notification defaults.",
+        "staff_path": "Event Team → Permissions → Notifications",
+        "gotchas": "Portal Users are people with portal access but no Event_Users row, so role-based notification policy never applied to them. This fix removes the misleading UI option; it does not change how portal users actually receive notifications.",
+        "talk_track": "The Portal User entry in notification settings looked configurable but never did anything — we've removed it so the settings page only shows roles where changes actually take effect.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that Portal User is excluded from role-based notification policy and explain why (portal users have no event-team role row).",
+          "why_use_it": "null",
+          "at": "2026-11-03T14:12:12.074Z"
+        }
+      },
+      "related": [
+        "/event-team/invite-manage-event-team-members"
+      ],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5091"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "ask-report-results-unmasked-by-default",
+      "title": "Ask: report results no longer mask contact data by default",
+      "summary": "When **Ask** runs a report query, contact field values are now returned unmasked by default. Previously, PII was obfuscated on every report run, which could hide names, emails and other contact data in Ask's answers. Masking still applies when a caller explicitly requests it.",
+      "article": "/agents/team-lead",
+      "related": [
+        "/reporting/report-builder",
+        "/agents/overview"
+      ],
+      "kind": "fixed",
+      "module": "Agents",
+      "features": [
+        "coordinators"
+      ],
+      "availability": "add_on",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Ask → report queries"
+      },
+      "permissions": [
+        "event.reports.ai_access"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers asking Ask questions that involve report data — such as \"which speakers haven't submitted their bio?\" — now see real names and field values in the answer instead of redacted placeholders, making the responses immediately actionable.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "PROD publish is manual and waits for Josh alongside public-api and web-api changes. DEV only as of merge."
+        },
+        "when_to_bring_up": "When a customer reports that Ask was returning [REDACTED] or blank values in report answers.",
+        "who_should_get_it": "Any org using Ask (AI Agents add-on) that runs report queries through the agent.",
+        "staff_path": "Ask → run any report query",
+        "gotchas": "This fix is deployed to DEV only at merge time; PROD requires a coordinated manual publish with public-api and web-api. Do not tell customers it is live until the PROD publish is confirmed.",
+        "talk_track": "Ask now shows you the actual contact data in its answers — names, emails, whatever the report returns — so you can act on the information right away.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The guide should note that Ask returns unmasked report results by default, and that field-level visibility is governed by the user's permissions (restricted_fields), not PII obfuscation.",
+          "why_use_it": "Ask lets you query your event data in plain language without building a report manually. You can ask about sessions, speakers, contacts or any custom field and get a direct answer, follow up with refinements, or open the underlying report as a canvas — all without leaving the page you are on.",
+          "at": "2026-11-03T14:12:39.435Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-agents#184"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "webex-webinars-integration",
+      "title": "Webex Webinars: connect, publish and sync webinars via Cisco Webex",
+      "summary": "Webex Webinars is now a supported webinar provider alongside Zoom and Goldcast. Connect a Webex account from the app marketplace, then create and publish webinars directly to Webex, sync registrants, pull attendance with minutes, collect survey ratings, import MP4 recordings into **Media**, and generate recaps and Dispatch posts — all from the same webinar loop used by other providers. **Media → Discover** gains a **Webex** source that lists every MP4 recording from the connected account (last 180 days) for org-wide import.",
+      "article": "/apps/webex-webinars-integration",
+      "related": [
+        "/webinars/overview",
+        "/webinars/publish-and-sync",
+        "/marketing/media-library",
+        "/webinars/engagement"
+      ],
+      "kind": "new",
+      "module": "Program",
+      "features": [
+        "marketing_media",
+        "marketing_dispatch",
+        "signals"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "self_serve",
+        "path": "Organization → Apps → Webex → Connect"
+      },
+      "where": {
+        "scope": "both",
+        "path": "Program → Webinars; Marketing → Media → Discover → Webex"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Teams that run webinars on Cisco Webex can manage the full lifecycle — scheduling, registration, attendance, recordings and post-event content — without leaving Sessionboard. Engagement data and recordings flow into the same pipeline as Zoom and Goldcast, so reporting and follow-up work the same way regardless of which platform hosts the webinar.",
+      "internal": {
+        "cs_action": {
+          "kind": "must_enable",
+          "note": "The Webex app connector is available to all orgs with no Early Access gate, but the connecting user must hold a Webex Webinars license on their Cisco account. WEBEX_CLIENT_ID and WEBEX_CLIENT_SECRET must be set in Doppler for each environment before any org can connect. Confirm with engineering that Doppler secrets are live before surfacing this to customers."
+        },
+        "when_to_bring_up": "When a customer asks about Webex support, or when a prospect uses Webex Webinars and is evaluating whether Sessionboard can replace their current workflow.",
+        "who_should_get_it": "Any org whose webinar host uses Cisco Webex Webinars (requires a Webex Webinars license on the connecting user's account).",
+        "staff_path": "Organization → Apps → Webex → Connect",
+        "gotchas": "The connecting Webex user must have a Webex Webinars session type on their account — a standard Webex Meetings license is not enough. Chat, polls and Q&A data require Webex compliance-officer access (enabled on request from Cisco); without it those signals are absent. Personal join links are not supported (Webex join links expire in 60 min); registrants receive the webinar's public webLink instead. ARF recordings are skipped; only MP4s appear in Media → Discover. Media → Discover's Webex source is visible only to org members with org-wide media access (not portfolio-scoped or event-only staff). The UI half of this feature ships separately in web-ui-v2#1383.",
+        "talk_track": "If your team hosts on Webex, you now get the same one-click publish, automatic registration sync, attendance pull and recording-to-Media pipeline that Zoom and Goldcast customers already use — no manual exports, no copy-paste.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide at /apps/webex-webinars-integration should document the required Webex Webinars license prerequisite, the six OAuth scopes requested, the Media → Discover Webex source and its org-wide access requirement, the limitation that chat/polls/Q&A need compliance-officer access, and the fact that personal join links are not supported.",
+          "why_use_it": "Sessionboard's Webex Webinars integration keeps your webinar platform and your program data in one place. Publish webinars to Webex, push registrants, pull attendance and survey results back automatically, and send MP4 recordings straight to Media — so your team can clip, recap and distribute content without manual downloads or uploads. Engagement Signals from Webex feed the same reports and Pathways rules as every other connected provider.",
+          "at": "2026-11-03T14:13:17.973Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5033"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "feature:marketing_dispatch (limited_release)"
+    },
+    {
+      "id": "webinars-microsoft-teams-provider",
+      "title": "Webinars: connect Microsoft Teams Webinars and Town Halls",
+      "summary": "Microsoft Teams Webinars and Town Halls are now a supported webinar provider. Connect your Microsoft 365 account under **Apps**, then create, publish, update and sync Teams webinars directly from Sessionboard — including registrant push, attendance records, engagement data (reactions and raised hands), session recordings in the Media library, and a Discover source for all ended webinar and town hall recordings. Because Teams emails its own join links, Sessionboard's confirmation email still goes out. Registrants who sign up on the Teams page (rather than through Sessionboard) are captured from attendance after the event.",
+      "article": "/apps/microsoft-teams-webinars-integration",
+      "related": [
+        "/webinars/overview",
+        "/webinars/publish-and-sync",
+        "/webinars/audience",
+        "/webinars/engagement",
+        "/marketing/media-library"
+      ],
+      "kind": "new",
+      "module": "Program",
+      "features": [
+        "media"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "self_serve",
+        "path": "Get started → Early Access → Preview → Microsoft Teams Webinars; then Organization → Apps → Microsoft Teams Webinars → Connect"
+      },
+      "where": {
+        "scope": "org",
+        "path": "Organization → Apps → Microsoft Teams Webinars"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Teams-first organizations can manage their webinar and town hall programme entirely from Sessionboard — building the agenda, pushing registrants, pulling attendance and engagement, and importing recordings — without switching between Sessionboard and the Teams admin centre.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "A customer's Microsoft 365 tenant admin must grant admin consent to the Sessionboard Entra app before any user in that tenant can connect — Microsoft shows 'Need admin approval' until they do. The publisher verification (MPN ID) is not yet in place, so even tenants that allow user consent will see the admin-approval screen for the high-privilege scopes (VirtualEvent.ReadWrite, Recording.Read.All). Recordings require OnlineMeetings.Read to be added to the Entra app and the connection to be re-made; this is pending. Confirm current Entra app status with engineering before bringing this up with a customer."
+        },
+        "when_to_bring_up": "When a customer asks whether Sessionboard supports Teams webinars, or when a Teams-first org is evaluating Sessionboard against a competitor that has native Teams support.",
+        "who_should_get_it": "Organizations that run webinars or town halls in Microsoft Teams and want to manage speakers, registrants and post-event content in Sessionboard.",
+        "staff_path": "Organization → Apps → Microsoft Teams Webinars",
+        "gotchas": "1) Tenant admin consent is required before any user can connect — share the admin-consent flow instructions proactively. 2) Recordings are not available until OnlineMeetings.Read is added to the Entra app and the customer reconnects. 3) Teams emails its own join link to registrants; Sessionboard's confirmation email also goes out, so registrants receive two emails. 4) Registrants who sign up directly on the Teams page are only captured after the event via attendance, not in real time. 5) Graph API calls for listing webinars can take up to ~8 s per call (parallelised to ~8 s total). 6) The connector is versioned; recordings need connector 0.2.3+.",
+        "talk_track": "If your team lives in Teams, you can now run your entire webinar programme — from CFP to post-event clips — without leaving Sessionboard. Registrants, attendance, engagement and recordings all come back automatically, and your marketing team gets the recordings in Media the moment the webinar ends.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide at /apps/microsoft-teams-webinars-integration should document the tenant admin consent requirement (including the 'Need admin approval' screen and how to share the admin-consent URL), the two-email behaviour for join links, the reconnect step needed to enable recordings, and the Discover source for ended webinar/town hall recordings.",
+          "why_use_it": "Sessionboard's Microsoft Teams Webinars integration keeps your webinar programme in one place: draft and publish webinars or town halls, sync registrants, and pull attendance, engagement and recordings back automatically. Organizers who already run their speaker and session workflow in Sessionboard get the same single source of truth for Teams-hosted events that Zoom and Goldcast customers have. Recordings flow into the Media library and the Discover source so your marketing team can clip, caption and distribute content without hunting for files.",
+          "at": "2026-11-03T14:13:53.145Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5030"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "goto-webinar-integration",
+      "title": "GoTo Webinar: connect and run the full webinar loop",
+      "summary": "GoTo Webinar is now a supported webinar provider alongside Zoom and Goldcast. Connect your GoTo account via OAuth, import past and upcoming webinars, and let Sessionboard keep registrants, panelists, attendance, Q&A, poll and survey answers, and recordings in sync automatically. Webhooks keep the event live; the **Media** library surfaces every GoTo recording asset through **Discover**.",
+      "article": "/apps/goto-webinar-integration",
+      "related": [
+        "/webinars/overview",
+        "/webinars/engagement",
+        "/marketing/media-library"
+      ],
+      "kind": "new",
+      "module": "Apps",
+      "features": [
+        "marketing_media"
+      ],
+      "availability": "add_on",
+      "enable": {
+        "how": "self_serve",
+        "path": "Get started → Early Access → Preview → GoTo Webinar, then Organization → Apps → GoTo Webinar → Connect"
+      },
+      "where": {
+        "scope": "org",
+        "path": "Organization → Apps → GoTo Webinar"
+      },
+      "permissions": [
+        "org.settings.manage_app_connections"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Teams that run webinars on GoTo Webinar can manage the full programme — speakers, registrants, engagement data and recordings — inside Sessionboard without switching tools or manually exporting reports.",
+      "internal": {
+        "cs_action": {
+          "kind": "must_enable",
+          "note": "GoTo Webinar requires GOTO_CLIENT_ID and GOTO_CLIENT_SECRET to be set in Doppler per environment, and webhooks must be created once with the developer account before any customer can connect. Coordinate with engineering before enabling for a customer."
+        },
+        "when_to_bring_up": "When a prospect or customer says they run webinars on GoTo Webinar and want programme management, speaker coordination, engagement reporting or post-webinar content distribution in Sessionboard.",
+        "who_should_get_it": "Organisations already using GoTo Webinar for virtual events or hybrid sessions who want unified speaker and content management.",
+        "staff_path": "Organization → Apps → GoTo Webinar",
+        "gotchas": "Not live-verified against a real GoTo account yet — this is the API half only; the UI card, picker, import dialog and Discover source ship in web-ui-v2#1383. API registration requires a GoTo plan that supports it (a 403 is returned otherwise). GoTo int64 keys exceed JS Number precision and are kept as strings internally. Poll/survey answers have no timestamp. Chat, reactions and CTA clicks are not available from GoTo's API. Recording download URLs are re-fetched at import and never stored.",
+        "talk_track": "If your team already lives in GoTo Webinar, you can now manage the whole webinar programme — speakers, registrants, engagement and recordings — from Sessionboard, with automatic syncs every 6 hours and real-time webhook updates.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide at /apps/goto-webinar-integration should document the OAuth connect flow, what syncs (registrants, panelists, attendance, Q&A, polls, surveys, recordings), GoTo plan requirements for API registration, the 365-day backfill on connect, the 6-hour sweep cadence, webhook setup, and known limits (no chat, reactions, CTA clicks, poll/survey timestamps, or cloud-recording on/off control).",
+          "why_use_it": "GoTo Webinar keeps your webinar data — registrants, attendance, Q&A, polls, surveys and recordings — inside the platform where you already manage speakers and sessions. Connecting it means Sessionboard imports your GoTo webinars automatically, writes engagement Signals for follow-up, and surfaces every recording in the Media library so your marketing team can clip and distribute content without hunting for files. Use it when your organisation runs webinars on GoTo and wants a single place to plan, promote and measure them.",
+          "at": "2026-11-03T14:14:23.213Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5031"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "field-events-date-status-and-ux",
+      "title": "Field Events: mark dates as month-only or tentative, end date follows start, and a Done button in date pickers",
+      "summary": "When creating or editing a field event, a new **Date not confirmed yet** checkbox lets you mark the date as **Month only** or **Tentative**. The event header and public page then show \"February 2027\" or \"June 2027 · tentative\" instead of an invented time. The **Ends** date now shifts automatically when you move **Starts**, and every date-time picker gains a **Done** button to close the time popover without extra clicks.",
+      "article": "/field-events/overview",
+      "related": [
+        "/field-events/registration-form"
+      ],
+      "kind": "new",
+      "module": "Event team",
+      "features": [
+        "gatherings"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Field event → Settings → Basics (or Create field event wizard → Basics)"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Tour stops and roadshow dates are often planned months in advance with only a rough month confirmed. Marking a date as month-only or tentative keeps the event sortable in lists while showing attendees an honest, uncluttered date on the public page — no invented times, no awkward placeholders.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "The date_status value won't persist until the companion web-api PR is deployed. Deploy order matters: UI first is safe (unknown kind_settings keys are dropped, not rejected), but customers won't see the tentative/month label on the public page until the API and org-portal companion PRs are also live."
+        },
+        "when_to_bring_up": "When a customer running a field events program complains that tour-stop dates show wrong times, or asks how to publish a stop before the exact date is confirmed.",
+        "who_should_get_it": "Any org using Field Events (gatherings beta) for roadshows, tours, or hosted events where dates are confirmed in stages.",
+        "staff_path": "Field event → Settings → Basics → Date not confirmed yet",
+        "gotchas": "Three companion PRs must all be live (web-api for validation and site-info passthrough, org-portal for public page render) before the date status label appears publicly. The UI change alone is safe to ship first.",
+        "talk_track": "You can now publish a field event stop the moment it is planned — mark it month-only or tentative, and the public page shows an honest date. Once confirmed, uncheck the box and the exact date appears automatically.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should document the Date not confirmed yet checkbox, the three date_status values (confirmed, month, tentative), how the event header and public page render each status, and the Ends-follows-Starts behaviour when moving the start date.",
+          "why_use_it": "Field Events let you manage tour stops, roadshows, and hosted gatherings alongside your main conference program. You can set up registration, check guests in, and track attendance for each stop from one place. Date status options mean you can publish a stop as soon as it is planned, even before the exact date is locked, so your public page always reflects what you actually know.",
+          "at": "2026-11-03T00:38:26.722Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1436"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "event-page-brand-kit-auto-apply",
+      "title": "Event pages automatically follow the brand kit unless the builder changed a colour",
+      "summary": "Event pages (field-event Sites built from a template) now inherit the resolved brand kit's primary colour, accent colour, contrast text, gradient, heading font and logo without any manual step. The kit that applies is chosen in order: an explicit kit pinned to the page, then the event's assigned kit, then the org's default kit. Any colour, font or logo the organiser edits directly in the **Site builder** wins over the kit for that column only, so builder edits are never overwritten. If the org later changes its default kit, untouched pages restyle automatically.",
+      "article": "/marketing/brand-kits",
+      "related": [
+        "/site/site-builder",
+        "/field-events/overview"
+      ],
+      "kind": "fixed",
+      "module": "CMS",
+      "features": [
+        "gatherings",
+        "marketing_brand"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Site builder → a field-event page"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "When an org has a default brand kit, every new field-event page is on brand from the moment it is created — no manual colour or font selection needed. Organizers who do customise a page keep their edits; only the untouched columns follow the kit.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Existing field-event pages that were created without a kit and never customised will restyle automatically to the org's default kit colours and font as soon as this ships. Confirm with the customer that the new appearance is expected before they notice it themselves."
+        },
+        "when_to_bring_up": "When a customer reports that their field-event pages don't match their brand kit, or when onboarding a customer who uses Field Events and has a brand kit configured.",
+        "who_should_get_it": "Orgs using Field Events (gatherings beta) that also have a brand kit set at the org or event level.",
+        "staff_path": "Site builder → a field-event page → colour/font settings",
+        "gotchas": "Pages that still hold a template starter colour (e.g. the Lab scheme) will be restyled by the kit. Pages where the organiser picked one of the built-in scheme swatches look identical to 'untouched', so the kit continues to win over them — a follow-up will address this. Only US has field-event pages in production (9 total as of ship date); EU has none.",
+        "talk_track": "Your field-event pages now pick up the org brand kit automatically. Any colour or font you set yourself in the builder still wins — the kit only fills in what you haven't touched.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The brand-kits guide should note that field-event pages (Sites) automatically inherit the resolved kit for untouched brand columns, and explain the resolution order: explicit page kit → event kit → org default kit.",
+          "why_use_it": "Brand kits let you define your organisation's primary colour, accent colour, fonts and logo once and have every event page reflect them automatically. Pages that have never been customised stay in sync with the kit, so a rebrand or a new default kit updates all untouched pages at once. Individual builder edits always take precedence, giving designers full control without losing the safety net of a shared brand.",
+          "at": "2026-11-03T00:14:52.580Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5093"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "webinars-index-mobile-aria-i18n",
+      "title": "Webinars index: mobile layout, keyboard-accessible tabs and translated UI",
+      "summary": "The **Webinars** index now works on narrow screens: the header, action buttons and the five view tabs no longer overflow sideways at 375 px. The tabs follow the WAI-ARIA tabs pattern — one tab stop, arrow keys move between tabs, and each panel is correctly labelled — and the selected tab is always written to the URL. The **Publish** dialog and all empty states are now translated into German, Spanish and French in addition to English.",
+      "article": "/webinars/overview",
+      "kind": "improved",
+      "module": "Program",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Webinars"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who manage webinars from a phone or tablet can now navigate the Webinars index without horizontal scrolling, and teams working in German, Spanish or French see the index and Publish dialog in their language.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Shipped for all users automatically. No configuration required."
+        },
+        "when_to_bring_up": "When a customer mentions they use Sessionboard on mobile or that their team works in a non-English language.",
+        "who_should_get_it": "Any customer using the Webinars module, especially those with international teams or who access Sessionboard on phones.",
+        "staff_path": "Webinars",
+        "gotchas": "The plan board and New Webinar form are not yet updated for mobile — those are being handled in a separate webinar review session.",
+        "talk_track": "The Webinars index now works properly on phones and passes WCAG 2.1 AA accessibility checks, and the UI is fully translated into German, Spanish and French.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The overview guide should note that the Webinars index is mobile-responsive and available in German, Spanish and French.",
+          "why_use_it": "The Webinars module lets you plan, publish and track webinars across providers like Zoom, Goldcast and Microsoft Teams from a single place. Use it to keep your webinar calendar, sync sessions to your webinar platform, and follow up with recordings and social content — all without leaving Sessionboard.",
+          "at": "2026-11-03T21:46:19.171Z"
+        }
+      },
+      "related": [
+        "/webinars/publish-and-sync",
+        "/webinars/plan"
+      ],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1447"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "org-shell-mobile-tablet-a11y",
+      "title": "Org admin shell works on phones and tablets, meets WCAG 2.1 AA",
+      "summary": "On phones (< 768 px) the org sidebar is now a left drawer opened from a **Menu** button in the header — replacing the fixed 224 px column that left almost no room for page content. On tablets (768–1023 px) the sidebar starts as a compact icon rail and expands on demand; the **Collapse** button is now tappable, not hover-only. The **Search** and **Ask** controls in the header collapse to icon-only on phones. Tables that overflow scroll sideways and are keyboard-reachable; dialog and sheet close buttons have a 44 px touch target; error toast details are fully visible. Twenty-nine navigation and header strings are now translated in English, German, Spanish and French.",
+      "article": "/get-started/sidebar",
+      "kind": "improved",
+      "module": "Platform",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Any org-level page → sidebar / header"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who manage events on a tablet or phone can now navigate the org admin shell without the sidebar eating most of the screen. Teams that rely on assistive technology or keyboard-only navigation meet WCAG 2.1 AA compliance across org-level pages.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Shipped for all orgs automatically. No configuration required."
+        },
+        "when_to_bring_up": "When a customer mentions using Sessionboard on a laptop in tablet mode, a Surface, or a phone, or when they raise accessibility concerns about the admin interface.",
+        "who_should_get_it": "All organizers, especially those on smaller screens or with accessibility requirements.",
+        "staff_path": "Any org-level page → sidebar / header",
+        "gotchas": "The tablet rail expansion is session-scoped and does not overwrite the saved desktop collapsed preference (sb.nav.collapsed). The + quick-add menu is hidden on phones; those actions are available inside the drawer instead.",
+        "talk_track": "The org shell now adapts to any screen size — phone, tablet or desktop — and passes WCAG 2.1 AA, so your team can manage events from wherever they are.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The sidebar guide should add a section describing the mobile drawer and tablet rail behaviours, including how to open the drawer on phones and how the rail expansion differs from the saved desktop preference.",
+          "why_use_it": "The sidebar gives you fast access to every org-level module — CRM, Marketing, Settings, Events and more — from a single persistent panel. On smaller screens it stays out of the way until you need it, and on desktop it can be pinned open or collapsed to an icon rail to match how you work. Keyboard users and screen-reader users can navigate the full shell without workarounds.",
+          "at": "2026-11-03T22:04:15.289Z"
+        }
+      },
+      "related": [
+        "/agents/agent-window",
+        "/get-started/navigate-your-contact-portal"
+      ],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1445"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "field-events-shell-mobile-a11y-i18n",
+      "title": "Field Events index and event shell: mobile layout, accessibility and localisation fixes",
+      "summary": "The **Field Events** index and the shared event header (used by field events and webinars) now display correctly on small screens and meet WCAG 2.1 AA contrast and keyboard-navigation requirements. Event cards on the index no longer overflow at narrow widths; the **Upcoming / Past / All** filter works as a proper toggle group; the event name and dates in the header wrap cleanly on phones; the **Invite** and **Publish** buttons use the accent colour; the live status pill meets 4.5:1 contrast; and the countdown timer, inline name/date editors, and **Send invitations** dialog are now translated into German, Spanish and French.",
+      "article": "/field-events/overview",
+      "kind": "fixed",
+      "module": "Event team",
+      "features": [
+        "gatherings"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Field Events → (index) and Field Events → (any event) → header"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers managing field events on a phone or using assistive technology can now navigate the index and event header without layout overflow, colour-contrast failures, or keyboard traps. Teams running events in German, Spanish or French see the header and status controls in their own language.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Fixes ship automatically for all Field Events (beta) customers; no configuration needed."
+        },
+        "when_to_bring_up": "When a customer on Field Events reports layout issues on mobile, colour-contrast failures, or missing translations in the event header.",
+        "who_should_get_it": "Any customer using Field Events (beta), especially those with accessibility requirements or non-English admin users.",
+        "staff_path": "Field Events → index page and any field event header",
+        "gotchas": "The five tab bodies (Overview, People, Program, Pages, After) and Settings still have known a11y follow-ups being handled in a separate webinar review session; this fix covers only the index and the shared event shell header.",
+        "talk_track": "The Field Events index and event header now work correctly on phones and pass WCAG 2.1 AA — useful if you have accessibility requirements or admins working in German, Spanish or French.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that the Field Events index and event header are accessible at WCAG 2.1 AA and are available in English, German, Spanish and French.",
+          "why_use_it": "null",
+          "at": "2026-11-03T22:23:17.347Z"
+        }
+      },
+      "related": [
+        "/field-events/registration-form",
+        "/field-events/checkin"
+      ],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1446"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
     }
   ]
 }
