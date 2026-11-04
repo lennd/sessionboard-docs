@@ -220,6 +220,1066 @@
       ],
       "ideas": [],
       "media": []
+    },
+    {
+      "id": "cfp-locked-fields-no-question-rules",
+      "title": "Question rules can no longer be applied to always-required contact fields on submission forms",
+      "summary": "The **⋯** menu on **First Name**, **Last Name**, and **Email** in the **Participant** step of a CFP or intake form no longer shows **Use question rules**. Those fields are always required, so a rule that hid them would block submission with no way for the submitter to recover. All other fields in the same step still offer question rules normally.",
+      "article": "/faq/does-sessionboard-offer-conditional-logic",
+      "related": [
+        "/sessions/submission-forms",
+        "/sponsors-exhibitors/exhibitor-intake-form"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "sessions"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Sessions → Forms → [CFP form] → Participant step → field ⋯ menu"
+      },
+      "permissions": [
+        "event.session_forms.update"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Prevents a form configuration that silently hides the Email field and strands every submitter's draft at the final submit step with no way to recover — a situation that affected real submissions for multiple days.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "A companion API change (sessionboard-web-api#5078) ships a migration that clears the 3 bad rules already stored in Prod US and a repair script for stranded drafts. Confirm with engineering that the repair script has run before telling affected customers their drafts are recoverable."
+        },
+        "when_to_bring_up": "If a customer reports that submitters are stuck on a draft and see 'Email address must be specified' at the final submit step despite their email being visible on the Review step.",
+        "who_should_get_it": "Any event that had a question rule on First Name, Last Name, or Email in a CFP or intake form — three rules were found in Prod US as of 2026-11-02.",
+        "staff_path": "Sessions → Forms → [CFP form] → Participant step → field ⋯ menu",
+        "gotchas": "Session Title is intentionally excluded from this restriction: hiding it breaks nothing downstream and 11 live form fields across 7 events use existing rules on it. The API also now rejects the rule server-side, so the restriction cannot be bypassed via direct PUT.",
+        "talk_track": "We closed a gap where adding a question rule to Email, First Name, or Last Name could silently block every submission on a form. Those fields are always required, so the rule option is no longer shown for them.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that question rules are unavailable on always-required locked fields (First Name, Last Name, Email) and explain why those fields cannot be hidden.",
+          "why_use_it": "null",
+          "at": "2026-11-02T18:46:02.603Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1425"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "api-token-pii-obfuscation-removed",
+      "title": "API token dialog no longer shows a PII Obfuscation switch; Contains Personal Data tooltip clarified",
+      "summary": "The **PII Obfuscation** toggle has been removed from the **Org Settings → API Tokens** dialog. It promised to redact personal data from AI and query results, but no live code path ever enforced it. The **Contains Personal Data** field tooltip now accurately states that fields marked this way are masked only in reports with **Hide personal details** on and in widgets in **PII Mode**; Ask, connected AI assistants, and API tokens receive those fields unmasked within the access their sign-in or token grants.",
+      "article": "/integrations/api-tokens",
+      "related": [
+        "/integrations/connect-ai-assistants",
+        "/concepts/custom-field-type-reference"
+      ],
+      "kind": "fixed",
+      "module": "Settings",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Org Settings → API Tokens"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who manage API tokens no longer see a PII Obfuscation control that had no effect, reducing confusion about what data protection is actually in place. Teams relying on the Contains Personal Data field marker now have accurate guidance on exactly where masking applies.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "The PII Obfuscation switch is gone. Any customer who believed it was protecting data in AI or API query results should be told that masking only applies to reports with Hide personal details on and PII Mode widgets — Ask, connected assistants, and API tokens always return fields unmasked within the token's access scope."
+        },
+        "when_to_bring_up": "When a customer asks about data privacy for API tokens or AI assistants, or if they previously relied on the PII Obfuscation toggle.",
+        "who_should_get_it": "Any organizer who has created API tokens or uses the Contains Personal Data field marker for privacy compliance.",
+        "staff_path": "Org Settings → API Tokens (switch is gone); field editor → Contains Personal Data tooltip (updated text)",
+        "gotchas": "Existing tokens that had mcpPiiObfuscation saved in the database are unaffected — the value stays but is never read. The API still accepts the field, so external integrations sending it will not break.",
+        "talk_track": "The PII Obfuscation switch was removed because it never actually masked data. Real masking happens in two explicit places: reports with Hide personal details turned on, and dashboard widgets in PII Mode. Ask and API tokens always return fields at the access level the token or sign-in grants.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The API tokens guide should note that tokens always return Contains Personal Data fields unmasked, and point to the report builder's Hide personal details and PII Mode widget settings as the supported masking surfaces.",
+          "why_use_it": "null",
+          "at": "2026-11-02T18:20:48.110Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1424"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "app-marketplace-card-layout",
+      "title": "App Marketplace cards show full app names and align badges at the bottom",
+      "summary": "App names in the **App Marketplace** now sit beside the logo on their own line and wrap rather than truncate, so long names like \"Microsoft Teams Webinars\" are always fully readable. The **Connected**, **Soon**, **Requires CRM**, capability chips and version tags move to a pinned footer row, keeping cards in a row visually aligned. The description spans the full card width, and the grid adjusts fluidly to the viewport so wider screens fit more cards without fixed breakpoints.",
+      "article": "/integrations/overview",
+      "kind": "improved",
+      "module": "Apps",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Apps → App Marketplace"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers browsing the App Marketplace can now read every app's full name at a glance without hovering or guessing, and status badges line up consistently across cards so it is easier to spot which apps are already connected.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "If a customer mentions difficulty reading app names or comparing cards in the marketplace.",
+        "who_should_get_it": "All organizations — the change is cosmetic and automatic.",
+        "staff_path": "Apps → App Marketplace",
+        "gotchas": "The Org-level / Event and Early Access badges were removed from cards; Early Access gating of which apps appear is unchanged. The Connected badge was not verified locally during QA.",
+        "talk_track": "The App Marketplace cards now show full app names and keep status badges neatly at the bottom of each card, making it easier to scan and compare integrations.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The App Marketplace guide should add a screenshot of the updated card layout showing the name-wrapping behaviour and the footer badge row.",
+          "why_use_it": "The App Marketplace is where you discover, connect and manage every integration available to your organization or event. Browse by capability, see which apps are already connected, and follow the per-app guide to map fields and start syncing data — all from one place.",
+          "at": "2026-11-02T17:15:12.034Z"
+        }
+      },
+      "related": [
+        "/integrations/what-syncs",
+        "/integrations/integration-readiness"
+      ],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1421"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "insights-exclude-deleted-events-reviewer-workload-dedup",
+      "title": "Org-level reports exclude soft-deleted events; Reviewer Workload lists each reviewer once",
+      "summary": "Two fixes to org-level **Insights** reports. First, org dashboards and saved reports (including **Submissions by Event**, **Cross-Event Pipeline**, **Portfolio Overview** and **Speaker Portfolio**) no longer count sessions, contacts or other records that belong to soft-deleted events. Second, **Review Progress → Reviewer Workload** (and the matching widget, report recipe and **Evaluation Plans by Track**) now shows one row per reviewer instead of repeating a reviewer once per last name.",
+      "article": "/reporting/dashboards",
+      "related": [
+        "/reporting/report-builder",
+        "/evaluations/evaluation-plans",
+        "/reporting/custom-reports"
+      ],
+      "kind": "fixed",
+      "module": "Reporting",
+      "features": [
+        "ai_reports"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Insights → Dashboards / Reports"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who archive or delete test events can now trust that org-level submission counts and reviewer workload numbers reflect only live events and real reviewers — no cleanup or workaround needed.",
+      "internal": {
+        "cs_action": {
+          "kind": "reach_out",
+          "note": "50 orgs (41 US, 8 EU, 1 ME) had deleted events leaking live sessions into org dashboards; 8 of those had saved org dashboards. Proactively let those 8 orgs know their numbers are now accurate — counts will drop. No action needed to enable the fix."
+        },
+        "when_to_bring_up": "When a customer questions why submission counts changed after the 2026-11-02 deploy, or when reviewing org-level reporting accuracy with any customer that has deleted test or QA events.",
+        "who_should_get_it": "Any org that has ever soft-deleted an event that still held live sessions — especially the 8 orgs with saved org dashboards that were seeing inflated counts.",
+        "staff_path": "Insights → Dashboards (org level); Review Progress → Reviewer Workload",
+        "gotchas": "Org-level submission and session counts will decrease for affected orgs after this fix — this is correct behaviour, not data loss. Explicit event-scoped reports and reports using INCLUDING_DELETED are unchanged.",
+        "talk_track": "Your org dashboards now automatically exclude deleted events, so the numbers you see reflect only your active programs. Reviewer Workload also shows one clean row per reviewer.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The dashboards guide should note that org-level reports automatically exclude soft-deleted events, and that Reviewer Workload aggregates by reviewer identity rather than by assignment row.",
+          "why_use_it": "Org-level dashboards and reports let you track submissions, pipeline health, reviewer workload and speaker portfolios across every event in your organization from a single view. Use them to spot trends, balance reviewer assignments and report to leadership without exporting data from each event individually.",
+          "at": "2026-11-02T16:36:27.440Z",
+          "permissions_to_confirm": [
+            "org.data_insights: dashboards_read, reports_read"
+          ]
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5074"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "contact-merge-preserves-logins-cfp-resolves-survivor",
+      "title": "Merging duplicate contacts no longer reverts; CfP saves resolve to the surviving contact",
+      "summary": "When an organizer merges duplicate contacts, every portal login from the merged-away contact is now re-pointed to the surviving contact and kept — none are silently removed. If a speaker with a merged-away login later saves a Call for Papers submission, Sessionboard resolves their identity to the surviving contact instead of creating a brand-new duplicate contact.",
+      "article": "/contacts/merge-duplicates",
+      "kind": "fixed",
+      "module": "CRM",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Contacts → (contact record) → Merge Duplicates"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "speaker"
+      ],
+      "use_case": "Organizers who merge duplicate contacts at large events can trust the merge sticks: speakers keep portal access under the surviving record and their next CfP save does not silently re-create the contact that was just cleaned up.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Fix is default-on; no configuration required. Four affected prod rows at AUA 2027 (org 9eb24a1e, event 6153) are being repaired separately via SQL outside this PR."
+        },
+        "when_to_bring_up": "When a customer reports that merged contacts reappeared, or that speakers lost portal access after a merge.",
+        "who_should_get_it": "Any organizer who uses the Merge Duplicates workflow, especially at high-volume events.",
+        "staff_path": "Contacts → (contact record) → Merge Duplicates",
+        "gotchas": "The four duplicate contacts created in prod at AUA 2027 on 2026-11-01/02 are not automatically repaired by this code change — a separate SQL fix is required for those rows. The Team page deduplication now happens on read (DISTINCT ON) rather than at merge time, so the write-side SSO carve-out is also removed; SSO logins are unaffected.",
+        "talk_track": "After merging duplicates, every speaker's portal login now follows them to the surviving contact automatically — no one loses access and no ghost contacts reappear.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that all portal logins from merged-away contacts are preserved on the survivor, and that speakers who had a merged-away login will continue to reach their portal and submit CfP forms without any re-registration step.",
+          "why_use_it": "null",
+          "at": "2026-11-02T16:34:00.728Z"
+        }
+      },
+      "related": [
+        "/contacts/add-delete-a-contact",
+        "/contacts/changing-a-contact-s-email-address",
+        "/faq/common-speaker-portal-issues-and-how-to-fix-them"
+      ],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5073"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "cfp-close-reminder-always-immediate",
+      "title": "CfP deadline reminders now arrive as their own email, not inside the daily digest",
+      "summary": "The **\"X days until the submission deadline\"** reminder email — and all other scheduled deadline reminders (evaluator due-soon, awards submitter and reviewer deadlines, content-slot, participant-acceptance and approval reminders) — now deliver as a standalone branded email regardless of a recipient's notification cadence preference. Previously, any submitter who had not explicitly set their cadence to **Immediate** received these time-sensitive reminders bundled into the next-morning daily digest, often hours after the intended send time.",
+      "article": "/communications/notifications",
+      "related": [
+        "/sessions/draft-submissions",
+        "/sessions/accept-decline",
+        "/communications/automated-emails"
+      ],
+      "kind": "fixed",
+      "module": "Communications",
+      "features": [
+        "notifications"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Communications → Notifications"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "reviewer",
+        "speaker",
+        "participant"
+      ],
+      "use_case": "Events with open calls for proposals can now be confident that every submitter receives the 1-day and 5-day deadline nudge as a timely standalone email — not buried in a morning digest that arrives after the window to act has narrowed. The same guarantee applies to evaluator, awards, and acceptance deadline reminders.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "This is a bug fix that changes delivery behaviour retroactively for all orgs. Any customer who previously complained that their CfP deadline reminder reached only a handful of submitters (e.g. AUA 2027, FIGO ICS Events) should be proactively informed that the issue is resolved. No action is needed to enable it."
+        },
+        "when_to_bring_up": "When a customer reports low open rates or low response rates on CfP deadline reminder emails, or asks why only a few submitters received the branded reminder.",
+        "who_should_get_it": "All organizations running open calls for proposals, evaluation rounds, or awards programs — especially large events where most submitters have no explicit notification preference set.",
+        "staff_path": null,
+        "gotchas": "Before this fix, only submitters with an explicit 'Immediate' preference row received the branded deadline email; everyone else got a single digest line. Production data showed events with 400–860 submitters receiving just 1–5 branded emails per reminder run. The fix is live for all orgs with no toggle.",
+        "talk_track": "Deadline reminders now always land as their own email the moment they are triggered — no more submitters missing the nudge because it was folded into a morning digest.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that scheduled deadline reminders (CfP close, evaluator due-soon, awards deadlines, acceptance reminders) are always delivered immediately as standalone emails and are never batched into the daily digest, regardless of a recipient's notification cadence preference.",
+          "why_use_it": "Sessionboard sends scheduled reminder emails — submission deadlines, evaluator due-soon notices, awards deadlines, and acceptance invitations — at the moment they are triggered so recipients have the maximum time to act. Delivering these as standalone branded emails, separate from the daily digest, ensures the urgency of a deadline is clear and the message is not lost among other notifications.",
+          "at": "2026-11-02T14:56:03.656Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5070"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "contract-bundle-event-role-access",
+      "title": "Event-role team members can now download the Speaker contracts bundle",
+      "summary": "Team members whose **event role** grants **Contracts** read can now use **Download → Speaker contracts** to build a ZIP of signed contract PDFs for that event. Previously, only users with an org-level Contracts read permission could trigger the bundle, even though they could already open individual contract PDFs with an event role.",
+      "article": "/speaker-crm/contracts-permissions",
+      "related": [
+        "/speaker-crm/contracts"
+      ],
+      "kind": "fixed",
+      "module": "Event team",
+      "features": [
+        "contracts"
+      ],
+      "availability": "add_on",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event header → Download → Speaker contracts"
+      },
+      "permissions": [
+        "event.contracts.read"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Customers who give event-specific staff (e.g. a vendor or event coordinator) a scoped event role with Contracts read can now let those team members download the full signed-contract bundle without granting them org-wide Contracts access.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "This is a bug fix; no action needed. Customers who reported that event-role users got 403 on the bundle will see it resolved automatically."
+        },
+        "when_to_bring_up": "When a customer says an event-only team member can open individual contracts but cannot download the bundle.",
+        "who_should_get_it": "Any customer using Contracts with event-scoped team roles (e.g. vendors, event coordinators without org access).",
+        "staff_path": "Event header → Download → Speaker contracts",
+        "gotchas": "The fix also correctly blocks removed team members (is_deleted check added); a previously-removed user who somehow retained a session token will now get 403 as expected.",
+        "talk_track": "If you give event staff a scoped role with Contracts read, they can now download the signed-contract ZIP the same way they can open individual PDFs — no org-level permission needed.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that the Speaker contracts download bundle respects event-role Contracts read, consistent with how individual contract PDFs are accessed.",
+          "why_use_it": "Contracts permissions in Sessionboard work at two levels — organization and event — so you can give a team member access to contracts for one event without exposing every contract across your organization. The download bundle follows the same rule as opening individual PDFs: an org-level grant or an event-level grant on the relevant event is enough.",
+          "at": "2026-11-02T14:11:38.656Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5049"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "goto-webinar-provider",
+      "title": "Connect GoTo Webinar as a webinar provider",
+      "summary": "**GoTo Webinar** is now available as a fourth webinar provider alongside Zoom, Goldcast and ON24. Connect it from **Apps → GoTo Webinar** via OAuth, then import and manage GoTo webinars from **Program → Webinars**. GoTo Webinar recordings and content also appear as a source in **Media → Discover**.",
+      "article": "/apps/goto-webinar-integration",
+      "related": [
+        "/webinars/overview",
+        "/webinars/publish-and-sync",
+        "/marketing/media-library",
+        "/apps/zoom-webinars-integration",
+        "/apps/on24-integration",
+        "/apps/goldcast-integration"
+      ],
+      "kind": "new",
+      "module": "Apps",
+      "features": [
+        "crm"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": "Included with CRM — Apps → GoTo Webinar → Connect, then Program → Webinars"
+      },
+      "where": {
+        "scope": "org",
+        "path": "Apps → GoTo Webinar; Program → Webinars; Media → Discover"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizations that run webinars on GoTo Webinar can now connect their GoTo account and manage those webinars — including import, follow-up content and Discover — without leaving Sessionboard.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "GoTo Webinar is gated behind the Field Events Early Access (gatherings). The UI is safe to ship before the API release (lennd/sessionboard-web-api#5031); confirm the API is live before pointing customers at it. The connected GoTo test account returned 403 on webinar data during development — verify with a GoTo account that has a GoTo Webinar seat before demoing."
+        },
+        "when_to_bring_up": "With any customer that runs webinars on GoTo Webinar and is already using or evaluating Sessionboard Webinars.",
+        "who_should_get_it": "Organizations on the Field Events Early Access that use GoTo Webinar as their webinar platform.",
+        "staff_path": "Apps → GoTo Webinar (Early Access: Field Events must be on)",
+        "gotchas": "GoTo Webinar's catalog id (goto-webinar) differs from its provider id (goto); the UI handles this mapping. The feature is only offered once the API lists GoTo in offeredProviders, so it will not appear until the web-api release is also deployed. A GoTo account without a GoTo Webinar seat returns 403 — confirm the customer has the right GoTo subscription.",
+        "talk_track": "If you already run webinars on GoTo Webinar, you can now connect your account and manage everything — import, follow-up, clips, Discover — right inside Sessionboard.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The /apps/goto-webinar-integration guide exists in the article index but should be verified to cover the OAuth connect flow, the offeredProviders gating behaviour, and the Media → Discover source that GoTo adds.",
+          "why_use_it": "GoTo Webinar integration lets you run your GoTo webinars where your speakers, sessions and contacts already live. Connect once via OAuth and Sessionboard imports your webinars, tracks attendance and surfaces recordings and clips in the Media library. Everything from planning to post-event follow-up stays in one place.",
+          "at": "2026-11-02T14:12:40.388Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1398",
+          "lennd/sessionboard-web-api#5031"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:preview"
+    },
+    {
+      "id": "microsoft-teams-webinars-provider",
+      "title": "Connect Microsoft Teams Webinars as a webinar platform",
+      "summary": "A **Microsoft Teams Webinars** card now appears in **Apps → Webinars**, alongside Zoom and Goldcast. Once connected, Teams joins the provider list in **Program → Webinars** so you can import Teams webinars and town halls, and choose Teams when creating a new webinar event.",
+      "article": "/apps/microsoft-teams-webinars-integration",
+      "related": [
+        "/webinars/overview",
+        "/webinars/publish-and-sync",
+        "/apps/zoom-webinars-integration",
+        "/apps/goldcast-integration",
+        "/integrations/overview"
+      ],
+      "kind": "new",
+      "module": "Apps",
+      "features": [
+        "crm"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": "Included with CRM — Apps → Microsoft Teams Webinars → Connect, then Program → Webinars"
+      },
+      "where": {
+        "scope": "org",
+        "path": "Apps → Webinars → Microsoft Teams Webinars"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizations that run webinars or town halls on Microsoft Teams can connect their tenant and import those events directly into Sessionboard, keeping speaker management, follow-up content, and CRM data in one place without manual exports.",
+      "internal": {
+        "cs_action": {
+          "kind": "must_enable",
+          "note": "The feature is behind the 'gatherings' (Field Events) Early Access flag. The customer's Microsoft 365 admin must also grant admin consent to the Sessionboard Entra app before any user in their tenant can connect — Microsoft shows 'Need admin approval' until that is done. Sessionboard's publisher verification (MPN ID) is not yet in place, so even tenants that allow user consent will require admin approval because the requested Graph permissions (ReadWrite.All, Recording.Read.All) mandate it regardless."
+        },
+        "when_to_bring_up": "With any customer that runs Microsoft Teams Webinars or town halls and already uses, or is evaluating, the Webinars module.",
+        "who_should_get_it": "Organizations on the Webinars module (CRM add-on) that host webinars or town halls in Microsoft Teams.",
+        "staff_path": "Apps → Webinars → Microsoft Teams Webinars (requires Field Events Early Access)",
+        "gotchas": "The customer's Microsoft 365 admin must grant admin consent to the Sessionboard Entra app before connection is possible; without it users see 'Need admin approval'. Publisher verification (MPN ID) is pending, so admin consent is required for all tenants regardless of their user-consent policy. The API must be on a prod release that accepts provider: 'teams' before this UI is useful — confirm with engineering before enabling for a customer.",
+        "talk_track": "If your team runs webinars or town halls in Microsoft Teams, you can now connect your tenant to Sessionboard and manage everything — speakers, recordings, clips, and follow-up — in one place, just like Zoom and Goldcast customers do.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide at /apps/microsoft-teams-webinars-integration should document the Microsoft 365 admin-consent requirement (including the 'Need admin approval' screen and how an admin grants consent), the specific Graph permissions requested, and the current publisher-verification status and what it means for tenants with user-consent policies.",
+          "why_use_it": "Sessionboard's webinar integrations let you manage your webinar programme — speakers, sessions, recordings, and follow-up — without leaving the platform where your contacts and content already live. Connect your webinar platform once, import past or upcoming events, and let Sessionboard handle the post-event workflow: recordings, clips, recaps, and Advocacy. Microsoft Teams Webinars support means Teams-first organizations get the same end-to-end experience as Zoom and Goldcast customers.",
+          "at": "2026-11-02T14:13:12.533Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1392",
+          "lennd/sessionboard-web-api#5030"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:preview"
+    },
+    {
+      "id": "webinars-lessons-from-this-webinar",
+      "title": "Webinars: turn a recording into a Learning course from the After tab",
+      "summary": "A **Lessons from this webinar** card on the webinar **After** tab proposes 3–5 ready-to-build lessons drawn from the recording's chapters and clips, audience questions, and survey interests. Each proposal shows its steps in order (e.g. **Watch 1:44–3:48 → Knowledge check · 2 questions → Quiz · 2 questions**) with an estimated length. Click **Create draft** to open the Learning editor and generate the course; once published, use **Send to attendees** to deliver it to a Learning Site for no-shows, attendees, or everyone who registered, with an optional due date.",
+      "article": "/webinars/after",
+      "related": [
+        "/site/content-galleries"
+      ],
+      "kind": "new",
+      "module": "Learning",
+      "features": [
+        "lessons_credits"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "csm",
+        "path": "Ask your Customer Success Manager to enable Learning (lessons_credits); then Program → Webinars → a webinar → After → Lessons from this webinar"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Program → Webinars → a webinar → After → Lessons from this webinar"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "After a webinar ends, turn the recording into a structured course in a few clicks — so attendees who missed parts (or no-shows) can learn at their own pace without the team writing a single lesson from scratch.",
+      "internal": {
+        "cs_action": {
+          "kind": "must_enable",
+          "note": "The card is hidden unless the org has the lessons_credits feature flag. Orgs without it see an upsell panel linking to the Learning page. The full card (proposals + Create draft) is also staff-only while the Academy course editor is gated behind SuperUserOnly; coordinate with the product team before surfacing to customers."
+        },
+        "when_to_bring_up": "When a customer asks how to extend the value of their webinar recordings, reduce no-show regret, or build a learning library from existing content.",
+        "who_should_get_it": "Orgs running webinars who already have or are evaluating the Learning (lessons_credits) add-on, especially those with recurring educational or training webinars.",
+        "staff_path": "Program → Webinars → a webinar → After → Lessons from this webinar",
+        "gotchas": "The card is hidden (not shown as an error) until the API release reaches production — the UI ships first. Adding lessons to a Content Gallery is not yet supported; gallery lesson cards open the storefront player, which does not yet play clip-backed watch steps. The Send to attendees dialog warns when the Learning Site's access mode would block outside registrants.",
+        "talk_track": "Every webinar you run can automatically become a self-paced course — Sessionboard reads the chapters, clips, Q&A and survey data and proposes the lessons for you. You review, hit Create draft, and the AI builds it. Then send it straight to your no-shows or the whole audience from the same screen.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The /webinars/after guide should add a section documenting the Lessons from this webinar card: how proposals are generated, the Create draft flow, the Made from this webinar draft-status list, and the Send to attendees dialog including Learning Site access-mode warnings.",
+          "why_use_it": "Sessionboard Learning lets you convert webinar recordings into structured courses — with watch segments, knowledge checks, quizzes, reflections, and FAQ lessons — and deliver them to your audience through a Learning Site. It extends the life of every webinar by giving registrants a self-paced path through the content, and lets you track who completes it. Use it when you want to turn a one-time live session into an ongoing learning asset without rebuilding the content by hand.",
+          "at": "2026-11-02T19:20:53.820Z",
+          "permissions_to_confirm": [
+            "org.lessons: create, read, update"
+          ]
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1430"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "cfp-protect-required-participant-fields-from-question-rules",
+      "title": "CFP forms: question rules can no longer hide required participant identity fields",
+      "summary": "On the **Participant** step of a CFP submission form, the **⋯** menu on **First Name**, **Last Name**, and **Email** no longer offers **Use question rules**. If a rule targeting one of those fields is sent via the API, the request is rejected with a clear error. This prevents a situation where submitters complete the entire form but cannot submit because a hidden required field has no value.",
+      "article": "/faq/does-sessionboard-offer-conditional-logic",
+      "related": [
+        "/sessions/submission-forms"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "sessions"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Sessions → Forms → a CFP form → Participant step → First Name / Last Name / Email → ⋯ menu"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Prevents form builders from accidentally hiding the identity fields that every participant submission requires, which would strand submitters on the final step with an error they cannot resolve on their own.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "A database migration automatically removed the three invalid rules already stored in production (3 rows in US, 0 in EU, 0 in ME). Affected draft submissions were repaired by backfilling participant identity from the submitter step. No manual action needed."
+        },
+        "when_to_bring_up": "When a customer reports that submitters are hitting 'Email address must be specified' on the final submit step despite having filled in all visible fields.",
+        "who_should_get_it": "Any org running a CFP with a Participant step — the fix is automatic and default-on.",
+        "staff_path": "Sessions → Forms → a CFP form → Participant step → First Name / Last Name / Email → ⋯ menu",
+        "gotchas": "Session Title is intentionally excluded from this guard — it is locked in the builder but hiding it via a rule does not break submission, and several live events rely on that behaviour. The submitter step's copies of First Name, Last Name, and Email are not affected and can still carry rules.",
+        "talk_track": "If a form builder ever accidentally attached a hide rule to a participant's name or email, submitters would complete the whole form and then hit an error they couldn't fix. That path is now blocked at the point of saving the rule.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that First Name, Last Name, and Email on the Participant step are excluded from question rules and explain why.",
+          "why_use_it": "Question rules let you show or hide form fields based on answers to earlier questions, keeping forms short and relevant for each submitter. Sessionboard enforces that the three identity fields on the Participant step — First Name, Last Name, and Email — are always collected, so those fields are excluded from the rule system. Rules on every other field in the step work as normal.",
+          "at": "2026-11-02T20:18:04.913Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5078"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "content-galleries-event-staff-access",
+      "title": "Content Galleries: event staff can now access their event's galleries",
+      "summary": "Event team members who hold the **Content** permission on an event can now open, list, and work with that event's **Content Galleries** from the event dashboard — even if they do not hold an active organization seat. Previously, those users received a 403 error and the **Content Galleries** tile failed to load.",
+      "article": "/site/content-galleries",
+      "kind": "fixed",
+      "module": "CMS",
+      "features": [
+        "content_galleries"
+      ],
+      "availability": "preview",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event Dashboard → Content Galleries"
+      },
+      "permissions": [
+        "event.content.read",
+        "event.content.create",
+        "event.content.update",
+        "event.content.delete"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Useful when an event has dedicated content or AV staff who manage galleries but are not full organization members — they can now do their work without needing an org seat or seeing a permissions error.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "The fix is automatic. Event staff with EVENT.CONTENT.read (or write) on an event now pass the gallery permission check for that event's galleries. Org-level galleries and the org-wide gallery list remain org-only."
+        },
+        "when_to_bring_up": "When a customer reports that an event admin or content manager gets a 403 error on the Content Galleries tile despite having the correct event role.",
+        "who_should_get_it": "Any org using Content Galleries where event staff are not also active org members — common with contracted AV or content vendors given event-only roles.",
+        "staff_path": "Event Dashboard → Content Galleries",
+        "gotchas": "Reviewers (Evaluators) do not gain access — only event roles that carry EVENT.CONTENT.read or higher. Org-level galleries (event_id null) and the org-wide gallery list still require an active org seat with ORG.EXTERNAL_SITES access. An event staff member's gallery list is scoped to their event only.",
+        "talk_track": "If you give outside content vendors or event-only admins a role with Content permissions, they can now manage that event's galleries without needing a full org seat.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that event team members with the Content permission can access their event's galleries even without an active organization seat, and that org-level galleries (not tied to an event) remain accessible to org members only.",
+          "why_use_it": "null",
+          "at": "2026-11-02T20:45:10.881Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5090"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": "availability:preview"
+    },
+    {
+      "id": "expo-moderator-resync-city-error-message",
+      "title": "ExpoPlatform sync: moderators assigned after last sync now send correctly, and city-without-country errors show an actionable message",
+      "summary": "Two fixes to the **ExpoPlatform** integration sync report. First, a contact assigned as a moderator after their account was last synced now has `moderator: true` sent to ExpoPlatform on the next sync, preventing the \"No matching id was found\" session error. Second, when a contact has a city but no country, the sync report now shows a plain-language message explaining what to fix instead of the raw ExpoPlatform error text.",
+      "article": "/apps/expoplatform-integration#syncing-sessions-and-speakers",
+      "kind": "fixed",
+      "module": "Apps",
+      "features": [
+        "expo"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Apps → ExpoPlatform → Sync → Sync report"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who assign moderators to sessions after the initial speaker sync no longer need to force-resync or manually remove and re-add the account in ExpoPlatform to get the moderator role to apply. Contacts with a city but no country now get a clear instruction in the sync report rather than a cryptic platform error.",
+      "internal": {
+        "cs_action": {
+          "kind": "reach_out",
+          "note": "Customers who previously saw 'Error adding moderators with id …' or 'Cannot save city without country param.' in their ExpoPlatform sync reports are directly affected. The moderator fix applies automatically on the next sync; the city message fix also applies retroactively when the report is re-read. Affected orgs may still need a force sync for sessions whose moderator failed in an earlier run."
+        },
+        "when_to_bring_up": "When a customer reports moderator sync errors or raw ExpoPlatform error text in their sync report.",
+        "who_should_get_it": "Any org using the ExpoPlatform integration with moderator-assigned sessions or contacts that have a city but no country.",
+        "staff_path": "Apps → ExpoPlatform → Sync → Sync report",
+        "gotchas": "Sessions whose moderator failed in a previous sync are marked as synced (non-blocking error), so they may need a force sync after this fix. The city field is still not sent to ExpoPlatform when the contact has no country — only the report message changed.",
+        "talk_track": "If you've seen mysterious moderator errors or raw error text in your ExpoPlatform sync report, this fix resolves both: moderators assigned after the last sync will now send correctly, and any city-without-country contacts will show a clear message telling you exactly what to update.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The guide should note that a contact must have a country set before their city will sync to ExpoPlatform, and that moderator assignments made after the last sync are automatically included in the next sync.",
+          "why_use_it": "The ExpoPlatform integration keeps your session and speaker data in sync between Sessionboard and your event platform, including moderator assignments and contact details. Run a sync at any time to push accepted sessions, speakers, and roles to ExpoPlatform, and review the sync report to catch and resolve any contacts that could not be updated.",
+          "at": "2026-11-02T22:34:08.349Z",
+          "permissions_to_confirm": [
+            "event.integrations: sync"
+          ]
+        }
+      },
+      "related": [
+        "/integrations/integration-readiness",
+        "/concepts/participant-roles"
+      ],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5089"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "scheduler-correct-dates-and-run-status",
+      "title": "Scheduler: sessions placed on correct event days; run status and score now shown",
+      "summary": "Two bugs in the **Scheduler** agent are fixed. First, the solver now reads event dates correctly so sessions are never placed on the day before the event starts. Second, after a run completes, the draft header shows the correct **Last generated** timestamp and the **Explain** tab shows the solver's real score instead of 0; a failed run is also recorded with its error.",
+      "article": "/agents/scheduler#run-history",
+      "related": [
+        "/agents/scheduler"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "sessions_v2"
+      ],
+      "availability": "add_on",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Program → Sessions → Agenda → a draft → Run Scheduler / Explain"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers using the Scheduler agent can trust that every session lands within the event's actual dates, and they can see the solver score and last-run timestamp to confirm the draft was generated successfully.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "One US event had 3 placements on the wrong day from the greedy solver; those drafts are not auto-corrected. Reach out if the customer is affected and offer to re-run the Scheduler. Legacy GPT-generator drafts (39 US, 1 EU events) have a separate out-of-window placement issue not fixed here."
+        },
+        "when_to_bring_up": "When a customer reports sessions appearing on the wrong day, or when the draft shows 'Not generated' or Score 0 after a successful run.",
+        "who_should_get_it": "Any org using the Scheduler (Sessions 2.0 add-on) to auto-build an agenda.",
+        "staff_path": "Program → Sessions → Agenda → a draft → Run Scheduler / Explain",
+        "gotchas": "Existing completed runs that were affected by the date bug are not retroactively moved; the customer must re-run the Scheduler. Historical runs have no stored score (shows '—' in the UI) because scores were never persisted before this fix. The legacy GPT-based generator is a separate code path and is not fixed by this PR.",
+        "talk_track": "The Scheduler now places every session inside your event's actual dates, and you can see the score and timestamp right after a run so you know it worked.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should document the run status badge and score field in the Explain tab, including what \"—\" means for runs completed before this fix.",
+          "why_use_it": "The Scheduler agent builds a draft agenda automatically, placing sessions into rooms and time slots while respecting constraints such as speaker conflicts, track balance and room capacity. Use it when manually slotting dozens or hundreds of sessions would take hours, or when you want to compare multiple scheduling scenarios quickly. The Explain tab shows the solver's score and placement breakdown so you can judge the quality of each draft before publishing.",
+          "at": "2026-11-02T23:07:27.300Z",
+          "permissions_to_confirm": [
+            "event.agenda: manage_drafts"
+          ]
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5075"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "portal-user-role-hide-notifications-tab",
+      "title": "Notifications tab hidden for the Portal User role",
+      "summary": "The **Notifications** tab no longer appears under **Event Team → Permissions** when the **Portal User** role is selected. The tab previously showed notification settings that had no effect for portal users, and listed notification types (admin and evaluator) that portal users never receive. Switching to the **Portal User** role now falls back to the **Permissions** tab automatically.",
+      "article": "/event-team/invite-manage-event-team-members#choose-which-notifications-a-role-receives",
+      "kind": "fixed",
+      "module": "Event team",
+      "features": [
+        "notifications"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event Team → Permissions → Portal User"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Prevents admins from spending time configuring notification settings for the Portal User role that would never be delivered, reducing confusion when managing event team permissions.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "If a customer reports confusion about why notification settings for Portal User had no effect, or asks why the tab is gone.",
+        "who_should_get_it": "All orgs — this is a bug fix visible to anyone who manages event team permissions.",
+        "staff_path": "Event Team → Permissions → Portal User",
+        "gotchas": "A companion API change (sessionboard-web-api#5091) removes Portal User from org role notification defaults and returns 404 on its notification endpoints. The UI fix ships first and is safe independently.",
+        "talk_track": "The Notifications tab for Portal User was showing settings that never reached anyone — portal users aren't matched through the event team row that drives notification delivery. It's now hidden so admins aren't misled.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that the Notifications tab is not available for the Portal User role, and explain why portal users do not receive role-based notifications.",
+          "why_use_it": null,
+          "at": "2026-11-02T23:10:07.884Z"
+        }
+      },
+      "related": [
+        "/communications/notifications"
+      ],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1435"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "event-page-builder-brand-kit-colours",
+      "title": "Event page builder canvas now shows Brand kit colours and fonts correctly",
+      "summary": "In the admin page-builder canvas for an event site, the **Brand kit** colours and fonts now display correctly instead of the template's default colour scheme. Previously, the canvas always showed the template's stored colours (for example, lavender/green and Work Sans) even when a Brand kit had been applied, while the published page and preview link showed the correct kit. The canvas now matches what visitors see.",
+      "article": "/site/site-builder",
+      "related": [
+        "/marketing/brand-kits"
+      ],
+      "kind": "fixed",
+      "module": "CMS",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Site → Site builder → canvas"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers editing an event site in the page builder now see the exact Brand kit colours and fonts on the canvas, so what they design matches what attendees see on the published page — no more guessing whether the live site will look different.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Fix is automatic once web-api #5093 is deployed first; until that API change is live, this code is a no-op and behaviour is unchanged."
+        },
+        "when_to_bring_up": "If a customer reports that their Brand kit colours or fonts do not appear in the site builder canvas, confirm both deploys are live.",
+        "who_should_get_it": "Any org using Brand kits with a site template (e.g. the 'Lab' template).",
+        "staff_path": "Site → Site builder → canvas",
+        "gotchas": "Deploy order matters: web-api #5093 must go out before this change has any effect. Until then, the canvas still shows template colours. The fix only affects the admin builder canvas; the published page and ?preview= link were already correct.",
+        "talk_track": "The builder canvas now shows exactly what your Brand kit looks like, so you can design with confidence that the published page matches.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The site-builder guide should note that the canvas reflects the active Brand kit and explain how kit colours override template defaults.",
+          "why_use_it": null,
+          "at": "2026-11-02T23:51:47.178Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-org-portal#303"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
     }
   ]
 }
