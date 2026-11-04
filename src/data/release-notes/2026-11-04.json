@@ -184,7 +184,7 @@
       "id": "report-builder-rich-text-plain",
       "title": "Report Builder shows descriptions and other rich text as readable text",
       "summary": "Rich-text fields — session **Description**, speaker **Biography**, group and task descriptions, and custom **Rich Text** or **Text Area** fields — now come back as readable text in the Report Builder preview and in CSV and Excel downloads, instead of editor HTML like `<p><strong>…</strong></p>`. Paragraphs, line breaks and list items stay on separate lines; filters still match the text as stored. Dashboards, share links and Ask return the same text.",
-      "article": "/reporting/report-builder",
+      "article": "/reporting/report-builder#download-the-results",
       "related": [
         "/reporting/exporting-data",
         "/reporting/dashboards"
@@ -269,7 +269,7 @@
         "when_to_bring_up": "When a customer says IDs in a Number field lose a leading zero, or match inconsistently to their CRM.",
         "who_should_get_it": "Customers storing member, customer or NPI-style IDs in Number fields.",
         "staff_path": "Event → Contacts → a contact → a Number custom field",
-        "gotchas": "Values that already lost the zero are not changed by the fix; they need a repair. Opening a CSV directly in Excel still drops leading zeros (Excel does that) — use the Excel download. The Public API still returns Number values as numbers.",
+        "gotchas": "Values that already lost the zero are not changed by the fix; they need a repair (retype, or a staff SQL fix). Opening a CSV directly in Excel still drops leading zeros (Excel does that) — use the Excel download. Still numeric, so still zero-less: the Public API returns Number values as numbers, and the legacy module exports and email merge tags print through the value-types package (parseFloat) until that package is released.",
         "talk_track": "Number fields now keep IDs exactly as you type them, leading zeros included."
       },
       "shipped": {
@@ -283,6 +283,224 @@
           "us": "2026-11-04",
           "eu": "2026-11-04",
           "me": "2026-11-04"
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "live-transcribe-participants-listed-once",
+      "title": "Live Transcribe lists each session participant once",
+      "summary": "The **Participants** card on a session in the **Live Transcribe Console** lists each person once, under the session role they hold. Before, a participant with a custom role such as **Panelist** also appeared a second time as **Speaker**.",
+      "article": "/marketing/live-transcribe-console#what-the-crew-sees",
+      "related": [
+        "/marketing/live-transcribe"
+      ],
+      "kind": "fixed",
+      "module": "Marketing",
+      "features": [
+        "marketing_transcribe"
+      ],
+      "enable": {
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Live Transcribe Console → a session → Participants"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "An AV crew or producer checking who is on stage sees the real panel line-up once, with each person's role, instead of a doubled list that looks like extra speakers.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Automatic for every Live Transcribe event. Reported by Clarion / Infocast (SB-11085); prod had 18,442 sessions in 78 US events with the duplicate rows."
+        },
+        "when_to_bring_up": "When a customer reports a Panelist, Moderator or other custom-role participant listed twice, once as Speaker, in Live Transcribe.",
+        "who_should_get_it": "Live Transcribe customers whose sessions use custom participant roles (panels, moderated sessions).",
+        "staff_path": "Event → Marketing → Transcribe → Invites → open the Console link → a session → Participants",
+        "gotchas": "Display fix only; the underlying participant data did not change.",
+        "talk_track": "The Participants card now shows the panel as it really is, one line per person under their role."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5118"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "transcript-speaker-name-resolution",
+      "title": "Tagged speaker names show wherever a transcript is read",
+      "summary": "Once you tag a voice on a recording or Live Transcribe session, the person's name replaces the \"Speaker 4\" placeholder in transcript search results, **Ask** answers, chapters, session recaps and the **Attend** app's session recap. A generic tag such as \"Audience Member 2\" shows its label. A participant whose seat on the session is hidden is never named, and names that come from the recording platform (Zoom, Goldcast) are kept.",
+      "article": "/marketing/media-library#tag-speakers",
+      "related": [
+        "/marketing/live-transcribe",
+        "/marketing/recaps"
+      ],
+      "kind": "fixed",
+      "module": "Marketing",
+      "features": [
+        "marketing_transcribe",
+        "marketing_media"
+      ],
+      "enable": {
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Marketing → Media → a recording → Speakers → Tag"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "A marketing team that tags speakers once gets recaps, chapters and search results that credit the right person by name, without re-importing the recording or fixing names by hand.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Automatic, read-time: existing tags apply immediately with no re-import (SB-10990, API side)."
+        },
+        "when_to_bring_up": "When a customer says recaps, search results or Ask answers say \"Speaker 4\" even though the speakers were tagged.",
+        "who_should_get_it": "Customers using Live Transcribe or Media with speaker tagging.",
+        "staff_path": "Event → Marketing → Media → a recording → Speakers → Tag; then search the transcript or regenerate a recap",
+        "gotchas": "Already-generated recaps and stored quotes keep the placeholder until regenerated / re-extracted; clip chat and home search do not resolve tags yet. Brand Voice examples also match tagged names now (limited release, not in the public summary). Create's speaker credit and citation tooltip are a separate entry (create-speaker-attribution) that needs web-ui-v2#1457 in production.",
+        "talk_track": "Tag a speaker once and their name follows the transcript everywhere it is used."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5119"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "trial-mode-public-forms",
+      "title": "Forms on a trial event show a Trial mode banner and don't take submissions",
+      "summary": "While an organization or event is on a trial, its public forms show a **Trial mode** banner. Submitters can fill in a form and **Save as draft**, but **Submit** and payment are off, on call for papers forms and on the event website's award, request, reviewer, registration and RSVP forms. Everything opens as soon as the trial ends.",
+      "article": "/participants/save-a-submission-as-a-draft#if-the-form-says-trial-mode",
+      "related": [
+        "/site/site-builder"
+      ],
+      "kind": "fixed",
+      "module": "Portals",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Public call for papers forms and event website pages of a trial organization or event"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "A team setting up its event before the contract is signed can build, share and test its forms without collecting real submissions or payments by accident.",
+      "internal": {
+        "cs_action": {
+          "kind": "reach_out",
+          "note": "Trial is a staff flag on the org or event. Before a trial customer opens a call for papers, nominations or registration, staff must turn trial off for the org and the event, or every final submit and payment is refused (403 trial_mode). Drafts and admin previews still work."
+        },
+        "when_to_bring_up": "When onboarding a customer on a trial, and whenever a customer reports \"Trial mode\" on a live form or that submitters can't press Submit or Pay.",
+        "who_should_get_it": "Organizations or events Sessionboard has put on a trial (pre-contract or pre-renewal).",
+        "staff_path": "Staff only: turn off trial on the organization and on the event; the banner and the block clear at once (nothing is cached).",
+        "gotchas": "A trial flag on the org blocks every event's public forms, and a trial flag on any event behind an org Site form blocks that form. Check both flags. At ship time US had 3 trial orgs and 7 trial events, EU 1 trial event; confirm none is live and collecting.",
+        "talk_track": "While you set up on a trial, your forms are a safe preview: people can try them and save drafts, and submissions and payments open the moment your account is live."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5117",
+          "lennd/sessionboard-web-ui-v2#1456",
+          "lennd/sessionboard-web-org-portal#308"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": []
+    },
+    {
+      "id": "sessions-list-subsessions-load-on-expand",
+      "title": "Large session lists load faster: subsessions load when you expand a parent",
+      "summary": "On **Program → Sessions** and the agenda's **List** tab, a parent session's subsessions now load when you expand it, with a short **Loading…** row, instead of arriving with every page. When you search, a parent that matches only through its subsessions shows just the matching ones, already expanded, as filters already did. Pages of events with thousands of subsessions load in a fraction of the time.",
+      "article": "/sessions/viewing-subsessions-within-the-agenda#on-the-list",
+      "related": [
+        "/sessions/create-a-subsession"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Program → Sessions; Program → Agenda → List"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "A program team running an event with hundreds of subsessions under a few parents can page, search and filter the Sessions list quickly instead of waiting on, or timing out on, every subsession at once.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Automatic. Came out of the 2026-11-04 prod-us outage (SB-11108): CES 2027 (205 parents, 6,226 subsessions) list pages were 2-12 MB and OOM-killed API tasks; customers saw \"CORS Error: Unable to reach the API\"."
+        },
+        "when_to_bring_up": "When a customer with many subsessions reports a slow Sessions or agenda list, or a \"CORS Error: Unable to reach the API\" while paging it.",
+        "who_should_get_it": "Events with large numbers of subsessions (abstract-driven medical and scientific meetings, CES-style programs).",
+        "staff_path": "Event → Program → Sessions → expand a parent session",
+        "gotchas": "Exports, reports and the calendar still carry every subsession; only the list grid loads them on expand. A parent loads its subsessions once per list load; editing a row refreshes that row only.",
+        "talk_track": "Big programs page instantly now; a session's subsessions load when you open it."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5132",
+          "lennd/sessionboard-web-ui-v2#1463"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
         },
         "announced_at": null,
         "emailed_at": null
