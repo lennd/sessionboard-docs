@@ -125,6 +125,8 @@ export async function verifySession(secret, value, nowS = Math.floor(Date.now() 
   const [, exp, userId, sig] = parts;
   if (!/^\d+$/.test(exp) || Number(exp) <= nowS) return null;
   if (!sameString(sig, await hmac(secret, parts.slice(0, 3).join('.')))) return null;
+  // Guest links (removed) minted `guest-<label>` sessions; refuse any still in a browser.
+  if (userId.startsWith('guest-')) return null;
   return { userId, exp: Number(exp) };
 }
 
