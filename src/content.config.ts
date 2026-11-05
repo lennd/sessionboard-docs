@@ -3,6 +3,7 @@ import { docsLoader } from '@astrojs/starlight/loaders';
 import { docsSchema } from '@astrojs/starlight/schema';
 
 import contract from './data/product-contract.json';
+import helpScopes from './data/help-scopes.json';
 
 /**
  * Retrieval and personalization taxonomy.
@@ -27,6 +28,14 @@ const FEATURE_IDS = contract.features as [string, ...string[]];
 const PERMISSION_IDS = contract.permissions as [string, ...string[]];
 
 const AUDIENCES = ['organizer', 'reviewer', 'speaker', 'participant'] as const;
+
+/**
+ * Self-serve products with their own Help Center scope (src/data/help-scopes.json).
+ * A reader who arrives with `?via=marketing` sees only the articles tagged
+ * `products: [marketing]` in the sidebar and search until they choose
+ * "All of Sessionboard". Untagged articles are platform-only.
+ */
+const PRODUCTS = Object.keys(helpScopes.scopes) as [string, ...string[]];
 
 /**
  * The Availability box (src/components/Availability.astro) renders under the
@@ -59,6 +68,12 @@ export const collections = {
           .array(z.enum(AUDIENCES))
           .default(['organizer'])
           .describe('Who this article is written for. Defaults to event organizers.'),
+        products: z
+          .array(z.enum(PRODUCTS))
+          .default([])
+          .describe(
+            'Self-serve products this article applies to (src/data/help-scopes.json). Drives the scoped sidebar and search a reader gets from the product\u2019s Help button.',
+          ),
         jtbd: z
           .string()
           .optional()

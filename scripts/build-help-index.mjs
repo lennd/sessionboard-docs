@@ -426,6 +426,9 @@ for (const file of walk(DOCS).sort()) {
         features: front.features ?? [],
         audience: front.audience ?? ['organizer'],
         jtbd: front.jtbd ?? null,
+        // Only when set, so tagging an article for a product scope does not
+        // re-embed every untagged one.
+        ...(front.products?.length ? { products: front.products } : {}),
         bodyHtml,
       }),
     )
@@ -440,6 +443,9 @@ for (const file of walk(DOCS).sort()) {
     features: front.features ?? [],
     audience: front.audience ?? ['organizer'],
     jtbd: front.jtbd ?? null,
+    // Self-serve products the article applies to (src/data/help-scopes.json),
+    // so Ask in Marketing or Learning can keep to its own guides.
+    products: front.products ?? [],
     contentHash,
     bodyHtml,
     chunks,

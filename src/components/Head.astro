@@ -12,6 +12,9 @@ import { readFileSync } from 'node:fs';
 import breadcrumbs from '../breadcrumbs.json';
 import site from '../../site.json';
 import { isStaffOnlySlug } from '../lib/staff-only.mjs';
+import { getCollection } from 'astro:content';
+import helpScopes from '../data/help-scopes.json';
+import { headScript, scopeCss, scopePaths } from '../lib/help-scope.mjs';
 
 const SITE = `https://${site.canonicalHost}`;
 const WWW = 'https://www.sessionboard.com';
@@ -119,6 +122,12 @@ const jsonLd = {
   ],
 };
 
+// Self-serve product scope (src/lib/help-scope.mjs): an inline script that
+// stamps <html data-sb-scope> from `?via=` or the cookie before first paint,
+// and the CSS that hides out-of-scope sidebar entries. Inert without a scope.
+const scopeHead = headScript(helpScopes, scopePaths(await getCollection('docs'), helpScopes));
+const scopeStyle = scopeCss(helpScopes);
+
 // Deferred marketing tags — mirrors growth-pages marketing_head_snippet().
 const marketingJs = `
 (function(){
@@ -172,6 +181,8 @@ const marketingJs = `
     <script set:html={marketingJs} />
   </>
 )}
+<script is:inline set:html={scopeHead} />
+<style is:inline set:html={scopeStyle} />
 <script>
   // Heading anchor icons (Starlight's a.sl-anchor-link) copy the section
   // hotlink to the clipboard on click (Josh, 2026-09-24). Default hash

@@ -3,15 +3,31 @@
  * Override of Starlight's Sidebar: identical, except it renders our
  * SidebarSublist copy (which tags group <li>s with data-group for the
  * separators in custom.css), under the signed-in reader's "For you" guides
- * (ForYou.astro, hidden until src/scripts/account.mjs reveals it).
+ * (ForYou.astro, hidden until src/scripts/account.mjs reveals it), and under
+ * the self-serve scope bar (src/lib/help-scope.mjs), which only shows while a
+ * reader is in a product scope.
  */
 import MobileMenuFooter from 'virtual:starlight/components/MobileMenuFooter';
 import SidebarPersister from '@astrojs/starlight/components/SidebarPersister.astro';
 import SidebarSublist from './SidebarSublist.astro';
 import ForYou from './ForYou.astro';
+import helpScopes from '../data/help-scopes.json';
 
 const { sidebar } = Astro.locals.starlightRoute;
 ---
+
+{
+	Object.entries(helpScopes.scopes).map(([key, scope]) => (
+		<div class="sb-scope-bar" data-for={key}>
+			<a class="sb-scope-bar-title" href={scope.home}>
+				Help for {scope.label}
+			</a>
+			<a class="sb-scope-bar-all" href="?via=all">
+				All of Sessionboard
+			</a>
+		</div>
+	))
+}
 
 <SidebarPersister>
 	<ForYou />
@@ -21,3 +37,69 @@ const { sidebar } = Astro.locals.starlightRoute;
 <div class="md:sl-hidden">
 	<MobileMenuFooter />
 </div>
+
+<script>
+	import { normalizePath } from '../lib/help-scope.mjs';
+
+	/**
+	 * Search under a product scope: Pagefind indexes the whole site, so hide the
+	 * results the scope does not tag, keep loading pages until some show, and
+	 * say so above the list with a way out to the whole Help Center.
+	 */
+	type Scope = { label: string; home: string; paths: string[] };
+	const state = (window as unknown as { sbHelpScope?: { scope: string | null; scopes: Record<string, Scope> } }).sbHelpScope;
+	const root = document.getElementById('starlight__search');
+	const scope = state?.scope ? state.scopes[state.scope] : null;
+
+	if (root && scope) {
+		const allowed = new Set(scope.paths);
+		const note = document.createElement('p');
+		note.className = 'sb-scope-search-note';
+		let loads = 0;
+		let lastTerm = '';
+		let queued = false;
+
+		const apply = () => {
+			queued = false;
+			const term = root.querySelector<HTMLInputElement>('.pagefind-ui__search-input')?.value.trim() ?? '';
+			if (term !== lastTerm) {
+				lastTerm = term;
+				loads = 0;
+			}
+			const results = [...root.querySelectorAll<HTMLLIElement>('li.pagefind-ui__result')];
+			let shown = 0;
+			for (const li of results) {
+				const href = li.querySelector<HTMLAnchorElement>('a.pagefind-ui__result-link')?.href;
+				const keep = Boolean(href) && allowed.has(normalizePath(href));
+				li.hidden = !keep;
+				if (keep) shown += 1;
+			}
+			const more = root.querySelector<HTMLButtonElement>('button.pagefind-ui__button');
+			if (more && shown < 5 && loads < 20) {
+				loads += 1;
+				more.click();
+			}
+			const drawer = root.querySelector('.pagefind-ui__drawer');
+			if (!term || !drawer) {
+				note.remove();
+				return;
+			}
+			const text = shown || more ? `Showing ${scope.label} guides only.` : `No ${scope.label} guides match.`;
+			if (note.dataset.text !== text) {
+				note.dataset.text = text;
+				note.textContent = `${text} `;
+				const all = document.createElement('a');
+				all.href = '?via=all';
+				all.textContent = 'Search all of Sessionboard';
+				note.append(all);
+			}
+			if (drawer.firstChild !== note) drawer.prepend(note);
+		};
+
+		new MutationObserver(() => {
+			if (queued) return;
+			queued = true;
+			requestAnimationFrame(apply);
+		}).observe(root, { childList: true, subtree: true, attributes: true, attributeFilter: ['href'] });
+	}
+</script>
