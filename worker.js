@@ -14,7 +14,7 @@ import trainingRedirects from './training-redirects.json';
 import site from './site.json';
 import { isProductUpdatesPath, productUpdatesResponse } from './src/lib/product-updates-proxy.mjs';
 import { isStaffOnlyHref, isStaffOnlyPath } from './src/lib/staff-only.mjs';
-import { ACCOUNT_PREFIX, accountResponse, isSignedInRequest, isStaffRequest } from './src/lib/account-session.mjs';
+import { ACCOUNT_PREFIX, accountResponse, isSignedInRequest, isStaffRequest, recheckStaff } from './src/lib/account-session.mjs';
 import { STATUS_PATH as RELEASE_EMAIL_STATUS_PATH } from './src/lib/product-updates-proxy.mjs';
 
 // `/en/migrated/knowledge-base/…` is a live path prefix left over from an
@@ -234,6 +234,14 @@ function staffCopy(response, staffOnlyPage) {
     headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive, nosnippet');
     headers.set('Referrer-Policy', 'no-referrer');
   }
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+}
+
+/** The response with one more Set-Cookie, or unchanged when there is none to set. */
+function withCookie(response, cookie) {
+  if (!cookie) return response;
+  const headers = new Headers(response.headers);
+  headers.append('Set-Cookie', cookie);
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
 
@@ -538,14 +546,22 @@ export default {
       if (asset.ok) return signedInCopy(asset);
     }
 
-    const staff = await isStaffRequest(request, env);
+    let staff = await isStaffRequest(request, env);
     const staffOnlyPage = isStaffOnlyPath(url.pathname, site);
+    // No staff cookie is not the same as not staff: ask the API before the 404
+    // (src/lib/account-session.mjs recheckStaff says why, and why it is safe).
+    // Reads only — nothing else is served from a staff-only path.
+    let staffCookie = null;
+    if (staffOnlyPage && !staff && (request.method === 'GET' || request.method === 'HEAD')) {
+      staffCookie = await recheckStaff(request, env, site);
+      staff = Boolean(staffCookie);
+    }
     if (staffOnlyPage && !staff) return notFoundPage(url, env);
 
     const asset = await env.ASSETS.fetch(request);
     const visible = staff ? staffCopy(asset, staffOnlyPage) : hideStaffOnly(asset);
     // Static build assets stay cacheable; every page a signed-in reader gets is theirs alone.
-    const response = signedIn && !url.pathname.startsWith('/_astro/') ? signedInCopy(visible) : visible;
+    const response = withCookie(signedIn && !url.pathname.startsWith('/_astro/') ? signedInCopy(visible) : visible, staffCookie);
 
     if (isEnablementPath(url.pathname)) {
       const headers = new Headers(response.headers);

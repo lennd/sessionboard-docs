@@ -111,9 +111,12 @@ function sameString(a, b) {
   return diff === 0;
 }
 
+/** A user id as it appears inside a signed cookie: the separator and anything else unsafe stripped. */
+const sessionUserId = (userId) => (userId == null ? '' : String(userId).replace(/[^A-Za-z0-9_-]/g, ''));
+
 /** `v1.<exp seconds>.<user id>.<hmac>` */
 export async function signSession(secret, userId, nowS = Math.floor(Date.now() / 1000)) {
-  const body = `${VERSION}.${nowS + SESSION_TTL_S}.${String(userId).replace(/[^A-Za-z0-9_-]/g, '')}`;
+  const body = `${VERSION}.${nowS + SESSION_TTL_S}.${sessionUserId(userId)}`;
   return `${body}.${await hmac(secret, body)}`;
 }
 
@@ -147,6 +150,50 @@ export async function isSignedInRequest(request, env) {
 /** Is the reader of this request signed-in Sessionboard staff? */
 export async function isStaffRequest(request, env) {
   return Boolean(await verifySession(env?.STAFF_SESSION_SECRET, readCookie(request, STAFF_COOKIE)));
+}
+
+/** How long a staff-only page waits on the API before answering 404 as it always has. */
+export const STAFF_RECHECK_TIMEOUT_MS = 3000;
+
+/**
+ * A staff cookie for a signed-in reader whose request arrived without one, when
+ * the API says they are staff right now; null in every other case.
+ *
+ * The staff cookie is minted at sign-in and re-synced by /_account/me, which
+ * page script calls only after a page has loaded. A staff member whose cookie
+ * had lapsed or been cleared (e.g. by a sign-in while their account was not a
+ * super user) was handed the 404 for every staff-only page they opened, with
+ * their account panel saying "Sessionboard staff" on top of it (Chris,
+ * 2026-11-05, from the release email's /enablement link). worker.js asks here
+ * before it answers 404, so the page itself is the re-sync.
+ *
+ * Nothing here can make anyone staff whom the API does not call staff:
+ *   - the answer comes only from GET /help/reader/me with the HttpOnly reader
+ *     token, the same call sign-in makes, on a configured region's API;
+ *   - the token must still be the read-only `help_reader` scope;
+ *   - the reader the API names must be the user the signed gate cookie was
+ *     issued to, so a reader cookie planted beside someone else's session
+ *     (or left over from another account) never crosses over;
+ *   - an unset secret, a missing or forged cookie, an API error, a non-JSON
+ *     answer or a slow API all return null, and the caller 404s (fail closed).
+ */
+export async function recheckStaff(request, env, site, fetchImpl = fetch) {
+  const secret = env?.STAFF_SESSION_SECRET;
+  if (!secret) return null;
+  const session = await verifySession(secret, readCookie(request, SESSION_COOKIE));
+  if (!session?.userId) return null;
+  const reader = readReader(request, site, env);
+  if (!reader) return null;
+  let result;
+  try {
+    result = await fetchReader(reader.region, reader.token, fetchImpl, { signal: AbortSignal.timeout(STAFF_RECHECK_TIMEOUT_MS) });
+  } catch {
+    return null;
+  }
+  const r = result?.reader;
+  if (!r || r.staff !== true || r.token_scope !== 'help_reader') return null;
+  if (!sessionUserId(r.id) || sessionUserId(r.id) !== session.userId) return null;
+  return setCookie(STAFF_COOKIE, await signSession(secret, r.id), SESSION_TTL_S);
 }
 
 // ── Reader cookie ────────────────────────────────────────────────────────
@@ -196,9 +243,10 @@ export function safeReturnPath(value) {
 }
 
 /** GET {api}/help/reader/me with a reader token: the payload, or null with the HTTP status. */
-async function fetchReader(region, token, fetchImpl) {
+async function fetchReader(region, token, fetchImpl, { signal } = {}) {
   const res = await fetchImpl(`${region.api}/help/reader/me`, {
     headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+    ...(signal ? { signal } : {}),
   });
   if (!res.ok) return { status: res.status, reader: null };
   const data = await res.json();

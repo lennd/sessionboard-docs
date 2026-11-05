@@ -17,6 +17,7 @@ import {
   isSignedInRequest,
   isStaffRequest,
   readReader,
+  recheckStaff,
   safeReturnPath,
   signSession,
   verifySession,
@@ -344,6 +345,117 @@ test('sign-out from a Help Center page clears the session; a cross-site form can
   assert.ok(res.headers.getSetCookie().find((c) => c.startsWith(`${READER_COOKIE}=;`)));
   const { res: csrf } = await call(SIGN_OUT_PATH, { method: 'POST', headers: { Origin: 'https://evil.example.net' } });
   assert.equal(csrf.status, 403);
+});
+
+// ── recheckStaff: a staff-only page with no staff cookie ──────────────
+
+/** A signed-in jar with the staff cookie dropped: what Chris's browser sent on 2026-11-05. */
+const withoutStaff = (jar) =>
+  jar
+    .split('; ')
+    .filter((c) => !c.startsWith(`${STAFF_COOKIE}=`))
+    .join('; ');
+const pageRequest = (cookie) => new Request(`${ORIGIN}/enablement`, { headers: cookie ? { Cookie: cookie } : {} });
+
+test('recheckStaff: a staff reader without a staff cookie gets a fresh one from the API', async () => {
+  const cookie = withoutStaff(await signedIn());
+  assert.equal(await isStaffRequest(pageRequest(cookie), ENV), false, 'the jar really has no staff cookie');
+  const api = fakeApi();
+  const set = await recheckStaff(pageRequest(cookie), ENV, SITE, api);
+  assert.ok(set.startsWith(`${STAFF_COOKIE}=v1.`));
+  for (const attr of ['HttpOnly', 'Secure', 'SameSite=Lax', 'Path=/', `Max-Age=${SESSION_TTL_S}`]) assert.ok(set.includes(attr), attr);
+  assert.equal(api.calls.length, 1);
+  assert.equal(api.calls[0].url, 'https://api.example.com/help/reader/me');
+  assert.equal(api.calls[0].init.headers.Authorization, `Bearer ${TOKEN}`);
+  assert.ok(api.calls[0].init.signal, 'the API call has a timeout');
+  const next = new Request(`${ORIGIN}/enablement`, { headers: { Cookie: `${cookie}; ${set.split(';')[0]}` } });
+  assert.equal(await isStaffRequest(next, ENV), true, 'the next request is staff without asking again');
+});
+
+test('recheckStaff: a reader who is not staff stays out', async () => {
+  const cookie = withoutStaff(await signedIn());
+  assert.equal(await recheckStaff(pageRequest(cookie), ENV, SITE, fakeApi({ reader: { ...READER, staff: false } })), null);
+  for (const staff of ['true', 1, 'yes', null, undefined]) {
+    assert.equal(await recheckStaff(pageRequest(cookie), ENV, SITE, fakeApi({ reader: { ...READER, staff } })), null, String(staff));
+  }
+});
+
+test('recheckStaff: signed out, no reader cookie, or no secret — no API call at all', async () => {
+  const jar = withoutStaff(await signedIn());
+  const cases = [
+    ['nothing', '', ENV],
+    ['hint only', `${HINT_COOKIE}=1`, ENV],
+    ['reader cookie without the signed gate cookie', jar.split('; ').filter((c) => !c.startsWith(`${SESSION_COOKIE}=`)).join('; '), ENV],
+    ['gate cookie without a reader cookie', jar.split('; ').filter((c) => !c.startsWith(`${READER_COOKIE}=`)).join('; '), ENV],
+    ['no secret', jar, {}],
+  ];
+  for (const [name, cookie, env] of cases) {
+    const api = fakeApi();
+    assert.equal(await recheckStaff(pageRequest(cookie), env, SITE, api), null, name);
+    assert.equal(api.calls.length, 0, name);
+  }
+});
+
+test('recheckStaff: a forged, expired or other-secret gate cookie gets nothing', async () => {
+  const reader = `${READER_COOKIE}=us.${TOKEN}`;
+  const expired = await signSession(ENV.STAFF_SESSION_SECRET, 'u1', Math.floor(Date.now() / 1000) - SESSION_TTL_S - 1);
+  const otherSecret = await signSession('not-the-secret', 'u1');
+  for (const gate of ['v1.9999999999.u1.AAAA', expired, otherSecret, 'v2.9999999999.u1.AAAA']) {
+    const api = fakeApi();
+    assert.equal(await recheckStaff(pageRequest(`${SESSION_COOKIE}=${gate}; ${reader}`), ENV, SITE, api), null, gate);
+    assert.equal(api.calls.length, 0, gate);
+  }
+});
+
+test('recheckStaff: a staff reader token beside someone else\'s session never crosses over', async () => {
+  // A non-staff user's gate cookie with a staff member's reader token next to it
+  // (planted, or left from another account) must not make that user staff.
+  const gate = await signSession(ENV.STAFF_SESSION_SECRET, 'u2');
+  const cookie = `${SESSION_COOKIE}=${gate}; ${READER_COOKIE}=us.${TOKEN}`;
+  assert.equal(await recheckStaff(pageRequest(cookie), ENV, SITE, fakeApi()), null);
+  // Nor does a reader with no id match a gate cookie minted for an empty id.
+  const empty = await signSession(ENV.STAFF_SESSION_SECRET, '');
+  const noId = { ...READER, id: undefined };
+  assert.equal(await recheckStaff(pageRequest(`${SESSION_COOKIE}=${empty}; ${READER_COOKIE}=us.${TOKEN}`), ENV, SITE, fakeApi({ reader: noId })), null);
+});
+
+test('recheckStaff: an admin-scoped token in the reader cookie is never trusted', async () => {
+  const gate = await signSession(ENV.STAFF_SESSION_SECRET, 'u1');
+  const cookie = `${SESSION_COOKIE}=${gate}; ${READER_COOKIE}=us.${ADMIN_TOKEN}`;
+  assert.equal(await recheckStaff(pageRequest(cookie), ENV, SITE, fakeApi()), null);
+});
+
+test('recheckStaff: the token only ever goes to a configured region API', async () => {
+  const gate = await signSession(ENV.STAFF_SESSION_SECRET, 'u1');
+  for (const region of ['evil', 'mars', '']) {
+    const api = fakeApi();
+    assert.equal(await recheckStaff(pageRequest(`${SESSION_COOKIE}=${gate}; ${READER_COOKIE}=${region}.${TOKEN}`), ENV, SITE, api), null, region);
+    assert.equal(api.calls.length, 0, region);
+  }
+  const api = fakeApi();
+  await recheckStaff(pageRequest(`${SESSION_COOKIE}=${gate}; ${READER_COOKIE}=eu.${TOKEN}`), ENV, SITE, api);
+  assert.equal(new URL(api.calls[0].url).origin, 'https://api-eu.example.com');
+});
+
+test('recheckStaff fails closed: API rejects, errors, answers garbage, or hangs', async () => {
+  const cookie = withoutStaff(await signedIn());
+  for (const status of [401, 403, 500, 502]) {
+    assert.equal(await recheckStaff(pageRequest(cookie), ENV, SITE, fakeApi({ status })), null, String(status));
+  }
+  const throws = async () => {
+    throw new TypeError('network');
+  };
+  assert.equal(await recheckStaff(pageRequest(cookie), ENV, SITE, throws), null, 'network error');
+  const html = async () => new Response('<html>oops</html>', { status: 200, headers: { 'Content-Type': 'text/html' } });
+  assert.equal(await recheckStaff(pageRequest(cookie), ENV, SITE, html), null, 'not JSON');
+  const empty = async () => new Response('null', { status: 200 });
+  assert.equal(await recheckStaff(pageRequest(cookie), ENV, SITE, empty), null, 'empty payload');
+  // An API that never answers is cut off by the request's signal, not waited on.
+  const hangs = (url, init) =>
+    new Promise((_, reject) => init.signal.addEventListener('abort', () => reject(init.signal.reason), { once: true }));
+  const started = Date.now();
+  assert.equal(await recheckStaff(pageRequest(cookie), ENV, SITE, hangs), null, 'timeout');
+  assert.ok(Date.now() - started < 5000, 'gave up within the timeout');
 });
 
 // ── /_account/sign-in ─────────────────────────────────────────────────
