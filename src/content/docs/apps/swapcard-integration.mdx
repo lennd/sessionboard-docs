@@ -36,17 +36,26 @@ There, you can connect new or manage existing integrations. To connect a new int
 
 ![There, you can connect new or manage existing integrations](/images/kb/3e5f4ada-image-png-Feb-27-2026-04-43-00-2035-PM.png)
 
-For Swapcard, enter the API key associated with your event. ❗Important Information❗
-
-API keys are associated with users in Swapcard. When a user is removed from Swapcard, the API key will no longer be valid in Sessionboard.
+For Swapcard, enter the API key associated with your event.
 
 ![API keys are associated with users in Swapcard](/images/kb/c98bce71-image-png-Feb-27-2026-04-43-24-5232-PM.png)
 
-Once you provide the API key, you will have four options: 'Enable Continuous Sync', 'Sync Speakers as Users', 'Force People Import Sync', and 'Sync Speakers without Email':
-- Enable 'Continuous sync' to create/update records on a regular interval (approx. 30 minutes) so that admins don't have to force sync them. The admin can still manually push a sync if they want to update between the sync intervals.
-- Enable 'Sync Speakers as Users' if you wish for them to have an account in Swapcard and to access their event by logging in.
-- Enable 'Force People Import Sync' when you are syncing a contact that has more than one Client ID in your Swapcard community or you are switching the User within your Swapcard community. To better understand this use case and the impact please see Swapcard's documentation of when to use the Force Import.
-- Enable 'Sync Speakers without Email' if you would like for your speaker creation within Swapcard to omit their email. This is often used in cases where registration data is also being imported into Swapcard from a 3rd party.
+### Your Swapcard API key
+
+Swapcard creates the API key, not Sessionboard. Before you connect:
+
+1. Ask the Swapcard administrator of your community, or your Swapcard contact, for an API key for the community that holds your events.
+2. Make sure the key can see every Swapcard event you plan to map. Events that need a different key go in a second connection (see [Map events](#map-events)).
+3. Keep in mind that the key belongs to a Swapcard user. If that user is removed from Swapcard, the key stops working in Sessionboard and syncs fail until you enter a new one.
+
+### Connection settings
+
+Once you enter the API key, these settings apply to every event on the connection:
+
+- **Enable Continuous Sync** — Creates and updates records about every 30 minutes, so nobody has to start a sync. You can still sync by hand between runs.
+- **Sync Speakers as Users** — Creates speakers as Swapcard users, so they get an account and can sign in to the event.
+- **Force People Import Sync** — Use it when a contact has more than one Client ID in your Swapcard community, or when you are switching the user in your community. Swapcard's documentation on the Force Import explains when to use it.
+- **Sync Speakers without Email** — Creates speakers in Swapcard without their email address. This is often used when registration data is also imported into Swapcard from another system.
 
 ---
 
@@ -57,9 +66,22 @@ Click “Add Mapping” to complete the mapping process.
 
 ![Map Events](/images/kb/dd93f9ad-image-png-Feb-27-2026-04-46-43-7184-PM.png)
 
-Once your event is connected, you will be able to identify if you would like to include 'Moderators' & 'Chairpersons' in your sync. Speakers will natively sync, but this will allow you to include your 'Moderators' and 'Chairpersons' if you choose to. Additionally, you can opt not to include your session content/files in your sync. These options will be set per event mapping.
+### Configure event settings
 
-![Once your event is connected](/images/kb/8fdc055e-image-png-Feb-27-2026-04-48-34-9283-PM.png)
+The next step, **Configure event settings**, holds the settings for each event mapping. Pick the mapping at the top, then set:
+
+- **Skip Content Sync** — Collect session content files without syncing them to Swapcard's Documents.
+- **Sync Chairpersons** — Sync chairpersons as speakers. See [Roles and groups in Swapcard](#roles-and-groups-in-swapcard).
+- **Sync Moderators** — Sync moderators as speakers.
+- **Sync Contact Type to Groups** — Place each person in the Swapcard group for their role, under **People > Settings > Groups**.
+- **Remove Deleted Speakers** — Delete speakers from Swapcard when they no longer belong to the event in Sessionboard.
+- **Remove Deleted Sessions** — Delete sessions from Swapcard when they are deleted in Sessionboard or are no longer accepted.
+- **Sync Subsessions** — Sync subsessions as Swapcard plannings linked to their parent session. When it's off, only parent sessions sync.
+- **Sync Language Variants** — Shown only when the event has language variants. Syncs fields that have language variants in each of the event's languages, not just the default one.
+
+Speakers always sync. Click **Save** after you change a mapping's settings.
+
+![Seven event mapping checkboxes — Skip Content Sync, Sync Chairpersons, Sync Moderators, Sync Contact Type to Groups, Remove Deleted Speakers, Remove Deleted Sessions and Sync Subsessions — each with its description](/images/kb/swapcard-event-settings-step.png)
 
 **Mapping Criteria**
 
@@ -72,7 +94,8 @@ Once your event is connected, you will be able to identify if you would like to 
 
 Everyone Sessionboard sends to Swapcard is created as a speaker. **Speakers** always sync; moderators and chairpersons sync only when **Sync Moderators** or **Sync Chairpersons** is on for the event mapping.
 
-With **Sync Contact Type to Groups** on, Sessionboard also places each person in Swapcard groups named **Speakers**, **Moderators** and **Chairpersons** (under **People > Settings > Groups** in Swapcard), creating a group if it doesn't exist:
+- **Roles:** each person gets their role at the session level in Swapcard, matching their role on that session in Sessionboard: Speaker, Moderator, Chairperson, or a custom role such as Panelist. Swapcard doesn't let other systems create session roles, so add each role you use, custom roles included, in your Swapcard event once, with the same name as in Sessionboard. A person whose role has no match in Swapcard isn't added to that session, and the run's results in **History > Integrations > Sync History** name the missing role.
+- **Groups:** with **Sync Contact Type to Groups** on, each person is also placed in the Swapcard group for their role (under **People > Settings > Groups** in Swapcard), as well as in the default **Speakers** group. If a group doesn't exist yet, Sessionboard creates it, so you don't need to create groups in Swapcard first.
 
 ![The event mapping settings with Sync Chairpersons off, and Sync Moderators and Sync Contact Type to Groups ticked](/images/kb/swapcard-sync-contact-type-to-groups.png)
 
@@ -81,10 +104,10 @@ With **Sync Contact Type to Groups** on, Sessionboard also places each person in
 | Speaker | Speakers |
 | Moderator | Moderators and Speakers |
 | Chairperson | Chairpersons and Speakers |
-| A custom role only (for example Panelist or Expert) | A group named after the role's plural name, such as **Panelists** |
+| A custom role (for example Panelist or Expert) | A group named after the role's plural name, such as **Panelists**, and Speakers |
 | Several of these roles | Every matching group |
 
-Because moderators and chairpersons are synced as speakers, they are always in the **Speakers** group as well, so a count of that group includes them. Someone whose only role on their sessions is a custom role goes in that role's group instead of **Speakers**, and leaves it on the next sync if they lose the role. Groups with any other name — for example ones a registration import adds — are kept when Sessionboard updates a person's groups.
+Because everyone is synced as a speaker, everyone is in the **Speakers** group as well, so a count of that group includes moderators, chairpersons and custom roles. Someone who loses a role leaves that role's group on the next sync. Groups with any other name — for example ones a registration import adds — are kept when Sessionboard updates a person's groups.
 
 ## Mapping session fields
 Once your events have been connected, your next window will allow you to map your designated session fields. Within the dropdown, be sure you have selected the correct event that you wish to map the session fields for.
@@ -165,6 +188,8 @@ By default, sessions and speakers are not removed from Swapcard when you delete 
 Sessionboard will endeavor to sync as much data between systems as possible. It is important to use system fields when possible to collect information about your sessions and speakers to ensure they will be successfully matched.
 
 Below is a list of standard fields that will be synced. Fields with an asterisk (*) are required.
+
+Mapped dropdown and multi-select fields send the option names. If an option doesn't exist on the Swapcard field yet, Swapcard creates it on the sync, so you don't need to create the options in Swapcard first.
 
 ### Sessions
 
