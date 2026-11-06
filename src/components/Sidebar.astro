@@ -6,18 +6,67 @@
  * (ForYou.astro, hidden until src/scripts/account.mjs reveals it), and under
  * the self-serve scope bar (src/lib/help-scope.mjs), which only shows while a
  * reader is in a product scope.
+ *
+ * Documentation suites (src/lib/suites.mjs): a page inside a self-serve suite
+ * (/sessionboard-marketing/…) renders that suite's own sidebar
+ * (src/data/suites/<key>.sidebar.json) and title instead of Platform's. When
+ * any self-serve suite is built, every page also carries the suite switcher,
+ * hidden until src/scripts/account.mjs finds the reader holds two or more
+ * suites. With no self-serve suite built, the output is what it always was.
  */
 import MobileMenuFooter from 'virtual:starlight/components/MobileMenuFooter';
 import SidebarPersister from '@astrojs/starlight/components/SidebarPersister.astro';
 import SidebarSublist from './SidebarSublist.astro';
 import ForYou from './ForYou.astro';
 import helpScopes from '../data/help-scopes.json';
+import suitesConfig from '../data/suites.json';
+import { getCollection } from 'astro:content';
+import { PLATFORM, anySelfServeBuilt, builtSuites, resolveSidebar, suiteForId } from '../lib/suites.mjs';
 
-const { sidebar } = Astro.locals.starlightRoute;
+const { sidebar, id } = Astro.locals.starlightRoute;
+const built = builtSuites(suitesConfig, process.env);
+const suitesOn = anySelfServeBuilt(built);
+const suite = suiteForId(id, suitesConfig);
+const suiteConf = suite === PLATFORM ? null : suitesConfig.suites[suite as keyof typeof suitesConfig.suites];
+
+let suiteSidebar = null;
+if (suiteConf && 'sidebar' in suiteConf) {
+	const files = import.meta.glob<{ default: unknown[] }>('../data/suites/*.sidebar.json', { eager: true });
+	const file = files[`../data/suites/${suiteConf.sidebar}.sidebar.json`];
+	if (!file) throw new Error(`Suite "${suite}" has no sidebar file src/data/suites/${suiteConf.sidebar}.sidebar.json`);
+	const items = file.default;
+	const entries = (await getCollection('docs')).filter((e) => suiteForId(e.id, suitesConfig) === suite);
+	suiteSidebar = resolveSidebar(items, { entries, currentPath: Astro.url.pathname });
+}
+const switcher = suitesOn ? Object.keys(suitesConfig.suites).filter((k) => built.has(k)) : [];
 ---
 
 {
-	Object.entries(helpScopes.scopes).map(([key, scope]) => (
+	switcher.length > 0 && (
+		<nav class="sb-suite-switch" aria-label="Help for" data-current={suite} hidden>
+			<span class="sb-suite-switch-label">Help for</span>
+			{switcher.map((key) => {
+				const conf = suitesConfig.suites[key as keyof typeof suitesConfig.suites];
+				return (
+					<a href={key === PLATFORM ? '/?via=platform' : `${conf.home}?via=${key}`} data-suite={key} aria-current={key === suite ? 'page' : undefined} hidden>
+						{conf.label}
+					</a>
+				);
+			})}
+		</nav>
+	)
+}
+
+{
+	suiteConf && (
+		<a class="sb-suite-title" href={suiteConf.home}>
+			{suiteConf.product}
+		</a>
+	)
+}
+
+{
+	!suiteConf && Object.entries(helpScopes.scopes).map(([key, scope]) => (
 		<div class="sb-scope-bar" data-for={key}>
 			<a class="sb-scope-bar-title" href={scope.home}>
 				Help for {scope.label}
@@ -30,8 +79,8 @@ const { sidebar } = Astro.locals.starlightRoute;
 }
 
 <SidebarPersister>
-	<ForYou />
-	<SidebarSublist sublist={sidebar} />
+	{!suiteConf && <ForYou />}
+	{suiteSidebar ? <SidebarSublist sublist={suiteSidebar} /> : <SidebarSublist sublist={sidebar} />}
 </SidebarPersister>
 
 <div class="md:sl-hidden">
@@ -40,6 +89,8 @@ const { sidebar } = Astro.locals.starlightRoute;
 
 <script>
 	import { normalizePath } from '../lib/help-scope.mjs';
+	import suitesConfig from '../data/suites.json';
+	import { keepResult } from '../lib/suites.mjs';
 
 	/**
 	 * Search under a product scope: Pagefind indexes the whole site, so hide the
@@ -50,9 +101,19 @@ const { sidebar } = Astro.locals.starlightRoute;
 	const state = (window as unknown as { sbHelpScope?: { scope: string | null; scopes: Record<string, Scope> } }).sbHelpScope;
 	const root = document.getElementById('starlight__search');
 	const scope = state?.scope ? state.scopes[state.scope] : null;
+	// Set by the suites head script, only when a self-serve suite is built.
+	const suites = (window as unknown as { sbSuites?: { here: string } }).sbSuites;
+	const here = suites?.here ?? null;
+	const suiteLabel = here ? suitesConfig.suites[here as keyof typeof suitesConfig.suites]?.label : null;
 
-	if (root && scope) {
-		const allowed = new Set(scope.paths);
+	// Results always stay inside the reader's suite; a product scope narrows Platform further.
+	const filter = scope
+		? { label: scope.label, keep: (href: string) => new Set(scope.paths).has(normalizePath(href)), escape: true }
+		: here
+			? { label: suiteLabel ?? 'Platform', keep: (href: string) => keepResult(href, here, suitesConfig), escape: false }
+			: null;
+
+	if (root && filter) {
 		const note = document.createElement('p');
 		note.className = 'sb-scope-search-note';
 		let loads = 0;
@@ -70,7 +131,7 @@ const { sidebar } = Astro.locals.starlightRoute;
 			let shown = 0;
 			for (const li of results) {
 				const href = li.querySelector<HTMLAnchorElement>('a.pagefind-ui__result-link')?.href;
-				const keep = Boolean(href) && allowed.has(normalizePath(href));
+				const keep = Boolean(href) && filter.keep(href as string);
 				li.hidden = !keep;
 				if (keep) shown += 1;
 			}
@@ -80,18 +141,21 @@ const { sidebar } = Astro.locals.starlightRoute;
 				more.click();
 			}
 			const drawer = root.querySelector('.pagefind-ui__drawer');
-			if (!term || !drawer) {
+			// Platform readers get no note: their search reads exactly as it always did.
+			if (!term || !drawer || (!filter.escape && here === 'platform')) {
 				note.remove();
 				return;
 			}
-			const text = shown || more ? `Showing ${scope.label} guides only.` : `No ${scope.label} guides match.`;
+			const text = shown || more ? `Showing ${filter.label} guides only.` : `No ${filter.label} guides match.`;
 			if (note.dataset.text !== text) {
 				note.dataset.text = text;
-				note.textContent = `${text} `;
-				const all = document.createElement('a');
-				all.href = '?via=all';
-				all.textContent = 'Search all of Sessionboard';
-				note.append(all);
+				note.textContent = filter.escape ? `${text} ` : text;
+				if (filter.escape) {
+					const all = document.createElement('a');
+					all.href = '?via=all';
+					all.textContent = 'Search all of Sessionboard';
+					note.append(all);
+				}
 			}
 			if (drawer.firstChild !== note) drawer.prepend(note);
 		};

@@ -25,6 +25,7 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { suiteForPath } from './suites.mjs';
 
 /**
  * The repo root is the nearest ancestor holding site.json. Resolved by walking
@@ -43,7 +44,8 @@ function findRoot() {
 }
 
 export const ROOT = findRoot();
-export const DATA_DIR = join(ROOT, 'src', 'data', 'release-notes');
+// SB_RELEASE_NOTES_DIR points the scripts at a fixture directory (tests only).
+export const DATA_DIR = process.env.SB_RELEASE_NOTES_DIR || join(ROOT, 'src', 'data', 'release-notes');
 export const DOCS_DIR = join(ROOT, 'src', 'content', 'docs');
 
 /** Entries dated on or after this day must carry every field; earlier ones were migrated from prose. */
@@ -70,6 +72,27 @@ export const MODULES = [
 ];
 
 export const KINDS = ['new', 'improved', 'fixed'];
+
+/**
+ * The product an entry belongs to (.cursor/rules/product-docs-suites.mdc).
+ * `platform` is the default and every entry written before suites existed.
+ * A self-serve product's entries (`marketing`, `learning`, `awards`) render
+ * only in that product's own "What's new" (src/data/suites.json); they never
+ * reach the Help Center release-notes page, the customer feed, Slack, the
+ * email digest, Enablement or Community — unless the entry also sets
+ * `platform: true` because the same change is built into Platform.
+ */
+export const PRODUCTS = ['platform', 'marketing', 'learning', 'awards'];
+
+/** True when an entry may go out on the Platform channels. */
+export const onPlatform = (entry) => (entry.product ?? 'platform') === 'platform' || entry.platform === true;
+
+/** True when an entry belongs in `product`'s own suite ('all' matches every entry). */
+export function forProduct(entry, product) {
+  if (product === 'all') return true;
+  if (product === 'platform') return onPlatform(entry);
+  return (entry.product ?? 'platform') === product;
+}
 
 /** Who gets it. Derived from the product contract when `features` is set; always overridable. */
 export const AVAILABILITY = {
@@ -306,6 +329,10 @@ export function statusConfig() {
   return _statusConfig;
 }
 
+const SUITES_CONFIG = JSON.parse(readFileSync(join(ROOT, 'src', 'data', 'suites.json'), 'utf8'));
+/** The documentation suite an article path belongs to (src/lib/suites.mjs). */
+const articleSuite = (path) => suiteForPath(String(path).replace(/#.*$/, ''), SUITES_CONFIG);
+
 function articleExists(path) {
   const clean = String(path).replace(/#.*$/, '').replace(/^\//, '');
   if (!clean) return false;
@@ -323,6 +350,16 @@ export function validateEntry(entry, date, contract, { file = '' } = {}) {
 
   if (!entry.id || !ID_RE.test(entry.id)) at('id must be a kebab-case slug');
   if (!entry.title || typeof entry.title !== 'string') at('title is required');
+  if (entry.product !== undefined && !PRODUCTS.includes(entry.product)) at(`product "${entry.product}" is not one of ${PRODUCTS.join(', ')}`);
+  if (entry.platform !== undefined && typeof entry.platform !== 'boolean') at('platform must be true or false');
+  const product = entry.product ?? 'platform';
+  const selfServe = product !== 'platform';
+  if (selfServe && entry.article && articleSuite(entry.article) !== product) {
+    at(`article ${entry.article} is not in the ${product} suite — a ${product} entry links to its own suite's guide`);
+  }
+  if (!selfServe && entry.article && articleSuite(entry.article) !== 'platform') {
+    at(`article ${entry.article} is in a self-serve suite — set "product" to that suite, or link a Platform guide`);
+  }
   if (!entry.summary || typeof entry.summary !== 'string') at('summary is required');
   if (entry.article && !articleExists(entry.article)) at(`article ${entry.article} does not resolve to an MDX page`);
   for (const r of entry.related || []) if (!articleExists(r)) at(`related ${r} does not resolve to an MDX page`);
@@ -405,7 +442,19 @@ export function validateEntry(entry, date, contract, { file = '' } = {}) {
   // surfaces (Early Access), or null. `isPublic()` reads it.
   entry.gated = gateReason(entry, contract);
 
-  if (strict) {
+  entry.product = product;
+  entry.platform = entry.platform === true;
+
+  // A self-serve-only entry never reaches Enablement or a CS channel, so the
+  // CS fields (module, enable, where, when_to_bring_up) are not asked of it.
+  if (strict && selfServe && !entry.platform) {
+    if (!entry.kind) at('kind is required');
+    if (!entry.article) at('article is required — every change links to the guide that covers it');
+    if (!entry.use_case) at('use_case is required — why would a customer want this?');
+    if (!entry.shipped.docs_only && entry.shipped.prs.length === 0 && !entry.shipped.pending) {
+      at('shipped.prs is required (or shipped.docs_only: true, or shipped.pending: "<branch or ticket>" while the PR does not exist yet)');
+    }
+  } else if (strict) {
     if (!entry.kind) at('kind is required');
     if (!entry.module) at('module is required (could not derive it from the article path)');
     if (!entry.article) at('article is required — every change links to the guide that covers it');
@@ -426,7 +475,7 @@ export function validateEntry(entry, date, contract, { file = '' } = {}) {
  * Load every release file, validate, and return `{ releases, problems }` where
  * `releases` is sorted newest first and each entry is resolved.
  */
-export function loadReleaseNotes({ contract = readContract() } = {}) {
+export function loadReleaseNotes({ contract = readContract(), product = 'platform' } = {}) {
   const releases = [];
   const problems = [];
   if (!existsSync(DATA_DIR)) return { releases, problems: [`${DATA_DIR} does not exist`] };
@@ -469,7 +518,18 @@ export function loadReleaseNotes({ contract = readContract() } = {}) {
   }
 
   releases.sort((a, b) => (a.date < b.date ? 1 : -1));
-  return { releases, problems };
+  // Validation covers every product; what callers get is one product's view.
+  // The default, Platform, is what every channel (page, feed, Slack, email,
+  // Enablement, Community) reads, so a self-serve-only entry cannot leak into
+  // one by a caller forgetting to filter. Pipeline scripts that track every
+  // entry (check, status, gaps, intake) pass product: 'all'.
+  // A date whose entries all belong to other products drops out of the view;
+  // an (unusual) empty release file stays exactly as it was.
+  const view = releases
+    .map((r) => ({ date: r.date, entries: r.entries.filter((e) => forProduct(e, product)), had: r.entries.length }))
+    .filter((r) => r.had === 0 || r.entries.length > 0)
+    .map(({ date, entries }) => ({ date, entries }));
+  return { releases: view, problems };
 }
 
 /** Flat list of resolved entries, newest release first. */

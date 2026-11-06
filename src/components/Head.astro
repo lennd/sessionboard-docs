@@ -15,6 +15,8 @@ import { isStaffOnlySlug } from '../lib/staff-only.mjs';
 import { getCollection } from 'astro:content';
 import helpScopes from '../data/help-scopes.json';
 import { headScript, scopeCss, scopePaths } from '../lib/help-scope.mjs';
+import suitesConfig from '../data/suites.json';
+import { anySelfServeBuilt, builtSuites, suiteHeadScript } from '../lib/suites.mjs';
 
 const SITE = `https://${site.canonicalHost}`;
 const WWW = 'https://www.sessionboard.com';
@@ -125,8 +127,19 @@ const jsonLd = {
 // Self-serve product scope (src/lib/help-scope.mjs): an inline script that
 // stamps <html data-sb-scope> from `?via=` or the cookie before first paint,
 // and the CSS that hides out-of-scope sidebar entries. Inert without a scope.
-const scopeHead = headScript(helpScopes, scopePaths(await getCollection('docs'), helpScopes));
-const scopeStyle = scopeCss(helpScopes);
+//
+// Documentation suites (src/lib/suites.mjs) replace a product's scope once
+// that product's suite is built: `?via=marketing` then goes to the Marketing
+// suite instead of filtering Platform articles, so the scope is dropped from
+// the config here. With no self-serve suite built, both lines are as before.
+const builtSuiteKeys = builtSuites(suitesConfig, process.env);
+const suitesOn = anySelfServeBuilt(builtSuiteKeys);
+const activeScopes = suitesOn
+  ? { ...helpScopes, scopes: Object.fromEntries(Object.entries(helpScopes.scopes).filter(([key]) => !builtSuiteKeys.has(key))) }
+  : helpScopes;
+const suiteHead = suitesOn ? suiteHeadScript(suitesConfig, builtSuiteKeys) : null;
+const scopeHead = headScript(activeScopes, scopePaths(await getCollection('docs'), activeScopes));
+const scopeStyle = scopeCss(activeScopes);
 
 // Deferred marketing tags — mirrors growth-pages marketing_head_snippet().
 const marketingJs = `
@@ -181,6 +194,7 @@ const marketingJs = `
     <script set:html={marketingJs} />
   </>
 )}
+{suiteHead && <script is:inline set:html={suiteHead} />}
 <script is:inline set:html={scopeHead} />
 <style is:inline set:html={scopeStyle} />
 <script>

@@ -20,6 +20,8 @@
  * innerHTML.
  */
 import { hydrateMarkers } from '../lib/marker-hydration.mjs';
+import suitesConfig from '../data/suites.json';
+import { PLATFORM, SUITE_COOKIE, landingTarget } from '../lib/suites.mjs';
 
 const HINT = 'sb_signed_in=1';
 /** Set by the product on .sessionboard.com while someone is signed in: `sb_app=<region id>`. Names a region, nothing else. */
@@ -390,6 +392,36 @@ function audienceNote(reader) {
 
 // ── Boot ───────────────────────────────────────────────────────────────
 
+/**
+ * Documentation suites (src/lib/suites.mjs), only when a self-serve suite is
+ * built (the head script then sets window.sbSuites). Reveals the switcher's
+ * entries for the suites this reader holds, and the switcher itself once that
+ * is two or more; on the site root, sends a reader who holds exactly one
+ * self-serve product and no Platform org to that product's suite.
+ */
+function applySuites(reader) {
+  const state = window.sbSuites;
+  if (!state || !reader) return;
+  const products = Array.isArray(reader.products) ? reader.products : null;
+  const held = new Set(products ?? [PLATFORM]);
+  held.add(state.here);
+  const nav = document.querySelector('.sb-suite-switch');
+  if (nav) {
+    const links = [...nav.querySelectorAll('a[data-suite]')];
+    let shown = 0;
+    for (const a of links) {
+      a.hidden = !held.has(a.dataset.suite);
+      if (!a.hidden) shown += 1;
+    }
+    nav.hidden = shown < 2;
+  }
+  const built = new Set([PLATFORM, ...Object.keys(state.suites)]);
+  const remembered = document.cookie.split('; ').some((c) => c.startsWith(`${SUITE_COOKIE}=`) && c.length > SUITE_COOKIE.length + 1);
+  if (remembered) return;
+  const target = landingTarget({ path: location.pathname, products }, suitesConfig, built);
+  if (target) location.replace(target);
+}
+
 async function boot() {
   wireToggles();
   let reader = await loadReader();
@@ -412,6 +444,7 @@ async function boot() {
 
   renderMenus(reader, ctx, choose);
   if (!reader) return;
+  applySuites(reader);
   showForYou(reader);
   audienceNote(reader);
   if (ctx) applyContext(reader, ctx);
