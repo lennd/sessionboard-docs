@@ -11173,8 +11173,9 @@ paths:
         directly: it answers `202` with `status: needs_approval` and a link, and nothing changes until a person
         approves it in Sessionboard Awards. It then runs as that person. Do not call again for the same change.
         If it cannot run when approved, the approval records why: the program has no categories (`no_categories`),
-        a self-serve trial has no card on file (`card_required`), or the plan is read-only (`trial_ended`,
-        `plan_ended`). Requires `write:awards`; the token's user needs the Awards update permission and must manage the
+        or the plan is read-only (`trial_ended`, `plan_ended`). A trial opens without a card; during the trial each
+        program takes up to 50 nominations before the person is asked to choose a plan, and nominations past that
+        are still accepted. Requires `write:awards`; the token's user needs the Awards update permission and must manage the
         program. Refused for a key restricted to particular events.
         Also at `POST /v1/awards/workspace/programs/{programId}/open`.
       tags:
@@ -11441,9 +11442,10 @@ paths:
         API call never announces directly: it answers `202` with `status: needs_approval` and a link, and nothing is
         sent until a person approves it in Sessionboard Awards. It then runs as that person. Do not call again for the
         same announcement. Each program is announced once; approving it again later reports progress and resends only
-        failed deliveries. If it cannot run when approved, the approval records why: no winners picked
-        (`no_winners`), or, for a first announcement, a submitted nomination without a finished scorecard
-        (`reviews_incomplete`). Winners are picked by a person in Sessionboard; the API cannot pick them.
+        failed deliveries. Winners and finalists whose nomination gave their email are told directly too. If it
+        cannot run when approved, the approval records why: no winners picked (`no_winners`), for a first
+        announcement a submitted nomination without a finished scorecard (`reviews_incomplete`), or, during a trial
+        with no plan chosen, more than 50 nominations in the program (`choose_plan`: a person chooses a plan first). Winners are picked by a person in Sessionboard; the API cannot pick them.
         Requires `write:awards`; the token's user needs the Awards update permission and must manage the program.
         Refused for a key restricted to particular events.
         Also at `POST /v1/awards/workspace/programs/{programId}/announce`.
