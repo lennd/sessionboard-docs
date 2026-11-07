@@ -32,9 +32,1958 @@
     {
       "name": "Learning",
       "description": "Turn Media-section videos (webinars, recordings, uploads, clips) into a course: draft it from\nvideos, review and edit the draft, then publish it and assign it. Organization-level: paths\nstart at `/v1/organization/{orgId}/learning`, and the same operations are served under\n`/v1/learning` with the organization taken from the token. Requires the preview scopes\n`read:learning` / `write:learning`, which a token or OAuth client gets only when they are\nnamed explicitly (not by default, and not listed in `scopes_supported`). The organization\nmust have Learning turned on, and the token's user needs the Lessons permissions.\n"
+    },
+    {
+      "name": "Learning workspace",
+      "description": "The self-serve Sessionboard Learning workspace: Home, courses, learners, putting a meeting on demand, credits and results, and publishing (which waits for a person's OK, `202 needs_approval`). Organization-level: paths start at `/v1/organization/{orgId}/learning/workspace`, and the same operations are served under `/v1/learning/workspace` with the organization taken from the token. Requires the preview scopes `read:learning` / `write:learning`, named explicitly. A key restricted to particular events cannot use it.\n"
+    },
+    {
+      "name": "Learning meetings",
+      "description": "Bring in a meeting from a registration platform (Cvent, Swoogo, Bizzabo and others) and turn its sessions into draft courses: the platforms and what each brings, the platform's events, the import and its progress. Nothing is written back to the platform, and nothing is published. Same scopes and paths as the Learning workspace (`…/learning/workspace/meetings`).\n"
+    },
+    {
+      "name": "Learning engagement",
+      "description": "Learners on the one engagement score: ranked learners, one learner across products, who to nudge, who is due for recertification, next courses for an event's people, the signal sources, and bringing Learning's records onto the score (`sync`, which sends nothing). Same scopes and paths as the Learning workspace (`…/learning/workspace/engagement`).\n"
+    },
+    {
+      "name": "Learning certifications",
+      "description": "The organization's certifications: what each requires and who holds it. Requires `read:learning`.\n"
     }
   ],
   "paths": {
+    "/v1/organization/{orgId}/learning/certifications": {
+      "get": {
+        "operationId": "learning-list-certifications",
+        "summary": "List certifications",
+        "description": "Every certification in the organization (draft, published and retired), by name, with its required lessons and courses, how many lessons it takes and their total minutes, how many people hold it now, how many awards expire within 30 days, and how many people are assigned it and overdue. Reads only. The token's user needs the Lessons read permission. Requires `read:learning`. Also at `GET /v1/learning/certifications`.",
+        "tags": [
+          "Learning certifications"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "certifications": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/LearningCertification"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace": {
+      "get": {
+        "operationId": "learning-get-workspace-home",
+        "summary": "Get the Learning workspace home",
+        "description": "The Learning workspace home: who learns here (the setup answers and the door they imply, `companies` or `associations`), which sections lead, the counts behind the home tiles, what is ready for a person's review (course drafts, meeting courses still in draft, certifications about to lapse) and whether Learning is on for the organization (`module.on`). Counts are totals, never learner rows. Any member of the organization can read it, even before Learning is turned on. Reads only. Requires `read:learning`; refused for a key restricted to particular events. Also at `GET /v1/learning/workspace`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "$ref": "#/components/schemas/LearningWorkspaceHome"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/courses": {
+      "get": {
+        "operationId": "learning-list-workspace-courses",
+        "summary": "List courses and course drafts",
+        "description": "Every course that is not archived (up to 200, most recently changed first) with where it came from (a meeting session, a synced catalog or written here), its credit by credit type, how many learners started it and how many completed it; plus up to 50 course drafts made from recordings (queued, generating, ready or failed) and the credit set on each. Reads only. Requires `read:learning`; refused for a key restricted to particular events. Also at `GET /v1/learning/workspace/courses`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "courses": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/LearningWorkspaceCourse"
+                          }
+                        },
+                        "drafts": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/LearningWorkspaceCourseDraft"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/courses/{lessonId}": {
+      "get": {
+        "operationId": "learning-get-workspace-course",
+        "summary": "Get a course and its learners",
+        "description": "One course as the course list shows it (source, credit, learners, completions) plus its number of steps that count, and up to 200 of the people taking it, most recent activity first, each with steps done, percent and whether they completed it. Reads only. Requires `read:learning`; refused for a key restricted to particular events. Also at `GET /v1/learning/workspace/courses/{lessonId}`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/LearningLessonId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "course": {
+                          "$ref": "#/components/schemas/LearningWorkspaceCourseDetail"
+                        },
+                        "learners": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/LearningCourseLearner"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "description": "No such course in your organization (`Course could not be found`), or another organization.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/learners": {
+      "get": {
+        "operationId": "learning-search-learners",
+        "summary": "Find a learner",
+        "description": "Finds people in the organization by name or email, to open their learner view. Covers everyone in People, including someone who only claimed credit. Fewer than two characters returns no one; at most 20 matches, by last name. A teammate limited to some credits portfolios finds only those portfolios' people. Reads only. Requires `read:learning`; refused for a key restricted to particular events. Also at `GET /v1/learning/workspace/learners`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "description": "Part of a first name, last name or email. At least 2 characters to match anyone."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "learners": {
+                          "type": "array",
+                          "maxItems": 20,
+                          "items": {
+                            "$ref": "#/components/schemas/LearningLearnerMatch"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/learners/{personId}": {
+      "get": {
+        "operationId": "learning-get-learner",
+        "summary": "Get a learner",
+        "description": "One learner: their courses with progress, certifications with status and expiry, assignments with due dates, sessions attended, and their credit by credit type with every claim and certificate, plus the paths of their transcript downloads. Read from the existing course progress, awards and credit records; nothing is copied. A teammate limited to some credits portfolios gets `404` for anyone outside them. Reads only. Requires `read:learning`; refused for a key restricted to particular events. Also at `GET /v1/learning/workspace/learners/{personId}`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/LearningPersonId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "$ref": "#/components/schemas/LearningLearnerDetail"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "description": "No such person in your organization or portfolios (`Learner could not be found`), or another organization.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/on-demand": {
+      "get": {
+        "operationId": "learning-list-on-demand-events",
+        "summary": "List meetings that can go on demand",
+        "description": "Up to 50 of the organization's events, newest first, that have recorded sessions, courses made from their sessions, or sessions brought in from a registration platform: what \"put the meeting on demand\" can start from. Each with its session count, sessions with recordings, and courses already published or in draft. Reads only. Requires `read:learning`; refused for a key restricted to particular events. Also at `GET /v1/learning/workspace/on-demand`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "events": {
+                          "type": "array",
+                          "maxItems": 50,
+                          "items": {
+                            "$ref": "#/components/schemas/LearningOnDemandEvent"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/on-demand/{eventId}": {
+      "get": {
+        "operationId": "learning-get-on-demand-event",
+        "summary": "Preview a meeting on demand",
+        "description": "For each session of the event: its recording, faculty and missing faculty disclosures, credit by credit type, attendance count, the registration platform it came from, and whether it is a course yet (and whether that course still waits for a recording); plus totals for the event. Every value is read from the event's own records. Reads only. Requires `read:learning`; refused for a key restricted to particular events. Also at `GET /v1/learning/workspace/on-demand/{eventId}`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/LearningEventId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "$ref": "#/components/schemas/LearningOnDemandPreview"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningEventUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceEventForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      },
+      "post": {
+        "operationId": "learning-make-on-demand-courses",
+        "summary": "Make draft courses from a meeting",
+        "description": "Turns the event's sessions into draft courses, gathered into one course for the meeting (\"<event> on demand\"). Each course carries the session's recording, quiz, credit, faculty and disclosure decisions. By default only sessions with a recording are used; with `includeWithoutRecording`, sessions without one become drafts that wait for a recording. Up to 60 sessions per call: `remaining` says how many are left, so call again until it is `0`. Safe to repeat: a session that is already a course is never drafted twice, a waiting draft whose session now has a recording gets it (`attached`), and a draft nobody edited takes the session's new title and description (`refreshed`). With `dryRun` it only counts. Nothing is published and no one is notified; publishing is Publish a meeting on demand. Learners keep the credit they already claimed in the room. The token's user needs the Lessons create permission. Requires `write:learning`; refused for a key restricted to particular events. Also at `POST /v1/learning/workspace/on-demand/{eventId}`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/LearningEventId"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "sessionIds": {
+                    "type": "array",
+                    "maxItems": 500,
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "description": "Only these sessions. Omit for every session of the event."
+                  },
+                  "includeWithoutRecording": {
+                    "type": "boolean",
+                    "description": "Also draft sessions with no recording yet, as courses waiting for one."
+                  },
+                  "dryRun": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Count what would be made; write nothing."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Drafted (or, with `dryRun`, counted). A dry run answers `LearningOnDemandDryRun`; otherwise `LearningOnDemandMakeResult`. When every session is already a course, `created` is `0` and `message` says so.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "oneOf": [
+                        {
+                          "$ref": "#/components/schemas/LearningOnDemandDryRun"
+                        },
+                        {
+                          "$ref": "#/components/schemas/LearningOnDemandMakeResult"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The body failed validation, `eventId` is not a whole number, or `No courses could be made from those sessions.`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningError"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningEventUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceEventForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "423": {
+            "$ref": "#/components/responses/LearningAssistantsPaused"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/on-demand/{eventId}/publish": {
+      "post": {
+        "operationId": "learning-publish-on-demand-event",
+        "summary": "Publish a meeting on demand",
+        "description": "Asks to publish the meeting's draft courses (all of them, or `lessonIds`). Publishing waits for a person: the call answers `202` with `status: needs_approval` and a link, and nothing is published until a person approves it in Sessionboard Learning; it then runs as them. When it runs, a course whose faculty has no disclosure on file, or that still waits for its recording, stays a draft and is listed as held with the reason. Do not call again while the request is pending. The token's user needs the Lessons update permission. Requires `write:learning`; refused for a key restricted to particular events. Also at `POST /v1/learning/workspace/on-demand/{eventId}/publish`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/LearningEventId"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "lessonIds": {
+                    "type": "array",
+                    "maxItems": 500,
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "description": "Only these draft courses of the meeting. Omit for all of them."
+                  },
+                  "prompt": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "description": "What the person asked for, shown on the approval request."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "$ref": "#/components/responses/LearningNeedsApproval"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningEventUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceEventForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "423": {
+            "$ref": "#/components/responses/LearningAssistantsPaused"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/courses/{lessonId}/publish": {
+      "post": {
+        "operationId": "learning-publish-course",
+        "summary": "Publish a course",
+        "description": "Asks to publish one course (draft to published), so the catalog and Learning Sites show it. Publishing waits for a person: the call answers `202` with `status: needs_approval` and a link, and nothing is published until a person approves it in Sessionboard Learning; it then runs as them. When it runs it is refused while any faculty member on the course has no disclosure on file, or when the course is archived. Do not call again for the same course while the request is pending. The token's user needs the Lessons update permission. Requires `write:learning`; refused for a key restricted to particular events. Also at `POST /v1/learning/workspace/courses/{lessonId}/publish`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/LearningLessonId"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "prompt": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "description": "What the person asked for, shown on the approval request."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "$ref": "#/components/responses/LearningNeedsApproval"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "423": {
+            "$ref": "#/components/responses/LearningAssistantsPaused"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/drafts/{draftId}/publish": {
+      "post": {
+        "operationId": "learning-publish-reviewed-course-draft",
+        "summary": "Publish a reviewed course draft",
+        "description": "Asks to publish a course drafted from a recording once a person has reviewed its suggested questions. Publishing waits for a person: the call answers `202` with `status: needs_approval` and a link, and nothing is published, assigned or announced until a person approves it in Sessionboard Learning; it then runs as them. When it runs, it is refused while any suggested question has not been accepted, edited or rejected by a person; rejected questions are taken out; the lessons, course and certification are published as in Publish and assign a course draft (with `assign` and `announce` as there); and the credit a person set on the draft goes on the course's last lesson. Reviewing the questions and setting credit are a person's and are not available through the API. The token's user needs the Lessons create and update permissions. Requires `write:learning`; refused for a key restricted to particular events. Also at `POST /v1/learning/workspace/drafts/{draftId}/publish`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/CourseDraftId"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "assign": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "description": "Who must take it. Omit to publish without assigning.",
+                    "properties": {
+                      "allTeam": {
+                        "type": "boolean",
+                        "description": "Everyone on the team, including people who join later."
+                      },
+                      "userIds": {
+                        "type": "array",
+                        "maxItems": 1000,
+                        "items": {
+                          "type": "integer"
+                        }
+                      },
+                      "dueInDays": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "minimum": 1,
+                        "maximum": 365
+                      },
+                      "required": {
+                        "type": "boolean"
+                      }
+                    }
+                  },
+                  "announce": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "slackChannelId": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "maxLength": 32
+                      },
+                      "teamsChannelId": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "maxLength": 255
+                      }
+                    }
+                  },
+                  "allowPendingMedia": {
+                    "type": "boolean",
+                    "description": "Publish even while clips are still being cut."
+                  },
+                  "prompt": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "description": "What the person asked for, shown on the approval request."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "$ref": "#/components/responses/LearningNeedsApproval"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "423": {
+            "$ref": "#/components/responses/LearningAssistantsPaused"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/credits": {
+      "get": {
+        "operationId": "learning-get-credits-overview",
+        "summary": "Get the credits overview",
+        "description": "The Credits overview: whether credits are on for the workspace, the organization's credit types (the ones picked in setup first, marked `chosen`), credit issued by type, the 25 latest claims, events whose credit claiming is open, the credit goals per type and suggested goals (what a learner earned in the last 12 months, median and top quarter). Amounts are never added across credit types. Reads only. Requires `read:learning`; refused for a key restricted to particular events. Also at `GET /v1/learning/workspace/credits`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "$ref": "#/components/schemas/LearningCreditsOverview"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/results": {
+      "get": {
+        "operationId": "learning-get-workspace-results",
+        "summary": "Get Learning results",
+        "description": "Results for the workspace: completions by month (last 6 months), credit claimed by credit type (last 12 months), up to 20 certifications with holders, expiring within 90 days and expired, the home counts, the door (companies read completions and certifications first, associations read credit first), and `claude_prompt`, a ready-made prompt with these numbers for building a dashboard in Claude. Nothing is sent anywhere. Reads only. Requires `read:learning`; refused for a key restricted to particular events. Also at `GET /v1/learning/workspace/results`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "$ref": "#/components/schemas/LearningWorkspaceResults"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/meetings/sources": {
+      "get": {
+        "operationId": "learning-list-meeting-sources",
+        "summary": "List registration platforms a meeting can come from",
+        "description": "Every registration platform a meeting can be brought in from, whether it is connected, and what comes across from each: sessions, speakers (on the sessions they present, or as contacts only), recordings (never sent with sessions; added after) and attendance (session check-ins, when the connection's sign-in can read them), with the one-line summary to show a person. Worked out from each connector and the live connection, not promised by hand. Reads only. Requires `read:learning`; refused for a key restricted to particular events. Also at `GET /v1/learning/workspace/meetings/sources`.",
+        "tags": [
+          "Learning meetings"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "sources": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/LearningRegistrationSource"
+                          }
+                        },
+                        "note": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningMeetingsForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/meetings/sources/{appId}/events": {
+      "get": {
+        "operationId": "learning-list-meeting-source-events",
+        "summary": "List a registration platform's events",
+        "description": "The connected platform's events, newest first, each with the Sessionboard event it was already brought into (`imported_event_id`), so importing it again updates that event instead of making a second one. When the platform is not connected, `connected` is `false` and `events` is empty. Reads the platform; writes nothing. The token's user needs permission to view integrations. Requires `read:learning`; refused for a key restricted to particular events. Also at `GET /v1/learning/workspace/meetings/sources/{appId}/events`.",
+        "tags": [
+          "Learning meetings"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/LearningRegistrationAppId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "$ref": "#/components/schemas/LearningRemoteEventList"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningMeetingsForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/meetings/import": {
+      "post": {
+        "operationId": "learning-import-meeting",
+        "summary": "Bring in a meeting from a registration platform",
+        "description": "Makes the platform's event a Sessionboard event and queues the import of its sessions, speakers (on the sessions they present, where the platform reads that), tracks and session check-ins. Nothing is written to the platform, nothing is published and no one is notified. Safe to repeat: an event brought in before is updated (new sessions added, changed ones updated unless someone edited them in Sessionboard), never duplicated. With `dryRun` it reads the platform's event and says what would happen (`status: preview`), writing nothing. The import runs in the background: poll Get an imported meeting with `jobId` until `import.state` is `done`, then make courses from it. Always answers `202`; `status` says what happened: `queued`, `preview`, `not_connected` (with `connect_url`, where a person connects the platform), `needs_remote_event`, `not_available` or `managed_on_platform`. The token's user needs the Lessons create permission and permission to view integrations. Requires `write:learning`; refused for a key restricted to particular events. Also at `POST /v1/learning/workspace/meetings/import`.",
+        "tags": [
+          "Learning meetings"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "appId"
+                ],
+                "properties": {
+                  "appId": {
+                    "$ref": "#/components/schemas/LearningRegistrationAppIdValue"
+                  },
+                  "remoteEventId": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "description": "The platform's event id, from List a registration platform's events."
+                  },
+                  "dryRun": {
+                    "type": "boolean",
+                    "description": "Say what would happen; write nothing."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Queued, previewed, or why not (`status`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "$ref": "#/components/schemas/LearningMeetingImport"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The body failed validation, or the connection has no event with that id (`There is no <platform> event with id <id> on this connection.`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningError"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningMeetingsForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/meetings/import-for-learning": {
+      "post": {
+        "operationId": "learning-import-meeting-for-learning",
+        "summary": "Bring in a meeting and draft courses, step by step",
+        "description": "\"Import last year's meeting and make courses\" in three steps. `preview` (the default) writes nothing: with no `appId` it lists the platforms and what each brings; with an `appId`, that platform's events and `suggested` (the latest one that already happened); with a `remoteEventId`, what the import would do. `import` brings the event in, as Bring in a meeting (needs `appId` and `remoteEventId`; answers `job_id` and `event`). `draft` makes draft courses from every session of the imported event (needs `eventId`; pass `jobId` to get `status: still_importing` while the import runs), the ones without a recording waiting for one. Nothing is published and no one is notified: publishing is Publish a meeting on demand, which a person approves. Credit is never set here. The token's user needs the Lessons create permission and permission to view integrations. Requires `write:learning`; refused for a key restricted to particular events. Also at `POST /v1/learning/workspace/meetings/import-for-learning`.",
+        "tags": [
+          "Learning meetings"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "step": {
+                    "type": "string",
+                    "enum": [
+                      "preview",
+                      "import",
+                      "draft"
+                    ],
+                    "default": "preview"
+                  },
+                  "appId": {
+                    "$ref": "#/components/schemas/LearningRegistrationAppIdValue"
+                  },
+                  "remoteEventId": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "description": "The platform's event id."
+                  },
+                  "eventId": {
+                    "oneOf": [
+                      {
+                        "type": "integer"
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "^\\d+$"
+                      }
+                    ],
+                    "description": "The Sessionboard event the import made (`draft` step)."
+                  },
+                  "jobId": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "description": "The import job (`draft` step waits for it)."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The step's answer: `step` plus, for `preview`, the platforms (as List registration platforms), one platform's events (as List a registration platform's events, with `suggested` and `message`) or an import preview (as Bring in a meeting with `status: preview`); for `import`, the import (as Bring in a meeting); for `draft`, `status: still_importing` or `status: drafted` with the result of Make draft courses from a meeting and `next`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "$ref": "#/components/schemas/LearningMeetingForLearningStep"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The body failed validation; `Importing needs appId and remoteEventId.`; `Drafting needs the eventId the import returned.`; the connection has no event with that id; or `No courses could be made from those sessions.`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningError"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningMeetingsForbidden"
+          },
+          "404": {
+            "description": "Another organization, or (`draft` step) the event is not in your organization (`Event could not be found`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/meetings/{eventId}": {
+      "get": {
+        "operationId": "learning-get-imported-meeting",
+        "summary": "Get an imported meeting",
+        "description": "A meeting brought in from a registration platform: with `jobId`, the import's progress (`running`, `done` or `failed`) and up to 12 notes on what did not come across; and the meeting as Preview a meeting on demand sees it (sessions, recordings, faculty, attendance, courses and the ones waiting for a recording). Reads only. Requires `read:learning`; refused for a key restricted to particular events. Also at `GET /v1/learning/workspace/meetings/{eventId}`.",
+        "tags": [
+          "Learning meetings"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/LearningEventId"
+          },
+          {
+            "name": "jobId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "description": "The `job_id` the import answered. Omit and `import` is `null`."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "$ref": "#/components/schemas/LearningImportedMeeting"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningEventUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningMeetingsEventForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/engagement/learners": {
+      "get": {
+        "operationId": "learning-rank-engagement-learners",
+        "summary": "Rank learners by engagement",
+        "description": "Everyone learning (a course, quiz, credit claim or certification, or a session or event attended), ranked by Learning's view of the one engagement score, where learning counts more and events and campaigns still count. Each with the score, its band, why (for example \"72 = 3 courses · 4.5 credits · certified · 2 webinars\"), the overall score and what they did. `counts` gives the number in each band before `band` filters. A teammate limited to some credits portfolios ranks only those portfolios' people. Reads only. Requires `read:learning`; refused for a key restricted to particular events. Also at `GET /v1/learning/workspace/engagement/learners`.",
+        "tags": [
+          "Learning engagement"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "name": "band",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/LearningEngagementBand"
+            }
+          },
+          {
+            "name": "eventId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Only people tied to this event."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 25
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "lines": {
+                          "$ref": "#/components/schemas/LearningEngagementLines"
+                        },
+                        "total": {
+                          "type": "integer",
+                          "description": "Learners in the list after `band`, before paging."
+                        },
+                        "counts": {
+                          "$ref": "#/components/schemas/LearningEngagementBandCounts"
+                        },
+                        "learners": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/LearningRankedLearner"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/engagement/learners/{personId}": {
+      "get": {
+        "operationId": "learning-get-learner-engagement",
+        "summary": "Get one learner's engagement",
+        "description": "One person across every product: the score (Learning's view and overall) with its parts and why, a timeline across meetings, campaigns and courses, credit owed this cycle against the credit goal, certifications coming up for renewal, the next three courses with the reason for each, and their events and Marketing activity. A teammate limited to some credits portfolios gets `404` for anyone outside them. Reads only. Requires `read:learning`; refused for a key restricted to particular events. Also at `GET /v1/learning/workspace/engagement/learners/{personId}`.",
+        "tags": [
+          "Learning engagement"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/LearningPersonId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "learner": {
+                          "$ref": "#/components/schemas/LearningEngagementLearner"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "description": "No such person in your organization or portfolios, or they have no email (`Learner could not be found`), or another organization.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/engagement/scores": {
+      "get": {
+        "operationId": "learning-get-engagement-scores",
+        "summary": "Get engagement scores for people",
+        "description": "Learning's view of the engagement score, with its why, for up to 200 people by People id: the score chips for a page of learners. Ids that are not well-formed, have no email, or are outside the caller's credits portfolios are left out. Reads only. Requires `read:learning`; refused for a key restricted to particular events. Also at `GET /v1/learning/workspace/engagement/scores`.",
+        "tags": [
+          "Learning engagement"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "name": "personIds",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 8000
+            },
+            "description": "Comma-separated People ids (UUIDs). The first 200 are read."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "lines": {
+                          "$ref": "#/components/schemas/LearningEngagementLines"
+                        },
+                        "scores": {
+                          "type": "object",
+                          "description": "Keyed by People id.",
+                          "additionalProperties": {
+                            "$ref": "#/components/schemas/LearningEngagementChip"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/engagement/nudge": {
+      "get": {
+        "operationId": "learning-list-learners-to-nudge",
+        "summary": "List learners to nudge",
+        "description": "People worth a nudge, most urgent first, each with the reason, a sentence of detail and the next course that answers it: a certification up for renewal (`renewal`), a course stalled for two weeks (`stalled`), credit owed late in the credit cycle (`credit_owed`), or a session attended whose course they have not taken (`earn_credit`). Reads only; nothing is sent. A nudge goes out through a Keep learning campaign, on a person's OK. Requires `read:learning`; refused for a key restricted to particular events. Also at `GET /v1/learning/workspace/engagement/nudge`.",
+        "tags": [
+          "Learning engagement"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 8
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "integer"
+                        },
+                        "counts": {
+                          "type": "object",
+                          "description": "People per reason. Absent when there is no one to nudge.",
+                          "additionalProperties": {
+                            "type": "integer"
+                          }
+                        },
+                        "people": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/LearningNudgePerson"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/engagement/results": {
+      "get": {
+        "operationId": "learning-get-engagement-results",
+        "summary": "Get Learning engagement results",
+        "description": "Learning engagement over time: how many learners are in each band now and 30 days ago, how many moved up a band and which learning activities moved them (points added), and 30-day outcomes (courses completed, people certified, people who claimed credit and credit claimed). Reads only. Requires `read:learning`; refused for a key restricted to particular events. Also at `GET /v1/learning/workspace/engagement/results`.",
+        "tags": [
+          "Learning engagement"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "$ref": "#/components/schemas/LearningEngagementResults"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/engagement/recertification": {
+      "get": {
+        "operationId": "learning-list-due-for-recertification",
+        "summary": "List people due for recertification",
+        "description": "People whose certification expires within `withinDays`, or lapsed in the last 90 days and has not been renewed, soonest first (up to 500), each with the next course that counts toward renewal. Reads only. Requires `read:learning`; refused for a key restricted to particular events. Also at `GET /v1/learning/workspace/engagement/recertification`.",
+        "tags": [
+          "Learning engagement"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "name": "withinDays",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 365,
+              "default": 30
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "within_days": {
+                          "type": "integer"
+                        },
+                        "total": {
+                          "type": "integer"
+                        },
+                        "people": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/LearningRecertificationPerson"
+                          }
+                        },
+                        "summary": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/engagement/recommend": {
+      "get": {
+        "operationId": "learning-recommend-courses",
+        "summary": "Recommend courses",
+        "description": "The next courses for an event's people (`eventId`) or for named people (`emails`): up to two per person with the reason for each, and the courses most of them would take. Reads only; nothing is sent. Sending recommendations is a Keep learning campaign. Requires `read:learning`; refused for a key restricted to particular events. Also at `GET /v1/learning/workspace/engagement/recommend`.",
+        "tags": [
+          "Learning engagement"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "name": "eventId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "The event whose people to recommend for. Takes precedence over `emails`."
+          },
+          {
+            "name": "emails",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 8000
+            },
+            "description": "Comma-separated emails. The first 200 are read."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            },
+            "description": "People returned."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "$ref": "#/components/schemas/LearningCourseRecommendations"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "description": "The event is not in your organization (`Event could not be found`), or another organization.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LearningError"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/engagement/sources": {
+      "get": {
+        "operationId": "learning-get-engagement-sources",
+        "summary": "Get Learning's signal sources",
+        "description": "How connected the Learning workspace is: every source that feeds learner engagement (courses, certifications, credits, your meetings, Marketing campaigns, registration and webinar platforms, files), whether each is connected, what each brought in over the last 30 days, an estimate of what an unconnected one would add (only from this organization's own history, else none), the capabilities connected sources turn on, the next best connection, and recent signals. Reads only. Requires `read:learning`; refused for a key restricted to particular events. Also at `GET /v1/learning/workspace/engagement/sources`.",
+        "tags": [
+          "Learning engagement"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "$ref": "#/components/schemas/LearningSignalSources"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/engagement/sync": {
+      "post": {
+        "operationId": "learning-sync-engagement-signals",
+        "summary": "Bring Learning activity into engagement now",
+        "description": "Records Learning activity as engagement signals now instead of waiting for the next scheduled run: course progress, quizzes, credit claims, certifications and session attendance from the last `days` days. Safe to repeat: a re-run writes nothing new. Sends nothing. The token's user needs the Lessons update permission. Requires `write:learning`; refused for a key restricted to particular events. Also at `POST /v1/learning/workspace/engagement/sync`.",
+        "tags": [
+          "Learning engagement"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "days": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1500,
+                    "default": 400,
+                    "description": "How far back to read."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "sync": {
+                          "$ref": "#/components/schemas/LearningSignalSync"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
     "/v1/organization/{orgId}/learning/media": {
       "get": {
         "operationId": "list-learning-media",
@@ -598,6 +2547,44 @@
           "type": "string",
           "format": "uuid"
         }
+      },
+      "LearningLessonId": {
+        "name": "lessonId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "description": "The course id (from List courses and course drafts)."
+      },
+      "LearningPersonId": {
+        "name": "personId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "description": "The People id (from Find a learner or Rank learners by engagement)."
+      },
+      "LearningEventId": {
+        "name": "eventId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "description": "The Sessionboard event. Another organization's event answers `401`."
+      },
+      "LearningRegistrationAppId": {
+        "name": "appId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/LearningRegistrationAppIdValue"
+        }
       }
     },
     "schemas": {
@@ -814,11 +2801,3482 @@
             }
           }
         }
+      },
+      "LearningError": {
+        "type": "object",
+        "description": "Gateway errors carry `error` (a code) and `message`. Errors from Learning itself carry `status`, `success: false`, `message`, `name`, and sometimes `code` (and `feature` or `paused_at`).",
+        "properties": {
+          "error": {
+            "description": "The gateway's error code (`SCOPE_REQUIRED`, `ORG_WIDE_TOKEN_REQUIRED`, `NOT_FOUND`, …).",
+            "type": [
+              "string",
+              "object"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer"
+          },
+          "success": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "description": "`FEATURE_NOT_ENABLED`, `AGENT_WRITES_PAUSED`, …"
+          },
+          "feature": {
+            "type": "string"
+          },
+          "paused_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "LearningApprovalRequest": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "needs_approval"
+          },
+          "approval_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "url": {
+            "type": "string",
+            "description": "Where a person approves or declines it, in Sessionboard Learning."
+          },
+          "message": {
+            "type": "string",
+            "description": "`Waiting for your OK in Sessionboard: <url>`"
+          },
+          "note": {
+            "type": "string",
+            "description": "Says nothing was sent or published and not to call again."
+          },
+          "approval": {
+            "$ref": "#/components/schemas/LearningApproval"
+          }
+        }
+      },
+      "LearningApproval": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "approved",
+              "declined",
+              "failed"
+            ]
+          },
+          "action": {
+            "type": "string",
+            "description": "`publish_course`, `publish_on_demand` or `publish_course_draft`."
+          },
+          "surface": {
+            "type": "string",
+            "description": "`courses` for these operations."
+          },
+          "title": {
+            "type": "string",
+            "description": "The approval card's headline, e.g. `Publish the course “Intro to Safety”`."
+          },
+          "summary": {
+            "type": "string",
+            "description": "What the person asked the assistant, when given (`From “…”`), else empty."
+          },
+          "target": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "description": "`course`, `event` or `course_draft`."
+              },
+              "id": {
+                "type": "string"
+              }
+            }
+          },
+          "event_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "assistant": {
+            "type": "object",
+            "properties": {
+              "vendor": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              },
+              "client": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "via": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "api_token",
+                  "oauth",
+                  null
+                ]
+              }
+            }
+          },
+          "requested_by": {
+            "type": "object",
+            "properties": {
+              "user_id": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "decided_by": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "user_id": {
+                "type": "integer"
+              },
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "decided_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "remedy": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Set only when a run failed for a reason a person can fix in one step."
+          },
+          "can_retry": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "product": {
+            "type": "string",
+            "const": "learning"
+          },
+          "url": {
+            "type": "string"
+          }
+        }
+      },
+      "LearningCertification": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "org_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "summary": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "badge_color": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "requirements": {
+            "type": "array",
+            "description": "Lessons and courses (series) that must be completed.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "lesson",
+                    "series"
+                  ]
+                },
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            }
+          },
+          "validity_months": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "How long an award lasts. `null` never expires."
+          },
+          "version": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "published",
+              "retired"
+            ]
+          },
+          "external_key": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lesson_count": {
+            "type": "integer",
+            "description": "Lessons it takes, courses expanded."
+          },
+          "duration_minutes": {
+            "type": "integer",
+            "description": "Total minutes of those lessons."
+          },
+          "holders": {
+            "type": "integer",
+            "description": "People holding it now (active, not expired)."
+          },
+          "expiring": {
+            "type": "integer",
+            "description": "Awards expiring within 30 days."
+          },
+          "assigned": {
+            "type": "integer",
+            "description": "People assigned it."
+          },
+          "overdue": {
+            "type": "integer",
+            "description": "Assigned people past their due date."
+          }
+        }
+      },
+      "LearningWorkspaceHome": {
+        "type": "object",
+        "properties": {
+          "organization": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          },
+          "profile": {
+            "$ref": "#/components/schemas/LearningWorkspaceProfile"
+          },
+          "nav": {
+            "type": "object",
+            "properties": {
+              "credits": {
+                "type": "string",
+                "enum": [
+                  "on",
+                  "off"
+                ],
+                "description": "Whether the Credits section shows."
+              },
+              "lead": {
+                "type": "string",
+                "enum": [
+                  "credits",
+                  "certifications"
+                ],
+                "description": "The section that leads (associations lead with credits, companies with certifications)."
+              }
+            }
+          },
+          "counts": {
+            "$ref": "#/components/schemas/LearningWorkspaceCounts"
+          },
+          "review": {
+            "type": "array",
+            "description": "What is waiting on a person, up to 5 drafts, 3 meetings and 3 certifications.",
+            "items": {
+              "$ref": "#/components/schemas/LearningReviewItem"
+            }
+          },
+          "module": {
+            "type": "object",
+            "properties": {
+              "on": {
+                "type": "boolean",
+                "description": "Whether Learning is on for the organization."
+              }
+            }
+          }
+        }
+      },
+      "LearningWorkspaceProfile": {
+        "type": "object",
+        "description": "The setup answers, with the defaults they imply.",
+        "properties": {
+          "learners": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "members_public",
+                "customers_partners",
+                "employees"
+              ]
+            }
+          },
+          "door": {
+            "type": "string",
+            "enum": [
+              "associations",
+              "companies"
+            ]
+          },
+          "credit_types": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "ama_pra_1",
+                "moc",
+                "ancc",
+                "acpe",
+                "cle",
+                "cpe",
+                "ceu",
+                "other"
+              ]
+            }
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "recordings",
+                "webinars",
+                "sessionboard_meeting",
+                "documents",
+                "other_lms"
+              ]
+            }
+          },
+          "other_lms": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "elevate",
+              "path",
+              "oasis",
+              "docebo",
+              "absorb",
+              "cornerstone",
+              "moodle",
+              "other",
+              "none",
+              null
+            ]
+          },
+          "signin": {
+            "type": "string",
+            "enum": [
+              "ams",
+              "sso",
+              "email"
+            ]
+          },
+          "ams": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "imis",
+              "nimble",
+              "fonteva",
+              "netforum",
+              "personify",
+              "yourmembership",
+              "other",
+              null
+            ]
+          },
+          "assistant": {
+            "type": "array",
+            "description": "The assistant jobs switched on. All are on until asked.",
+            "items": {
+              "type": "string",
+              "enum": [
+                "captions_chapters",
+                "draft_questions",
+                "reminders",
+                "reports"
+              ]
+            }
+          },
+          "credits_enabled": {
+            "type": "boolean"
+          },
+          "asked": {
+            "type": "object",
+            "description": "Which setup questions have been answered.",
+            "properties": {
+              "learners": {
+                "type": "boolean"
+              },
+              "credit_types": {
+                "type": "boolean"
+              },
+              "content": {
+                "type": "boolean"
+              },
+              "signin": {
+                "type": "boolean"
+              },
+              "assistant": {
+                "type": "boolean"
+              }
+            }
+          },
+          "finished": {
+            "type": "boolean"
+          },
+          "finished_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "LearningWorkspaceCounts": {
+        "type": "object",
+        "properties": {
+          "courses_published": {
+            "type": "integer"
+          },
+          "courses_draft": {
+            "type": "integer"
+          },
+          "certifications": {
+            "type": "integer",
+            "description": "Published certifications."
+          },
+          "learners": {
+            "type": "integer",
+            "description": "People with any course progress."
+          },
+          "active_learners_30d": {
+            "type": "integer"
+          },
+          "certified": {
+            "type": "integer",
+            "description": "Active",
+            "unexpired certification awards.": null
+          },
+          "certified_30d": {
+            "type": "integer"
+          },
+          "expiring_30d": {
+            "type": "integer"
+          },
+          "overdue": {
+            "type": "integer",
+            "description": "Assignments past due and not completed."
+          },
+          "assigned": {
+            "type": "integer"
+          },
+          "assigned_done": {
+            "type": "integer"
+          },
+          "drafts_ready": {
+            "type": "integer",
+            "description": "Course drafts ready for review."
+          },
+          "drafts_working": {
+            "type": "integer",
+            "description": "Course drafts queued or generating."
+          },
+          "sites": {
+            "type": "integer",
+            "description": "Learning Sites."
+          },
+          "credit_30d": {
+            "type": "number",
+            "description": "Credit claimed in the last 30 days",
+            "all types together.": null
+          },
+          "claims_30d": {
+            "type": "integer"
+          },
+          "transcripts": {
+            "type": "integer",
+            "description": "People with at least one credit claim."
+          }
+        }
+      },
+      "LearningReviewItem": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "course_draft",
+              "meeting_on_demand",
+              "expiring"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "description": "The draft id, the event id (as text) or the certification id."
+          },
+          "title": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "review",
+              "remind"
+            ]
+          },
+          "href": {
+            "type": "string",
+            "description": "Path inside the Learning workspace."
+          },
+          "at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "LearningCourseSource": {
+        "type": "object",
+        "description": "Where the course came from.",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "session",
+              "synced",
+              "written"
+            ]
+          },
+          "event_id": {
+            "type": "integer",
+            "description": "`session` only."
+          },
+          "event_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`session` only."
+          }
+        }
+      },
+      "LearningCourseCredit": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "description": "The course's credit by credit type. Types are never added together: `amount` and `type` are set only when there is one type; `label` lists each (e.g. `1.00 AMA PRA Category 1 Credit · 1.00 ANCC Contact Hours`).",
+        "properties": {
+          "amount": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "by_type": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LearningCreditAmount"
+            }
+          },
+          "label": {
+            "type": "string"
+          }
+        }
+      },
+      "LearningCreditAmount": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          }
+        }
+      },
+      "LearningWorkspaceCourse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "published"
+            ]
+          },
+          "duration_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "source": {
+            "$ref": "#/components/schemas/LearningCourseSource"
+          },
+          "credit": {
+            "$ref": "#/components/schemas/LearningCourseCredit"
+          },
+          "learners": {
+            "type": "integer",
+            "description": "People who started it."
+          },
+          "completed": {
+            "type": "integer",
+            "description": "People who finished every step that counts."
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "published_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "LearningWorkspaceCourseDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "published"
+            ]
+          },
+          "duration_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "steps": {
+            "type": "integer",
+            "description": "Steps that count toward completion (claim and survey steps do not)."
+          },
+          "source": {
+            "$ref": "#/components/schemas/LearningCourseSource"
+          },
+          "credit": {
+            "$ref": "#/components/schemas/LearningCourseCredit"
+          },
+          "learners": {
+            "type": "integer"
+          },
+          "completed": {
+            "type": "integer"
+          },
+          "published_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "LearningWorkspaceCourseDraft": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "generating",
+              "ready",
+              "failed"
+            ]
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "progress": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "step": {
+                "type": "string"
+              },
+              "done": {
+                "type": "integer"
+              },
+              "total": {
+                "type": "integer"
+              }
+            }
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "credit": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "The credit a person set on the draft, applied on publish.",
+            "properties": {
+              "credit_type_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "amount": {
+                "type": "number"
+              }
+            }
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "LearningCourseLearner": {
+        "type": "object",
+        "properties": {
+          "person_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "done": {
+            "type": "integer",
+            "description": "Steps completed."
+          },
+          "steps": {
+            "type": "integer"
+          },
+          "percent": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "`null` when the course has no steps that count."
+          },
+          "completed": {
+            "type": "boolean"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "last_activity_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "LearningLearnerMatch": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "People id."
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "LearningLearnerDetail": {
+        "type": "object",
+        "properties": {
+          "learner": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              },
+              "email": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "has_login": {
+                "type": "boolean"
+              }
+            }
+          },
+          "courses": {
+            "type": "array",
+            "description": "Up to 200 courses they touched, most recent activity first.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "draft",
+                    "published",
+                    "archived"
+                  ]
+                },
+                "duration_minutes": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "steps": {
+                  "type": "integer"
+                },
+                "done": {
+                  "type": "integer"
+                },
+                "percent": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "completed": {
+                  "type": "boolean"
+                },
+                "started_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "completed_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "last_activity_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          },
+          "certifications": {
+            "type": "array",
+            "description": "Their certification awards, newest first.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "The award."
+                },
+                "certification_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "active",
+                    "expired",
+                    "revoked"
+                  ]
+                },
+                "awarded_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "expires_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "days_left": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "description": "`null` once expired or when it never expires."
+                },
+                "verify_code": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            }
+          },
+          "assignments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "certification",
+                    "series",
+                    "lesson"
+                  ],
+                  "description": "`series` is a course."
+                },
+                "name": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "state": {
+                  "type": "string",
+                  "enum": [
+                    "assigned",
+                    "overdue",
+                    "completed"
+                  ]
+                },
+                "due_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "completed_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                }
+              }
+            }
+          },
+          "credits": {
+            "type": "object",
+            "properties": {
+              "types": {
+                "type": "array",
+                "description": "Credit by credit type, largest total first.",
+                "items": {
+                  "$ref": "#/components/schemas/LearningLedgerType"
+                }
+              },
+              "claims": {
+                "type": "integer",
+                "description": "Live claims in all."
+              }
+            }
+          },
+          "attended": {
+            "type": "array",
+            "description": "Up to 200 sessions attended, newest first.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "session_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "title": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "event_id": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "event_name": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "occurred_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          },
+          "downloads": {
+            "type": "object",
+            "description": "Paths of the transcript downloads.",
+            "properties": {
+              "transcript_pdf": {
+                "type": "string"
+              },
+              "transcript_xlsx": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "LearningLedgerType": {
+        "type": "object",
+        "properties": {
+          "credit_type_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "unit": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "total": {
+            "type": "number"
+          },
+          "claims": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "amount": {
+                  "type": "number"
+                },
+                "title": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The course or session."
+                },
+                "source": {
+                  "type": "string",
+                  "enum": [
+                    "lesson",
+                    "session"
+                  ]
+                },
+                "event_name": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "activity_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "When the activity ran."
+                },
+                "claimed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "verified_by": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "enum": [
+                    "admin",
+                    "lesson",
+                    "scan",
+                    "import",
+                    "check_in",
+                    "self_report",
+                    null
+                  ]
+                },
+                "certificate": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "number": {
+                      "type": "string"
+                    },
+                    "issued_at": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "LearningOnDemandEvent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "date_from": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "event_format": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "standard",
+              "lite",
+              "gathering",
+              "webinar",
+              null
+            ]
+          },
+          "sessions": {
+            "type": "integer"
+          },
+          "with_recordings": {
+            "type": "integer"
+          },
+          "courses_published": {
+            "type": "integer"
+          },
+          "courses_draft": {
+            "type": "integer"
+          },
+          "imported": {
+            "type": "boolean",
+            "description": "Brought in from a registration platform."
+          }
+        }
+      },
+      "LearningOnDemandPreview": {
+        "type": "object",
+        "properties": {
+          "event": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer"
+              },
+              "name": {
+                "type": "string"
+              },
+              "date_from": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "date_to": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "event_format": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "standard",
+                  "lite",
+                  "gathering",
+                  "webinar",
+                  null
+                ]
+              }
+            }
+          },
+          "sessions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LearningOnDemandSession"
+            }
+          },
+          "totals": {
+            "$ref": "#/components/schemas/LearningOnDemandTotals"
+          }
+        }
+      },
+      "LearningOnDemandSession": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "recording": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "minutes": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "count": {
+                "type": "integer"
+              }
+            }
+          },
+          "faculty": {
+            "type": "integer"
+          },
+          "disclosures_missing": {
+            "type": "integer",
+            "description": "Faculty with no disclosure on file."
+          },
+          "credit": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "The session's credit, or the credit set on the course made from it (the course's wins per type). Types are never added together.",
+            "properties": {
+              "amount": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "Only with one type."
+              },
+              "type_name": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Only with one type."
+              },
+              "types": {
+                "type": "integer"
+              },
+              "by_type": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/LearningCreditAmount"
+                }
+              },
+              "label": {
+                "type": "string"
+              }
+            }
+          },
+          "attendance": {
+            "type": "integer"
+          },
+          "source": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "The registration platform it came from.",
+            "properties": {
+              "app": {
+                "type": "string"
+              },
+              "external_id": {
+                "type": "string"
+              }
+            }
+          },
+          "course": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "draft",
+                  "published",
+                  "archived"
+                ]
+              },
+              "waiting_for_recording": {
+                "type": "boolean"
+              },
+              "recording_ready": {
+                "type": "boolean",
+                "description": "Waiting, and the session now has a recording; make courses again to add it."
+              }
+            }
+          }
+        }
+      },
+      "LearningOnDemandTotals": {
+        "type": "object",
+        "properties": {
+          "sessions": {
+            "type": "integer"
+          },
+          "with_recordings": {
+            "type": "integer"
+          },
+          "faculty": {
+            "type": "integer"
+          },
+          "disclosures_missing": {
+            "type": "integer",
+            "description": "Sessions with a faculty disclosure missing."
+          },
+          "credit_sessions": {
+            "type": "integer"
+          },
+          "attendance": {
+            "type": "integer"
+          },
+          "courses_published": {
+            "type": "integer"
+          },
+          "courses_draft": {
+            "type": "integer"
+          },
+          "waiting_for_recording": {
+            "type": "integer"
+          },
+          "imported": {
+            "type": "integer",
+            "description": "Sessions brought in from a registration platform."
+          }
+        }
+      },
+      "LearningEventRef": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "LearningOnDemandDryRun": {
+        "type": "object",
+        "properties": {
+          "dry_run": {
+            "type": "boolean",
+            "const": true
+          },
+          "event": {
+            "$ref": "#/components/schemas/LearningEventRef"
+          },
+          "would_create": {
+            "type": "integer"
+          },
+          "would_wait_for_recording": {
+            "type": "integer"
+          },
+          "batch": {
+            "type": "integer",
+            "description": "Sessions drafted per call (60)."
+          }
+        }
+      },
+      "LearningOnDemandMakeResult": {
+        "type": "object",
+        "properties": {
+          "event": {
+            "$ref": "#/components/schemas/LearningEventRef"
+          },
+          "created": {
+            "type": "integer"
+          },
+          "waiting_for_recording": {
+            "type": "integer",
+            "description": "Of the courses made, how many wait for a recording. Absent when `created` is `0`."
+          },
+          "attached": {
+            "type": "integer",
+            "description": "Waiting drafts that got their recording."
+          },
+          "refreshed": {
+            "type": "integer",
+            "description": "Untouched drafts that took the session's new title and description."
+          },
+          "remaining": {
+            "type": "integer",
+            "description": "Sessions left; call again until `0`."
+          },
+          "series_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The meeting's course (\"<event> on demand\"). `null` when nothing was made."
+          },
+          "courses": {
+            "type": "array",
+            "description": "The draft courses made. Absent when `created` is `0`.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string",
+                  "const": "draft"
+                }
+              }
+            }
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "LearningCreditsOverview": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "description": "Whether credits are on for the workspace."
+          },
+          "door": {
+            "type": "string",
+            "enum": [
+              "associations",
+              "companies"
+            ]
+          },
+          "types": {
+            "type": "array",
+            "description": "Up to 100 credit types, those picked in setup first.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "key": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "unit": {
+                  "type": "string"
+                },
+                "increment": {
+                  "type": "string",
+                  "description": "Smallest step credit is rounded down to",
+                  "as decimal text (e.g. `\"0.250\"`).": null
+                },
+                "chosen": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "totals": {
+            "type": "array",
+            "description": "Live credit claimed by credit type, largest first.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "credit_type_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uuid"
+                },
+                "name": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "amount": {
+                  "type": "number"
+                },
+                "claims": {
+                  "type": "integer"
+                },
+                "people": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "recent": {
+            "type": "array",
+            "description": "The 25 latest live claims.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "amount": {
+                  "type": "number"
+                },
+                "claimed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "method": {
+                  "type": "string",
+                  "enum": [
+                    "earned",
+                    "admin_granted",
+                    "imported",
+                    "self_reported"
+                  ]
+                },
+                "credit_type": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "person": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "email": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "person_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uuid"
+                },
+                "lesson_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uuid"
+                },
+                "activity": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The course or session title."
+                },
+                "has_certificate": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "claim_sites": {
+            "type": "array",
+            "description": "Up to 20 events whose credit claiming is open.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "event_id": {
+                  "type": "integer"
+                },
+                "event_name": {
+                  "type": "string"
+                },
+                "claiming_enabled": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "goals": {
+            "type": "array",
+            "description": "Credit goals, one per credit type.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "credit_type_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uuid"
+                },
+                "credit_type": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "amount": {
+                  "type": "number"
+                },
+                "cycle_months": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "goal_suggestions": {
+            "type": "array",
+            "description": "What a learner earned of each type in the last 12 months, rounded up to a quarter.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "credit_type_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "median": {
+                  "type": "number"
+                },
+                "p75": {
+                  "type": "number"
+                },
+                "people": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        }
+      },
+      "LearningWorkspaceResults": {
+        "type": "object",
+        "properties": {
+          "door": {
+            "type": "string",
+            "enum": [
+              "associations",
+              "companies"
+            ]
+          },
+          "credits_enabled": {
+            "type": "boolean"
+          },
+          "monthly": {
+            "type": "array",
+            "description": "Course completions by month, last 6 months.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "month": {
+                  "type": "string",
+                  "description": "`YYYY-MM`"
+                },
+                "completions": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "credit_by_type": {
+            "type": "array",
+            "description": "Live credit claimed by credit type, last 12 months.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "credit_type": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "amount": {
+                  "type": "number"
+                },
+                "claims": {
+                  "type": "integer"
+                },
+                "people": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "certifications": {
+            "type": "array",
+            "description": "Up to 20 certifications that are not retired, most holders first.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "validity_months": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "holders": {
+                  "type": "integer"
+                },
+                "expiring_90d": {
+                  "type": "integer"
+                },
+                "expired": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "counts": {
+            "$ref": "#/components/schemas/LearningWorkspaceCounts"
+          },
+          "claude_prompt": {
+            "type": "string",
+            "description": "A prompt with these numbers for building a dashboard in Claude. Nothing is sent."
+          }
+        }
+      },
+      "LearningRegistrationAppIdValue": {
+        "type": "string",
+        "enum": [
+          "cvent",
+          "swoogo",
+          "bizzabo",
+          "rainfocus",
+          "eventbrite",
+          "swapcard",
+          "visit",
+          "map-your-show",
+          "a2z"
+        ],
+        "description": "A registration platform. Today sessions can be brought in from `cvent`, `swoogo` and `bizzabo`; the others answer `not_available` (List registration platforms says why)."
+      },
+      "LearningRegistrationSource": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/LearningRegistrationAppIdValue"
+          },
+          "name": {
+            "type": "string"
+          },
+          "connected": {
+            "type": "boolean"
+          },
+          "connection_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "needs_reauth": {
+            "type": "boolean"
+          },
+          "simulated": {
+            "type": "boolean"
+          },
+          "coming": {
+            "type": "boolean",
+            "description": "Cannot be connected yet."
+          },
+          "importable": {
+            "type": "boolean",
+            "description": "Sessions can be brought in from it."
+          },
+          "connect": {
+            "type": "string",
+            "enum": [
+              "oauth",
+              "api_key",
+              "coming"
+            ],
+            "description": "How a person connects it."
+          },
+          "brings": {
+            "type": "object",
+            "properties": {
+              "sessions": {
+                "$ref": "#/components/schemas/LearningSourceBrings"
+              },
+              "speakers": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/LearningSourceBrings"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "on_sessions": {
+                        "type": "boolean",
+                        "description": "Speakers arrive on the sessions they present, so faculty carry over."
+                      }
+                    }
+                  }
+                ]
+              },
+              "recordings": {
+                "$ref": "#/components/schemas/LearningSourceBrings"
+              },
+              "attendance": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/LearningSourceBrings"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "needs_new_sign_in": {
+                        "type": "boolean",
+                        "description": "The connection's sign-in cannot read attendees or check-ins."
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "line": {
+            "type": "string",
+            "description": "One line to show a person."
+          }
+        }
+      },
+      "LearningSourceBrings": {
+        "type": "object",
+        "properties": {
+          "available": {
+            "type": "boolean"
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      },
+      "LearningRemoteEvent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The platform's event id."
+          },
+          "name": {
+            "type": "string"
+          },
+          "starts_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "imported_event_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "The Sessionboard event it was brought into before."
+          },
+          "imported_event_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "LearningRemoteEventList": {
+        "type": "object",
+        "properties": {
+          "app_id": {
+            "$ref": "#/components/schemas/LearningRegistrationAppIdValue"
+          },
+          "connected": {
+            "type": "boolean"
+          },
+          "supported": {
+            "type": "boolean",
+            "description": "Whether the platform can list events. Absent when not connected."
+          },
+          "source": {
+            "$ref": "#/components/schemas/LearningRegistrationSource"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LearningRemoteEvent"
+            }
+          }
+        }
+      },
+      "LearningMeetingImport": {
+        "type": "object",
+        "properties": {
+          "app_id": {
+            "$ref": "#/components/schemas/LearningRegistrationAppIdValue"
+          },
+          "remote_event_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source": {
+            "$ref": "#/components/schemas/LearningRegistrationSource"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "preview",
+              "not_connected",
+              "needs_remote_event",
+              "not_available",
+              "managed_on_platform"
+            ]
+          },
+          "dry_run": {
+            "type": "boolean",
+            "description": "`preview` only."
+          },
+          "connect_url": {
+            "type": "string",
+            "description": "`not_connected` only: where a person connects the platform in Sessionboard Learning."
+          },
+          "remote_event": {
+            "$ref": "#/components/schemas/LearningRemoteEvent"
+          },
+          "event": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "The Sessionboard event. On `preview`: `id` (`null` when one will be made), `name`, `will_create`. After an import: `id`, `name`, `created`; `null` when nothing was queued and no event was made.",
+            "properties": {
+              "id": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "name": {
+                "type": "string"
+              },
+              "created": {
+                "type": "boolean"
+              },
+              "will_create": {
+                "type": "boolean"
+              }
+            }
+          },
+          "include": {
+            "type": "array",
+            "description": "What is brought in.",
+            "items": {
+              "type": "string",
+              "enum": [
+                "sessions",
+                "speakers",
+                "attendees"
+              ]
+            }
+          },
+          "outcome": {
+            "type": "object",
+            "description": "Per kind, `queued`, `not_available` or `managed_on_platform`.",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "reasons": {
+            "type": "object",
+            "description": "Per kind that is not brought in, why.",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "job_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "The import job; pass it as `jobId` to Get an imported meeting."
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "LearningMeetingForLearningStep": {
+        "type": "object",
+        "description": "`step` plus the fields of the answer it wraps (List registration platforms, List a registration platform's events, Bring in a meeting, or Make draft courses from a meeting).",
+        "properties": {
+          "step": {
+            "type": "string",
+            "enum": [
+              "preview",
+              "import",
+              "draft"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "description": "`still_importing` or `drafted` on the `draft` step; on `import` and an import preview, as in Bring in a meeting."
+          },
+          "suggested": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/LearningRemoteEvent"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "`preview` with an `appId`: the latest of its events that already happened."
+          },
+          "event_id": {
+            "type": "integer",
+            "description": "`still_importing` only."
+          },
+          "next": {
+            "type": "string",
+            "description": "`drafted` only: what to do next."
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      },
+      "LearningImportState": {
+        "type": "object",
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "running",
+              "done",
+              "failed"
+            ]
+          },
+          "summary": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "What the import reported."
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "notes": {
+            "type": "array",
+            "maxItems": 12,
+            "description": "What did not come across, in the import's words.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string"
+                },
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "error",
+                    "skip"
+                  ]
+                },
+                "text": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "LearningImportedMeeting": {
+        "type": "object",
+        "properties": {
+          "event": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer"
+              },
+              "name": {
+                "type": "string"
+              },
+              "date_from": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "date_to": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "event_format": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "standard",
+                  "lite",
+                  "gathering",
+                  "webinar",
+                  null
+                ]
+              }
+            }
+          },
+          "import": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/LearningImportState"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "`null` without `jobId`, or when the job is not this organization's."
+          },
+          "totals": {
+            "$ref": "#/components/schemas/LearningOnDemandTotals"
+          },
+          "sessions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LearningOnDemandSession"
+            }
+          }
+        }
+      },
+      "LearningEngagementBand": {
+        "type": "string",
+        "enum": [
+          "warming",
+          "engaged",
+          "highly"
+        ],
+        "description": "`warming` (Warming up), `engaged` (Engaged), `highly` (Highly engaged)."
+      },
+      "LearningEngagementLines": {
+        "type": "object",
+        "description": "The scores where the bands start (default 50 and 80).",
+        "properties": {
+          "engaged": {
+            "type": "number"
+          },
+          "highly": {
+            "type": "number"
+          }
+        }
+      },
+      "LearningEngagementBandCounts": {
+        "type": "object",
+        "properties": {
+          "warming": {
+            "type": "integer"
+          },
+          "engaged": {
+            "type": "integer"
+          },
+          "highly": {
+            "type": "integer"
+          }
+        }
+      },
+      "LearningEngagementChip": {
+        "type": "object",
+        "description": "Learning's view of the one engagement score (learning counts more), with the overall score beside it.",
+        "properties": {
+          "score": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "band": {
+            "$ref": "#/components/schemas/LearningEngagementBand"
+          },
+          "band_label": {
+            "type": "string"
+          },
+          "why": {
+            "type": "string",
+            "description": "The score as a sentence, e.g. `72 = 3 courses · 4.5 credits · certified · 2 webinars`."
+          },
+          "overall": {
+            "type": "object",
+            "properties": {
+              "score": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "band": {
+                "$ref": "#/components/schemas/LearningEngagementBand"
+              },
+              "why": {
+                "type": "string"
+              }
+            }
+          },
+          "courses_completed": {
+            "type": "integer"
+          },
+          "courses_started": {
+            "type": "integer"
+          },
+          "credits": {
+            "type": "number"
+          },
+          "certifications": {
+            "type": "integer"
+          }
+        }
+      },
+      "LearningRankedLearner": {
+        "allOf": [
+          {
+            "type": "object",
+            "properties": {
+              "person_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uuid"
+              },
+              "key": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The person's key in People."
+              },
+              "name": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "$ref": "#/components/schemas/LearningEngagementChip"
+          }
+        ]
+      },
+      "LearningNextLesson": {
+        "type": "object",
+        "description": "A course worth taking next, with the reason in words a learner can read.",
+        "properties": {
+          "lesson_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "content_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "const": "course"
+          },
+          "minutes": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "credit": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uuid"
+                },
+                "name": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "amount": {
+                  "type": "number"
+                }
+              }
+            }
+          },
+          "event": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "session": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "renewal",
+              "continue",
+              "attended",
+              "topic",
+              "credit",
+              "popular"
+            ]
+          },
+          "because": {
+            "type": "string"
+          },
+          "rank": {
+            "type": "integer"
+          },
+          "earns_credit": {
+            "type": "boolean",
+            "description": "`attended` only."
+          }
+        }
+      },
+      "LearningEngagementLearner": {
+        "allOf": [
+          {
+            "type": "object",
+            "properties": {
+              "person_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "$ref": "#/components/schemas/LearningEngagementChip"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "parts": {
+                "type": "array",
+                "description": "What makes up the score.",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "key": {
+                      "type": "string",
+                      "description": "The activity, e.g. `courses`, `credits`, `certified`, `events`, `webinars`."
+                    },
+                    "count": {
+                      "type": "integer"
+                    },
+                    "points": {
+                      "type": "integer"
+                    },
+                    "sent": {
+                      "type": "integer",
+                      "description": "Emails sent",
+                      "for open rates.": null
+                    },
+                    "amount": {
+                      "type": "number",
+                      "description": "For credit."
+                    },
+                    "product": {
+                      "type": "string",
+                      "enum": [
+                        "platform",
+                        "marketing",
+                        "learning"
+                      ]
+                    }
+                  }
+                }
+              },
+              "lines": {
+                "$ref": "#/components/schemas/LearningEngagementLines"
+              },
+              "timeline": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "text": {
+                      "type": "string"
+                    },
+                    "event": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "source": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "content_id": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  }
+                }
+              },
+              "credit_owed": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "description": "Credit owed this cycle against the credit goal. `null` without a goal.",
+                "properties": {
+                  "goal": {
+                    "type": "number"
+                  },
+                  "earned": {
+                    "type": "number"
+                  },
+                  "owed": {
+                    "type": "number"
+                  },
+                  "credit_type": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "by": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "date-time"
+                  },
+                  "cycle_start": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "cycle_end": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "date-time"
+                  }
+                }
+              },
+              "renewals": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "certification_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "expires_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "days_left": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              },
+              "next_lessons": {
+                "type": "array",
+                "maxItems": 3,
+                "items": {
+                  "$ref": "#/components/schemas/LearningNextLesson"
+                }
+              },
+              "activity": {
+                "type": "object",
+                "properties": {
+                  "events_attended": {
+                    "type": "integer"
+                  },
+                  "webinars_watched": {
+                    "type": "integer"
+                  },
+                  "sessions_attended": {
+                    "type": "integer"
+                  },
+                  "campaigns_opened": {
+                    "type": "integer"
+                  },
+                  "clips_watched": {
+                    "type": "integer"
+                  },
+                  "shared": {
+                    "type": "integer"
+                  },
+                  "last_at": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "date-time"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "LearningNudgePerson": {
+        "type": "object",
+        "properties": {
+          "person_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "key": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "renewal",
+              "stalled",
+              "credit_owed",
+              "earn_credit"
+            ]
+          },
+          "detail": {
+            "type": "string"
+          },
+          "urgency": {
+            "type": "number",
+            "description": "Higher is more urgent."
+          },
+          "next_lesson": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/LearningNextLesson"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "LearningRecertificationPerson": {
+        "type": "object",
+        "properties": {
+          "person_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "certification": {
+            "type": "string"
+          },
+          "certification_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "days_left": {
+            "type": "integer",
+            "description": "Zero or negative once lapsed."
+          },
+          "expired": {
+            "type": "boolean"
+          },
+          "next_lesson": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/LearningNextLesson"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "LearningCourseRecommendations": {
+        "type": "object",
+        "properties": {
+          "event": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/LearningEventRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "people": {
+            "type": "array",
+            "description": "People with at least one course to take next.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "person_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uuid"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "email": {
+                  "type": "string"
+                },
+                "picks": {
+                  "type": "array",
+                  "maxItems": 2,
+                  "items": {
+                    "$ref": "#/components/schemas/LearningNextLesson"
+                  }
+                }
+              }
+            }
+          },
+          "courses": {
+            "type": "array",
+            "description": "Courses picked, by how many people they suit.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "lesson_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "people": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "summary": {
+            "type": "string"
+          }
+        }
+      },
+      "LearningEngagementResults": {
+        "type": "object",
+        "properties": {
+          "lines": {
+            "$ref": "#/components/schemas/LearningEngagementLines"
+          },
+          "total": {
+            "type": "integer",
+            "description": "People with a learning signal."
+          },
+          "bands": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "band": {
+                  "$ref": "#/components/schemas/LearningEngagementBand"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "now": {
+                  "type": "integer"
+                },
+                "thirty_days_ago": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "moved_up": {
+            "type": "integer",
+            "description": "People who moved up a band in 30 days."
+          },
+          "what_moved_them": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "points": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "outcomes_30d": {
+            "type": "object",
+            "properties": {
+              "courses_completed": {
+                "type": "integer"
+              },
+              "certified": {
+                "type": "integer"
+              },
+              "claimed_people": {
+                "type": "integer"
+              },
+              "credit": {
+                "type": "number"
+              }
+            }
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      },
+      "LearningSignalSources": {
+        "type": "object",
+        "properties": {
+          "window_days": {
+            "type": "integer",
+            "const": 30
+          },
+          "connected_pct": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "summary": {
+            "type": "string"
+          },
+          "signals_30d": {
+            "type": "integer"
+          },
+          "people_30d": {
+            "type": "integer"
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "group": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "slot": {
+                  "type": "string"
+                },
+                "provider": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "app_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "builtin": {
+                  "type": "boolean"
+                },
+                "connected": {
+                  "type": "boolean"
+                },
+                "needs_reauth": {
+                  "type": "boolean"
+                },
+                "connect_method": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "`oauth`, `api_key`, `simulated`, `apps_page` or `coming`."
+                },
+                "coming": {
+                  "type": "boolean"
+                },
+                "adds_signals": {
+                  "type": "boolean"
+                },
+                "signals_30d": {
+                  "type": "integer"
+                },
+                "via_file_30d": {
+                  "type": "integer"
+                },
+                "minutes_watched_30d": {
+                  "type": "integer"
+                },
+                "last_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "top": {
+                  "type": "array",
+                  "maxItems": 3,
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string"
+                      },
+                      "label": {
+                        "type": "string"
+                      },
+                      "count": {
+                        "type": "integer"
+                      }
+                    }
+                  }
+                },
+                "ready_hint": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "start": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "description": "Where to start a built-in source that has nothing yet."
+                },
+                "estimate": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "description": "What an unconnected source would add. `per_month` is `null` when there is nothing to go on.",
+                  "properties": {
+                    "per_month": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "basis": {
+                      "type": "string"
+                    },
+                    "coming": {
+                      "type": "boolean"
+                    },
+                    "covered_by": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "superpowers": {
+            "type": "array",
+            "description": "Capabilities connected sources turn on.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "for_attendees": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "for_marketing": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "on": {
+                  "type": "boolean"
+                },
+                "powered_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "needs_any_of": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "turn_on": {
+                  "type": [
+                    "object",
+                    "null"
+                  ]
+                },
+                "better_with": {
+                  "type": [
+                    "object",
+                    "null"
+                  ]
+                }
+              }
+            }
+          },
+          "next_best": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "The connection that would add the most.",
+            "properties": {
+              "key": {
+                "type": "string"
+              },
+              "app_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "label": {
+                "type": "string"
+              },
+              "slot": {
+                "type": "string"
+              },
+              "unlocks": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "per_month": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "adds_points": {
+                "type": "integer"
+              },
+              "why": {
+                "type": "string"
+              }
+            }
+          },
+          "recent": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "text": {
+                  "type": "string"
+                },
+                "source": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      },
+      "LearningSignalSync": {
+        "type": "object",
+        "properties": {
+          "since": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "courses": {
+            "type": "integer"
+          },
+          "enrolled": {
+            "type": "integer"
+          },
+          "quizzes": {
+            "type": "integer"
+          },
+          "credit_claims": {
+            "type": "integer"
+          },
+          "certifications": {
+            "type": "integer"
+          },
+          "attendance": {
+            "type": "integer"
+          },
+          "written": {
+            "type": "integer",
+            "description": "New signals written."
+          },
+          "note": {
+            "type": "string"
+          }
+        }
       }
     },
     "responses": {
       "LearningForbidden": {
         "description": "- `SCOPE_REQUIRED` — the token lacks `read:learning` (reads) or `write:learning` (writes). Legacy tokens with no scopes cannot write.\n- `FORBIDDEN` — Learning is not on for the organization, or the token's user lacks the Lessons permission.\n"
+      },
+      "LearningUnauthorized": {
+        "description": "Missing, invalid or expired token."
+      },
+      "LearningEventUnauthorized": {
+        "description": "Missing, invalid or expired token, or the event does not belong to your organization (`Event does not belong to your organization`)."
+      },
+      "LearningOrgNotFound": {
+        "description": "`orgId` is not your organization (`error: NOT_FOUND`, `message: Organization not found`).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/LearningError"
+            },
+            "example": {
+              "error": "NOT_FOUND",
+              "message": "Organization not found"
+            }
+          }
+        }
+      },
+      "LearningBadRequest": {
+        "description": "A path, query or body value failed validation, or an unknown body property was sent. `message` names the field. (A `source` object naming the assistant, with the person's `prompt`, is accepted on every write and removed before validation.) For an `{eventId}` path that is not a whole number: `error: VALIDATION_ERROR`, `eventId must be a valid integer`.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/LearningError"
+            }
+          }
+        }
+      },
+      "LearningWorkspaceForbidden": {
+        "description": "- `SCOPE_REQUIRED` — the token lacks `read:learning` (reads) or `write:learning` (writes). Legacy tokens with no scopes cannot write.\n- `ORG_WIDE_TOKEN_REQUIRED` — the token is restricted to particular events: \"The Learning workspace covers every event and learner in the organization, so this API key (restricted to particular events) cannot use it. Use a key without an event restriction.\"\n- `FEATURE_NOT_ENABLED` (`feature: lessons_credits`) — Learning is not on for the organization.\n- `FORBIDDEN` — the token's user is not an active member of the organization, or lacks the Lessons permission the operation needs.\n",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/LearningError"
+            },
+            "examples": {
+              "org_wide_token_required": {
+                "summary": "Event-restricted key",
+                "value": {
+                  "error": "ORG_WIDE_TOKEN_REQUIRED",
+                  "message": "The Learning workspace covers every event and learner in the organization, so this API key (restricted to particular events) cannot use it. Use a key without an event restriction."
+                }
+              },
+              "scope_required": {
+                "summary": "Token lacks the write scope",
+                "value": {
+                  "error": "SCOPE_REQUIRED",
+                  "message": "This operation requires the 'write:learning' scope."
+                }
+              },
+              "feature_off": {
+                "summary": "Learning is off",
+                "value": {
+                  "status": 403,
+                  "success": false,
+                  "message": "Feature 'lessons_credits' is not enabled for this organization",
+                  "name": "FeatureNotEnabledError",
+                  "code": "FEATURE_NOT_ENABLED",
+                  "feature": "lessons_credits"
+                }
+              }
+            }
+          }
+        }
+      },
+      "LearningWorkspaceEventForbidden": {
+        "description": "As for every Learning workspace operation:\n- `SCOPE_REQUIRED` — the token lacks `read:learning` (reads) or `write:learning` (writes). Legacy tokens with no scopes cannot write.\n- `ORG_WIDE_TOKEN_REQUIRED` — the token is restricted to particular events: \"The Learning workspace covers every event and learner in the organization, so this API key (restricted to particular events) cannot use it. Use a key without an event restriction.\"\n- `EVENT_ARCHIVED` — the event is archived.\n- `FEATURE_NOT_ENABLED` (`feature: lessons_credits`) — Learning is not on for the organization.\n- `FORBIDDEN` — the token's user is not an active member of the organization, or lacks the Lessons permission the operation needs.\n",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/LearningError"
+            }
+          }
+        }
+      },
+      "LearningMeetingsForbidden": {
+        "description": "- `SCOPE_REQUIRED` — the token lacks `read:learning` (reads) or `write:learning` (writes). Legacy tokens with no scopes cannot write.\n- `ORG_WIDE_TOKEN_REQUIRED` — the token is restricted to particular events: \"Bringing in a meeting reaches the organization's registration platforms and every event, so this API key (restricted to particular events) cannot use it. Use a key without an event restriction.\"\n- `FEATURE_NOT_ENABLED` (`feature: lessons_credits`) — Learning is not on for the organization.\n- `FORBIDDEN` — the token's user is not an active member of the organization, lacks the Lessons permission, or (listing a platform's events, importing) lacks permission to view integrations (`You need permission to view integrations to use Apps`).\n",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/LearningError"
+            },
+            "example": {
+              "error": "ORG_WIDE_TOKEN_REQUIRED",
+              "message": "Bringing in a meeting reaches the organization's registration platforms and every event, so this API key (restricted to particular events) cannot use it. Use a key without an event restriction."
+            }
+          }
+        }
+      },
+      "LearningMeetingsEventForbidden": {
+        "description": "- `SCOPE_REQUIRED` — the token lacks `read:learning`.\n- `ORG_WIDE_TOKEN_REQUIRED` — the token is restricted to particular events: \"Bringing in a meeting reaches the organization's registration platforms and every event, so this API key (restricted to particular events) cannot use it. Use a key without an event restriction.\"\n- `EVENT_ARCHIVED` — the event is archived.\n- `FEATURE_NOT_ENABLED` (`feature: lessons_credits`) — Learning is not on for the organization.\n- `FORBIDDEN` — the token's user is not an active member of the organization, or lacks the Lessons read permission.\n",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/LearningError"
+            }
+          }
+        }
+      },
+      "LearningNeedsApproval": {
+        "description": "Waiting for a person. Nothing was published or sent: a person approves or declines the request in Sessionboard Learning (`payload.url`), and it then runs as them. Do not call again.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean"
+                },
+                "payload": {
+                  "$ref": "#/components/schemas/LearningApprovalRequest"
+                }
+              }
+            }
+          }
+        }
+      },
+      "LearningAssistantsPaused": {
+        "description": "A person has paused connected assistants for the organization or the event (`code: AGENT_WRITES_PAUSED`). Ask them to resume it in Sessionboard before trying again.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/LearningError"
+            },
+            "example": {
+              "status": 423,
+              "success": false,
+              "message": "A person has paused connected assistants in Sessionboard. Ask them to resume it from their workspace before trying again.",
+              "name": "AgentWritesPausedError",
+              "code": "AGENT_WRITES_PAUSED",
+              "paused_at": "2026-11-06T15:04:05.000Z"
+            }
+          }
+        }
+      },
+      "LearningTooManyRequests": {
+        "description": "- The token's request limit (100 requests per 15 minutes per bucket by default — see [Rate Limiting](/rate-limiting)). Wait `Retry-After` seconds.\n- `QUOTA_EXCEEDED` (writes) — the token's daily write quota (10,000 a day). Resets at midnight UTC.\n",
+        "headers": {
+          "Retry-After": {
+            "description": "Seconds to wait before retrying.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/LearningError"
+            }
+          }
+        }
       }
     }
   }
