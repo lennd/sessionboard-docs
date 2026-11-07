@@ -33,7 +33,7 @@ import { absolutizeAssets } from '../src/lib/absolutize-assets.mjs';
 import { annotateImages, imageSize } from '../src/lib/annotate-images.mjs';
 import { isStaffOnlySlug } from '../src/lib/staff-only.mjs';
 import { ACADEMY_SLUG, academyOpen } from '../src/lib/academy.mjs';
-import { PLATFORM, builtSuites, keepEntry, suiteForId } from '../src/lib/suites.mjs';
+import { PLATFORM, deployedSuites, keepEntry, suiteForId } from '../src/lib/suites.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const DOCS = join(ROOT, 'src', 'content', 'docs');
@@ -364,7 +364,8 @@ if (!existsSync(DIST)) {
 }
 
 const suitesConfig = JSON.parse(readFileSync(join(ROOT, 'src', 'data', 'suites.json'), 'utf8'));
-const BUILT_SUITES = builtSuites(suitesConfig, process.env);
+// Unreleased suites are deployed but staff-only, so isStaffOnlySlug below drops them.
+const BUILT_SUITES = deployedSuites(suitesConfig, process.env);
 
 const articles = [];
 const problems = [];

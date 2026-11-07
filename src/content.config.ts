@@ -5,7 +5,7 @@ import { docsSchema } from '@astrojs/starlight/schema';
 import contract from './data/product-contract.json';
 import helpScopes from './data/help-scopes.json';
 import suitesConfig from './data/suites.json';
-import { builtSuites, keepEntry } from './lib/suites.mjs';
+import { deployedSuites, keepEntry } from './lib/suites.mjs';
 import type { Loader } from 'astro/loaders';
 
 /**
@@ -51,13 +51,13 @@ const WHERE = ['org', 'event', 'both'] as const;
 const AVAILABILITY = ['everyone', 'preview', 'beta', 'add_on', 'on_request', 'limited_release', 'enterprise'] as const;
 
 /**
- * Starlight's docs loader, minus the pages of self-serve suites that are not in
- * this build (src/data/suites.json `released`, SB_PREVIEW_SUITES). An unreleased
- * product's suite can then live on main without being published: its pages,
- * sidebar, search entries and help-index rows simply do not exist in the
- * production site. Platform pages pass through untouched.
+ * Starlight's docs loader, minus the pages of suites that are not deployed
+ * (deployedSuites: every suite unless SB_PUBLIC_SUITES_ONLY). An unreleased
+ * suite is deployed staff-only (src/lib/staff-only.mjs): the Worker 404s it for
+ * everyone else, and search, the help index, the sitemap and llms.txt leave it
+ * out. Platform pages pass through untouched.
  */
-const BUILT_SUITES = builtSuites(suitesConfig, process.env);
+const BUILT_SUITES = deployedSuites(suitesConfig, process.env);
 
 function suitesDocsLoader(): Loader {
   const inner = docsLoader();

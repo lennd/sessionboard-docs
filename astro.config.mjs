@@ -36,8 +36,8 @@ export default defineConfig({
     rehypePlugins: [rehypeAppLinks],
   },
   integrations: [
-    // Unreleased product suites (src/data/suites.json) leave no static files
-    // behind: their screenshots and share images are removed from dist/.
+    // Suites left out of an SB_PUBLIC_SUITES_ONLY build leave no static files behind.
+    // Otherwise unreleased suites are deployed staff-only (src/lib/staff-only.mjs).
     suiteStaticFiles(suitesConfig),
     // Staff-only sections (site.json `staffOnly`, src/lib/staff-only.mjs) stay out too.
     sitemap({

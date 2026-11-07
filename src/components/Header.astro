@@ -22,7 +22,7 @@ import SiteTitle from 'virtual:starlight/components/SiteTitle';
 import SocialIcons from 'virtual:starlight/components/SocialIcons';
 import ThemeSelect from 'virtual:starlight/components/ThemeSelect';
 import { apiProductAt, builtProducts, registry } from '../lib/api-docs/data';
-import { PLATFORM } from '../lib/api-docs/products.mjs';
+import { PLATFORM, builtApiProducts } from '../lib/api-docs/products.mjs';
 import site from '../../site.json';
 import { academyOpen } from '../lib/academy.mjs';
 import ProductBadge from './ProductBadge.astro';
@@ -59,8 +59,11 @@ const tabs = [
 		? [{ label: 'Academy', short: 'Academy', href: '/academy', current: onAcademy }]
 		: []),
 ];
-const preview = products.some((P) => !(registry.products as Record<string, { released?: boolean }>)[P.key]?.released);
+// ?as= simulation is for local preview builds only; in production staff see every product.
+const preview = Boolean(String(process.env.SB_PREVIEW_SUITES ?? '').trim()) && products.some((P) => !(registry.products as Record<string, { released?: boolean }>)[P.key]?.released);
 const switchable = onApi && products.length > 1;
+// Products everyone can read; the rest are staff-only until they ship (src/lib/staff-only.mjs).
+const publicProducts = builtApiProducts(registry, process.env);
 ---
 
 <div class="header">
@@ -86,7 +89,7 @@ const switchable = onApi && products.length > 1;
 					</summary>
 					<ul>
 						{products.map((P) => (
-							<li data-product={P.key} hidden>
+							<li data-product={P.key} data-public={publicProducts.has(P.key) ? '1' : undefined} hidden>
 								<a href={`${P.base}?via=all`} aria-current={P.key === onApi!.key ? 'page' : undefined}>
 									<ProductBadge product={P.key as 'platform'} />
 									{P.label}
@@ -111,8 +114,10 @@ const switchable = onApi && products.length > 1;
 </div>
 
 <script>
-	// Show only the products the reader holds (Platform when the API does not say), and the
-	// switcher only when that is two or more. Preview builds accept ?as=a,b to simulate a token.
+	// Show only the products the reader holds (Platform when the API does not say) and can read:
+	// staff (super users) every product, unreleased ones included; everyone else the released
+	// ones. The switcher shows when that is two or more. Preview builds accept ?as=a,b to
+	// simulate a token.
 	const sw = document.querySelector<HTMLDetailsElement>('.sb-api-switch');
 	if (sw) {
 		const KEY = 'sb-api-preview-products';
@@ -126,11 +131,13 @@ const switchable = onApi && products.length > 1;
 		try {
 			simulated = sw.dataset.preview ? sessionStorage.getItem(KEY) : null;
 		} catch {}
-		const apply = (held: string[]) => {
+		const apply = (held: string[], staff = false) => {
 			const items = [...sw.querySelectorAll<HTMLElement>('li[data-product]')];
 			let shown = 0;
 			for (const li of items) {
-				const on = held.includes(li.dataset.product!) || li.dataset.product === sw.dataset.current;
+				// data-public already includes products a preview build names (SB_PREVIEW_SUITES).
+				const readable = staff || li.dataset.public === '1';
+				const on = (staff || (readable && held.includes(li.dataset.product!))) || li.dataset.product === sw.dataset.current;
 				li.hidden = !on;
 				if (on) shown++;
 			}
@@ -140,7 +147,9 @@ const switchable = onApi && products.length > 1;
 		else
 			fetch('/_account/me', { credentials: 'same-origin', headers: { Accept: 'application/json' } })
 				.then((r) => (r.ok ? r.json() : null))
-				.then((body) => apply(Array.isArray(body?.reader?.products) ? body.reader.products : ['platform']))
+				.then((body) =>
+					apply(Array.isArray(body?.reader?.products) ? body.reader.products : ['platform'], body?.reader?.staff === true),
+				)
 				.catch(() => apply(['platform']));
 		document.addEventListener('click', (e) => {
 			if (sw.open && !sw.contains(e.target as Node)) sw.open = false;
