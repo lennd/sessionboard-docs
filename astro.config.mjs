@@ -46,9 +46,11 @@ export default defineConfig({
         alt: 'Sessionboard',
       },
       favicon: '/favicon.png',
-      customCss: ['./src/styles/custom.css'],
+      customCss: ['./src/styles/custom.css', './src/styles/api.css'],
       components: {
         Head: './src/components/Head.astro',
+        // Adds the Help Center | API Docs tabs; the API tab's sidebar is set in src/route-data.ts.
+        Header: './src/components/Header.astro',
         Sidebar: './src/components/Sidebar.astro',
         PageTitle: './src/components/PageTitle.astro',
         Footer: './src/components/Footer.astro',
@@ -61,7 +63,24 @@ export default defineConfig({
       plugins: [
         starlightLlmsTxt({ exclude: staffOnlyGlobs(site) }),
         // /_account/sign-in (the 404 page's sign-in link) is a Worker route, not a page.
-        starlightLinksValidator({ errorOnRelativeLinks: false, exclude: ['/_account/**'] }),
+        // API endpoint pages and the spec files are generated (src/pages/api, public/api), which
+        // the validator cannot see; scripts/api-docs-sync.mjs and tests/api-docs.test.mjs check them.
+        starlightLinksValidator({
+          errorOnRelativeLinks: false,
+          exclude: [
+            '/_account/**',
+            '/api/reference/*/*',
+            '/api/reference/*/*#*',
+            '/api/openapi.yaml',
+            '/api/openapi.json',
+            '/api/llms.txt',
+            // Self-serve products' API sections (src/pages/[product]/api) exist only in builds
+            // that include the product; tests/api-docs.test.mjs checks their links instead.
+            '/sessionboard-*/api',
+            '/sessionboard-*/api/**',
+            '/sessionboard-*/api#*',
+          ],
+        }),
       ],
       pagination: true,
       lastUpdated: false,

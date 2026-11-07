@@ -266,6 +266,9 @@ function publicReader(reader, region) {
     roles: Array.isArray(reader.roles) ? reader.roles : [],
     organizations: Array.isArray(reader.organizations) ? reader.organizations : [],
     portals: Array.isArray(reader.portals) ? reader.portals : [],
+    // Documentation suites the reader can read (web-api /help/reader/me):
+    // 'platform', 'marketing', 'learning', 'awards'. Null when the API predates it.
+    products: Array.isArray(reader.products) ? reader.products : null,
     region: region.id,
     app_origin: region.app,
   };
