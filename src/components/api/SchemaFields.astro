@@ -6,11 +6,12 @@
  */
 import Markdown from './Markdown.astro';
 import { childProperties, flatten, schemaFacts, typeLabel, variants } from '../../lib/api-docs/spec.mjs';
-import spec from '../../data/api/openapi.json';
+import { apiProduct } from '../../lib/api-docs/data';
 
 interface Field { name: string; schema: any; required?: boolean; location?: string; description?: string; deprecated?: boolean }
-interface Props { fields: Field[]; depth?: number; seen?: string[] }
-const { fields, depth = 0, seen = [] } = Astro.props;
+interface Props { fields: Field[]; depth?: number; seen?: string[]; product?: string }
+const { fields, depth = 0, seen = [], product = 'platform' } = Astro.props;
+const spec = apiProduct(product)!.spec;
 const rows = fields.map((f) => {
   const { schema: s } = flatten(spec, f.schema || {});
   const refKey = (f.schema?.$ref || f.schema?.items?.$ref) ?? null;
@@ -41,7 +42,7 @@ const rows = fields.map((f) => {
         {r.readOnly && <span class="api-field-flag">read-only</span>}
         {r.deprecated && <span class="api-field-flag api-field-deprecated">deprecated</span>}
       </div>
-      {r.description && <div class="api-field-desc"><Markdown text={r.description} /></div>}
+      {r.description && <div class="api-field-desc"><Markdown text={r.description} product={product} /></div>}
       {r.facts.length > 0 && (
         <dl class="api-field-facts">
           {r.facts.map(([k, v]) => (<><dt>{k}</dt><dd><code>{v}</code></dd></>))}
@@ -50,14 +51,14 @@ const rows = fields.map((f) => {
       {r.options.length > 1 && r.options.map((v: any) => (
         <details class="api-field-children">
           <summary>{v.label}{v.name ? ` (${v.name})` : ''}</summary>
-          {v.description && <div class="api-field-desc"><Markdown text={v.description} /></div>}
-          {v.fields.length > 0 ? <Astro.self fields={v.fields} depth={depth + 1} seen={r.nextSeen} /> : <p class="api-field-type">{v.type}</p>}
+          {v.description && <div class="api-field-desc"><Markdown text={v.description} product={product} /></div>}
+          {v.fields.length > 0 ? <Astro.self fields={v.fields} depth={depth + 1} seen={r.nextSeen} product={product} /> : <p class="api-field-type">{v.type}</p>}
         </details>
       ))}
       {r.children.length > 0 && (
         <details class="api-field-children">
           <summary>Show child attributes</summary>
-          <Astro.self fields={r.children} depth={depth + 1} seen={r.nextSeen} />
+          <Astro.self fields={r.children} depth={depth + 1} seen={r.nextSeen} product={product} />
         </details>
       )}
     </li>

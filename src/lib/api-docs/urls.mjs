@@ -11,6 +11,11 @@
  *   /api-reference/overview                 -> /api/reference/overview
  *   /api-reference/<tag>/<summary>          -> /api/reference/<tag>/<summary>
  *
+ * Self-serve products (src/data/api/products.json) get the same shape under their own
+ * base inside their Help Center suite: Mintlify `marketing/overview` -> /sessionboard-marketing/api,
+ * `marketing/mcp-tools` -> /sessionboard-marketing/api/mcp-tools, endpoints ->
+ * /sessionboard-marketing/api/reference/<tag>/<summary>.
+ *
  * Endpoint slugs are Mintlify's: the operation's first tag and its summary, slugified.
  * Mintlify keeps "&" in a few tag slugs and drops it in others; we always drop it, and
  * the redirect map lists both spellings.
@@ -33,9 +38,19 @@ export function looseKey(text) {
   return String(text).toLowerCase().replace(/&amp;/g, '&').replace(/[^a-z0-9]+/g, '');
 }
 
-/** Route (no leading slash, as Starlight ids are written) for a Mintlify guide page path. */
-export function guideRoute(mintPage) {
+/**
+ * Route (no leading slash, as Starlight ids are written) for a Mintlify guide page path.
+ * With a product registry, a page under a product's `sourceDir` lands under that
+ * product's base; its `overview` page is the product's API home.
+ */
+export function guideRoute(mintPage, registry = null) {
   const p = mintPage.replace(/^\/+|\/+$/g, '').replace(/\.mdx?$/, '');
+  for (const conf of Object.values(registry?.products ?? {})) {
+    if (!conf.sourceDir || !(p === conf.sourceDir || p.startsWith(`${conf.sourceDir}/`))) continue;
+    const rest = p.slice(conf.sourceDir.length).replace(/^\/+/, '');
+    const base = conf.base.replace(/^\/+/, '');
+    return rest === '' || rest === 'overview' ? base : `${base}/${rest}`;
+  }
   if (p === 'introduction' || p === '') return 'api';
   if (p.startsWith('api-reference/')) return `api/reference/${p.slice('api-reference/'.length)}`;
   return `api/${p}`;
@@ -51,7 +66,7 @@ export function guideFile(route) {
 }
 
 /** Every operation in spec order: { method, path, op, tag, summary, slug, href }. Slugs are unique. */
-export function listOperations(spec) {
+export function listOperations(spec, base = API_BASE) {
   const out = [];
   const taken = new Map();
   for (const [path, item] of Object.entries(spec.paths || {})) {
@@ -63,15 +78,15 @@ export function listOperations(spec) {
       let slug = `${slugify(tag)}/${slugify(summary)}`;
       if (taken.has(slug)) slug = `${slug}-${slugify(op.operationId || `${method}-${path}`)}`;
       taken.set(slug, true);
-      out.push({ method, path, op, item, tag, summary, slug, href: `${API_BASE}/reference/${slug}` });
+      out.push({ method, path, op, item, tag, summary, slug, href: `${base}/reference/${slug}` });
     }
   }
   return out;
 }
 
 /** Index of operations for link rewriting: "METHOD /path", loose tag/summary keys. */
-export function operationIndex(spec) {
-  const ops = listOperations(spec);
+export function operationIndex(spec, base = API_BASE) {
+  const ops = listOperations(spec, base);
   const byMethodPath = new Map();
   const byLoose = new Map();
   for (const o of ops) {
@@ -88,7 +103,7 @@ export function operationIndex(spec) {
  */
 export const MINTLIFY_HOSTS = ['apidocs.sessionboard.com', 'sessionboard.mintlify.app'];
 
-export function rewriteHref(href, index) {
+export function rewriteHref(href, index, { registry = null, fallback = null } = {}) {
   // Absolute links to the Mintlify site become links inside this one.
   const abs = href && href.match(/^https?:\/\/([^/]+)(\/.*)?$/);
   if (abs && MINTLIFY_HOSTS.includes(abs[1])) href = abs[2] && abs[2] !== '/' ? abs[2] : '/introduction';
@@ -107,15 +122,17 @@ export function rewriteHref(href, index) {
     const m = hash.match(/^\/paths\/(.+)\/(get|post|put|patch|delete)$/);
     if (!m) return `${API_BASE}/openapi.${pathPart.endsWith('.json') ? 'json' : 'yaml'}`;
     const path = decodeURIComponent(m[1]).replace(/~1/g, '/').replace(/~0/g, '~');
-    const o = index.byMethodPath.get(`${m[2].toUpperCase()} ${path}`);
+    const key = `${m[2].toUpperCase()} ${path}`;
+    const o = index.byMethodPath.get(key) ?? fallback?.byMethodPath.get(key);
     return o ? o.href : null;
   }
   const parts = pathPart.replace(/^\/+|\/+$/g, '').split('/');
   if (parts[0] === 'api-reference' && parts.length === 3) {
-    const o = index.byLoose.get(`${looseKey(parts[1])}/${looseKey(parts[2])}`);
+    const key = `${looseKey(parts[1])}/${looseKey(parts[2])}`;
+    const o = index.byLoose.get(key) ?? fallback?.byLoose.get(key);
     return o ? `${o.href}${anchor}` : null;
   }
-  const route = guideRoute(pathPart);
+  const route = guideRoute(pathPart, registry);
   return `/${route}${anchor}`;
 }
 

@@ -1,0 +1,48 @@
+---
+/**
+ * A self-serve product's API docs, inside that product's Help Center suite:
+ *   /sessionboard-<key>/api                     the product's API overview
+ *   /sessionboard-<key>/api/<page>              its guides (authentication, MCP tools, changelog, …)
+ *   /sessionboard-<key>/api/reference/<tag>/<summary>   one page per operation in its own spec
+ * Only products in this build exist (src/data/api/products.json `released`, SB_PREVIEW_SUITES):
+ * an unreleased product has no pages at all in the production site.
+ * Guides: src/api-docs/<key>/*.mdx; data: src/data/api/products/<key>/ (scripts/api-docs-sync.mjs).
+ */
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+import EndpointPage from '../../../components/api/EndpointPage.astro';
+import { builtProducts } from '../../../lib/api-docs/data';
+import { PLATFORM } from '../../../lib/api-docs/products.mjs';
+import { listOperations } from '../../../lib/api-docs/urls.mjs';
+
+type Guide = { Content: any; frontmatter: { title: string; description?: string }; getHeadings: () => { depth: number; slug: string; text: string }[] };
+export function getStaticPaths() {
+  // Inside getStaticPaths: Astro runs it apart from the rest of the frontmatter.
+  const guides = import.meta.glob<Guide>('../../../api-docs/*/*.mdx', { eager: true });
+  const paths = [];
+  for (const P of builtProducts()) {
+    if (P.key === PLATFORM) continue;
+    const product = P.base.replace(/^\//, '').split('/')[0];
+    for (const [file, mod] of Object.entries(guides)) {
+      const m = file.match(/\/api-docs\/([^/]+)\/([^/]+)\.mdx$/);
+      if (!m || m[1] !== P.key) continue;
+      paths.push({ params: { product, slug: m[2] === 'index' ? undefined : m[2] }, props: { key: P.key, guide: mod } });
+    }
+    for (const o of listOperations(P.spec, P.base)) paths.push({ params: { product, slug: `reference/${o.slug}` }, props: { key: P.key, op: o.slug } });
+  }
+  return paths;
+}
+
+const { key, guide, op } = Astro.props as { key: string; guide?: Guide; op?: string };
+const Content = guide?.Content;
+---
+{
+  guide ? (
+    <StarlightPage frontmatter={{ title: guide.frontmatter.title, description: guide.frontmatter.description, editUrl: false }} headings={guide.getHeadings()}>
+      <div class="api-guide">
+        <Content />
+      </div>
+    </StarlightPage>
+  ) : (
+    <EndpointPage product={key} slug={op!} />
+  )
+}

@@ -67,7 +67,19 @@ export default defineConfig({
         // the validator cannot see; scripts/api-docs-sync.mjs and tests/api-docs.test.mjs check them.
         starlightLinksValidator({
           errorOnRelativeLinks: false,
-          exclude: ['/_account/**', '/api/reference/*/*', '/api/reference/*/*#*', '/api/openapi.yaml', '/api/openapi.json', '/api/llms.txt'],
+          exclude: [
+            '/_account/**',
+            '/api/reference/*/*',
+            '/api/reference/*/*#*',
+            '/api/openapi.yaml',
+            '/api/openapi.json',
+            '/api/llms.txt',
+            // Self-serve products' API sections (src/pages/[product]/api) exist only in builds
+            // that include the product; tests/api-docs.test.mjs checks their links instead.
+            '/sessionboard-*/api',
+            '/sessionboard-*/api/**',
+            '/sessionboard-*/api#*',
+          ],
         }),
       ],
       pagination: true,

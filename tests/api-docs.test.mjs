@@ -77,3 +77,62 @@ test('examples and code samples are generated for every operation', () => {
   }
   assert.deepEqual(exampleFor(spec, { type: 'object', properties: { n: { type: 'integer' } } }), { n: 123 });
 });
+
+// ── Self-serve products (src/data/api/products.json) ─────────────────────────
+import { readdirSync } from 'node:fs';
+import { PLATFORM, apiProductForPath, builtApiProducts, productForSourcePage, productForTab } from '../src/lib/api-docs/products.mjs';
+
+const registry = json('src/data/api/products.json');
+const productDirs = existsSync(new URL('../src/data/api/products', import.meta.url))
+  ? readdirSync(new URL('../src/data/api/products', import.meta.url))
+  : [];
+
+test('unreleased products build only with SB_PREVIEW_SUITES, Platform always', () => {
+  const released = Object.keys(registry.products).filter((k) => registry.products[k].released);
+  assert.deepEqual([...builtApiProducts(registry, {})].sort(), released.sort());
+  assert.ok(builtApiProducts(registry, {}).has(PLATFORM));
+  assert.equal(builtApiProducts(registry, { SB_PREVIEW_SUITES: '1' }).size, Object.keys(registry.products).length);
+  assert.deepEqual([...builtApiProducts(registry, { SB_PREVIEW_SUITES: 'awards' })].sort(), [...new Set([...released, 'awards'])].sort());
+});
+
+test('every API docs path maps to its product; other paths to none (worker sign-in landing)', () => {
+  assert.equal(apiProductForPath('/api', registry), PLATFORM);
+  assert.equal(apiProductForPath('/api/reference/sessions/get-a-session', registry), PLATFORM);
+  assert.equal(apiProductForPath('/sessionboard-awards/api', registry), 'awards');
+  assert.equal(apiProductForPath('/sessionboard-marketing/api/reference/x/y.html', registry), 'marketing');
+  for (const p of ['/', '/welcome', '/sessionboard-awards/get-started', '/apis', '/integrations/api-tokens']) assert.equal(apiProductForPath(p, registry), null, p);
+  assert.equal(productForTab('Awards', registry), 'awards');
+  assert.equal(productForTab('API Reference', registry), PLATFORM);
+  assert.equal(productForSourcePage('learning/overview', registry), 'learning');
+  assert.equal(guideRoute('learning/overview', registry), 'sessionboard-learning/api');
+  assert.equal(guideRoute('learning/mcp-tools', registry), 'sessionboard-learning/api/mcp-tools');
+  assert.equal(guideRoute('authentication', registry), 'api/authentication');
+});
+
+for (const key of productDirs) {
+  test(`${key}: its own section, never linking into Platform pages`, () => {
+    const pSpec = json(`src/data/api/products/${key}/openapi.json`);
+    const pNav = json(`src/data/api/products/${key}/nav.json`);
+    const pSource = json(`src/data/api/products/${key}/source.json`);
+    const base = registry.products[key].base;
+    const ops = listOperations(pSpec, base);
+    assert.ok(ops.length > 0);
+    for (const o of ops) assert.ok(o.href.startsWith(`${base}/reference/`), o.href);
+    const sidebar = buildApiSidebar({ nav: pNav, spec: pSpec, source: pSource, pathname: base, base, registry });
+    const links = flatten(sidebar);
+    assert.equal(links.find((l) => l.isCurrent)?.href, base);
+    for (const l of links) assert.ok(l.href.startsWith(base), `${key} sidebar leaves its section: ${l.href}`);
+    // product-docs-suites.mdc: a self-serve suite never sends its reader into Platform pages,
+    // and every link inside the section reaches a page that exists (the link validator skips them).
+    const routes = new Set([...Object.keys(pSource.guides).map((r) => `/${r}`), ...ops.map((o) => o.href)]);
+    const dir = new URL(`../src/api-docs/${key}/`, import.meta.url);
+    for (const f of readdirSync(dir)) {
+      const text = readFileSync(new URL(f, dir), 'utf8');
+      for (const [, href] of text.matchAll(/\]\((\/[^)\s]*)\)|href="(\/[^"]*)"/g)) {
+        if (!href || href.startsWith('/images/')) continue;
+        assert.ok(href.startsWith(`${base}`), `${key}/${f} links outside its section: ${href}`);
+        assert.ok(routes.has(href.split('#')[0]), `${key}/${f} links to a page that does not exist: ${href}`);
+      }
+    }
+  });
+}

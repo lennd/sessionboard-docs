@@ -14,6 +14,8 @@ import trainingRedirects from './training-redirects.json';
 import site from './site.json';
 import { isProductUpdatesPath, productUpdatesResponse } from './src/lib/product-updates-proxy.mjs';
 import { isStaffOnlyHref, isStaffOnlyPath } from './src/lib/staff-only.mjs';
+import { apiProductForPath } from './src/lib/api-docs/products.mjs';
+import apiProducts from './src/data/api/products.json';
 import { ACCOUNT_PREFIX, accountResponse, isSignedInRequest, isStaffRequest, recheckStaff } from './src/lib/account-session.mjs';
 import { STATUS_PATH as RELEASE_EMAIL_STATUS_PATH } from './src/lib/product-updates-proxy.mjs';
 
@@ -181,7 +183,10 @@ async function internalResponse(request, url, env) {
 // product says they are signed in, or offers Sign in. Only what the landing
 // page and the release-notes email links need stays public.
 const WELCOME_PATH = '/welcome';
-const PUBLIC_EXACT = new Set([WELCOME_PATH, '/favicon.png', '/favicon.svg', '/favicon.ico', RELEASE_EMAIL_STATUS_PATH]);
+// The API docs (Platform /api and each product's /…/api) have their own public page:
+// what the API is and how to get access (src/pages/api/welcome.astro).
+const API_WELCOME_PATH = '/api/welcome';
+const PUBLIC_EXACT = new Set([WELCOME_PATH, API_WELCOME_PATH, '/favicon.png', '/favicon.svg', '/favicon.ico', RELEASE_EMAIL_STATUS_PATH]);
 const PUBLIC_PREFIXES = ['/_astro/'];
 const isPublicPath = (pathname) => PUBLIC_EXACT.has(pathname) || PUBLIC_PREFIXES.some((p) => pathname.startsWith(p));
 
@@ -193,7 +198,8 @@ function signInRequired(request, url) {
   const headers = { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow', Vary: 'Cookie' };
   if (!looksLikePage) return new Response('Not found\n', { status: 404, headers: { ...headers, 'Content-Type': 'text/plain; charset=utf-8' } });
   const back = `${url.pathname}${url.search}`;
-  const target = back === '/' ? WELCOME_PATH : `${WELCOME_PATH}?return=${encodeURIComponent(back)}`;
+  const landing = apiProductForPath(url.pathname, apiProducts) ? API_WELCOME_PATH : WELCOME_PATH;
+  const target = back === '/' ? WELCOME_PATH : `${landing}?return=${encodeURIComponent(back)}`;
   return new Response(null, { status: 302, headers: { ...headers, Location: target } });
 }
 

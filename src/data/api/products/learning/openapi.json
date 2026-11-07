@@ -1,0 +1,825 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Sessionboard Public API",
+    "version": "1.0",
+    "description": "REST API for managing sessions, speakers, contacts, sponsors, exhibitors, and event data on the Sessionboard platform.",
+    "contact": {
+      "name": "Sessionboard Support",
+      "email": "support@sessionboard.com"
+    },
+    "termsOfService": "https://www.sessionboard.com/legal/terms-of-service"
+  },
+  "servers": [
+    {
+      "url": "https://public-api.sessionboard.com",
+      "description": "US Region"
+    },
+    {
+      "url": "https://public-api-eu.sessionboard.com",
+      "description": "EU Region"
+    }
+  ],
+  "security": [
+    {
+      "ApiKey": []
+    },
+    {
+      "BearerToken": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Learning",
+      "description": "Turn Media-section videos (webinars, recordings, uploads, clips) into a course: draft it from\nvideos, review and edit the draft, then publish it and assign it. Organization-level: paths\nstart at `/v1/organization/{orgId}/learning`, and the same operations are served under\n`/v1/learning` with the organization taken from the token. Requires the preview scopes\n`read:learning` / `write:learning`, which a token or OAuth client gets only when they are\nnamed explicitly (not by default, and not listed in `scopes_supported`). The organization\nmust have Learning turned on, and the token's user needs the Lessons permissions.\n"
+    }
+  ],
+  "paths": {
+    "/v1/organization/{orgId}/learning/media": {
+      "get": {
+        "operationId": "list-learning-media",
+        "summary": "List videos a course can be made from",
+        "description": "Media-section recordings, uploads and clips, newest first. A course is written from what is said, so only items with `has_transcript: true` can be used (a clip uses its recording's transcript). Requires `read:learning`. Also served at `GET /v1/learning/media` with the organization taken from the token.",
+        "tags": [
+          "Learning"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "video",
+                "clip"
+              ]
+            },
+            "description": "`video` for recordings and uploads, `clip` for clips cut from them. Omit for both."
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "description": "Words from the title."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "media": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/LearningMedia"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningForbidden"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/library": {
+      "get": {
+        "operationId": "get-learning-library",
+        "summary": "List lessons and courses",
+        "description": "The organization's lessons and courses (series), with ids and external keys — what an assignment can target. Requires `read:learning`. Also at `GET /v1/learning/library`.",
+        "tags": [
+          "Learning"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`payload.lessons[]` and `payload.courses[]`."
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningForbidden"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/drafts": {
+      "get": {
+        "operationId": "list-course-drafts",
+        "summary": "List course drafts",
+        "description": "Course drafts made from videos, newest first. Requires `read:learning`. Also at `GET /v1/learning/drafts`.",
+        "tags": [
+          "Learning"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "drafts": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/CourseDraftSummary"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningForbidden"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/drafts/create": {
+      "post": {
+        "operationId": "create-course-draft",
+        "summary": "Draft a course from videos",
+        "description": "Starts making a course from 1–10 videos or clips. The videos are checked now (same organization, a transcript, no cuts); then the course is generated in the background: lesson-sized segments, a clip cut for each, and per lesson a short reading, in-video questions and a quiz, every question grounded in that clip's transcript. Answers `202` with the draft (`status: queued`); poll `GET /v1/organization/{orgId}/learning/drafts/{draftId}` until `status` is `ready` or `failed` (usually a minute or two per video). Nothing is published and no one is notified. Requires `write:learning`. Also at `POST /v1/learning/drafts/create`.",
+        "tags": [
+          "Learning"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "mediaItemIds"
+                ],
+                "properties": {
+                  "mediaItemIds": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 10,
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "description": "Videos / clips from List videos, in course order."
+                  },
+                  "title": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "description": "Course title. Defaults to the video's title when there is one video."
+                  },
+                  "audience": {
+                    "type": "string",
+                    "maxLength": 500,
+                    "description": "Who the course is for. Shapes the writing; it does not decide who is assigned."
+                  },
+                  "certification": {
+                    "type": "boolean",
+                    "description": "Add a certification earned by completing every lesson."
+                  },
+                  "validityMonths": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 120,
+                    "description": "How long the certification lasts. Omit for never expires."
+                  },
+                  "questionTypes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "multiple_choice",
+                        "true_false",
+                        "short_answer",
+                        "multi_select",
+                        "ordering",
+                        "matching",
+                        "numeric"
+                      ]
+                    },
+                    "description": "Default `multiple_choice`, `true_false`, `multi_select`."
+                  },
+                  "checkpointsPerLesson": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 3,
+                    "description": "Questions that pause the video, per lesson. Default 2."
+                  },
+                  "quizQuestions": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10,
+                    "description": "Final quiz questions per lesson. Default 4."
+                  },
+                  "maxLessonsPerVideo": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 12,
+                    "description": "Upper bound on lessons from one long video, default 8. Exceeded only when fewer lessons would each run past 10 minutes."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Queued.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "draft": {
+                          "$ref": "#/components/schemas/CourseDraftSummary"
+                        },
+                        "poll": {
+                          "type": "string",
+                          "description": "Internal path of the draft; poll the Get a course draft operation."
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A video is not in this organization, has no transcript, or has cuts."
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningForbidden"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/drafts/{draftId}": {
+      "get": {
+        "operationId": "get-course-draft",
+        "summary": "Get a course draft",
+        "description": "While generating: `status` and `progress`. When `ready`: the `bundle` (lessons, the course, the certification), the `diff` publishing would make, `warnings` (questions left out because the clip doesn't answer them) and `media` — per clip, its `status` and a short-lived playable `url`. Requires `read:learning`. Also at `GET /v1/learning/drafts/{draftId}`.",
+        "tags": [
+          "Learning"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/CourseDraftId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "draft": {
+                          "$ref": "#/components/schemas/CourseDraft"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningForbidden"
+          },
+          "404": {
+            "description": "Not found — also returned for another organization's draft."
+          }
+        }
+      },
+      "put": {
+        "operationId": "update-course-draft",
+        "summary": "Save edits to a course draft",
+        "description": "Replaces the draft's bundle with your edited copy (send the whole bundle — anything left out is dropped) and returns the draft with a fresh `diff`. Pass the draft's `updated_at` from the read you edited as `baseUpdatedAt`: if the draft changed since, the save answers `409` with `code: COURSE_DRAFT_STALE` and writes nothing. Requires `write:learning`. Also at `PUT /v1/learning/drafts/{draftId}`.",
+        "tags": [
+          "Learning"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/CourseDraftId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "bundle"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "maxLength": 255
+                  },
+                  "baseUpdatedAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "bundle": {
+                    "$ref": "#/components/schemas/CourseBundle"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved; the draft as in Get a course draft."
+          },
+          "400": {
+            "description": "The bundle failed validation (the message names the lesson and question)."
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningForbidden"
+          },
+          "409": {
+            "description": "The draft changed since `baseUpdatedAt` (`code: COURSE_DRAFT_STALE`, with the current `updated_at`)."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/drafts/{draftId}/apply": {
+      "post": {
+        "operationId": "apply-course-draft",
+        "summary": "Publish and assign a course draft",
+        "description": "Publishes the draft's lessons, course and certification to every learner in the organization. Lessons upsert by key, so publishing an edited draft again updates the same lessons and keeps learners' progress. With `assign`, assigns the certification (or the course when there is none) and messages each assignee (Slack DM, or email when Slack can't reach them); repeating the same `assign` does not assign or message again. With `announce.slackChannelId`, posts the announcement in that channel. Refused while clips are still being cut unless `allowPendingMedia`. The token's user needs the Lessons create and update permissions. Requires `write:learning`. Also at `POST /v1/learning/drafts/{draftId}/apply`.",
+        "tags": [
+          "Learning"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/CourseDraftId"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "assign": {
+                    "type": "object",
+                    "properties": {
+                      "allTeam": {
+                        "type": "boolean",
+                        "description": "Everyone on the team, including people who join later."
+                      },
+                      "userIds": {
+                        "type": "array",
+                        "items": {
+                          "type": "integer"
+                        }
+                      },
+                      "dueInDays": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "minimum": 1,
+                        "maximum": 365
+                      },
+                      "required": {
+                        "type": "boolean",
+                        "default": true
+                      }
+                    }
+                  },
+                  "announce": {
+                    "type": "object",
+                    "properties": {
+                      "slackChannelId": {
+                        "type": "string",
+                        "maxLength": 32
+                      }
+                    }
+                  },
+                  "allowPendingMedia": {
+                    "type": "boolean",
+                    "default": false
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Published; the draft with `apply_result` (`diff`, the assignment and its delivery report)."
+          },
+          "400": {
+            "description": "A clip could not be cut, or there is nothing to assign."
+          },
+          "403": {
+            "description": "Token lacks `write:learning`, the user lacks the Lessons permissions, clips are still being cut, or the draft changed or is being published (reload it)."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/assignments/create": {
+      "post": {
+        "operationId": "create-learning-assignment",
+        "summary": "Assign a certification, course or lesson",
+        "description": "Assigns already-published training to the whole team or named teammates and messages each of them. Requires `write:learning`. Also at `POST /v1/learning/assignments/create`.",
+        "tags": [
+          "Learning"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "targetKind",
+                  "targetId",
+                  "audience"
+                ],
+                "properties": {
+                  "targetKind": {
+                    "type": "string",
+                    "enum": [
+                      "certification",
+                      "series",
+                      "lesson"
+                    ],
+                    "description": "`series` is a course."
+                  },
+                  "targetId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "audience": {
+                    "type": "object",
+                    "properties": {
+                      "allTeam": {
+                        "type": "boolean"
+                      },
+                      "userIds": {
+                        "type": "array",
+                        "items": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  },
+                  "dueInDays": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 1,
+                    "maximum": 365
+                  },
+                  "required": {
+                    "type": "boolean"
+                  },
+                  "slackChannelId": {
+                    "type": "string",
+                    "maxLength": 32
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Assigned; `payload.assignment` and `payload.delivery` (who was messaged, and how)."
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningForbidden"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-access-token",
+        "description": "Organization API token. Generate from Organization Settings → API Tokens."
+      },
+      "BearerToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "OAuth 2.1 access token. Obtained via the OAuth PKCE flow at `/oauth/token`."
+      }
+    },
+    "parameters": {
+      "LearningOrgId": {
+        "name": "orgId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string"
+        },
+        "description": "Your organization ID. Any other organization returns `404`."
+      },
+      "CourseDraftId": {
+        "name": "draftId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      }
+    },
+    "schemas": {
+      "LearningMedia": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "recording",
+              "audio",
+              "clip"
+            ]
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "duration_seconds": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "has_transcript": {
+            "type": "boolean"
+          },
+          "chapter_count": {
+            "type": "integer"
+          },
+          "clip_count": {
+            "type": "integer",
+            "description": "Clips cut from this recording."
+          },
+          "parent": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "A clip's recording.",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "title": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "can_make_course": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CourseDraftSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "generating",
+              "ready",
+              "applying",
+              "applied",
+              "failed"
+            ]
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "media_item_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "progress": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "step": {
+                "type": "string"
+              },
+              "done": {
+                "type": "integer"
+              },
+              "total": {
+                "type": "integer"
+              }
+            }
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "lesson_count": {
+            "type": "integer"
+          },
+          "applied_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Send back as `baseUpdatedAt` when you save."
+          }
+        }
+      },
+      "CourseDraft": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/CourseDraftSummary"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "bundle": {
+                "$ref": "#/components/schemas/CourseBundle"
+              },
+              "diff": {
+                "type": "object",
+                "description": "What publishing would do — `created` / `updated` / `unchanged` for lessons, courses and certifications."
+              },
+              "warnings": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "lesson": {
+                      "type": "integer"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "media": {
+                "type": "object",
+                "description": "Per clip id — `status` (ready, processing, failed, missing), a short-lived `url`, `duration_s`, `poster_url`.",
+                "additionalProperties": true
+              },
+              "apply_result": {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "CourseBundle": {
+        "type": "object",
+        "description": "Lessons, the course and the certification. A lesson's watch step plays a clip (`mediaItemId`) and may carry `checkpoints` — questions with `atSeconds`, seconds into the clip. A question has `prompt`, `type`, `options`, `answer` (multi-select, ordering and matching answers are JSON strings), optional `config` and `feedback` (`correct`, `incorrect`, `hint`). Keys are permanent: publishing upserts by key.",
+        "required": [
+          "lessons"
+        ],
+        "properties": {
+          "lessons": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "courses": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "certifications": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "LearningForbidden": {
+        "description": "- `SCOPE_REQUIRED` — the token lacks `read:learning` (reads) or `write:learning` (writes). Legacy tokens with no scopes cannot write.\n- `FORBIDDEN` — Learning is not on for the organization, or the token's user lacks the Lessons permission.\n"
+      }
+    }
+  }
+}

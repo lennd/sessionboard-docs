@@ -7,6 +7,8 @@
  *   node scripts/api-docs-sync.mjs --from <dir>         # another checkout (CI: the checked-out repo)
  *   node scripts/api-docs-sync.mjs --ref origin/main    # read a git ref instead of the working tree
  *   node scripts/api-docs-sync.mjs --check              # exit 1 if anything here differs from the source
+ *   node scripts/api-docs-sync.mjs --ref origin/main --products-ref feature/api-docs-products
+ *                                                       # Platform from one ref, self-serve products from another
  *
  * That repo stays the single source until the Mintlify site is retired: the OpenAPI spec,
  * the navigation (docs.json) and every guide page. Nothing under the paths below is edited
@@ -20,12 +22,21 @@
  *   src/content/docs/api/**.mdx      guide pages, converted from Mintlify MDX
  *   public/api/openapi.{yaml,json}   downloadable spec
  *   public/images/api/*              images the guides use
+ *
+ * Self-serve products (src/data/api/products.json): a docs.json tab whose name is a
+ * product's `tab` is that product's API section, with its own spec (the tab's `openapi`
+ * file, api-reference/products/<key>.json) and guides (pages under `sourceDir/`). It writes
+ *   src/data/api/products/<key>/{openapi,nav,source}.json
+ *   src/api-docs/<key>/**.mdx        rendered by src/pages/[product]/api/[...slug].astro,
+ *                                    only for products in the build (SB_PREVIEW_SUITES)
+ * Everything else in docs.json is Platform, unchanged.
  */
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { guideFile, guideRoute, listOperations, mintlifyOperationUrls, operationIndex, rewriteHref } from '../src/lib/api-docs/urls.mjs';
+import { PLATFORM, productForTab } from '../src/lib/api-docs/products.mjs';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
@@ -43,11 +54,13 @@ if (!FROM || !fs.existsSync(FROM)) {
 }
 
 const git = (...a) => execFileSync('git', ['-C', FROM, ...a], { encoding: 'buffer', maxBuffer: 64 << 20 });
-const readSource = (rel) => (REF ? git('show', `${REF}:${rel}`) : fs.readFileSync(path.join(FROM, rel)));
+const PRODUCTS_REF = opt('--products-ref') ?? REF;
+let activeRef = REF;
+const readSource = (rel) => (activeRef ? git('show', `${activeRef}:${rel}`) : fs.readFileSync(path.join(FROM, rel)));
 const sourceExists = (rel) => {
-  if (!REF) return fs.existsSync(path.join(FROM, rel));
+  if (!activeRef) return fs.existsSync(path.join(FROM, rel));
   try {
-    git('cat-file', '-e', `${REF}:${rel}`);
+    git('cat-file', '-e', `${activeRef}:${rel}`);
     return true;
   } catch {
     return false;
@@ -61,7 +74,8 @@ try {
 // ---------------------------------------------------------------- outputs
 const outputs = new Map(); // repo-relative path -> Buffer|string
 const put = (rel, data) => outputs.set(rel, data);
-const OWNED_DIRS = ['src/content/docs/api', 'public/images/api'];
+const OWNED_DIRS = ['src/content/docs/api', 'public/images/api', 'src/api-docs', 'src/data/api/products'];
+const registry = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/data/api/products.json'), 'utf8'));
 
 // ---------------------------------------------------------------- spec + nav
 const specYaml = readSource('api-reference/openapi.yaml');
@@ -70,23 +84,68 @@ const spec = JSON.parse(specJsonBuf.toString('utf8'));
 const docs = JSON.parse(readSource('docs.json').toString('utf8'));
 const index = operationIndex(spec);
 
-put('src/data/api/openapi.json', JSON.stringify(spec, null, 2) + '\n');
-put('public/api/openapi.yaml', specYaml);
-put('public/api/openapi.json', JSON.stringify(spec, null, 2) + '\n');
-put('src/data/api/nav.json', JSON.stringify(docs.navigation, null, 2) + '\n');
+// docs.json tabs, split by product: a tab named after a product is that product's.
+// Platform tabs come from --ref, product tabs from --products-ref (default: the same ref).
+activeRef = PRODUCTS_REF;
+const productDocs = PRODUCTS_REF === REF ? docs : JSON.parse(readSource('docs.json').toString('utf8'));
+let productsCommit = null;
+try {
+  productsCommit = git('rev-parse', PRODUCTS_REF ?? 'HEAD').toString().trim();
+} catch {}
+activeRef = REF;
+const tabsByProduct = new Map();
+for (const tab of docs.navigation.tabs || []) {
+  if (productForTab(tab.tab, registry) !== PLATFORM) continue;
+  if (!tabsByProduct.has(PLATFORM)) tabsByProduct.set(PLATFORM, []);
+  tabsByProduct.get(PLATFORM).push(tab);
+}
+for (const tab of productDocs.navigation.tabs || []) {
+  const key = productForTab(tab.tab, registry);
+  if (key === PLATFORM) continue;
+  if (!tabsByProduct.has(key)) tabsByProduct.set(key, []);
+  tabsByProduct.get(key).push(tab);
+}
+const platformNav = { ...docs.navigation, tabs: tabsByProduct.get(PLATFORM) ?? [] };
 
-// Every non-endpoint page string in the navigation is a guide.
-const guidePages = [];
-(function walk(node) {
-  if (Array.isArray(node)) return node.forEach(walk);
-  if (typeof node === 'string') {
-    if (!/^(GET|POST|PUT|PATCH|DELETE) \//.test(node)) guidePages.push(node);
-    return;
-  }
-  if (node && typeof node === 'object') {
-    for (const k of ['tabs', 'groups', 'pages']) if (node[k]) walk(node[k]);
-  }
-})(docs.navigation);
+put('src/data/api/openapi.json', JSON.stringify(spec, null, 2) + '\n');
+// The YAML source can hold operations the JSON leaves out (x-hidden, other products'
+// paths), so the published .yaml is the Platform JSON itself: JSON is valid YAML 1.2.
+void specYaml;
+put('public/api/openapi.yaml', JSON.stringify(spec, null, 2) + '\n');
+put('public/api/openapi.json', JSON.stringify(spec, null, 2) + '\n');
+put('src/data/api/nav.json', JSON.stringify(platformNav, null, 2) + '\n');
+
+/** Every non-endpoint page string in a navigation tree is a guide. */
+function guidesIn(nav) {
+  const out = [];
+  (function walk(node) {
+    if (Array.isArray(node)) return node.forEach(walk);
+    if (typeof node === 'string') {
+      if (!/^(GET|POST|PUT|PATCH|DELETE) \//.test(node)) out.push(node);
+      return;
+    }
+    if (node && typeof node === 'object') {
+      for (const k of ['tabs', 'groups', 'pages']) if (node[k]) walk(node[k]);
+    }
+  })(nav);
+  return out;
+}
+const guidePages = guidesIn(platformNav);
+
+/** The `openapi` file a tab's endpoint groups name (the first one found). */
+function tabSpecFile(tab) {
+  let found = null;
+  (function walk(node) {
+    if (found || !node || typeof node !== 'object') return;
+    if (Array.isArray(node)) return node.forEach(walk);
+    if (typeof node.openapi === 'string') found = node.openapi;
+    for (const k of ['groups', 'pages']) if (node[k]) walk(node[k]);
+  })(tab);
+  return found;
+}
+
+// Link rewriting context for the guide being converted (Platform first, then each product).
+let linkCtx = { index, opts: { registry } };
 
 // ---------------------------------------------------------------- MDX conversion
 const COMPAT = ['Note', 'Tip', 'Warning', 'Info', 'Steps', 'Step', 'Card', 'CardGroup', 'Accordion', 'AccordionGroup'];
@@ -174,7 +233,7 @@ function convertProse(line, file) {
   s = s.replace(/(`[^`]*`)|(\]\()([^)\s]+)(\))|(href=")([^"]+)(")/g, (m, code, a1, href1, a2, h1, href2, h2) => {
     if (code) return code;
     const href = href1 ?? href2;
-    const next = rewriteHref(href, index);
+    const next = rewriteHref(href, linkCtx.index, linkCtx.opts);
     if (href.startsWith('/images/')) images.add(href.slice('/images/'.length));
     if (next === null) {
       if (href.startsWith('/')) unresolved.push(`${file}: ${href}`);
@@ -220,7 +279,62 @@ for (const page of guidePages) {
   put(`src/content/docs/${guideFile(route)}`, head.join('\n') + converted.replace(/^\n+/, ''));
 }
 
-for (const img of images) put(`public/images/api/${img}`, readSource(`images/${img}`));
+// ---------------------------------------------------------------- self-serve products
+const productSummary = [];
+activeRef = PRODUCTS_REF;
+for (const [key, tabs] of tabsByProduct) {
+  if (key === PLATFORM) continue;
+  const conf = registry.products[key];
+  const nav = { tabs };
+  const specFile = tabs.map(tabSpecFile).find(Boolean);
+  if (!specFile || !sourceExists(specFile.replace(/\.ya?ml$/, '.json'))) {
+    unresolved.push(`${key}: its docs.json tab names no readable spec (${specFile ?? 'none'})`);
+    continue;
+  }
+  const pSpec = JSON.parse(readSource(specFile.replace(/\.ya?ml$/, '.json')).toString('utf8'));
+  const pIndex = operationIndex(pSpec, conf.base);
+  linkCtx = { index: pIndex, opts: { registry, fallback: index } };
+  const titles = {};
+  for (const page of guidesIn(nav)) {
+    const rel = `${page}.mdx`;
+    if (!sourceExists(rel)) {
+      unresolved.push(`docs.json names ${page} but ${rel} does not exist`);
+      continue;
+    }
+    const { fm, body } = splitFrontmatter(readSource(rel).toString('utf8'));
+    const route = guideRoute(page, registry);
+    const sub = route === conf.base.replace(/^\//, '') ? 'index' : route.slice(conf.base.replace(/^\//, '').length + 1);
+    const converted = convertBody(body, rel);
+    const used = COMPAT.filter((c) => new RegExp(`<${c}[\\s>/]`).test(converted));
+    const usesTabs = /<Tabs[\s>]/.test(converted);
+    const title = fm.title || page;
+    titles[route] = { title, label: fm.sidebarTitle || title, description: fm.description ?? null, source: rel };
+    const head = [
+      '---',
+      `title: ${yamlString(title)}`,
+      fm.description ? `description: ${yamlString(fm.description)}` : null,
+      '---',
+      '',
+      used.length ? `import { ${used.join(', ')} } from '@compat';` : null,
+      usesTabs ? `import { Tabs, TabItem } from '@astrojs/starlight/components';` : null,
+      used.length || usesTabs ? '' : null,
+      `{/* Generated by scripts/api-docs-sync.mjs from lennd/sessionboard-public-api-docs ${rel}. Edit it there and re-sync. */}`,
+      '',
+    ].filter((l) => l !== null);
+    put(`src/api-docs/${key}/${sub}.mdx`, head.join('\n') + converted.replace(/^\n+/, ''));
+  }
+  put(`src/data/api/products/${key}/openapi.json`, JSON.stringify(pSpec, null, 2) + '\n');
+  put(`src/data/api/products/${key}/nav.json`, JSON.stringify(nav, null, 2) + '\n');
+  put(`src/data/api/products/${key}/source.json`, JSON.stringify({ repo: 'lennd/sessionboard-public-api-docs', commit: productsCommit, spec: specFile, guides: titles }, null, 2) + '\n');
+  productSummary.push(`${key} (${Object.keys(titles).length} guides, ${listOperations(pSpec).length} endpoints)`);
+}
+
+activeRef = REF;
+for (const img of images) {
+  if (!sourceExists(`images/${img}`)) activeRef = PRODUCTS_REF; // an image only a product guide uses
+  put(`public/images/api/${img}`, readSource(`images/${img}`));
+  activeRef = REF;
+}
 
 // ---------------------------------------------------------------- 301 map
 const redirects = {};
@@ -288,5 +402,5 @@ for (const [rel, data] of outputs) {
   fs.writeFileSync(abs, toBuf(data));
 }
 console.log(
-  `api-docs-sync: ${guidePages.length} guides, ${listOperations(spec).length} endpoints, ${images.size} images from ${commit?.slice(0, 7) ?? 'working tree'}; ${changed.length} file(s) changed, ${stale.length} removed.`,
+  `api-docs-sync: Platform ${guidePages.length} guides, ${listOperations(spec).length} endpoints${productSummary.length ? `; ${productSummary.join(', ')}` : ''}; ${images.size} images from ${commit?.slice(0, 7) ?? 'working tree'}; ${changed.length} file(s) changed, ${stale.length} removed.`,
 );

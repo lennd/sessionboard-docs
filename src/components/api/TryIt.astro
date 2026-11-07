@@ -6,10 +6,11 @@
  * answers CORS with `*` and allows the x-access-token / Authorization headers, so no proxy.
  */
 import { exampleFor, parameters, requestBody, mediaExamples } from '../../lib/api-docs/spec.mjs';
-import spec from '../../data/api/openapi.json';
+import { apiProduct } from '../../lib/api-docs/data';
 
-interface Props { o: any }
-const { o } = Astro.props;
+interface Props { o: any; product?: string }
+const { o, product = 'platform' } = Astro.props;
+const spec = apiProduct(product)!.spec;
 const params = parameters(spec, o.item, o.op);
 const body = requestBody(spec, o.op);
 const sec = (o.op.security ?? spec.security ?? []).flatMap((s: Record<string, unknown>) => Object.keys(s));

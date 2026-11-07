@@ -20,9 +20,9 @@ export const METHOD_BADGE = {
 const ENDPOINT = /^(GET|POST|PUT|PATCH|DELETE) (\/.*)$/;
 const norm = (p) => (p.length > 1 ? p.replace(/\/+$/, '').replace(/\.html$/, '') : p);
 
-export function buildApiSidebar({ nav, spec, source, pathname }) {
+export function buildApiSidebar({ nav, spec, source, pathname, base = '/api', registry = null }) {
   const current = norm(pathname);
-  const byMethodPath = new Map(listOperations(spec).map((o) => [`${o.method.toUpperCase()} ${o.path}`, o]));
+  const byMethodPath = new Map(listOperations(spec, base).map((o) => [`${o.method.toUpperCase()} ${o.path}`, o]));
 
   const link = (label, href, extra = {}) => ({
     type: 'link',
@@ -45,7 +45,7 @@ export function buildApiSidebar({ nav, spec, source, pathname }) {
           attrs: { class: 'api-op', 'data-method': m[1] },
         });
       }
-      const route = guideRoute(entry);
+      const route = guideRoute(entry, registry);
       const meta = source.guides?.[route];
       return link(meta?.label ?? entry, `/${route}`);
     }
@@ -59,20 +59,22 @@ export function buildApiSidebar({ nav, spec, source, pathname }) {
     return { type: 'group', label, entries, collapsed: collapsedByDefault && !hasCurrent, badge: undefined };
   }
 
+  const hasEndpoints = (g) => /"(GET|POST|PUT|PATCH|DELETE) \//.test(JSON.stringify(g.pages));
   const sidebar = [];
   for (const tab of nav.tabs || []) {
-    const groups = (tab.groups || []).map((g) => g);
-    const isReference = groups.some((g) => JSON.stringify(g.pages).match(/"(GET|POST|PUT|PATCH|DELETE) \//));
-    if (!isReference) {
-      // "Documentation": its groups sit at the top level, open.
+    const groups = tab.groups || [];
+    if (!groups.some(hasEndpoints)) {
+      // A guides tab ("Documentation"): its groups sit at the top level, open.
       for (const g of groups) sidebar.push(group(g.group, g.pages, false));
-    } else {
-      // "API Reference": one top-level group; the prose pages open, endpoint groups collapsed.
-      const inner = groups.map((g) => {
-        const endpoints = JSON.stringify(g.pages).match(/"(GET|POST|PUT|PATCH|DELETE) \//);
-        return group(g.group, g.pages, !!endpoints);
-      });
+    } else if (groups.every(hasEndpoints) || groups.filter((g) => !hasEndpoints(g)).length > 1 || tab.tab === 'API Reference') {
+      // A reference tab: one top-level group; prose groups open, endpoint groups collapsed.
+      const inner = groups.map((g) => group(g.group, g.pages, hasEndpoints(g)));
       sidebar.push({ type: 'group', label: tab.tab, entries: inner, collapsed: false, badge: undefined });
+    } else {
+      // A product tab (guides group + endpoint groups): guides open at the top, endpoints under "API reference".
+      for (const g of groups.filter((x) => !hasEndpoints(x))) sidebar.push(group(g.group, g.pages, false));
+      const inner = groups.filter(hasEndpoints).map((g) => group(g.group, g.pages, true));
+      sidebar.push({ type: 'group', label: 'API reference', entries: inner, collapsed: false, badge: undefined });
     }
   }
   return sidebar;
