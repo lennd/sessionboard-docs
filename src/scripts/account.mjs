@@ -22,6 +22,7 @@
 import { hydrateMarkers } from '../lib/marker-hydration.mjs';
 import suitesConfig from '../data/suites.json';
 import { PLATFORM, SUITE_COOKIE, landingTarget } from '../lib/suites.mjs';
+import { docsGrantLine } from '../lib/docs-grant.mjs';
 
 const HINT = 'sb_signed_in=1';
 /** Set by the product on .sessionboard.com while someone is signed in: `sb_app=<region id>`. Names a region, nothing else. */
@@ -47,6 +48,7 @@ const VIA_LABELS = {
   event_portal: 'the event portal',
   org_portal: 'the reviewer portal',
   ready_room: 'Ready Room',
+  docs_grant: 'an email link from Sessionboard',
 };
 /** The article audience each role reads (frontmatter `audience`). */
 const AUDIENCE_BY_ROLE = { organizer: 'organizer', speaker: 'participant', reviewer: 'reviewer', ready_room: 'organizer' };
@@ -221,6 +223,9 @@ function buildPanel(reader, ctx, onChoose) {
     reader.email ? el('p', { class: 'sb-acct-muted', text: reader.email }) : null,
     el('p', { class: 'sb-acct-muted', text: `Signed in from ${VIA_LABELS[reader.signed_in_via] ?? 'Sessionboard'}` }),
   ];
+  // Staff-granted documentation access (src/lib/docs-grant.mjs).
+  const grantLine = docsGrantLine(reader.docs_grant, document.documentElement.lang || undefined);
+  if (grantLine) nodes.push(el('p', { class: 'sb-acct-muted', 'data-sb-docs-grant': '', text: grantLine }));
   const roles = [...reader.roles, ...(reader.staff ? ['staff'] : [])];
   if (roles.length) {
     nodes.push(
