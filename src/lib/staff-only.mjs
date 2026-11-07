@@ -28,9 +28,19 @@ import suitesConfig from '../data/suites.json' with { type: 'json' };
 
 const trimSlashes = (value) => String(value ?? '').replace(/^\/+|\/+$/g, '');
 
+/**
+ * SB_PREVIEW_SUITES for this process: the build's environment, or — in the Worker,
+ * which has no process.env — what worker.js copies from its own env (setPreviewSuites).
+ * Production sets neither, so every unreleased suite stays staff-only (fail closed).
+ */
+let workerPreviewSuites = '';
+export function setPreviewSuites(value) {
+  workerPreviewSuites = String(value ?? '');
+}
+
 /** Unreleased suites (not named by SB_PREVIEW_SUITES): `[{ key, prefix }]`. */
 function staffOnlySuitePrefixes() {
-  const preview = String(globalThis.process?.env?.SB_PREVIEW_SUITES ?? '').trim().toLowerCase();
+  const preview = String(globalThis.process?.env?.SB_PREVIEW_SUITES ?? workerPreviewSuites).trim().toLowerCase();
   const all = ['1', 'all', 'true', 'yes'].includes(preview);
   const named = new Set(preview.split(',').map((s) => s.trim()).filter(Boolean));
   return Object.entries(suitesConfig.suites)

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { isStaffOnlyHref, isStaffOnlyPath, isStaffOnlySlug, staffOnlyGlobs } from '../src/lib/staff-only.mjs';
+import { isStaffOnlyHref, isStaffOnlyPath, isStaffOnlySlug, setPreviewSuites, staffOnlyGlobs } from '../src/lib/staff-only.mjs';
 import {
   CONTEXT_PATH,
   HINT_COOKIE,
@@ -103,6 +103,21 @@ test('an unreleased product suite is staff-only: pages, API pages, share cards a
   }
   assert.equal(isStaffOnlyPath('/sessions/create-a-session', SITE), false);
   assert.equal(isStaffOnlyPath('/images/kb/x.png', SITE), false);
+});
+
+test('a Worker preview (SB_PREVIEW_SUITES from its env) makes the named suite public, and only that one', () => {
+  const unreleased = Object.entries(suitesConfig.suites).filter(([, s]) => s.path && !s.released);
+  if (unreleased.length < 2) return;
+  const [[named, namedSuite], [other, otherSuite]] = unreleased;
+  try {
+    setPreviewSuites(named);
+    assert.equal(isStaffOnlyPath(namedSuite.home, SITE), false, named);
+    assert.equal(isStaffOnlyPath(`/images/suites/${named}/a.png`, SITE), false, named);
+    assert.equal(isStaffOnlyPath(otherSuite.home, SITE), true, other);
+  } finally {
+    setPreviewSuites('');
+  }
+  assert.equal(isStaffOnlyPath(namedSuite.home, SITE), true, 'closed again without the preview var');
 });
 
 test('site.json gates Registration, Expo, Onsite, the Attend app and Enablement to staff', () => {

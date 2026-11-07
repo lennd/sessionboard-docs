@@ -13,7 +13,7 @@ import redirects from './redirects-map.json';
 import trainingRedirects from './training-redirects.json';
 import site from './site.json';
 import { isProductUpdatesPath, productUpdatesResponse } from './src/lib/product-updates-proxy.mjs';
-import { isStaffOnlyHref, isStaffOnlyPath } from './src/lib/staff-only.mjs';
+import { isStaffOnlyHref, isStaffOnlyPath, setPreviewSuites } from './src/lib/staff-only.mjs';
 import { apiProductForPath } from './src/lib/api-docs/products.mjs';
 import apiProducts from './src/data/api/products.json';
 import mintlifyRedirects from './src/data/api/mintlify-redirects.json';
@@ -456,6 +456,9 @@ function textResponse(body) {
 
 export default {
   async fetch(request, env) {
+    // A local preview (wrangler dev with SB_PREVIEW_SUITES) treats the suites it names as
+    // public, matching its build; production has no such var (src/lib/staff-only.mjs).
+    setPreviewSuites(env?.SB_PREVIEW_SUITES);
     const url = new URL(request.url);
     if (RETIRED_FEEDBACK_HOSTS.has(url.hostname)) {
       return Response.redirect(`https://${PROD_HOST}${CHANGELOG_PATH}`, 301);
