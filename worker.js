@@ -16,6 +16,8 @@ import { isProductUpdatesPath, productUpdatesResponse } from './src/lib/product-
 import { isStaffOnlyHref, isStaffOnlyPath } from './src/lib/staff-only.mjs';
 import { apiProductForPath } from './src/lib/api-docs/products.mjs';
 import apiProducts from './src/data/api/products.json';
+import mintlifyRedirects from './src/data/api/mintlify-redirects.json';
+import { retiredApiDocsTarget } from './src/lib/api-docs/retired-host.mjs';
 import { ACCOUNT_PREFIX, accountResponse, isSignedInRequest, isStaffRequest, recheckStaff } from './src/lib/account-session.mjs';
 import { STATUS_PATH as RELEASE_EMAIL_STATUS_PATH } from './src/lib/product-updates-proxy.mjs';
 
@@ -34,6 +36,9 @@ const LEGACY_HOSTS = new Set(site.legacyHosts);
 // The retired Canny portal. Its ideas, roadmap and changelog have no page-level
 // equivalent here, so every path lands on the release notes.
 const RETIRED_FEEDBACK_HOSTS = new Set(site.retiredFeedbackHosts);
+// The retired Mintlify API docs (lennd/sessionboard-public-api-docs). Each page it served
+// 301s to the same page under /api (src/lib/api-docs/retired-host.mjs).
+const RETIRED_API_DOCS_HOSTS = new Set(site.retiredApiDocsHosts ?? []);
 
 // ── Crawler policy ──────────────────────────────────────────────────────
 // The Help Center is a growth surface: we want to rank in search and be cited
@@ -448,6 +453,9 @@ export default {
     const url = new URL(request.url);
     if (RETIRED_FEEDBACK_HOSTS.has(url.hostname)) {
       return Response.redirect(`https://${PROD_HOST}${CHANGELOG_PATH}`, 301);
+    }
+    if (RETIRED_API_DOCS_HOSTS.has(url.hostname)) {
+      return Response.redirect(`https://${PROD_HOST}${retiredApiDocsTarget(url.pathname, mintlifyRedirects.redirects)}`, 301);
     }
     const isLegacyHost = LEGACY_HOSTS.has(url.hostname);
     const isProd = url.hostname === PROD_HOST || isLegacyHost;
