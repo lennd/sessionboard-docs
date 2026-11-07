@@ -134,6 +134,9 @@ tags:
   - name: Learning certifications
     description: |
       The organization's certifications: what each requires and who holds it. Requires `read:learning`.
+  - name: Sites
+    description: |
+      Build and edit a product's Site by API or chat: the Marketing event page, a Learning Site, an Awards Site. Every edit lands in the Site's draft; nothing goes live until you publish with the person's OK, and every publish is a version you can restore. Organization-level: paths start at `/v1/organization/{orgId}/sites`, and the same operations are served under `/v1/sites` with the organization taken from the token. Reads need `read:sites` or the Site's product scope (`read:marketing`, `read:learning`, `read:awards`); writes need the matching `write:` scope. The signed-in person's own access to the Site applies too.
 paths:
   # ──────────────────────────────────────────────
   # Events
@@ -16818,6 +16821,475 @@ paths:
           $ref: '#/components/responses/MarketingForbidden'
         '404':
           description: Not found in your organization.
+  /v1/organization/{orgId}/sites:
+    get:
+      operationId: list-sites
+      x-sb-product: [marketing, learning, awards]
+      summary: List Sites
+      description: >-
+        The organization's Sites in Marketing, Learning and Awards, most recently changed first (up to 200). Each
+        carries its `revision` (send it back on your next write) and whether it has unpublished changes. Also at
+        `GET /v1/sites`.
+      tags:
+        - Sites
+      parameters:
+        - $ref: '#/components/parameters/SitesOrgId'
+        - name: product
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [marketing, learning, awards]
+          description: Only this product's Sites.
+        - name: eventId
+          in: query
+          required: false
+          schema:
+            type: string
+            pattern: '^\d+$'
+          description: Only this event's Sites (Marketing event pages).
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    type: object
+                    properties:
+                      sites:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/SiteSummary'
+        '403':
+          $ref: '#/components/responses/SitesForbidden'
+  /v1/organization/{orgId}/sites/make:
+    post:
+      operationId: make-site
+      x-sb-product: [marketing, learning, awards]
+      summary: Make a Site
+      description: >-
+        Makes a product's first Site with no setup, from the organization's own data and Brand Kit: a Learning
+        Site from its courses, an Awards Site with its home in the draft, or a Marketing page for an event
+        (`eventId`). Pass `url` to rebuild an existing page: its text, menu and images come back as `source_page`
+        for you to turn into edits. Nothing is published. Also at `POST /v1/sites/make`.
+      tags:
+        - Sites
+      parameters:
+        - $ref: '#/components/parameters/SitesOrgId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [product]
+              properties:
+                product:
+                  type: string
+                  enum: [marketing, learning, awards]
+                name:
+                  type: string
+                  maxLength: 200
+                brief:
+                  type: string
+                  maxLength: 2000
+                  description: What the Site is for, in the person's words.
+                url:
+                  type: string
+                  format: uri
+                  maxLength: 2048
+                  description: An https page to rebuild.
+                eventId:
+                  type: string
+                  pattern: '^\d+$'
+                  description: Marketing only; the event the page is for.
+      responses:
+        '200':
+          description: The new Site, read as in Get a Site, plus `source_page` when you sent `url`.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    allOf:
+                      - $ref: '#/components/schemas/Site'
+                      - type: object
+                        properties:
+                          source_page:
+                            type: object
+                            description: The page at `url`, read for you to rebuild (title, headings, text, links, images).
+        '400':
+          description: A missing `eventId` for Marketing, or a `url` that could not be read.
+        '403':
+          $ref: '#/components/responses/SitesForbidden'
+  /v1/organization/{orgId}/sites/{siteId}:
+    get:
+      operationId: get-site
+      x-sb-product: [marketing, learning, awards]
+      summary: Get a Site
+      description: >-
+        The Site as its draft stands: its pages with their blocks, the menu, the theme, the roles you can preview
+        as, the block catalog (every block kind this Site takes, with its JSON Schema), what Publish would change,
+        and the rules for editing. Also at `GET /v1/sites/{siteId}`.
+      tags:
+        - Sites
+      parameters:
+        - $ref: '#/components/parameters/SitesOrgId'
+        - $ref: '#/components/parameters/SiteId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    $ref: '#/components/schemas/Site'
+        '403':
+          $ref: '#/components/responses/SitesForbidden'
+        '404':
+          description: Not found — also returned for another organization's Site.
+  /v1/organization/{orgId}/sites/{siteId}/draft:
+    put:
+      operationId: edit-site
+      x-sb-product: [marketing, learning, awards]
+      summary: Edit a Site's draft
+      description: >-
+        Applies up to 60 edits, in order, to the draft. Visitors see nothing until you publish. Send the
+        `revision` you last read as `baseRevision`: if the Site changed since, the call answers `409` with `code:
+        SITE_DRAFT_STALE` and writes nothing; read it again and retry. All edits apply or none do; a block that
+        fails its schema answers `400` naming the block. Also at `PUT /v1/sites/{siteId}/draft`.
+      tags:
+        - Sites
+      parameters:
+        - $ref: '#/components/parameters/SitesOrgId'
+        - $ref: '#/components/parameters/SiteId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                baseRevision:
+                  type: string
+                  maxLength: 64
+                  description: The `revision` from your last read (three timestamps joined by dots; send it back as is).
+                ops:
+                  type: array
+                  maxItems: 60
+                  items:
+                    $ref: '#/components/schemas/SiteOp'
+                brandKitId:
+                  type: [string, 'null']
+                  format: uuid
+                  description: The Brand Kit the Site follows, applied when it is published.
+            example:
+              baseRevision: '1794034466000.1793990000000.1794034466000'
+              ops:
+                - op: theme.set
+                  theme:
+                    mode: dark
+                    accent: '#E11D48'
+                - op: site.update
+                  name: Northwind Summit 2027
+      responses:
+        '200':
+          description: Saved. The new `revision`, what changed, and the Site's pages and diff.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    type: object
+                    properties:
+                      revision:
+                        type: string
+                      changes:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            op:
+                              type: string
+                            page:
+                              type: string
+                            block:
+                              type: [string, 'null']
+                      site:
+                        $ref: '#/components/schemas/SiteSummary'
+                      pages:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/SitePage'
+                      diff:
+                        $ref: '#/components/schemas/SiteDiff'
+        '400':
+          description: An edit could not apply (the message names it), or a block failed its schema (`details` per block).
+        '403':
+          $ref: '#/components/responses/SitesForbidden'
+        '409':
+          description: 'The Site changed since `baseRevision` (`code: SITE_DRAFT_STALE`).'
+  /v1/organization/{orgId}/sites/{siteId}/draft/discard:
+    post:
+      operationId: discard-site-draft
+      x-sb-product: [marketing, learning, awards]
+      summary: Discard a Site's draft
+      description: >-
+        Throws away every unpublished change; the draft goes back to what is live. Confirm with the person first.
+        Also at `POST /v1/sites/{siteId}/draft/discard`.
+      tags:
+        - Sites
+      parameters:
+        - $ref: '#/components/parameters/SitesOrgId'
+        - $ref: '#/components/parameters/SiteId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                baseRevision:
+                  type: string
+                  maxLength: 64
+      responses:
+        '200':
+          description: Discarded.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    type: object
+                    properties:
+                      revision:
+                        type: string
+                      discarded:
+                        type: boolean
+        '403':
+          $ref: '#/components/responses/SitesForbidden'
+        '409':
+          description: 'The Site changed since `baseRevision` (`code: SITE_DRAFT_STALE`).'
+  /v1/organization/{orgId}/sites/{siteId}/diff:
+    get:
+      operationId: get-site-diff
+      x-sb-product: [marketing, learning, awards]
+      summary: See what Publish would change
+      description: >-
+        The draft against what is live, in pages, blocks and settings, with one plain sentence per change in
+        `summary` — show it to the person before they approve a publish. Also at `GET /v1/sites/{siteId}/diff`.
+      tags:
+        - Sites
+      parameters:
+        - $ref: '#/components/parameters/SitesOrgId'
+        - $ref: '#/components/parameters/SiteId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    allOf:
+                      - $ref: '#/components/schemas/SiteDiff'
+                      - type: object
+                        properties:
+                          revision:
+                            type: string
+                          has_unpublished_changes:
+                            type: boolean
+        '403':
+          $ref: '#/components/responses/SitesForbidden'
+  /v1/organization/{orgId}/sites/{siteId}/preview:
+    get:
+      operationId: preview-site
+      x-sb-product: [marketing, learning, awards]
+      summary: Preview a Site as a role on a device
+      description: >-
+        A short-lived link to the draft as one role sees it on one device, plus a structured description of what
+        that role sees (pages and blocks), for clients that cannot open the link. Roles depend on the product:
+        `visitor` and `invited` (Marketing), `visitor` and `learner` (Learning), `visitor`, `submitter`,
+        `evaluator` and, on event portals, `speaker` (Awards). Also at `GET /v1/sites/{siteId}/preview`.
+      tags:
+        - Sites
+      parameters:
+        - $ref: '#/components/parameters/SitesOrgId'
+        - $ref: '#/components/parameters/SiteId'
+        - name: role
+          in: query
+          required: false
+          schema:
+            type: string
+          description: One of the Site's `roles` (default `visitor`).
+        - name: device
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [desktop, tablet, mobile]
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: string
+          description: '`home`, a page id, slug or exact title (default `home`).'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    $ref: '#/components/schemas/SitePreview'
+        '400':
+          description: A role this Site does not have.
+        '403':
+          $ref: '#/components/responses/SitesForbidden'
+  /v1/organization/{orgId}/sites/{siteId}/publish:
+    post:
+      operationId: publish-site
+      x-sb-product: [marketing, learning, awards]
+      summary: Publish a Site
+      description: >-
+        The draft goes live. Only after the person has seen the diff (and a preview) and said OK: send
+        `confirmed: true` and the `revision` of the diff they approved; an edit made after their OK answers `409`.
+        Called by an AI assistant, it answers `202` with `status: needs_approval` and a link: a person approves it
+        in Sessionboard, and it runs as them. Every publish is a version you can restore. Also at `POST
+        /v1/sites/{siteId}/publish`.
+      tags:
+        - Sites
+      parameters:
+        - $ref: '#/components/parameters/SitesOrgId'
+        - $ref: '#/components/parameters/SiteId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [revision, confirmed]
+              properties:
+                revision:
+                  type: string
+                  maxLength: 64
+                  description: The `revision` of the diff the person approved.
+                confirmed:
+                  type: boolean
+                  description: '`true` only after the person said OK.'
+      responses:
+        '200':
+          description: Published.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    type: object
+                    properties:
+                      published:
+                        type: boolean
+                      version:
+                        type: [integer, 'null']
+                      revision:
+                        type: string
+                      url:
+                        type: [string, 'null']
+        '202':
+          description: 'Waiting for a person: `status: needs_approval`, `approval_id` and `url` to approve it in Sessionboard.'
+        '400':
+          description: '`confirmed` is not `true`.'
+        '403':
+          $ref: '#/components/responses/SitesForbidden'
+        '409':
+          description: 'The draft changed after the approved `revision` (`code: SITE_DRAFT_STALE`).'
+  /v1/organization/{orgId}/sites/{siteId}/versions:
+    get:
+      operationId: list-site-versions
+      x-sb-product: [marketing, learning, awards]
+      summary: List a Site's versions
+      description: >-
+        Every publish, newest first, with a plain-language summary of what it changed. A Site's first publish also
+        keeps the Site as it was before (`source: baseline`). Also at `GET /v1/sites/{siteId}/versions`.
+      tags:
+        - Sites
+      parameters:
+        - $ref: '#/components/parameters/SitesOrgId'
+        - $ref: '#/components/parameters/SiteId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    type: object
+                    properties:
+                      versions:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/SiteVersion'
+        '403':
+          $ref: '#/components/responses/SitesForbidden'
+  /v1/organization/{orgId}/sites/{siteId}/versions/{versionId}/restore:
+    post:
+      operationId: restore-site-version
+      x-sb-product: [marketing, learning, awards]
+      summary: Restore a version into the draft
+      description: >-
+        Copies a version into the draft so the person can look it over; nothing goes live until it is published.
+        Also at `POST /v1/sites/{siteId}/versions/{versionId}/restore`.
+      tags:
+        - Sites
+      parameters:
+        - $ref: '#/components/parameters/SitesOrgId'
+        - $ref: '#/components/parameters/SiteId'
+        - $ref: '#/components/parameters/SiteVersionId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                baseRevision:
+                  type: string
+                  maxLength: 64
+      responses:
+        '200':
+          description: Restored into the draft; the new `revision`, the version number and the diff against live.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    type: object
+                    properties:
+                      revision:
+                        type: string
+                      restored_version:
+                        type: integer
+                      diff:
+                        $ref: '#/components/schemas/SiteDiff'
+        '403':
+          $ref: '#/components/responses/SitesForbidden'
+        '404':
+          description: No such version on this Site.
+        '409':
+          description: 'The Site changed since `baseRevision` (`code: SITE_DRAFT_STALE`).'
 components:
   securitySchemes:
     ApiKey:
@@ -17121,6 +17593,29 @@ components:
         $ref: '#/components/schemas/LearningRegistrationAppIdValue'
 
 
+    SitesOrgId:
+      name: orgId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Your organization ID. Any other organization returns `404`.
+    SiteId:
+      name: siteId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: The Site's `id` from List Sites.
+    SiteVersionId:
+      name: versionId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: The version's `id` from List a Site's versions.
   schemas:
     SignupForm:
       type: object
@@ -24845,6 +25340,275 @@ components:
 
 
 
+    SiteSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          description: '`event_page` (Marketing), `learning`, or `awards` / `event_portal` / `internal` (Awards).'
+        product:
+          type: string
+          enum: [marketing, learning, awards]
+        name:
+          type: string
+        slug:
+          type: string
+        event_id:
+          type: [integer, 'null']
+        url:
+          type: [string, 'null']
+          description: The live address.
+        revision:
+          type: string
+          description: Send back as `baseRevision` on your next write.
+        has_unpublished_changes:
+          type: boolean
+        published_at:
+          type: [string, 'null']
+          format: date-time
+    SiteBlock:
+      type: object
+      properties:
+        id:
+          type: string
+        kind:
+          type: string
+          description: A kind from the Site's `block_catalog`.
+        hidden:
+          type: boolean
+        config:
+          type: object
+          description: The block's settings, as its schema in `block_catalog` describes.
+    SitePage:
+      type: object
+      properties:
+        ref:
+          type: string
+          description: '`home`, or how to refer to the page in an edit.'
+        id:
+          type: [string, 'null']
+          description: '`null` for a page that is new in the draft.'
+        title:
+          type: string
+        slug:
+          type: string
+        path:
+          type: string
+        url:
+          type: [string, 'null']
+        is_home:
+          type: boolean
+        hidden:
+          type: boolean
+        visibility:
+          type: string
+          enum: [public, reviewers, submitters]
+        is_new:
+          type: boolean
+        blocks:
+          type: array
+          items:
+            $ref: '#/components/schemas/SiteBlock'
+    Site:
+      type: object
+      properties:
+        site:
+          allOf:
+            - $ref: '#/components/schemas/SiteSummary'
+            - type: object
+              properties:
+                draft_updated_at:
+                  type: [string, 'null']
+                  format: date-time
+                brand_kit_id:
+                  type: [string, 'null']
+                last_write:
+                  type: [object, 'null']
+                  description: Who wrote the draft last (a person, Ask, or an MCP client) and when.
+        pages:
+          type: array
+          items:
+            $ref: '#/components/schemas/SitePage'
+        nav:
+          type: [object, 'null']
+          description: The menu; `null` follows the pages.
+        theme:
+          type: object
+          properties:
+            mode:
+              type: string
+              enum: [light, dark, auto]
+            primary:
+              type: [string, 'null']
+            accent:
+              type: [string, 'null']
+            text:
+              type: [string, 'null']
+            gradient:
+              type: array
+              items:
+                type: [string, 'null']
+            font:
+              type: [string, 'null']
+            logo_url:
+              type: [string, 'null']
+            follow_brand_kit:
+              type: boolean
+        roles:
+          type: array
+          description: Who you can preview the Site as.
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              label:
+                type: string
+              hint:
+                type: string
+        devices:
+          type: array
+          items:
+            type: string
+        has_pages:
+          type: boolean
+          description: '`false` for a one-page Site (the Marketing event page): use page `home`.'
+        block_catalog:
+          type: array
+          description: Every block kind this Site takes, with a label, a JSON Schema for `config` and an example.
+          items:
+            type: object
+        diff:
+          $ref: '#/components/schemas/SiteDiff'
+        rules:
+          type: array
+          description: How to edit this Site, in plain sentences.
+          items:
+            type: string
+    SiteOp:
+      type: object
+      required: [op]
+      description: >-
+        One edit. Pages are named by `home`, a page id, a slug or the exact title. `page.add` takes `page` (`title`,
+        optional `slug`, `blocks`, `hidden`, `visibility`) and `before`; `page.update` takes `page` and any of
+        `title`, `slug`, `hidden`, `visibility`; `page.move` takes `page` and `before`; `page.remove` takes `page`.
+        `block.add` takes `page`, `block` (`kind`, `config`, optional `id`, `hidden`) and `before`; `block.update`
+        takes `page` and `block` (`id`, `config` merged into the block unless `replace: true`, `hidden`);
+        `block.move` takes `page`, `block.id`, optional `to_page` and `before`; `block.remove` takes `page` and
+        `block.id`. `nav.set` takes `items` (each `kind` `page`, `url` or `form`, with `label`); `nav.reset` goes
+        back to the pages. `theme.set` takes `theme` (`primary`, `accent`, `text` as hex, `gradient` [two hex],
+        `font`, `logoUrl`, `mode` `light` / `dark` / `auto`, `followBrandKit`). `site.update` takes `name`.
+      properties:
+        op:
+          type: string
+          enum:
+            - page.add
+            - page.update
+            - page.move
+            - page.remove
+            - block.add
+            - block.update
+            - block.move
+            - block.remove
+            - nav.set
+            - nav.reset
+            - theme.set
+            - site.update
+      additionalProperties: true
+    SiteDiff:
+      type: object
+      properties:
+        changed:
+          type: boolean
+        pages:
+          type: array
+          items:
+            type: object
+        blocks:
+          type: array
+          items:
+            type: object
+        settings:
+          type: array
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+              label:
+                type: string
+        summary:
+          type: array
+          description: One plain sentence per change, for the person to read.
+          items:
+            type: string
+    SitePreview:
+      type: object
+      properties:
+        role:
+          type: string
+        device:
+          type: string
+        viewport:
+          type: object
+          properties:
+            width:
+              type: integer
+            height:
+              type: integer
+        page:
+          type: object
+          properties:
+            ref:
+              type: string
+            title:
+              type: string
+            path:
+              type: string
+        preview_url:
+          type: [string, 'null']
+          description: Opens the draft as this role; expires at `expires_at`.
+        expires_at:
+          type: string
+          format: date-time
+        sees:
+          type: object
+          description: What this role sees, for clients that cannot open the link.
+          properties:
+            pages:
+              type: array
+              items:
+                type: object
+            blocks:
+              type: array
+              items:
+                type: object
+        note:
+          type: [string, 'null']
+    SiteVersion:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        version:
+          type: integer
+          description: '`0` is the Site before its first versioned publish.'
+        source:
+          type: string
+          enum: [publish, baseline]
+        summary:
+          type: array
+          items:
+            type: string
+        created_by:
+          type: [integer, 'null']
+        created_at:
+          type: string
+          format: date-time
   responses:
     MarketingForbidden:
       description: |
@@ -25166,5 +25930,7 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/LearningError'
-
-
+    SitesForbidden:
+      description: |
+        - `SCOPE_REQUIRED` — the token lacks `read:sites` (or `read:marketing`, `read:learning`, `read:awards`) for reads, or the matching `write:` scope for writes.
+        - `FORBIDDEN` — the token's user cannot edit this Site.
