@@ -38,6 +38,8 @@
  * never set them on the production Worker.
  */
 
+import { normalizeDocsGrant } from './docs-grant.mjs';
+
 export const ACCOUNT_PREFIX = '/_account/';
 export const SESSION_PATH = '/_account/session';
 export const ME_PATH = '/_account/me';
@@ -269,6 +271,11 @@ function publicReader(reader, region) {
     // Documentation suites the reader can read (web-api /help/reader/me):
     // 'platform', 'marketing', 'learning', 'awards'. Null when the API predates it.
     products: Array.isArray(reader.products) ? reader.products : null,
+    // The API docs (/api, /sessionboard-<product>/api): every account holder;
+    // a reader with only a staff grant when it says so. True when the API predates it.
+    api_docs: reader.api_docs !== false,
+    // Staff-granted access (src/lib/docs-grant.mjs): { products, api_docs, expires_at } or null.
+    docs_grant: normalizeDocsGrant(reader.docs_grant),
     region: region.id,
     app_origin: region.app,
   };

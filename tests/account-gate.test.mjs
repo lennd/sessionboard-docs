@@ -322,6 +322,35 @@ test('/me drops the staff cookie as soon as the reader is no longer staff', asyn
   assert.ok(res.headers.getSetCookie().find((c) => c.startsWith(`${STAFF_COOKIE}=;`)));
 });
 
+test('/me passes a staff grant and API docs access through to page script', async () => {
+  const cookie = await signedIn();
+  const granted = {
+    ...READER,
+    staff: false,
+    id: 'docs-grant-0000',
+    signed_in_via: 'docs_grant',
+    roles: [],
+    products: ['platform', 'marketing'],
+    api_docs: false,
+    docs_grant: { granted_by: 'sessionboard', products: ['platform', 'marketing'], api_docs: false, expires_at: '2027-02-05T23:59:59.000Z' },
+  };
+  const { res } = await call(ME_PATH, {}, { cookie, api: fakeApi({ reader: granted }) });
+  assert.equal(res.status, 200);
+  const { reader } = await res.json();
+  assert.equal(reader.signed_in_via, 'docs_grant');
+  assert.deepEqual(reader.products, ['platform', 'marketing']);
+  assert.equal(reader.api_docs, false);
+  assert.deepEqual(reader.docs_grant, { products: ['platform', 'marketing'], api_docs: false, expires_at: '2027-02-05T23:59:59.000Z' });
+});
+
+test('/me from an API that predates grants: API docs on, no grant', async () => {
+  const cookie = await signedIn();
+  const { res } = await call(ME_PATH, {}, { cookie });
+  const { reader } = await res.json();
+  assert.equal(reader.api_docs, true);
+  assert.equal(reader.docs_grant, null);
+});
+
 test('/me signed out is a plain 401 with no API call', async () => {
   const { res, api } = await call(ME_PATH);
   assert.equal(res.status, 401);
