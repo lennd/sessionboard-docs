@@ -7,7 +7,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { ACADEMY_PATH, ACADEMY_SIGN_IN_PATH, READER_COOKIE, accountResponse } from '../src/lib/account-session.mjs';
-import { lessonsForArticle, visibleProducts, groupByProduct, roleOf, nextPathFor } from '../src/lib/academy.mjs';
+import { academyOpen, lessonsForArticle, visibleProducts, groupByProduct, roleOf, nextPathFor } from '../src/lib/academy.mjs';
+import realSite from '../site.json' with { type: 'json' };
 
 const SITE = {
   account: {
@@ -60,6 +61,21 @@ test('GET /_account/academy: signed out is 401; an API without the Academy reads
   assert.equal((await call(ACADEMY_PATH, {}, { api: fakeApi({}), withCookie: false })).status, 401);
   const res = await call(ACADEMY_PATH, {}, { api: fakeApi({}) });
   assert.deepEqual((await res.json()).academy, { available: false });
+});
+
+test('GET /_account/academy: an outage or rate limit is an upstream error, not a closed Academy', async () => {
+  for (const status of [429, 500, 503]) {
+    const res = await call(ACADEMY_PATH, {}, { api: fakeApi({ '/help/academy': [status, null] }) });
+    assert.equal(res.status, 502, `upstream ${status}`);
+    assert.equal((await res.json()).academy, null);
+  }
+});
+
+test('the Academy is closed until site.json says otherwise', () => {
+  assert.equal(academyOpen({}), false);
+  assert.equal(academyOpen({ academy: { open: 'yes' } }), false);
+  assert.equal(academyOpen({ academy: { open: true } }), true);
+  assert.equal(typeof realSite.academy?.open, 'boolean', 'site.json declares academy.open');
 });
 
 const signIn = (body, { origin = ORIGIN, ...opts } = {}) =>

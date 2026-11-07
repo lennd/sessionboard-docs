@@ -13,6 +13,7 @@
  */
 import { defineRouteMiddleware } from '@astrojs/starlight/route-data';
 import { isStaffOnlySlug } from './lib/staff-only.mjs';
+import { ACADEMY_SLUG, academyOpen } from './lib/academy.mjs';
 import { prevNext } from './lib/api-docs/sidebar.mjs';
 import { apiProductAt, apiSidebarFor } from './lib/api-docs/data';
 import site from '../site.json';
@@ -20,6 +21,8 @@ import site from '../site.json';
 export const onRequest = defineRouteMiddleware((context) => {
   const route = context.locals.starlightRoute;
   if (isStaffOnlySlug(route.id, site)) route.entry.data.pagefind = false;
+  // A closed Academy (site.json `academy.open`) is not searchable (src/lib/academy.mjs).
+  if (route.id === ACADEMY_SLUG && !academyOpen(site)) route.entry.data.pagefind = false;
 
   const P = apiProductAt(context.url.pathname);
   if (P) {

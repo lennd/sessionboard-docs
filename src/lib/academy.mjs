@@ -23,6 +23,15 @@
  * /_account/me), Platform when that is unknown; staff see every path.
  */
 
+/**
+ * Is the Academy open (site.json `academy.open`)? While it is not, the header shows no
+ * Academy tab, articles show no "Learn this in Academy" card, and /academy is built but
+ * kept out of search, Ask's index, the sitemap and llms.txt, and noindexed — reachable
+ * only by its address, for staff to preview.
+ */
+export const academyOpen = (site) => site?.academy?.open === true;
+export const ACADEMY_SLUG = 'academy';
+
 export const PRODUCTS = ['platform', 'marketing', 'learning', 'awards'];
 export const PRODUCT_LABELS = { platform: 'Platform', marketing: 'Marketing', learning: 'Learning', awards: 'Awards' };
 export const ROLE_LABELS = { admin: 'Admin', reviewer: 'Reviewer', 'speaker-manager': 'Speaker manager' };

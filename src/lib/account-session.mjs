@@ -440,8 +440,10 @@ export async function accountResponse(request, url, env, site, fetchImpl = fetch
         headers: { Authorization: `Bearer ${session.token}`, Accept: 'application/json' },
       });
       if (res.status === 401) return json(401, { signedIn: false }, { cookies: clearSessionCookies() });
-      // An API from before the Academy (404) reads as "no Academy in this region".
-      if (!res.ok) return json(200, { academy: { available: false }, region: session.region.id });
+      // An API from before the Academy (404) reads as "no Academy in this region"; anything
+      // else (an outage, rate limiting) is an upstream error, so the page says it couldn't load.
+      if (res.status === 404) return json(200, { academy: { available: false }, region: session.region.id });
+      if (!res.ok) return json(502, { academy: null, error: 'upstream' });
       const data = await res.json();
       return json(200, { academy: data?.payload ?? data, region: session.region.id });
     } catch {
