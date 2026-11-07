@@ -197,3 +197,11 @@ test('Platform sidebar never lists a suite page', () => {
   const platform = sidebarSlugs(JSON.parse(readFileSync(join(root, 'src/sidebar.json'), 'utf8')));
   assert.deepEqual(platform.filter((slug) => suiteForId(slug, config) !== PLATFORM), []);
 });
+
+test('suites.mjs normalizes paths exactly like help-scope.mjs', async () => {
+  const { normalizePath: a } = await import('../src/lib/suites.mjs');
+  const { normalizePath: b } = await import('../src/lib/help-scope.mjs');
+  for (const p of ['/a/b.html#x', '/a/b/?q=1', 'https://learn.sessionboard.com/get-started', '/index.html', '/', '', '/sessionboard-awards/index']) {
+    assert.equal(a(p), b(p), p);
+  }
+});

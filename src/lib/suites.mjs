@@ -24,7 +24,23 @@
  * scripts and the tests.
  */
 
-import { normalizePath } from './help-scope.mjs';
+/**
+ * `/a/b.html#x?y` → `/a/b`; `/index` → `/`. The same rule as help-scope.mjs
+ * `normalizePath`, kept as its own copy on purpose: page scripts import this
+ * module, and sharing a module with Sidebar.astro's script would make Vite
+ * split both into chunks and change every Platform page's HTML.
+ */
+export function normalizePath(href) {
+  let path = String(href ?? '');
+  try {
+    path = new URL(path, 'https://x.invalid').pathname;
+  } catch {
+    return '';
+  }
+  path = path.replace(/\/index(\.html)?$/, '/').replace(/\.html$/, '');
+  if (path.length > 1) path = path.replace(/\/$/, '');
+  return path || '/';
+}
 
 export const PLATFORM = 'platform';
 export const SUITE_COOKIE = 'sb_help_suite';
@@ -177,7 +193,9 @@ export function crossSuiteLinks(pages, config) {
  */
 export function suiteHeadScript(config, built) {
   const suites = Object.fromEntries(
-    [...built].filter((k) => k !== PLATFORM).map((k) => [k, { path: config.suites[k].path, home: config.suites[k].home }]),
+    [...built]
+      .filter((k) => k !== PLATFORM)
+      .map((k) => [k, { path: config.suites[k].path, home: config.suites[k].home, label: config.suites[k].label }]),
   );
   return `(function(){
 var C=${JSON.stringify(SUITE_COOKIE)},S=${JSON.stringify(suites)},d=document,l=location;

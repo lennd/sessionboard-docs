@@ -18,6 +18,7 @@ import MobileMenuFooter from 'virtual:starlight/components/MobileMenuFooter';
 import SidebarPersister from '@astrojs/starlight/components/SidebarPersister.astro';
 import SidebarSublist from './SidebarSublist.astro';
 import ForYou from './ForYou.astro';
+import SuiteSearch from './SuiteSearch.astro';
 import helpScopes from '../data/help-scopes.json';
 import suitesConfig from '../data/suites.json';
 import { getCollection } from 'astro:content';
@@ -87,10 +88,10 @@ const switcher = suitesOn ? Object.keys(suitesConfig.suites).filter((k) => built
 	<MobileMenuFooter />
 </div>
 
+{suitesOn && <SuiteSearch />}
+
 <script>
 	import { normalizePath } from '../lib/help-scope.mjs';
-	import suitesConfig from '../data/suites.json';
-	import { keepResult } from '../lib/suites.mjs';
 
 	/**
 	 * Search under a product scope: Pagefind indexes the whole site, so hide the
@@ -101,19 +102,9 @@ const switcher = suitesOn ? Object.keys(suitesConfig.suites).filter((k) => built
 	const state = (window as unknown as { sbHelpScope?: { scope: string | null; scopes: Record<string, Scope> } }).sbHelpScope;
 	const root = document.getElementById('starlight__search');
 	const scope = state?.scope ? state.scopes[state.scope] : null;
-	// Set by the suites head script, only when a self-serve suite is built.
-	const suites = (window as unknown as { sbSuites?: { here: string } }).sbSuites;
-	const here = suites?.here ?? null;
-	const suiteLabel = here ? suitesConfig.suites[here as keyof typeof suitesConfig.suites]?.label : null;
 
-	// Results always stay inside the reader's suite; a product scope narrows Platform further.
-	const filter = scope
-		? { label: scope.label, keep: (href: string) => new Set(scope.paths).has(normalizePath(href)), escape: true }
-		: here
-			? { label: suiteLabel ?? 'Platform', keep: (href: string) => keepResult(href, here, suitesConfig), escape: false }
-			: null;
-
-	if (root && filter) {
+	if (root && scope) {
+		const allowed = new Set(scope.paths);
 		const note = document.createElement('p');
 		note.className = 'sb-scope-search-note';
 		let loads = 0;
@@ -131,7 +122,7 @@ const switcher = suitesOn ? Object.keys(suitesConfig.suites).filter((k) => built
 			let shown = 0;
 			for (const li of results) {
 				const href = li.querySelector<HTMLAnchorElement>('a.pagefind-ui__result-link')?.href;
-				const keep = Boolean(href) && filter.keep(href as string);
+				const keep = Boolean(href) && allowed.has(normalizePath(href));
 				li.hidden = !keep;
 				if (keep) shown += 1;
 			}
@@ -141,21 +132,18 @@ const switcher = suitesOn ? Object.keys(suitesConfig.suites).filter((k) => built
 				more.click();
 			}
 			const drawer = root.querySelector('.pagefind-ui__drawer');
-			// Platform readers get no note: their search reads exactly as it always did.
-			if (!term || !drawer || (!filter.escape && here === 'platform')) {
+			if (!term || !drawer) {
 				note.remove();
 				return;
 			}
-			const text = shown || more ? `Showing ${filter.label} guides only.` : `No ${filter.label} guides match.`;
+			const text = shown || more ? `Showing ${scope.label} guides only.` : `No ${scope.label} guides match.`;
 			if (note.dataset.text !== text) {
 				note.dataset.text = text;
-				note.textContent = filter.escape ? `${text} ` : text;
-				if (filter.escape) {
-					const all = document.createElement('a');
-					all.href = '?via=all';
-					all.textContent = 'Search all of Sessionboard';
-					note.append(all);
-				}
+				note.textContent = `${text} `;
+				const all = document.createElement('a');
+				all.href = '?via=all';
+				all.textContent = 'Search all of Sessionboard';
+				note.append(all);
 			}
 			if (drawer.firstChild !== note) drawer.prepend(note);
 		};

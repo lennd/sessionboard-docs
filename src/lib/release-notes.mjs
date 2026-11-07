@@ -570,6 +570,10 @@ export function publicReleases(releases) {
 /** The shape public surfaces and the feed receive. `internal` is removed, never masked. */
 export function publicEntry(entry) {
   const { internal, ...rest } = entry;
+  // The product defaults (`platform`, not also-on-Platform) are left out so a
+  // Platform entry's public shape is exactly what it was before suites.
+  if (rest.product === 'platform') delete rest.product;
+  if (rest.platform === false) delete rest.platform;
   return rest;
 }
 

@@ -1,0 +1,71 @@
+---
+/**
+ * Search inside a documentation suite (src/lib/suites.mjs). Rendered only
+ * when a self-serve suite is in the build, so a Platform-only site carries
+ * none of it.
+ *
+ * Pagefind indexes the whole site, so results outside the reader's suite are
+ * hidden: on a Platform page every suite page, on a suite page everything but
+ * that suite. More results are loaded until some show. A product scope
+ * (help-scope.mjs, Sidebar.astro) still narrows Platform further.
+ */
+---
+
+<script>
+	import { normalizePath } from '../lib/suites.mjs';
+
+	type Suites = { here: string; suites: Record<string, { path: string; label: string }> };
+	const state = (window as unknown as { sbSuites?: Suites }).sbSuites;
+	const root = document.getElementById('starlight__search');
+
+	if (root && state) {
+		const here = state.here;
+		const suiteOf = (href: string) => {
+			const path = normalizePath(href);
+			for (const [key, s] of Object.entries(state.suites)) if (path === s.path || path.startsWith(`${s.path}/`)) return key;
+			return 'platform';
+		};
+		const label = here === 'platform' ? null : state.suites[here]?.label ?? null;
+		const note = document.createElement('p');
+		note.className = 'sb-scope-search-note';
+		let loads = 0;
+		let lastTerm = '';
+		let queued = false;
+
+		const apply = () => {
+			queued = false;
+			const term = root.querySelector<HTMLInputElement>('.pagefind-ui__search-input')?.value.trim() ?? '';
+			if (term !== lastTerm) {
+				lastTerm = term;
+				loads = 0;
+			}
+			let shown = 0;
+			for (const li of root.querySelectorAll<HTMLLIElement>('li.pagefind-ui__result')) {
+				const href = li.querySelector<HTMLAnchorElement>('a.pagefind-ui__result-link')?.href;
+				// Only ever hides: a product scope (Sidebar.astro) may have hidden it too.
+				const keep = Boolean(href) && suiteOf(href as string) === here;
+				if (!keep) li.hidden = true;
+				else if (!li.hidden) shown += 1;
+			}
+			const more = root.querySelector<HTMLButtonElement>('button.pagefind-ui__button');
+			if (more && shown < 5 && loads < 20) {
+				loads += 1;
+				more.click();
+			}
+			const drawer = root.querySelector('.pagefind-ui__drawer');
+			if (!label || !term || !drawer) {
+				note.remove();
+				return;
+			}
+			const text = shown || more ? `Showing ${label} guides only.` : `No ${label} guides match.`;
+			if (note.textContent !== text) note.textContent = text;
+			if (drawer.firstChild !== note) drawer.prepend(note);
+		};
+
+		new MutationObserver(() => {
+			if (queued) return;
+			queued = true;
+			requestAnimationFrame(apply);
+		}).observe(root, { childList: true, subtree: true, attributes: true, attributeFilter: ['href'] });
+	}
+</script>
