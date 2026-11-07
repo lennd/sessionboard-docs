@@ -1,6 +1,7 @@
 ---
 /**
- * Starlight's header plus the top-level tabs: "Help Center" (every guide) and
+ * Starlight's header plus the top-level tabs: "Help Center" (every guide),
+ * "Academy" (lessons, exams and certifications — src/lib/academy.mjs) and
  * "API Docs" (the API docs of the product you are in: Platform's /api, or a self-serve
  * product's /sessionboard-<key>/api when that product is built). Markup and layout are
  * Starlight's own Header.astro; only the tab bar and the API product switcher are new.
@@ -22,6 +23,8 @@ import SocialIcons from 'virtual:starlight/components/SocialIcons';
 import ThemeSelect from 'virtual:starlight/components/ThemeSelect';
 import { apiProductAt, builtProducts, registry } from '../lib/api-docs/data';
 import { PLATFORM } from '../lib/api-docs/products.mjs';
+import site from '../../site.json';
+import { academyOpen } from '../lib/academy.mjs';
 import ProductBadge from './ProductBadge.astro';
 
 const shouldRenderSearch =
@@ -42,11 +45,19 @@ const suiteProduct =
 // when that suite is not in this build.
 const helpIds = new Set((await getCollection('docs')).map((e) => e.id));
 const helpHref = onApi && onApi.help !== '/' && helpIds.has(onApi.help.replace(/^\//, '')) ? onApi.help : '/';
+// The Academy (src/lib/academy.mjs): our own Learning Site's paths, surfaced here.
+// The build renders /academy as academy.html, so normalise before matching.
+const academyPath = path.replace(/\.html$/, '').replace(/\/$/, '');
+const onAcademy = academyPath === '/academy' || academyPath.startsWith('/academy/');
 const tabs = [
-	{ label: 'Help Center', short: 'Help', href: helpHref, current: !onApi },
+	{ label: 'Help Center', short: 'Help', href: helpHref, current: !onApi && !onAcademy },
 	// ?via=all clears a self-serve help scope (src/lib/help-scope.mjs), which would otherwise hide
 	// the API sidebar's untagged links.
 	{ label: 'API Docs', short: 'API', href: `${suiteProduct.base}?via=all`, current: Boolean(onApi) },
+	// Shown once the Academy is open (site.json `academy.open`), and always on /academy itself.
+	...(academyOpen(site) || onAcademy
+		? [{ label: 'Academy', short: 'Academy', href: '/academy', current: onAcademy }]
+		: []),
 ];
 const preview = products.some((P) => !(registry.products as Record<string, { released?: boolean }>)[P.key]?.released);
 const switchable = onApi && products.length > 1;

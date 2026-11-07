@@ -32,6 +32,7 @@ import { fileURLToPath } from 'node:url';
 import { absolutizeAssets } from '../src/lib/absolutize-assets.mjs';
 import { annotateImages, imageSize } from '../src/lib/annotate-images.mjs';
 import { isStaffOnlySlug } from '../src/lib/staff-only.mjs';
+import { ACADEMY_SLUG, academyOpen } from '../src/lib/academy.mjs';
 import { PLATFORM, builtSuites, keepEntry, suiteForId } from '../src/lib/suites.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -371,6 +372,8 @@ const problems = [];
 for (const file of walk(DOCS).sort()) {
   const rel = relative(DOCS, file).replace(/\.mdx$/, '');
   if (EXCLUDE.has(rel)) continue;
+  // A closed Academy (site.json `academy.open`) is not something Ask should cite.
+  if (rel === ACADEMY_SLUG && !academyOpen(site)) continue;
   // Staff-only sections (site.json `staffOnly`) are not public, and Team Lead
   // answers customers: an answer citing them would link to a 404.
   if (isStaffOnlySlug(rel.replace(/\/index$/, ''), site)) continue;

@@ -12,6 +12,7 @@ import { readFileSync } from 'node:fs';
 import breadcrumbs from '../breadcrumbs.json';
 import site from '../../site.json';
 import { isStaffOnlySlug } from '../lib/staff-only.mjs';
+import { ACADEMY_SLUG, academyOpen } from '../lib/academy.mjs';
 import { getCollection } from 'astro:content';
 import helpScopes from '../data/help-scopes.json';
 import { headScript, scopeCss, scopePaths } from '../lib/help-scope.mjs';
@@ -53,7 +54,9 @@ const isInternal =
   slug === INTERNAL_PREFIX ||
   slug.startsWith(`${INTERNAL_PREFIX}/`) ||
   Boolean((entry.data as { unlisted?: boolean }).unlisted) ||
-  isStaffOnlySlug(slug, site);
+  isStaffOnlySlug(slug, site) ||
+  // A closed Academy is reachable only by its address (src/lib/academy.mjs).
+  (slug === ACADEMY_SLUG && !academyOpen(site));
 const title = entry.data.title;
 // Who the article is written for (frontmatter `audience`), for the signed-in
 // reader's "this guide is for organizers" note (src/scripts/account.mjs).
