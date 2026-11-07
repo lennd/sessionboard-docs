@@ -10,6 +10,9 @@ import {
   availableSuites,
   builtSuites,
   crossSuiteLinks,
+  deployedSuites,
+  readableSuites,
+  staffOnlySuites,
   internalLinks,
   keepEntry,
   keepResult,
@@ -128,7 +131,7 @@ test('crossSuiteLinks flags any link across a suite boundary', () => {
 
 // ── The head script, run as the browser runs it ────────────────────────────
 
-function runHead({ path, search = '', cookie = '' }) {
+function runHead({ path, search = '', cookie = '', publicSuites = ALL }) {
   const replaced = [];
   const attrs = {};
   const doc = {
@@ -139,7 +142,7 @@ function runHead({ path, search = '', cookie = '' }) {
   Object.defineProperty(doc, 'cookie', { get: () => cookie, set: (v) => cookies.push(v) });
   const window = {};
   const location = { pathname: path, search, protocol: 'https:', replace: (u) => replaced.push(u) };
-  vm.runInNewContext(suiteHeadScript(config, ALL), { document: doc, location, window, URLSearchParams });
+  vm.runInNewContext(suiteHeadScript(config, ALL, publicSuites), { document: doc, location, window, URLSearchParams });
   return { replaced, attrs, cookies, state: window.sbSuites };
 }
 
@@ -163,6 +166,34 @@ test('head script: remembered suite only redirects the root; ?via=platform clear
   assert.deepEqual(cleared.replaced, []);
   assert.match(cleared.cookies[0], /Max-Age=0/);
   assert.equal(cleared.attrs['data-sb-suite'], PLATFORM);
+});
+
+test('head script: an unreleased (staff-only) suite is never remembered or landed on, but its pages know their suite', () => {
+  const r = runHead({ path: '/', search: '?via=awards', publicSuites: NONE });
+  assert.deepEqual(r.replaced, []);
+  assert.match(r.cookies[0], /Max-Age=0/);
+  assert.deepEqual(runHead({ path: '/', cookie: 'sb_help_suite=awards', publicSuites: NONE }).replaced, []);
+  const page = runHead({ path: '/sessionboard-awards/get-started', publicSuites: NONE });
+  assert.equal(page.attrs['data-sb-suite'], 'awards');
+  assert.equal(page.state.suites.awards.staff, 1);
+});
+
+// ── Staff read every suite (Josh, 2026-11-07) ─────────────────────────────
+
+test('every suite is deployed; unreleased ones are the staff-only ones', () => {
+  assert.deepEqual([...deployedSuites(config, {})].sort(), Object.keys(config.suites).sort());
+  assert.deepEqual([...deployedSuites(config, { SB_PUBLIC_SUITES_ONLY: '1' })].sort(), [...NONE].sort());
+  assert.deepEqual(
+    staffOnlySuites(config).sort(),
+    Object.keys(config.suites).filter((k) => k !== PLATFORM && !config.suites[k].released).sort(),
+  );
+});
+
+test('staff can read every deployed suite; everyone else only the public ones', () => {
+  const deployed = deployedSuites(config, {});
+  assert.deepEqual([...readableSuites({ staff: true }, config, deployed, NONE)].sort(), [...deployed].sort());
+  assert.deepEqual([...readableSuites({ staff: false, products: ['marketing'] }, config, deployed, NONE)], [...NONE]);
+  assert.deepEqual([...readableSuites(null, config, deployed, NONE)], [...NONE]);
 });
 
 // ── The suites on disk ─────────────────────────────────────────────────────

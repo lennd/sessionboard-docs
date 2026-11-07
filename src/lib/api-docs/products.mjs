@@ -20,6 +20,16 @@ export function builtApiProducts(registry, env = {}) {
   return new Set(productKeys(registry).filter((k) => k === PLATFORM || registry.products[k].released || all || named.has(k)));
 }
 
+/**
+ * Products deployed with API docs: every product, unless SB_PUBLIC_SUITES_ONLY.
+ * An unreleased product's API pages live under its suite (/sessionboard-<key>/api), which
+ * is staff-only until the product ships (src/lib/staff-only.mjs), so staff can read them.
+ */
+export function deployedApiProducts(registry, env = {}) {
+  const publicOnly = ['1', 'true', 'yes'].includes(String(env.SB_PUBLIC_SUITES_ONLY ?? '').trim().toLowerCase());
+  return publicOnly ? builtApiProducts(registry, env) : new Set(productKeys(registry));
+}
+
 const clean = (p) => {
   let path = String(p ?? '').split(/[?#]/)[0].replace(/\.html$/, '');
   if (path.length > 1) path = path.replace(/\/+$/, '');

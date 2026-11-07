@@ -16,16 +16,36 @@
  *   SidebarSublist.astro tags its sidebar group so the Worker can find it;
  *   build-help-index     keeps it out of the corpus Team Lead answers from.
  *
+ * Unreleased product suites (src/data/suites.json `released: false`, e.g.
+ * /sessionboard-marketing) are staff-only sections too, with their screenshots
+ * (/images/suites/<key>/), so staff can read and switch to them before the
+ * product ships (src/lib/suites.mjs). A local preview build that names a suite
+ * in SB_PREVIEW_SUITES treats it as public.
+ *
  * Slugs here are route slugs without a leading slash (`registration/overview`).
  */
+import suitesConfig from '../data/suites.json' with { type: 'json' };
 
 const trimSlashes = (value) => String(value ?? '').replace(/^\/+|\/+$/g, '');
+
+/** Unreleased suites (not named by SB_PREVIEW_SUITES): `[{ key, prefix }]`. */
+function staffOnlySuitePrefixes() {
+  const preview = String(globalThis.process?.env?.SB_PREVIEW_SUITES ?? '').trim().toLowerCase();
+  const all = ['1', 'all', 'true', 'yes'].includes(preview);
+  const named = new Set(preview.split(',').map((s) => s.trim()).filter(Boolean));
+  return Object.entries(suitesConfig.suites)
+    .filter(([key, s]) => s.path && !s.released && !all && !named.has(key))
+    .map(([key, s]) => ({ key, prefix: trimSlashes(s.path) }));
+}
 
 /** The configured rule, normalized: `{ prefixes: string[], pages: Set<string> }`. */
 export function staffOnlyRule(site) {
   const config = site?.staffOnly ?? {};
   return {
-    prefixes: (config.prefixes ?? []).map(trimSlashes).filter(Boolean),
+    prefixes: [
+      ...(config.prefixes ?? []).map(trimSlashes).filter(Boolean),
+      ...staffOnlySuitePrefixes().map((s) => s.prefix),
+    ],
     pages: new Set((config.pages ?? []).map(trimSlashes).filter(Boolean)),
   };
 }
@@ -51,6 +71,9 @@ export function isStaffOnlyPath(pathname, site) {
   }
   const og = path.match(/^\/og\/(.+)\.png$/);
   if (og) return isStaffOnlySlug(og[1].replace(/--/g, '/'), site);
+  // An unreleased suite's screenshots.
+  const shot = path.match(/^\/images\/suites\/([^/]+)\//);
+  if (shot) return staffOnlySuitePrefixes().some((s) => s.key === shot[1]);
   return isStaffOnlySlug(path, site);
 }
 

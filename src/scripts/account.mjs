@@ -399,15 +399,21 @@ function audienceNote(reader) {
 
 /**
  * Documentation suites (src/lib/suites.mjs), only when a self-serve suite is
- * built (the head script then sets window.sbSuites). Reveals the switcher's
- * entries for the suites this reader holds, and the switcher itself once that
- * is two or more; on the site root, sends a reader who holds exactly one
- * self-serve product and no Platform org to that product's suite.
+ * deployed (the head script then sets window.sbSuites). Reveals the switcher's
+ * entries for the suites this reader holds and can read, and the switcher
+ * itself once that is two or more; on the site root, sends a reader who holds
+ * exactly one self-serve product and no Platform org to that product's suite.
+ * Staff (super users) get every suite, unreleased ones included (staff-only
+ * until they ship, src/lib/staff-only.mjs); nobody else is shown or sent to an
+ * unreleased suite, whatever their token holds.
  */
 function applySuites(reader) {
   const state = window.sbSuites;
   if (!state || !reader) return;
-  const products = Array.isArray(reader.products) ? reader.products : null;
+  const staff = reader.staff === true;
+  // Readable: Platform and the public suites; for staff, every deployed suite.
+  const readable = new Set([PLATFORM, ...Object.keys(state.suites).filter((k) => staff || !state.suites[k].staff)]);
+  const products = staff ? [...readable] : Array.isArray(reader.products) ? reader.products.filter((p) => readable.has(p)) : null;
   // Only what the reader holds: the page being read never adds a product (the
   // switcher's own markup marks the current suite as active).
   const held = new Set(products ?? [PLATFORM]);
@@ -421,7 +427,7 @@ function applySuites(reader) {
     }
     nav.hidden = shown < 2;
   }
-  const built = new Set([PLATFORM, ...Object.keys(state.suites)]);
+  const built = readable;
   const remembered = document.cookie.split('; ').some((c) => c.startsWith(`${SUITE_COOKIE}=`) && c.length > SUITE_COOKIE.length + 1);
   if (remembered) return;
   // An explicit ?via= (kept by the head script before any script strips it) wins

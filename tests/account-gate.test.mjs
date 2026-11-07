@@ -24,6 +24,7 @@ import {
   verifySession,
 } from '../src/lib/account-session.mjs';
 import realSite from '../site.json' with { type: 'json' };
+import suitesConfig from '../src/data/suites.json' with { type: 'json' };
 
 const SITE = {
   canonicalHost: 'learn.example.com',
@@ -78,14 +79,30 @@ test('hrefs: root-relative and same-site absolute links, with hashes and queries
   assert.equal(isStaffOnlyHref('/attend', SITE), false);
 });
 
-test('llms globs list each section and page', () => {
+test('llms globs list each section and page, unreleased product suites included', () => {
+  const unreleased = Object.values(suitesConfig.suites)
+    .filter((s) => s.path && !s.released)
+    .flatMap((s) => [s.path.slice(1), `${s.path.slice(1)}/**`]);
   assert.deepEqual(staffOnlyGlobs(SITE), [
     'registration',
     'registration/**',
     'onsite',
     'onsite/**',
+    ...unreleased,
     'participants/register-for-an-event',
   ]);
+});
+
+test('an unreleased product suite is staff-only: pages, API pages, share cards and screenshots', () => {
+  for (const [key, s] of Object.entries(suitesConfig.suites)) {
+    if (!s.path) continue;
+    const root = s.path.slice(1);
+    const paths = [s.path, `${s.home}`, `${s.path}/api`, `/og/${root}--get-started.png`, `/images/suites/${key}/shot.png`];
+    for (const p of paths) assert.equal(isStaffOnlyPath(p, SITE), !s.released, `${p} (released: ${s.released})`);
+    assert.equal(isStaffOnlyHref(`https://learn.example.com${s.home}`, { ...SITE, canonicalHost: 'learn.example.com' }), !s.released);
+  }
+  assert.equal(isStaffOnlyPath('/sessions/create-a-session', SITE), false);
+  assert.equal(isStaffOnlyPath('/images/kb/x.png', SITE), false);
 });
 
 test('site.json gates Registration, Expo, Onsite, the Attend app and Enablement to staff', () => {

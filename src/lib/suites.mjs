@@ -16,9 +16,13 @@
  *   4. Platform.
  * A reader with several products gets a switcher listing only those.
  *
- * An unreleased suite (`released: false`) is left out of the build unless
- * SB_PREVIEW_SUITES names it (`1` / `all` for every suite). With no
- * self-serve suite built, nothing here changes a byte of the Platform HTML.
+ * Every suite is deployed (deployedSuites). An unreleased one (`released:
+ * false`) is staff-only until it ships: src/lib/staff-only.mjs counts its URL
+ * tree as a staff-only section, so the Worker 404s it for everyone else and it
+ * stays out of search, Ask, the sitemap and llms.txt, while Sessionboard staff
+ * (super users) can read and switch to it (Josh, 2026-11-07). builtSuites is
+ * what everyone sees: Platform, every released suite, and whatever
+ * SB_PREVIEW_SUITES names (`1` / `all` for every suite) in a local preview.
  *
  * Plain JS: imported by content.config.ts, Astro components, the build
  * scripts and the tests.
@@ -57,6 +61,28 @@ export function builtSuites(config, env = {}) {
   const all = ['1', 'all', 'true', 'yes'].includes(preview);
   const named = new Set(preview.split(',').map((s) => s.trim()).filter(Boolean));
   return new Set([PLATFORM, ...selfServeKeys(config).filter((k) => config.suites[k].released || all || named.has(k))]);
+}
+
+/**
+ * Every suite in the deployed site: public ones (builtSuites) and the
+ * unreleased ones staff can read. SB_PUBLIC_SUITES_ONLY=1 builds only the
+ * public ones (the behaviour before staff could read unreleased suites).
+ */
+export function deployedSuites(config, env = {}) {
+  const publicOnly = ['1', 'true', 'yes'].includes(String(env.SB_PUBLIC_SUITES_ONLY ?? '').trim().toLowerCase());
+  return publicOnly ? builtSuites(config, env) : new Set(Object.keys(config.suites));
+}
+
+/** Unreleased self-serve suites: deployed, readable only by staff. */
+export const staffOnlySuites = (config) => selfServeKeys(config).filter((k) => !config.suites[k].released);
+
+/**
+ * The suites a reader can switch between and be sent to: staff get every
+ * deployed suite, everyone else what their token holds among the public ones.
+ */
+export function readableSuites(reader, config, deployed, publicSuites) {
+  if (reader?.staff === true) return new Set(deployed);
+  return new Set([...deployed].filter((k) => publicSuites.has(k)));
 }
 
 /** True when at least one self-serve suite is in the build. */
@@ -191,21 +217,32 @@ export function crossSuiteLinks(pages, config) {
  * home landingTarget() picks. The `?via=` itself is left for help-scope's
  * script, which strips it from the address bar.
  */
-export function suiteHeadScript(config, built) {
+export function suiteHeadScript(config, built, publicSuites = built) {
   const suites = Object.fromEntries(
     [...built]
       .filter((k) => k !== PLATFORM)
-      .map((k) => [k, { path: config.suites[k].path, home: config.suites[k].home, label: config.suites[k].label }]),
+      .map((k) => [
+        k,
+        {
+          path: config.suites[k].path,
+          home: config.suites[k].home,
+          label: config.suites[k].label,
+          // Staff-only (unreleased): the page still knows it is in this suite, but
+          // ?via= and the remembered cookie never send anyone there.
+          ...(publicSuites.has(k) ? {} : { staff: 1 }),
+        },
+      ]),
   );
   return `(function(){
 var C=${JSON.stringify(SUITE_COOKIE)},S=${JSON.stringify(suites)},d=document,l=location;
 var via=null;try{via=new URLSearchParams(l.search).get('via');}catch(e){}
-var has=function(k){return Object.prototype.hasOwnProperty.call(S,k);};
+var own=function(k){return Object.prototype.hasOwnProperty.call(S,k);};
+var has=function(k){return own(k)&&!S[k].staff;};
 var tail='; path=/; SameSite=Lax'+(l.protocol==='https:'?'; Secure':'');
 var m=d.cookie.match(new RegExp('(?:^|; )'+C+'=([^;]*)'));var remembered=m?decodeURIComponent(m[1]):null;
 if(via!==null){if(has(via)){d.cookie=C+'='+via+tail;}else{d.cookie=C+'='+tail+'; Max-Age=0';remembered=null;}}
 var p=l.pathname.replace(/\\/index(\\.html)?$/,'/').replace(/\\.html$/,'');if(p.length>1)p=p.replace(/\\/$/,'');p=p||'/';
-var here='platform';for(var k in S){if(has(k)&&(p===S[k].path||p.indexOf(S[k].path+'/')===0))here=k;}
+var here='platform';for(var k in S){if(own(k)&&(p===S[k].path||p.indexOf(S[k].path+'/')===0))here=k;}
 var go=null;
 if(via!==null){if(has(via)&&here!==via)go=S[via].home;}
 else if(p==='/'&&remembered&&has(remembered))go=S[remembered].home;
