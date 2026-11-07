@@ -23,6 +23,7 @@ import SocialIcons from 'virtual:starlight/components/SocialIcons';
 import ThemeSelect from 'virtual:starlight/components/ThemeSelect';
 import { apiProductAt, builtProducts, registry } from '../lib/api-docs/data';
 import { PLATFORM } from '../lib/api-docs/products.mjs';
+import site from '../../site.json';
 import ProductBadge from './ProductBadge.astro';
 
 const shouldRenderSearch =
@@ -52,7 +53,10 @@ const tabs = [
 	// ?via=all clears a self-serve help scope (src/lib/help-scope.mjs), which would otherwise hide
 	// the API sidebar's untagged links.
 	{ label: 'API Docs', short: 'API', href: `${suiteProduct.base}?via=all`, current: Boolean(onApi) },
-	{ label: 'Academy', short: 'Academy', href: '/academy', current: onAcademy },
+	// Shown once the Academy is open (site.json `academy.open`), and always on /academy itself.
+	...((site as { academy?: { open?: boolean } }).academy?.open === true || onAcademy
+		? [{ label: 'Academy', short: 'Academy', href: '/academy', current: onAcademy }]
+		: []),
 ];
 const preview = products.some((P) => !(registry.products as Record<string, { released?: boolean }>)[P.key]?.released);
 const switchable = onApi && products.length > 1;

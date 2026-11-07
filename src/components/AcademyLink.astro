@@ -4,12 +4,16 @@
  * (its read step links here), a card that opens that lesson's path on the
  * Academy tab. Found from the built-in catalog (src/lib/academy.mjs), so
  * nothing is added to articles by hand. Paths of an unreleased product only
- * show on its own (unreleased) suite pages.
+ * show on its own (unreleased) suite pages. Off while site.json `academy.open`
+ * is false.
  */
 import catalog from '../data/academy/catalog.json';
 import { lessonsForArticle } from '../lib/academy.mjs';
+import site from '../../site.json';
 
-const found = lessonsForArticle(catalog, Astro.url.pathname).filter((l: { released: boolean }) => l.released).slice(0, 3);
+// Nothing until the Academy is open (site.json `academy.open`).
+const open = (site as { academy?: { open?: boolean } }).academy?.open === true;
+const found = !open ? [] : lessonsForArticle(catalog, Astro.url.pathname).filter((l: { released: boolean }) => l.released).slice(0, 3);
 ---
 
 {
