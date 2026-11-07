@@ -69,7 +69,7 @@ export default defineConfig({
         starlightLlmsTxt({ exclude: staffOnlyGlobs(site) }),
         // /_account/sign-in (the 404 page's sign-in link) is a Worker route, not a page.
         // API endpoint pages and the spec files are generated (src/pages/api, public/api), which
-        // the validator cannot see; scripts/api-docs-sync.mjs and tests/api-docs.test.mjs check them.
+        // the validator cannot see; scripts/api-spec.mjs and tests/api-docs.test.mjs check them.
         starlightLinksValidator({
           errorOnRelativeLinks: false,
           exclude: [

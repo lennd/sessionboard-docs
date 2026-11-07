@@ -39,15 +39,15 @@ test('Mintlify links rewrite to Help Center URLs', () => {
   assert.ok(rewriteHref('/api-reference/contacts/get-a-contacts-sessions', index));
 });
 
-test('301 map covers every guide and endpoint and only targets pages that exist', () => {
+test('frozen 301 map (every URL Mintlify served) only targets pages that exist', () => {
+  // The map was frozen when the Mintlify site was retired (2026-11-07): new endpoints and
+  // guides never had a Mintlify URL, so they are not in it. What must hold forever is that
+  // every old URL still lands on a real page; when a page moves, update its target.
   const ops = listOperations(spec);
-  const targets = new Set(Object.values(redirects));
-  // Two operations titled "Get a dashboard" share one Mintlify URL, so Mintlify serves only
-  // one of them; the second gets its own page here (slug + operationId) and no redirect.
-  const deduped = ops.filter((o) => o.slug !== `${o.slug.split('/')[0]}/${o.summary.toLowerCase().replace(/['’]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')}`);
-  assert.ok(deduped.length <= 2, deduped.map((o) => o.href).join(' '));
-  for (const o of ops) if (!deduped.includes(o)) assert.ok(targets.has(o.href), o.href);
-  for (const route of Object.keys(source.guides)) assert.ok(targets.has(`/${route}`), route);
+  assert.ok(Object.keys(redirects).length >= 270);
+  assert.equal(redirects['/'], '/api');
+  assert.equal(redirects['/changelog'], '/api/changelog');
+  assert.equal(redirects['/breaking-changes'], '/api/breaking-changes');
   const known = new Set([...ops.map((o) => o.href), ...Object.keys(source.guides).map((r) => `/${r}`), '/api/openapi.yaml', '/api/openapi.json']);
   for (const [from, to] of Object.entries(redirects)) assert.ok(known.has(to), `${from} -> ${to}`);
 });
