@@ -43,7 +43,9 @@ const helpIds = new Set((await getCollection('docs')).map((e) => e.id));
 const helpHref = onApi && onApi.help !== '/' && helpIds.has(onApi.help.replace(/^\//, '')) ? onApi.help : '/';
 const tabs = [
 	{ label: 'Help Center', short: 'Help', href: helpHref, current: !onApi },
-	{ label: 'API Docs', short: 'API', href: suiteProduct.base, current: Boolean(onApi) },
+	// ?via=all clears a self-serve help scope (src/lib/help-scope.mjs), which would otherwise hide
+	// the API sidebar's untagged links.
+	{ label: 'API Docs', short: 'API', href: `${suiteProduct.base}?via=all`, current: Boolean(onApi) },
 ];
 const preview = products.some((P) => !(registry.products as Record<string, { released?: boolean }>)[P.key]?.released);
 const switchable = onApi && products.length > 1;
@@ -55,7 +57,7 @@ const switchable = onApi && products.length > 1;
 		<nav class="sb-top-tabs print:hidden" aria-label="Documentation">
 			{
 				tabs.map((t) => (
-					<a href={t.href} aria-current={t.current ? 'page' : undefined} data-tab={t.short.toLowerCase()}>
+					<a href={t.href} aria-current={t.current ? 'page' : undefined} aria-label={t.label} data-tab={t.short.toLowerCase()}>
 						<span class="sb-tab-long">{t.label}</span>
 						<span class="sb-tab-short" aria-hidden="true">{t.short}</span>
 					</a>
@@ -71,7 +73,7 @@ const switchable = onApi && products.length > 1;
 					<ul>
 						{products.map((P) => (
 							<li data-product={P.key} hidden>
-								<a href={P.base} aria-current={P.key === onApi!.key ? 'page' : undefined}>
+								<a href={`${P.base}?via=all`} aria-current={P.key === onApi!.key ? 'page' : undefined}>
 									{P.label}
 								</a>
 							</li>

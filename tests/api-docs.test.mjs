@@ -136,3 +136,14 @@ for (const key of productDirs) {
     }
   });
 }
+
+test('multipart endpoints send a file part, never a JSON string', () => {
+  const o = listOperations(spec).find((x) => x.method === 'post' && x.path.endsWith('/files/upload'));
+  const r = sampleRequest(spec, o);
+  assert.ok(r.multipart?.some((f) => f.name === 'file' && f.file));
+  const [curl, js, py] = codeSamples(r);
+  assert.match(curl.code, /--form 'file=@/);
+  assert.doesNotMatch(curl.code, /--data/);
+  assert.match(js.code, /new FormData\(\)/);
+  assert.match(py.code, /files=\{"file": open\(/);
+});
