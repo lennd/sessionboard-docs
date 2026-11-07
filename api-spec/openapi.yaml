@@ -12050,6 +12050,177 @@ paths:
   # ──────────────────────────────────────────────
   # Learning meetings (from a registration platform)
   # ──────────────────────────────────────────────
+  /v1/organization/{orgId}/learning/workspace/question-bank:
+    get:
+      operationId: learning-list-question-bank
+      summary: List the question bank
+      description: >-
+        The organization's bank questions, newest first, 50 a page. A quiz page draws from the bank by tag with a
+        `bank_draw` block (`{ tags, match, count, points? }`): publishing the course copies every matching live
+        question into the quiz, and each attempt draws `count` of them per learner. `tags` narrows the list to
+        questions that carry every tag (any of them with `match=any`), `q` to prompts that contain the text. Each item
+        carries the question block (answers included), its type, the prompt as plain text, its tags and whether it is
+        archived. Reads only. Requires `read:learning`; refused for a key restricted to particular events. Also at
+        `GET /v1/learning/workspace/question-bank`.
+      tags:
+        - Learning workspace
+      parameters:
+        - $ref: '#/components/parameters/LearningOrgId'
+        - name: tags
+          in: query
+          required: false
+          description: Comma-separated tags, for example `pharmacology,module-2`.
+          schema: { type: string, maxLength: 700 }
+        - name: match
+          in: query
+          required: false
+          description: '`all` (default): questions with every tag. `any`: questions with at least one.'
+          schema: { type: string, enum: [all, any] }
+        - name: q
+          in: query
+          required: false
+          description: Text the prompt contains.
+          schema: { type: string, maxLength: 100 }
+        - name: archived
+          in: query
+          required: false
+          description: '`true` lists archived questions instead of live ones.'
+          schema: { type: string, enum: ['true', 'false'] }
+        - name: offset
+          in: query
+          required: false
+          description: How many questions to skip, for the next page.
+          schema: { type: string, pattern: '^[0-9]+$' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  payload:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/LearningQuestionBankItem'
+                      total: { type: integer }
+                      limit: { type: integer }
+                      offset: { type: integer }
+        '400':
+          $ref: '#/components/responses/LearningBadRequest'
+        '401':
+          $ref: '#/components/responses/LearningUnauthorized'
+        '403':
+          $ref: '#/components/responses/LearningWorkspaceForbidden'
+        '404':
+          $ref: '#/components/responses/LearningOrgNotFound'
+        '429':
+          $ref: '#/components/responses/LearningTooManyRequests'
+  /v1/organization/{orgId}/learning/workspace/question-bank/tags:
+    get:
+      operationId: learning-list-question-bank-tags
+      summary: List the question bank's tags
+      description: >-
+        The tags in use on live bank questions, with how many questions carry each, most used first (up to 200). Reads
+        only. Requires `read:learning`; refused for a key restricted to particular events. Also at
+        `GET /v1/learning/workspace/question-bank/tags`.
+      tags:
+        - Learning workspace
+      parameters:
+        - $ref: '#/components/parameters/LearningOrgId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  payload:
+                    type: object
+                    properties:
+                      tags:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            tag: { type: string }
+                            questions: { type: integer }
+        '401':
+          $ref: '#/components/responses/LearningUnauthorized'
+        '403':
+          $ref: '#/components/responses/LearningWorkspaceForbidden'
+        '404':
+          $ref: '#/components/responses/LearningOrgNotFound'
+        '429':
+          $ref: '#/components/responses/LearningTooManyRequests'
+  /v1/organization/{orgId}/learning/workspace/question-bank/manage:
+    post:
+      operationId: learning-manage-question-bank
+      summary: Add, edit, archive or restore a bank question
+      description: >-
+        `create` adds a question (`question`, a question block with its answers, and up to 10 `tags`). `update` changes
+        a question's block, its tags or both (`itemId`). `archive` takes a question out of future draws and `restore`
+        puts it back. A quiz that already drew a question keeps its copy until its course is published again. The
+        token's user needs the Lessons update permission. Requires `write:learning`; refused for a key restricted to
+        particular events. Also at `POST /v1/learning/workspace/question-bank/manage`.
+      tags:
+        - Learning workspace
+      parameters:
+        - $ref: '#/components/parameters/LearningOrgId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [action]
+              properties:
+                action:
+                  type: string
+                  enum: [create, update, archive, restore]
+                itemId:
+                  type: string
+                  format: uuid
+                  description: The bank question. Required for every action except `create`.
+                question:
+                  type: object
+                  additionalProperties: true
+                  description: A question block (the same shape a quiz page uses), answers included.
+                tags:
+                  type: array
+                  maxItems: 10
+                  items: { type: string, maxLength: 64 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  payload:
+                    type: object
+                    properties:
+                      item:
+                        $ref: '#/components/schemas/LearningQuestionBankItem'
+        '400':
+          $ref: '#/components/responses/LearningBadRequest'
+        '401':
+          $ref: '#/components/responses/LearningUnauthorized'
+        '403':
+          $ref: '#/components/responses/LearningWorkspaceForbidden'
+        '404':
+          $ref: '#/components/responses/LearningOrgNotFound'
+        '429':
+          $ref: '#/components/responses/LearningTooManyRequests'
   /v1/organization/{orgId}/learning/workspace/meetings/sources:
     get:
       operationId: learning-list-meeting-sources
@@ -14935,8 +15106,10 @@ paths:
       description: >-
         Sets the event's registration goal, attendance goal, or both. `null` clears one; with no goal set, the last
         comparable edition's numbers are used. Answers with the same body as
-        `GET /v1/organization/{orgId}/marketing/goals/turnout`, so pace against the new goal shows at once. Sends and
-        spends nothing. Requires `write:marketing`. Also at `POST /v1/marketing/goals/turnout/{eventId}/goal`.
+        `GET /v1/organization/{orgId}/marketing/goals/turnout`, so pace against the new goal shows at once. An event has
+        at most one open registration goal: when it has one (made on the Goals page or with `plan_goal`),
+        `registrationsGoal` changes that goal's number and the answer's `goal.source` is `goal`; nothing new is created.
+        Sends and spends nothing. Requires `write:marketing`. Also at `POST /v1/marketing/goals/turnout/{eventId}/goal`.
       tags:
         - Marketing
       parameters:
@@ -24504,6 +24677,22 @@ components:
         message: { type: string }
 
     # ── Credits and results ─────────────────────
+    LearningQuestionBankItem:
+      type: object
+      description: A question in the organization's question bank.
+      properties:
+        id: { type: string, format: uuid }
+        question:
+          type: object
+          additionalProperties: true
+          description: The question block, answers included; its `id` is the bank question's id.
+        question_type: { type: string }
+        prompt: { type: string, description: The prompt as plain text. }
+        tags:
+          type: array
+          items: { type: string }
+        archived: { type: boolean }
+        updated_at: { type: string, format: date-time }
     LearningCreditsOverview:
       type: object
       properties:
