@@ -1,7 +1,7 @@
 /**
  * The API Docs sidebar, organized by task and domain (src/data/api/layout.json) rather than
- * by Mintlify's "Org — X" / "Event — X" groups. Pages and endpoints still come from the
- * synced Mintlify nav, so every URL is unchanged; only where they sit in the sidebar moves.
+ * by the "Org — X" / "Event — X" groups of src/data/api/nav.json (the old Mintlify nav). Pages
+ * and endpoints still come from that nav, so every URL is unchanged; only where they sit moves.
  *
  *   Get started · Recipes · Guides · Reference (Program, Event setup, People & CRM, …)
  *
