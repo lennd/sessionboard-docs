@@ -205,3 +205,42 @@ test('suites.mjs normalizes paths exactly like help-scope.mjs', async () => {
     assert.equal(a(p), b(p), p);
   }
 });
+
+// ── Static files of unreleased suites ────────────────────────────────────
+
+test('unbuiltSuiteFiles lists the screenshots and share images of every suite not built, nothing else', async () => {
+  const { mkdtempSync, mkdirSync, writeFileSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { unbuiltSuiteFiles } = await import('../src/lib/suites-build.mjs');
+  const dist = mkdtempSync(join(tmpdir(), 'sb-suites-dist-'));
+  for (const k of ['awards', 'learning']) {
+    mkdirSync(join(dist, 'images', 'suites', k), { recursive: true });
+    writeFileSync(join(dist, 'images', 'suites', k, 'x.png'), '');
+  }
+  mkdirSync(join(dist, 'images', 'kb'), { recursive: true });
+  writeFileSync(join(dist, 'images', 'kb', 'platform.png'), '');
+  mkdirSync(join(dist, 'og'));
+  for (const f of ['sessionboard-awards--ask.png', 'sessionboard-learning--site.png', 'awards--getting-started.png', 'marketing--advocacy.png']) writeFileSync(join(dist, 'og', f), '');
+
+  assert.deepEqual(unbuiltSuiteFiles(dist, config, NONE), [
+    'images/suites/awards',
+    'images/suites/learning',
+    'og/sessionboard-awards--ask.png',
+    'og/sessionboard-learning--site.png',
+  ]);
+  assert.deepEqual(unbuiltSuiteFiles(dist, config, builtSuites(config, { SB_PREVIEW_SUITES: 'awards' })), [
+    'images/suites/learning',
+    'og/sessionboard-learning--site.png',
+  ]);
+  assert.deepEqual(unbuiltSuiteFiles(dist, config, ALL), []);
+});
+
+test('suite screenshots live in their own suite folder', () => {
+  for (const page of pages) {
+    const suite = suiteForId(page.id, config);
+    for (const m of page.source.matchAll(/\]\((\/images\/[^)\s]+)\)/g)) {
+      if (suite === PLATFORM) assert.ok(!m[1].startsWith('/images/suites/'), `${page.id} uses a suite image ${m[1]}`);
+      else assert.ok(m[1].startsWith(`/images/suites/${suite}/`), `${page.id} image ${m[1]} must be under /images/suites/${suite}/`);
+    }
+  }
+});

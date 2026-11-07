@@ -8,6 +8,8 @@ import sidebar from './src/sidebar.json' with { type: 'json' };
 import site from './site.json' with { type: 'json' };
 import rehypeAppLinks from './plugins/rehype-app-links.mjs';
 import { isStaffOnlyHref, staffOnlyGlobs } from './src/lib/staff-only.mjs';
+import suitesConfig from './src/data/suites.json' with { type: 'json' };
+import { suiteStaticFiles } from './src/lib/suites-build.mjs';
 
 // The staff-only enablement section (src/pages/<internalPrefix>/) is unlisted.
 // Starlight adds @astrojs/sitemap itself unless one is configured here, so
@@ -29,6 +31,9 @@ export default defineConfig({
     rehypePlugins: [rehypeAppLinks],
   },
   integrations: [
+    // Unreleased product suites (src/data/suites.json) leave no static files
+    // behind: their screenshots and share images are removed from dist/.
+    suiteStaticFiles(suitesConfig),
     // Staff-only sections (site.json `staffOnly`, src/lib/staff-only.mjs) stay out too.
     sitemap({
       filter: (page) =>
