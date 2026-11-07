@@ -408,8 +408,9 @@ function applySuites(reader) {
   const state = window.sbSuites;
   if (!state || !reader) return;
   const products = Array.isArray(reader.products) ? reader.products : null;
+  // Only what the reader holds: the page being read never adds a product (the
+  // switcher's own markup marks the current suite as active).
   const held = new Set(products ?? [PLATFORM]);
-  held.add(state.here);
   const nav = document.querySelector('.sb-suite-switch');
   if (nav) {
     const links = [...nav.querySelectorAll('a[data-suite]')];
@@ -423,7 +424,9 @@ function applySuites(reader) {
   const built = new Set([PLATFORM, ...Object.keys(state.suites)]);
   const remembered = document.cookie.split('; ').some((c) => c.startsWith(`${SUITE_COOKIE}=`) && c.length > SUITE_COOKIE.length + 1);
   if (remembered) return;
-  const target = landingTarget({ path: location.pathname, products }, suitesConfig, built);
+  // An explicit ?via= (kept by the head script before any script strips it) wins
+  // over the token: /?via=platform stays on Platform for a one-product reader.
+  const target = landingTarget({ path: location.pathname, via: state.via ?? null, products }, suitesConfig, built);
   if (target) location.replace(target);
 }
 

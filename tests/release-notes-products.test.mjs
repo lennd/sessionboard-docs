@@ -41,6 +41,7 @@ const awardsAndPlatform = base({
   product: 'awards',
   platform: true,
   article: '/sessionboard-awards/get-started',
+  platform_article: '/awards/getting-started',
   module: 'Awards',
   where: { scope: 'org', path: 'Awards' },
   internal: { when_to_bring_up: 'Always.' },
@@ -114,4 +115,13 @@ test('release-email.mjs skips self-serve-only entries', () => {
 test('check-release-notes.mjs validates every product', () => {
   const out = run('check-release-notes.mjs', [], fixtureDir());
   assert.match(out, /3|✓/);
+});
+
+test('platform_article: required on a shared entry, a Platform guide, and only on shared entries', () => {
+  const contract = { features: {}, settings: {}, permissions: [] };
+  const shared = (over) => base({ id: 'shared', product: 'awards', platform: true, article: '/sessionboard-awards/get-started', module: 'Awards', where: { scope: 'org', path: 'Awards' }, internal: { when_to_bring_up: 'Always.' }, ...over });
+  assert.deepEqual(validateEntry(shared({ platform_article: '/awards/getting-started' }), '2026-11-06', contract), []);
+  assert.match(validateEntry(shared({}), '2026-11-06', contract).join('\n'), /platform_article is required/);
+  assert.match(validateEntry(shared({ platform_article: '/sessionboard-awards/get-started' }), '2026-11-06', contract).join('\n'), /must be a Platform guide/);
+  assert.match(validateEntry(base({ id: 'p', article: '/awards/getting-started', platform_article: '/awards/getting-started', module: 'Awards', where: { scope: 'org', path: 'Awards' }, internal: { when_to_bring_up: 'Always.' } }), '2026-11-06', contract).join('\n'), /only for a self-serve entry/);
 });

@@ -357,6 +357,18 @@ export function validateEntry(entry, date, contract, { file = '' } = {}) {
   if (selfServe && entry.article && articleSuite(entry.article) !== product) {
     at(`article ${entry.article} is not in the ${product} suite — a ${product} entry links to its own suite's guide`);
   }
+  // A change shared with Platform (`platform: true`) links its own suite's
+  // guide in the suite's view, and `platform_article` (a Platform guide) on
+  // every Platform channel, which never links into a self-serve suite.
+  if (entry.platform_article !== undefined) {
+    if (!selfServe || entry.platform !== true) at('platform_article is only for a self-serve entry with "platform": true');
+    else if (typeof entry.platform_article !== 'string' || articleSuite(entry.platform_article) !== 'platform') {
+      at(`platform_article ${entry.platform_article} must be a Platform guide`);
+    } else if (!articleExists(entry.platform_article)) at(`platform_article ${entry.platform_article} does not resolve to an MDX page`);
+  }
+  if (strict && selfServe && entry.platform === true && entry.article && !entry.platform_article) {
+    at('platform_article is required — a change shared with Platform links a Platform guide on Platform channels');
+  }
   if (!selfServe && entry.article && articleSuite(entry.article) !== 'platform') {
     at(`article ${entry.article} is in a self-serve suite — set "product" to that suite, or link a Platform guide`);
   }
@@ -527,8 +539,11 @@ export function loadReleaseNotes({ contract = readContract(), product: requested
   // entry (check, status, gaps, intake) pass product: 'all'.
   // A date whose entries all belong to other products drops out of the view;
   // an (unusual) empty release file stays exactly as it was.
+  // On the Platform view a shared entry links its Platform guide, never the suite's.
+  const forView = (e) =>
+    product === 'platform' && e.product !== 'platform' && e.platform_article ? { ...e, article: e.platform_article } : e;
   const view = releases
-    .map((r) => ({ date: r.date, entries: r.entries.filter((e) => forProduct(e, product)), had: r.entries.length }))
+    .map((r) => ({ date: r.date, entries: r.entries.filter((e) => forProduct(e, product)).map(forView), had: r.entries.length }))
     .filter((r) => r.had === 0 || r.entries.length > 0)
     .map(({ date, entries }) => ({ date, entries }));
   return { releases: view, problems };

@@ -16,7 +16,7 @@ import { getCollection } from 'astro:content';
 import helpScopes from '../data/help-scopes.json';
 import { headScript, scopeCss, scopePaths } from '../lib/help-scope.mjs';
 import suitesConfig from '../data/suites.json';
-import { anySelfServeBuilt, builtSuites, suiteHeadScript } from '../lib/suites.mjs';
+import { anySelfServeBuilt, builtSuites, suiteForPath, suiteHeadScript } from '../lib/suites.mjs';
 
 const SITE = `https://${site.canonicalHost}`;
 const WWW = 'https://www.sessionboard.com';
@@ -143,6 +143,10 @@ const activeScopes = suitesOn
 const suiteHead = suitesOn ? suiteHeadScript(suitesConfig, builtSuiteKeys) : null;
 const scopeHead = headScript(activeScopes, scopePaths(await getCollection('docs'), activeScopes));
 const scopeStyle = scopeCss(activeScopes);
+// Legacy scopes filter Platform pages only. On a suite page a leftover
+// `sb_help_scope` cookie (say, learning) would hide this suite's own sidebar
+// and compete with its search filter, so suite pages carry no scope at all.
+const onSuitePage = suiteForPath(Astro.url.pathname, suitesConfig) !== 'platform';
 
 // Deferred marketing tags — mirrors growth-pages marketing_head_snippet().
 const marketingJs = `
@@ -198,8 +202,8 @@ const marketingJs = `
   </>
 )}
 {suiteHead && <script is:inline set:html={suiteHead} />}
-<script is:inline set:html={scopeHead} />
-<style is:inline set:html={scopeStyle} />
+{!onSuitePage && <script is:inline set:html={scopeHead} />}
+{!onSuitePage && <style is:inline set:html={scopeStyle} />}
 <script>
   // Heading anchor icons (Starlight's a.sl-anchor-link) copy the section
   // hotlink to the clipboard on click (Josh, 2026-09-24). Default hash

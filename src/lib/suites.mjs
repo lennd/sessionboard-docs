@@ -210,7 +210,7 @@ var go=null;
 if(via!==null){if(has(via)&&here!==via)go=S[via].home;}
 else if(p==='/'&&remembered&&has(remembered))go=S[remembered].home;
 d.documentElement.setAttribute('data-sb-suite',here);
-window.sbSuites={here:here,suites:S};
+window.sbSuites={here:here,suites:S,via:via};
 if(go)l.replace(go);
 })();`;
 }

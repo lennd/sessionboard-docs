@@ -18,7 +18,9 @@ import { apiProductForPath } from './src/lib/api-docs/products.mjs';
 import apiProducts from './src/data/api/products.json';
 import mintlifyRedirects from './src/data/api/mintlify-redirects.json';
 import { retiredApiDocsTarget } from './src/lib/api-docs/retired-host.mjs';
-import { ACCOUNT_PREFIX, accountResponse, isSignedInRequest, isStaffRequest, recheckStaff } from './src/lib/account-session.mjs';
+import { ACCOUNT_PREFIX, accountResponse, grantAllowsPath, isSignedInRequest, isStaffRequest, recheckStaff } from './src/lib/account-session.mjs';
+import { suiteForPath } from './src/lib/suites.mjs';
+import suitesConfig from './src/data/suites.json';
 import { STATUS_PATH as RELEASE_EMAIL_STATUS_PATH } from './src/lib/product-updates-proxy.mjs';
 
 // `/en/migrated/knowledge-base/…` is a live path prefix left over from an
@@ -557,6 +559,10 @@ export default {
     const publicPath = isPublicPath(url.pathname);
     const signedIn = publicPath ? false : await isSignedInRequest(request, env);
     if (!publicPath && !signedIn) return signInRequired(request, url);
+    // A reader with only a staff grant reads the API docs and product suites the grant names (checked here, not in page script).
+    if (signedIn && !(await grantAllowsPath(request, env, site, { apiProduct: apiProductForPath(url.pathname, apiProducts), suite: suiteForPath(url.pathname, suitesConfig) }))) {
+      return notFoundPage(url, env);
+    }
 
     // HubSpot KB sitemap path → Starlight sitemap
     if (url.pathname === '/sitemap.xml') {
