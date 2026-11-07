@@ -53,7 +53,7 @@ export function requiredScopes(o, fallback = {}) {
 
 /**
  * A self-serve product's layout, derived from its own docs.json tab: its overview,
- * authentication and changelog under Get started, its MCP tools under AI, and its endpoint
+ * authentication, MCP tools and changelog under Get started, and its endpoint
  * groups as resources of one Reference domain named after the product.
  */
 export function productLayout(nav, label) {
@@ -64,6 +64,8 @@ export function productLayout(nav, label) {
     getStarted: [
       ...by('overview').map((page) => ({ label: 'Overview', page })),
       ...by('authentication').map((page) => ({ label: 'Authentication', page })),
+      // MCP sits in Get started, as it does for Platform (Josh, 2026-11-06).
+      ...by('mcp-tools').map((page) => ({ label: 'MCP tools', page })),
       ...by('changelog').map((page) => ({ label: 'Changelog', page })),
     ],
     recipes: [],
@@ -75,9 +77,6 @@ export function productLayout(nav, label) {
         about: `Every ${label} API endpoint, grouped by what it works on. Organization- and event-level endpoints sit side by side, with the scope each one needs.`,
         resources: [...groups.keys()].map((g) => ({ label: g, groups: [g] })),
       },
-      ...(by('mcp-tools').length
-        ? [{ slug: 'ai', label: 'AI', about: `The ${label} tools an AI assistant can use through the Sessionboard MCP server.`, pages: by('mcp-tools'), resources: [] }]
-        : []),
     ],
   };
 }
