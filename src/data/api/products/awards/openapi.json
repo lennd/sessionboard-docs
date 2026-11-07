@@ -1110,7 +1110,7 @@
       "post": {
         "operationId": "awards-workspace-announce-winners",
         "summary": "Ask to announce the winners",
-        "description": "Asks a person to email the results to everyone who submitted a nomination: winners and finalists get their news (with your `note`), and the rest a thank-you unless `notifyOthers` is `false`. Because it sends email, an API call never announces directly: it answers `202` with `status: needs_approval` and a link, and nothing is sent until a person approves it in Sessionboard Awards. It then runs as that person. Do not call again for the same announcement. Each program is announced once; approving it again later reports progress and resends only failed deliveries. If it cannot run when approved, the approval records why: no winners picked (`no_winners`), or, for a first announcement, a submitted nomination without a finished scorecard (`reviews_incomplete`). Winners are picked by a person in Sessionboard; the API cannot pick them. Requires `write:awards`; the token's user needs the Awards update permission and must manage the program. Refused for a key restricted to particular events. Also at `POST /v1/awards/workspace/programs/{programId}/announce`.",
+        "description": "Asks a person to email the results to everyone who submitted a nomination: whoever nominated each winner and finalist gets the news (with your `note`), and the rest a thank-you unless `notifyOthers` is `false`. Because it sends email, an API call never announces directly: it answers `202` with `status: needs_approval` and a link, and nothing is sent until a person approves it in Sessionboard Awards. It then runs as that person. Do not call again for the same announcement. Each program is announced once; approving it again later reports progress and resends only failed deliveries. If it cannot run when approved, the approval records why: no winners picked (`no_winners`), or, for a first announcement, a submitted nomination without a finished scorecard (`reviews_incomplete`). Winners are picked by a person in Sessionboard; the API cannot pick them. Requires `write:awards`; the token's user needs the Awards update permission and must manage the program. Refused for a key restricted to particular events. Also at `POST /v1/awards/workspace/programs/{programId}/announce`.",
         "tags": [
           "Awards workspace"
         ],
@@ -1166,6 +1166,180 @@
           },
           "423": {
             "$ref": "#/components/responses/AwardsWorkspacePaused"
+          },
+          "429": {
+            "$ref": "#/components/responses/AwardsWorkspaceTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/awards/workspace/programs/{programId}/announce/preview": {
+      "get": {
+        "operationId": "awards-workspace-preview-announcement",
+        "summary": "Preview the winner announcement",
+        "description": "Who the announcement would email (the people who nominated each winner and finalist, and the thank-yous), whether it can run now and, if not, why (`blocked`: `no_winners` or `reviews_incomplete`), and the progress of an announcement already sent. Sends nothing. Requires `read:awards`; the token's user must manage the program. Refused for a key restricted to particular events. Also at `GET /v1/awards/workspace/programs/{programId}/announce/preview`.",
+        "tags": [
+          "Awards workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AwardsOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/AwardsProgramId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/AwardsWorkspaceUnauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/AwardsWorkspaceProgramNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/AwardsWorkspaceTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/awards/workspace/programs/{programId}/remind": {
+      "post": {
+        "operationId": "awards-workspace-remind",
+        "summary": "Remind reviewers or unfinished nominators",
+        "description": "Emails a reminder to `audience`: `reviewers` (reviewers with assigned scorecards still to finish, while the review pass is open) or `drafts` (people who started a nomination and have not submitted it, while nominations are open). Nobody gets the same reminder twice in 24 hours. With `?preview=true` it answers who would get it and who is skipped, and sends nothing. Without it, because it sends email, an API call answers `202` with `status: needs_approval` and a link, and nothing is sent until a person approves it in Sessionboard Awards; it then runs as that person. `422` when the program cannot take that reminder now (`nominations_closed`, `no_site`). Requires `write:awards`; the token's user must manage the program. Refused for a key restricted to particular events. Also at `POST /v1/awards/workspace/programs/{programId}/remind`.",
+        "tags": [
+          "Awards workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AwardsOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/AwardsProgramId"
+          },
+          {
+            "name": "preview",
+            "in": "query",
+            "required": false,
+            "description": "`true`: say who would get the reminder and send nothing.",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "audience"
+                ],
+                "properties": {
+                  "audience": {
+                    "type": "string",
+                    "enum": [
+                      "reviewers",
+                      "drafts"
+                    ]
+                  },
+                  "source": {
+                    "$ref": "#/components/schemas/AwardsWorkspaceSource"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The preview (`?preview=true`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "202": {
+            "$ref": "#/components/responses/AwardsWorkspaceNeedsApproval"
+          },
+          "400": {
+            "$ref": "#/components/responses/AwardsWorkspaceBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/AwardsWorkspaceUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/AwardsWorkspaceWriteForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/AwardsWorkspaceProgramNotFound"
+          },
+          "423": {
+            "$ref": "#/components/responses/AwardsWorkspacePaused"
+          },
+          "429": {
+            "$ref": "#/components/responses/AwardsWorkspaceTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/awards/workspace/programs/{programId}/reminders/{reminderId}": {
+      "get": {
+        "operationId": "awards-workspace-get-reminder",
+        "summary": "Get a reminder's progress",
+        "description": "How far one reminder has got: sent, skipped, failed and still pending, per person. Requires `read:awards`; the token's user must manage the program. Refused for a key restricted to particular events. Also at `GET /v1/awards/workspace/programs/{programId}/reminders/{reminderId}`.",
+        "tags": [
+          "Awards workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AwardsOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/AwardsProgramId"
+          },
+          {
+            "name": "reminderId",
+            "in": "path",
+            "required": true,
+            "description": "The reminder's id, from the remind response once it runs.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/AwardsWorkspaceUnauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/AwardsWorkspaceProgramNotFound"
           },
           "429": {
             "$ref": "#/components/responses/AwardsWorkspaceTooManyRequests"
