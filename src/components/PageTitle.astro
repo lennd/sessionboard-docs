@@ -8,6 +8,8 @@ import breadcrumbs from '../breadcrumbs.json';
 import Availability from './Availability.astro';
 import site from '../../site.json';
 import { isStaffOnlySlug } from '../lib/staff-only.mjs';
+import { apiProductAt } from '../lib/api-docs/data';
+import ProductBadge from './ProductBadge.astro';
 
 const { entry, id } = Astro.locals.starlightRoute;
 const slug = id === 'index' ? '' : id;
@@ -19,6 +21,9 @@ const trail = (breadcrumbs as Record<string, { trail: { label: string; href: str
 const data = entry.data as Record<string, unknown>;
 const features = Array.isArray(data.features) ? (data.features as string[]) : [];
 const permissions = Array.isArray(data.permissions) ? (data.permissions as string[]) : [];
+// API docs pages (Platform's /api and each product's /…/api) are not in the sidebar the
+// trail is built from; they name their product instead, with its badge.
+const apiProduct = trail.length === 0 ? apiProductAt(Astro.url.pathname) : null;
 const showAvailability = !slug.startsWith('enablement') && (features.length > 0 || data.where || data.availability || data.enable_path || data.included_with || permissions.length > 0);
 ---
 
@@ -30,6 +35,20 @@ const showAvailability = !slug.startsWith('enablement') && (features.length > 0 
         {trail.map((crumb) => (
           <li>{crumb.href ? <a href={crumb.href}>{crumb.label}</a> : crumb.label}</li>
         ))}
+      </ol>
+    </nav>
+  )
+}
+{
+  apiProduct && (
+    <nav class="sb-breadcrumbs sb-api-crumbs" aria-label="Breadcrumb">
+      <ol>
+        <li>
+          <a href={`${apiProduct.base}?via=all`}>
+            <ProductBadge product={apiProduct.key as 'platform'} />
+            {apiProduct.label} API
+          </a>
+        </li>
       </ol>
     </nav>
   )

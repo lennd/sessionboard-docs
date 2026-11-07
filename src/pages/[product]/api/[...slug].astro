@@ -10,7 +10,8 @@
  */
 import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
 import EndpointPage from '../../../components/api/EndpointPage.astro';
-import { builtProducts } from '../../../lib/api-docs/data';
+import DomainPage from '../../../components/api/DomainPage.astro';
+import { builtProducts, domainsFor } from '../../../lib/api-docs/data';
 import { PLATFORM } from '../../../lib/api-docs/products.mjs';
 import { listOperations } from '../../../lib/api-docs/urls.mjs';
 
@@ -28,11 +29,12 @@ export function getStaticPaths() {
       paths.push({ params: { product, slug: m[2] === 'index' ? undefined : m[2] }, props: { key: P.key, guide: mod } });
     }
     for (const o of listOperations(P.spec, P.base)) paths.push({ params: { product, slug: `reference/${o.slug}` }, props: { key: P.key, op: o.slug } });
+    for (const d of domainsFor(P)) paths.push({ params: { product, slug: `reference/${d.slug}` }, props: { key: P.key, domain: d.slug } });
   }
   return paths;
 }
 
-const { key, guide, op } = Astro.props as { key: string; guide?: Guide; op?: string };
+const { key, guide, op, domain } = Astro.props as { key: string; guide?: Guide; op?: string; domain?: string };
 const Content = guide?.Content;
 ---
 {
@@ -42,6 +44,8 @@ const Content = guide?.Content;
         <Content />
       </div>
     </StarlightPage>
+  ) : domain ? (
+    <DomainPage product={key} slug={domain} />
   ) : (
     <EndpointPage product={key} slug={op!} />
   )

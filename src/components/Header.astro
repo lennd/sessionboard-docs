@@ -23,6 +23,7 @@ import SocialIcons from 'virtual:starlight/components/SocialIcons';
 import ThemeSelect from 'virtual:starlight/components/ThemeSelect';
 import { apiProductAt, builtProducts, registry } from '../lib/api-docs/data';
 import { PLATFORM } from '../lib/api-docs/products.mjs';
+import ProductBadge from './ProductBadge.astro';
 
 const shouldRenderSearch =
 	config.pagefind || config.components.Search !== '@astrojs/starlight/components/Search.astro';
@@ -48,7 +49,9 @@ const academyPath = path.replace(/\.html$/, '').replace(/\/$/, '');
 const onAcademy = academyPath === '/academy' || academyPath.startsWith('/academy/');
 const tabs = [
 	{ label: 'Help Center', short: 'Help', href: helpHref, current: !onApi && !onAcademy },
-	{ label: 'API Docs', short: 'API', href: suiteProduct.base, current: Boolean(onApi) },
+	// ?via=all clears a self-serve help scope (src/lib/help-scope.mjs), which would otherwise hide
+	// the API sidebar's untagged links.
+	{ label: 'API Docs', short: 'API', href: `${suiteProduct.base}?via=all`, current: Boolean(onApi) },
 	{ label: 'Academy', short: 'Academy', href: '/academy', current: onAcademy },
 ];
 const preview = products.some((P) => !(registry.products as Record<string, { released?: boolean }>)[P.key]?.released);
@@ -61,7 +64,7 @@ const switchable = onApi && products.length > 1;
 		<nav class="sb-top-tabs print:hidden" aria-label="Documentation">
 			{
 				tabs.map((t) => (
-					<a href={t.href} aria-current={t.current ? 'page' : undefined} data-tab={t.short.toLowerCase()}>
+					<a href={t.href} aria-current={t.current ? 'page' : undefined} aria-label={t.label} data-tab={t.short.toLowerCase()}>
 						<span class="sb-tab-long">{t.label}</span>
 						<span class="sb-tab-short" aria-hidden="true">{t.short}</span>
 					</a>
@@ -72,12 +75,15 @@ const switchable = onApi && products.length > 1;
 			switchable && (
 				<details class="sb-api-switch print:hidden" data-current={onApi!.key} data-preview={preview ? '1' : undefined} hidden>
 					<summary aria-label={`API docs for ${onApi!.label}. Switch product`}>
-						<span class="sb-api-switch-for">API for</span> {onApi!.label}
+						<span class="sb-api-switch-for">API for</span>
+						<ProductBadge product={onApi!.key as 'platform'} />
+						{onApi!.label}
 					</summary>
 					<ul>
 						{products.map((P) => (
 							<li data-product={P.key} hidden>
-								<a href={P.base} aria-current={P.key === onApi!.key ? 'page' : undefined}>
+								<a href={`${P.base}?via=all`} aria-current={P.key === onApi!.key ? 'page' : undefined}>
+									<ProductBadge product={P.key as 'platform'} />
 									{P.label}
 								</a>
 							</li>
@@ -282,7 +288,9 @@ const switchable = onApi && products.length > 1;
 		box-shadow: var(--sl-shadow-md);
 	}
 	.sb-api-switch li a {
-		display: block;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
 		padding: 0.35rem 0.6rem;
 		border-radius: 0.35rem;
 		color: var(--sl-color-gray-2);

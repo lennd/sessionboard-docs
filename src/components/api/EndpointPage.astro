@@ -12,7 +12,7 @@ import SchemaFields from './SchemaFields.astro';
 import TryIt from './TryIt.astro';
 import { apiProduct } from '../../lib/api-docs/data';
 import { listOperations } from '../../lib/api-docs/urls.mjs';
-import { childProperties, codeSamples, deref, flatten, mediaExamples, parameters, requestBody, responses, sampleRequest } from '../../lib/api-docs/spec.mjs';
+import { childProperties, codeSamples, deref, flatten, mediaExamples, parameters, requestBody, responses, sampleRequest, variants } from '../../lib/api-docs/spec.mjs';
 
 interface Props { product?: string; slug: string }
 const { product = 'platform', slug } = Astro.props;
@@ -43,17 +43,19 @@ const responseExamples = resps
 const bodyExamples = body ? mediaExamples(spec, body.media, body.schema) : [];
 // Object bodies and responses list their properties at the top level, like Mintlify; arrays
 // and scalars show one row whose children (if any) open under "Show child attributes".
+const isUnion = (schema: any) => variants(spec, schema || {}).length > 1;
 const topFields = (schema: any, fallback: string, required = false) => {
   const { schema: s } = flatten(spec, schema || {});
   const isArray = s.type === 'array' || (Array.isArray(s.type) && s.type.includes('array')) || !!s.items;
-  const kids = isArray ? [] : childProperties(spec, schema || {});
+  // A root-level oneOf/anyOf (e.g. the OAuth token grants) stays one row, so every option renders.
+  const kids = isArray || isUnion(schema) ? [] : childProperties(spec, schema || {});
   return kids.length ? kids : [{ name: fallback, schema: schema || {}, required }];
 };
 // The schema's own description, shown above its properties when they are listed top-level.
 const topDescription = (schema: any) => {
   const { schema: s } = flatten(spec, schema || {});
   const isArray = s.type === 'array' || !!s.items;
-  return !isArray && childProperties(spec, schema || {}).length ? s.description : undefined;
+  return !isArray && !isUnion(schema) && childProperties(spec, schema || {}).length ? s.description : undefined;
 };
 
 const headings = [

@@ -5,7 +5,7 @@
  * cookies, the URL or our Worker, and goes only to the region the reader picks. The API
  * answers CORS with `*` and allows the x-access-token / Authorization headers, so no proxy.
  */
-import { exampleFor, parameters, requestBody, mediaExamples } from '../../lib/api-docs/spec.mjs';
+import { exampleFor, parameters, requestBody, mediaExamples, multipartFields } from '../../lib/api-docs/spec.mjs';
 import { apiProduct } from '../../lib/api-docs/data';
 
 interface Props { o: any; product?: string }
@@ -35,6 +35,8 @@ const data = {
   query: params.query.map(field),
   headers: params.header.map(field),
   contentType: body?.contentType ?? null,
+  // multipart/form-data: one control per part (a file input for binary parts), sent as FormData.
+  multipart: body?.contentType === 'multipart/form-data' ? multipartFields(spec, body.schema, bodyExample) : null,
   body: bodyExample === undefined ? null : body?.contentType === 'application/x-www-form-urlencoded' ? new URLSearchParams(Object.entries(bodyExample || {}).map(([k, v]) => [k, String(v)])).toString() : JSON.stringify(bodyExample, null, 2),
 };
 const id = `tryit-${o.method}-${o.slug.replace(/[^a-z0-9]+/g, '-')}`;
@@ -85,11 +87,33 @@ const id = `tryit-${o.method}-${o.slug.replace(/[^a-z0-9]+/g, '-')}`;
         </fieldset>
       )
     )}
-    {data.body !== null && (
+    {data.multipart ? (
       <fieldset class="api-tryit-group">
         <legend>Body <span class="api-tryit-ct">{data.contentType}</span></legend>
-        <textarea name="body" rows={Math.min(18, data.body.split('\n').length + 1)} spellcheck="false">{data.body}</textarea>
+        {data.multipart.map((f: any) => (
+          <div class="api-tryit-row">
+            <label for={`${id}-part-${f.name}`}>{f.name}{f.required && <span class="api-tryit-req" title="required">*</span>}</label>
+            {f.file ? (
+              <input id={`${id}-part-${f.name}`} type="file" data-part={f.name} data-required={f.required ? '1' : undefined} />
+            ) : (
+              <input id={`${id}-part-${f.name}`} data-part={f.name} data-required={f.required ? '1' : undefined} placeholder={f.value} spellcheck="false" />
+            )}
+          </div>
+        ))}
       </fieldset>
+    ) : (
+      data.body !== null && (
+        <fieldset class="api-tryit-group">
+          <legend>Body <span class="api-tryit-ct">{data.contentType}</span></legend>
+          <textarea
+            name="body"
+            id={`${id}-body`}
+            aria-label={`Request body (${data.contentType})`}
+            rows={Math.min(18, data.body.split('\n').length + 1)}
+            spellcheck="false"
+          >{data.body}</textarea>
+        </fieldset>
+      )
     )}
     <div class="api-tryit-url"><span class={`api-method api-method-${o.method}`}>{data.method}</span><code data-url></code></div>
     <div class="api-tryit-actions">
@@ -111,6 +135,7 @@ const id = `tryit-${o.method}-${o.slug.replace(/[^a-z0-9]+/g, '-')}`;
     auth: { kind: 'apiKey' | 'bearer'; header?: string }[];
     path_params: Field[]; query: Field[]; headers: Field[];
     contentType: string | null; body: string | null;
+    multipart: { name: string; file: boolean; required: boolean }[] | null;
   };
 
   function setup(root: HTMLElement) {
@@ -158,9 +183,26 @@ const id = `tryit-${o.method}-${o.slug.replace(/[^a-z0-9]+/g, '-')}`;
         else headers.set('Authorization', `Bearer ${token}`);
       }
       for (const [name, v] of values('header')) if (v) headers.set(name, v);
-      let body: string | undefined;
+      let body: string | FormData | undefined;
       const bodyEl = form.elements.namedItem('body') as HTMLTextAreaElement | null;
-      if (bodyEl && op.method !== 'GET') {
+      if (op.multipart && op.method !== 'GET') {
+        // FormData: the browser writes the multipart boundary, so no Content-Type here.
+        const fd = new FormData();
+        const missingParts: string[] = [];
+        for (const el of form.querySelectorAll<HTMLInputElement>('[data-part]')) {
+          const name = el.dataset.part!;
+          if (el.type === 'file') {
+            if (el.files?.[0]) fd.append(name, el.files[0]);
+            else if (el.dataset.required) missingParts.push(name);
+          } else if (el.value.trim()) fd.append(name, el.value.trim());
+          else if (el.dataset.required) missingParts.push(name);
+        }
+        if (missingParts.length) {
+          status.textContent = `Fill in ${missingParts.join(', ')} first.`;
+          return;
+        }
+        body = fd;
+      } else if (bodyEl && op.method !== 'GET') {
         body = bodyEl.value;
         if (op.contentType) headers.set('Content-Type', op.contentType);
         if (op.contentType === 'application/json' && body.trim()) {

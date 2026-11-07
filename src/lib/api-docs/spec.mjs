@@ -101,7 +101,10 @@ export function variants(spec, schema) {
   });
   return real.map((v, i) => {
     const { schema: vs, name } = flatten(spec, v);
-    return { label: `Option ${i + 1}`, name, description: vs.description, type: typeLabel(spec, v), fields: childProperties(spec, v) };
+    // Name an option by its title, or by the const it pins (e.g. grant_type: refresh_token).
+    const pinned = Object.entries(vs.properties || {}).map(([k, p]) => [k, flatten(spec, p).schema]).find(([, p]) => p.const !== undefined || p.enum?.length === 1);
+    const label = vs.title ?? (pinned ? `${pinned[0]}: ${pinned[1].const ?? pinned[1].enum[0]}` : `Option ${i + 1}`);
+    return { label, name, description: vs.description, type: typeLabel(spec, v), fields: childProperties(spec, v) };
   });
 }
 
@@ -246,7 +249,152 @@ export function sampleRequest(spec, o) {
   for (const p of params.header) if (p.required) headers.push([p.name, `<${p.name}>`]);
   if (body && body.contentType === 'application/json') headers.push(['Content-Type', 'application/json']);
   const form = body && body.contentType === 'application/x-www-form-urlencoded';
-  return { method: o.method.toUpperCase(), url, query, headers, body: bodyExample, form };
+  const multipart = body && body.contentType === 'multipart/form-data' ? multipartFields(spec, body.schema, bodyExample) : null;
+  return { method: o.method.toUpperCase(), url, query, headers, body: bodyExample, form, multipart };
+}
+
+/** A binary field: `format: binary` (OpenAPI 3.0) or `contentMediaType` / `contentEncoding` (3.1). */
+export function isBinary(spec, schema) {
+  const { schema: s } = flatten(spec, schema || {});
+  return s.format === 'binary' || s.contentMediaType !== undefined || s.contentEncoding === 'binary';
+}
+
+/** multipart/form-data parts: [{ name, file, required, value }] from the body schema and example. */
+export function multipartFields(spec, schema, example = {}) {
+  return childProperties(spec, schema || {}).map((f) => {
+    const file = isBinary(spec, f.schema);
+    const v = example && typeof example === 'object' ? example[f.name] : undefined;
+    return { name: f.name, file, required: f.required, value: file ? null : v == null ? '' : typeof v === 'string' ? v : JSON.stringify(v) };
+  });
+}
+
+function multipartSamples(r, fullUrl) {
+  const parts = r.multipart;
+  const fileName = (f) => `/path/to/${f.name === 'file' ? 'slides.pdf' : f.name}`;
+  const curl = [`curl --request ${r.method} \\`, `  --url '${fullUrl}' \\`];
+  r.headers.forEach(([k, v]) => curl.push(`  --header '${k}: ${v}' \\`));
+  parts.forEach((f, i) => curl.push(`  --form '${f.name}=${f.file ? `@${fileName(f)}` : f.value.replace(/'/g, "'\\''")}'${i < parts.length - 1 ? ' \\' : ''}`));
+
+  const hdrObj = Object.fromEntries(r.headers);
+  const js = [
+    'const form = new FormData();',
+    ...parts.map((f) => (f.file ? `form.append('${f.name}', fileInput.files[0]); // a File or Blob` : `form.append('${f.name}', ${JSON.stringify(f.value)});`)),
+    '',
+    `const response = await fetch('${fullUrl}', {`,
+    `  method: '${r.method}',`,
+    r.headers.length ? `  headers: ${indentAll(json(hdrObj), '  ')}, // no Content-Type: fetch sets the multipart boundary` : null,
+    '  body: form,',
+    '});',
+    '',
+    'const data = await response.json();',
+    'console.log(data);',
+  ].filter((l) => l !== null).join('\n');
+
+  const python = [
+    'import requests',
+    '',
+    'response = requests.request(',
+    `    "${r.method}",`,
+    `    "${r.url}",`,
+    r.query.length ? `    params=${json(Object.fromEntries(r.query), 4).replace(/\n/g, '\n    ')},` : null,
+    r.headers.length ? `    headers=${json(hdrObj, 4).replace(/\n/g, '\n    ')},` : null,
+    `    files={${parts.filter((f) => f.file).map((f) => `"${f.name}": open("${fileName(f)}", "rb")`).join(', ')}},`,
+    parts.some((f) => !f.file) ? `    data={${parts.filter((f) => !f.file).map((f) => `"${f.name}": ${JSON.stringify(f.value)}`).join(', ')}},` : null,
+    ')',
+    '',
+    'print(response.json())',
+  ].filter((l) => l !== null).join('\n');
+
+  const php = [
+    '<?php',
+    '',
+    '$curl = curl_init();',
+    '',
+    'curl_setopt_array($curl, [',
+    `    CURLOPT_URL => "${fullUrl}",`,
+    '    CURLOPT_RETURNTRANSFER => true,',
+    `    CURLOPT_CUSTOMREQUEST => "${r.method}",`,
+    '    CURLOPT_POSTFIELDS => [',
+    ...parts.map((f) => (f.file ? `        "${f.name}" => new CURLFile("${fileName(f)}"),` : `        "${f.name}" => ${JSON.stringify(f.value)},`)),
+    '    ],',
+    r.headers.length ? `    CURLOPT_HTTPHEADER => [\n${r.headers.map(([k, v]) => `        "${k}: ${v}",`).join('\n')}\n    ],` : null,
+    ']);',
+    '',
+    '$response = curl_exec($curl);',
+    'curl_close($curl);',
+    '',
+    'echo $response;',
+  ].filter((l) => l !== null).join('\n');
+
+  const go = [
+    'package main',
+    '',
+    'import (',
+    '\t"bytes"',
+    '\t"fmt"',
+    '\t"io"',
+    '\t"mime/multipart"',
+    '\t"net/http"',
+    '\t"os"',
+    ')',
+    '',
+    'func main() {',
+    '\tvar body bytes.Buffer',
+    '\tw := multipart.NewWriter(&body)',
+    ...parts.flatMap((f) =>
+      f.file
+        ? [`\tf, _ := os.Open("${fileName(f)}")`, '\tdefer f.Close()', `\tpart, _ := w.CreateFormFile("${f.name}", f.Name())`, '\tio.Copy(part, f)']
+        : [`\tw.WriteField("${f.name}", ${JSON.stringify(f.value)})`],
+    ),
+    '\tw.Close()',
+    '',
+    `\treq, _ := http.NewRequest("${r.method}", "${fullUrl}", &body)`,
+    '\treq.Header.Set("Content-Type", w.FormDataContentType())',
+    ...r.headers.map(([k, v]) => `\treq.Header.Add("${k}", "${v}")`),
+    '',
+    '\tres, _ := http.DefaultClient.Do(req)',
+    '\tdefer res.Body.Close()',
+    '\tout, _ := io.ReadAll(res.Body)',
+    '\tfmt.Println(string(out))',
+    '}',
+  ].join('\n');
+
+  const java = [
+    '// Java 11+ HttpClient has no multipart helper: build the body with a boundary.',
+    'String boundary = "----sessionboard" + System.currentTimeMillis();',
+    'var bytes = new java.io.ByteArrayOutputStream();',
+    ...parts.flatMap((f) =>
+      f.file
+        ? [
+            `bytes.write(("--" + boundary + "\\r\\nContent-Disposition: form-data; name=\\"${f.name}\\"; filename=\\"${fileName(f).split('/').pop()}\\"\\r\\nContent-Type: application/octet-stream\\r\\n\\r\\n").getBytes());`,
+            `bytes.write(java.nio.file.Files.readAllBytes(java.nio.file.Path.of("${fileName(f)}")));`,
+            'bytes.write("\\r\\n".getBytes());',
+          ]
+        : [`bytes.write(("--" + boundary + "\\r\\nContent-Disposition: form-data; name=\\"${f.name}\\"\\r\\n\\r\\n" + ${JSON.stringify(f.value)} + "\\r\\n").getBytes());`],
+    ),
+    'bytes.write(("--" + boundary + "--\\r\\n").getBytes());',
+    '',
+    'HttpRequest request = HttpRequest.newBuilder()',
+    `    .uri(URI.create("${fullUrl}"))`,
+    '    .header("Content-Type", "multipart/form-data; boundary=" + boundary)',
+    ...r.headers.map(([k, v]) => `    .header("${k}", "${v}")`),
+    `    .method("${r.method}", HttpRequest.BodyPublishers.ofByteArray(bytes.toByteArray()))`,
+    '    .build();',
+    '',
+    'HttpResponse<String> response = HttpClient.newHttpClient()',
+    '    .send(request, HttpResponse.BodyHandlers.ofString());',
+    '',
+    'System.out.println(response.body());',
+  ].join('\n');
+
+  return [
+    { label: 'cURL', lang: 'bash', code: curl.join('\n') },
+    { label: 'JavaScript', lang: 'js', code: js },
+    { label: 'Python', lang: 'python', code: python },
+    { label: 'PHP', lang: 'php', code: php },
+    { label: 'Go', lang: 'go', code: go },
+    { label: 'Java', lang: 'java', code: java },
+  ];
 }
 
 const qs = (query) => (query.length ? '?' + query.map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&') : '');
@@ -255,6 +403,7 @@ const indentAll = (text, pad) => text.split('\n').map((l, i) => (i ? pad + l : l
 
 export function codeSamples(r) {
   const fullUrl = r.url + qs(r.query);
+  if (r.multipart) return multipartSamples(r, fullUrl);
   const hasBody = r.body !== undefined;
   const formBody = hasBody && r.form ? new URLSearchParams(Object.entries(r.body || {}).map(([k, v]) => [k, String(v)])).toString() : null;
   const bodyText = hasBody ? (formBody ?? json(r.body)) : null;

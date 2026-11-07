@@ -1,0 +1,34 @@
+---
+title: "Sync sessions and speakers to your website"
+description: "Page through an event's accepted sessions and speakers and keep your website's copy current."
+sidebar:
+  label: "Sync sessions and speakers"
+---
+
+Keep an agenda page or speaker directory on your own site in step with Sessionboard. You need an API token with `read:events`, `read:sessions` and `read:contacts`.
+
+## 1. Find the event
+
+[`GET /v1/events`](/api/reference/events/list-events) lists the events your token can reach. Note the `id` of the one you publish.
+
+## 2. Page through the sessions
+
+[`POST /v1/event/{eventId}/sessions`](/api/reference/sessions/search-sessions) is a search: send the filters in the body and the page in the query string. Ask for 100 per page and stop when you reach `pagination.totalPages`.
+
+```bash
+curl --request POST \
+  --url 'https://public-api.sessionboard.com/v1/event/{eventId}/sessions?page=1&pageSize=100' \
+  --header 'x-access-token: <api-token>' \
+  --header 'Content-Type: application/json' \
+  --data '{ "filters": { "status": "accepted" } }'
+```
+
+Each session carries its speakers, track, room, tags and custom fields, so one pass usually covers an agenda page.
+
+## 3. Page through the speakers
+
+[`POST /v1/event/{eventId}/speakers`](/api/reference/speakers/search-speakers) works the same way and returns each speaker's name, company, title, photo and bio.
+
+## 4. Pick up only what changed
+
+On later runs, send `filters.updatedAt.after` with the time of your last successful sync to fetch only what changed since. Session search results are cached for two minutes, so do not poll more often than that.

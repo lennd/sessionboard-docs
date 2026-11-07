@@ -136,3 +136,55 @@ for (const key of productDirs) {
     }
   });
 }
+
+test('multipart endpoints send a file part, never a JSON string', () => {
+  const o = listOperations(spec).find((x) => x.method === 'post' && x.path.endsWith('/files/upload'));
+  const r = sampleRequest(spec, o);
+  assert.ok(r.multipart?.some((f) => f.name === 'file' && f.file));
+  const [curl, js, py] = codeSamples(r);
+  assert.match(curl.code, /--form 'file=@/);
+  assert.doesNotMatch(curl.code, /--data/);
+  assert.match(js.code, /new FormData\(\)/);
+  assert.match(py.code, /files=\{"file": open\(/);
+});
+
+// ── Sidebar layout (src/data/api/layout.json) ─────────────────────────────────
+import { buildLayoutSidebar, productLayout, referenceDomains, unplaced, scopeOf, requiredScopes } from '../src/lib/api-docs/layout.mjs';
+const layout = json('src/data/api/layout.json');
+
+test('every Mintlify page and endpoint group has a place in the layout', () => {
+  assert.deepEqual(unplaced(layout, nav), { pages: [], groups: [], unknownGroups: [] });
+  for (const key of productDirs) {
+    const pNav = json(`src/data/api/products/${key}/nav.json`);
+    assert.deepEqual(unplaced(productLayout(pNav, key), pNav), { pages: [], groups: [], unknownGroups: [] }, key);
+  }
+});
+
+test('the reference lists every operation exactly once, with its level', () => {
+  const domains = referenceDomains({ layout, nav, spec, source });
+  const hrefs = domains.flatMap((d) => d.resources.flatMap((r) => r.ops.map((o) => o.href)));
+  const navEndpoints = JSON.stringify(nav).match(/"(GET|POST|PUT|PATCH|DELETE) \/[^"]*"/g).length;
+  assert.equal(hrefs.length, navEndpoints);
+  assert.equal(new Set(hrefs).size, hrefs.length);
+  const contacts = domains.find((d) => d.slug === 'people-crm').resources.find((r) => r.label === 'Contacts');
+  assert.deepEqual([...new Set(contacts.ops.map((o) => o.scope))].sort(), ['event', 'org']);
+  assert.equal(scopeOf('/v1/event/{eventId}/sessions'), 'event');
+  assert.equal(scopeOf('/v1/organization/{orgId}/contacts'), 'org');
+});
+
+test('required scopes come from the description first', () => {
+  const o = listOperations(spec).find((x) => x.method === 'get' && x.path === '/v1/event/{eventId}/transcriptions');
+  assert.deepEqual(requiredScopes(o, { read: 'read:nothing' }), ['read:transcriptions']);
+});
+
+test('the layout sidebar marks the current page and links every recipe', () => {
+  const o = listOperations(spec)[0];
+  const sidebar = buildLayoutSidebar({ layout, nav, spec, source, pathname: o.href });
+  const links = flatten(sidebar);
+  assert.equal(links.filter((l) => l.isCurrent).length, 1);
+  for (const r of layout.recipes) {
+    assert.ok(links.some((l) => l.href === r.href), r.href);
+    assert.ok(existsSync(new URL(`../src/content/docs${r.href}.mdx`, import.meta.url)), `${r.href} has no page`);
+  }
+  assert.deepEqual(sidebar.map((g) => g.label), ['Get started', 'Recipes', 'Guides', 'Reference']);
+});

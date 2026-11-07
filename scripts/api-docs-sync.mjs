@@ -74,7 +74,9 @@ try {
 // ---------------------------------------------------------------- outputs
 const outputs = new Map(); // repo-relative path -> Buffer|string
 const put = (rel, data) => outputs.set(rel, data);
-const OWNED_DIRS = ['src/content/docs/api', 'public/images/api', 'src/api-docs', 'src/data/api/products'];
+// A product's files are owned (and pruned) only when the source has its tab: syncing from a
+// ref without it (main, before that product's docs merge there) leaves its section alone.
+const OWNED_DIRS = ['src/content/docs/api', 'public/images/api'];
 const registry = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/data/api/products.json'), 'utf8'));
 
 // ---------------------------------------------------------------- spec + nav
@@ -281,6 +283,7 @@ for (const page of guidePages) {
 
 // ---------------------------------------------------------------- self-serve products
 const productSummary = [];
+for (const key of tabsByProduct.keys()) if (key !== PLATFORM) OWNED_DIRS.push(`src/api-docs/${key}`, `src/data/api/products/${key}`);
 activeRef = PRODUCTS_REF;
 for (const [key, tabs] of tabsByProduct) {
   if (key === PLATFORM) continue;
@@ -371,7 +374,10 @@ for (const dir of OWNED_DIRS) {
     }
   })(abs);
 }
-const stale = existingOwned.filter((rel) => !outputs.has(rel));
+// Hand-written pages that live beside the synced ones and are never pruned: the recipes
+// (src/content/docs/api/recipes/) exist only in the Help Center, not in Mintlify.
+const HAND_WRITTEN = ['src/content/docs/api/recipes/'];
+const stale = existingOwned.filter((rel) => !outputs.has(rel) && !HAND_WRITTEN.some((dir) => rel.startsWith(dir)));
 const changed = [...outputs].filter(([rel, data]) => {
   const abs = path.join(ROOT, rel);
   return !fs.existsSync(abs) || !fs.readFileSync(abs).equals(toBuf(data));
