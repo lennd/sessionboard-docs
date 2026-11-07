@@ -191,7 +191,11 @@ const WELCOME_PATH = '/welcome';
 // The API docs (Platform /api and each product's /…/api) have their own public page:
 // what the API is and how to get access (src/pages/api/welcome.astro).
 const API_WELCOME_PATH = '/api/welcome';
-const PUBLIC_EXACT = new Set([WELCOME_PATH, API_WELCOME_PATH, '/favicon.png', '/favicon.svg', '/favicon.ico', RELEASE_EMAIL_STATUS_PATH]);
+// What apidocs.sessionboard.com published to anyone stays public after its 301s land here:
+// the spec files (code generators and AI clients fetch them unauthenticated) and the two
+// pages customer contracts cite, the API changelog and the 30-day breaking-changes policy.
+const API_PUBLIC_PATHS = ['/api/openapi.json', '/api/openapi.yaml', '/api/changelog', '/api/breaking-changes'];
+const PUBLIC_EXACT = new Set([WELCOME_PATH, API_WELCOME_PATH, ...API_PUBLIC_PATHS, '/favicon.png', '/favicon.svg', '/favicon.ico', RELEASE_EMAIL_STATUS_PATH]);
 const PUBLIC_PREFIXES = ['/_astro/'];
 const isPublicPath = (pathname) => PUBLIC_EXACT.has(pathname) || PUBLIC_PREFIXES.some((p) => pathname.startsWith(p));
 
