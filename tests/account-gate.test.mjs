@@ -18,6 +18,7 @@ import {
   isStaffRequest,
   readReader,
   recheckStaff,
+  grantAllowsPath,
   safeReturnPath,
   signSession,
   verifySession,
@@ -322,6 +323,35 @@ test('/me drops the staff cookie as soon as the reader is no longer staff', asyn
   assert.ok(res.headers.getSetCookie().find((c) => c.startsWith(`${STAFF_COOKIE}=;`)));
 });
 
+test('/me passes a staff grant and API docs access through to page script', async () => {
+  const cookie = await signedIn();
+  const granted = {
+    ...READER,
+    staff: false,
+    id: 'docs-grant-0000',
+    signed_in_via: 'docs_grant',
+    roles: [],
+    products: ['platform', 'marketing'],
+    api_docs: false,
+    docs_grant: { granted_by: 'sessionboard', products: ['platform', 'marketing'], api_docs: false, expires_at: '2027-02-05T23:59:59.000Z' },
+  };
+  const { res } = await call(ME_PATH, {}, { cookie, api: fakeApi({ reader: granted }) });
+  assert.equal(res.status, 200);
+  const { reader } = await res.json();
+  assert.equal(reader.signed_in_via, 'docs_grant');
+  assert.deepEqual(reader.products, ['platform', 'marketing']);
+  assert.equal(reader.api_docs, false);
+  assert.deepEqual(reader.docs_grant, { products: ['platform', 'marketing'], api_docs: false, expires_at: '2027-02-05T23:59:59.000Z' });
+});
+
+test('/me from an API that predates grants: API docs on, no grant', async () => {
+  const cookie = await signedIn();
+  const { res } = await call(ME_PATH, {}, { cookie });
+  const { reader } = await res.json();
+  assert.equal(reader.api_docs, true);
+  assert.equal(reader.docs_grant, null);
+});
+
 test('/me signed out is a plain 401 with no API call', async () => {
   const { res, api } = await call(ME_PATH);
   assert.equal(res.status, 401);
@@ -488,4 +518,53 @@ test('return paths cannot leave the host', () => {
   assert.equal(safeReturnPath('/\\evil.example.net'), '/');
   assert.equal(safeReturnPath('https://evil.example.net'), '/');
   assert.equal(safeReturnPath(null), '/');
+});
+
+// ── grantAllowsPath: a reader with only a staff grant ─────────────────
+
+const GRANT_READER = {
+  ...READER,
+  id: 'docs-grant-7',
+  staff: false,
+  signed_in_via: 'docs_grant',
+  api_docs: false,
+  docs_grant: { products: ['marketing'], api_docs: false, expires_at: '2099-01-01T00:00:00Z' },
+};
+const grantJar = async (reader = GRANT_READER) =>
+  cookieJar((await post({ token: TOKEN, api: 'https://api.example.com' }, { api: fakeApi({ reader }) })).res);
+const at = (path, cookie) => new Request(`${ORIGIN}${path}`, { headers: { Cookie: cookie } });
+
+test('grantAllowsPath: account holders are never asked about, and never call the API', async () => {
+  const cookie = await signedIn();
+  const api = fakeApi();
+  assert.equal(await grantAllowsPath(at('/api/reference', cookie), ENV, SITE, { apiProduct: 'platform' }, api), true);
+  assert.equal(await grantAllowsPath(at('/sessionboard-awards/x', cookie), ENV, SITE, { suite: 'awards' }, api), true);
+  assert.equal(api.calls.length, 0);
+});
+
+test('grantAllowsPath: a grant reader gets only the suites and API docs the grant names', async () => {
+  const cookie = await grantJar();
+  const api = () => fakeApi({ reader: GRANT_READER });
+  assert.equal(await grantAllowsPath(at('/get-started', cookie), ENV, SITE, {}, api()), true, 'Platform guides');
+  assert.equal(await grantAllowsPath(at('/sessionboard-marketing/x', cookie), ENV, SITE, { suite: 'marketing' }, api()), true);
+  assert.equal(await grantAllowsPath(at('/sessionboard-awards/x', cookie), ENV, SITE, { suite: 'awards' }, api()), false, 'not granted');
+  assert.equal(await grantAllowsPath(at('/api/reference', cookie), ENV, SITE, { apiProduct: 'platform' }, api()), false, 'api_docs: false');
+  const withApi = { ...GRANT_READER, api_docs: true, docs_grant: { ...GRANT_READER.docs_grant, api_docs: true } };
+  const c2 = await grantJar(withApi);
+  assert.equal(await grantAllowsPath(at('/api/reference', c2), ENV, SITE, { apiProduct: 'platform' }, fakeApi({ reader: withApi })), true);
+  assert.equal(
+    await grantAllowsPath(at('/sessionboard-marketing/api/x', c2), ENV, SITE, { apiProduct: 'marketing', suite: 'marketing' }, fakeApi({ reader: withApi })),
+    true,
+  );
+  assert.equal(
+    await grantAllowsPath(at('/sessionboard-learning/api/x', c2), ENV, SITE, { apiProduct: 'learning', suite: 'learning' }, fakeApi({ reader: withApi })),
+    false,
+  );
+});
+
+test('grantAllowsPath: an expired grant or a failing API keeps the reader out', async () => {
+  const cookie = await grantJar();
+  const expired = { ...GRANT_READER, docs_grant: { ...GRANT_READER.docs_grant, expires_at: '2020-01-01T00:00:00Z' } };
+  assert.equal(await grantAllowsPath(at('/sessionboard-marketing/x', cookie), ENV, SITE, { suite: 'marketing' }, fakeApi({ reader: expired })), false);
+  assert.equal(await grantAllowsPath(at('/sessionboard-marketing/x', cookie), ENV, SITE, { suite: 'marketing' }, fakeApi({ status: 500 })), false);
 });

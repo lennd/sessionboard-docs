@@ -30,28 +30,22 @@
   ],
   "tags": [
     {
-      "name": "Awards",
-      "description": "Read and manage Awards programs and their categories, rounds, promo codes, submissions and reviews. Organization-level: paths start at `/v1/organization/{orgId}/awards`. Requires `read:awards` / `write:awards` scopes."
+      "name": "Awards workspace",
+      "description": "The self-serve Sessionboard Awards workspace: Home, the awards profile, programs and their categories, opening and closing nominations, the one review pass (reviewers and assignments), announcing winners and results. Organization-level: paths start at `/v1/organization/{orgId}/awards/workspace`, and the same operations are served under `/v1/awards/workspace` with the organization taken from the token. Reads need `read:awards`, writes `write:awards`. A key restricted to particular events cannot use it. Opening nominations, inviting reviewers and announcing wait for a person's OK (`202 needs_approval`); picking winners is a person's alone and has no API.\n"
     }
   ],
   "paths": {
-    "/v1/organization/{orgId}/awards/programs": {
+    "/v1/organization/{orgId}/awards/workspace": {
       "get": {
-        "operationId": "list-awards-programs",
-        "summary": "List programs",
-        "description": "Requires the `read:awards` scope.",
+        "operationId": "awards-workspace-get-home",
+        "summary": "Get the Awards workspace home",
+        "description": "The workspace at a glance: the setup answers, the plan tier (`self_serve` or `enterprise`), counts across programs, every program with its counts, what is waiting on a person (\"Ready for your review\": assistant requests to approve, programs without categories, unfinished nominations, programs ready for winners) and the list of what only Enterprise Awards includes, each with `locked` for your plan. Any member of the organization can read the setup answers. The program data needs the Awards read permission; without it `can_read_awards` is `false`, every count is `0` and the lists are empty. Programs are limited to the ones the token's user manages or can see through their portfolios. Reads only; sends nothing. Requires `read:awards`. Refused for a key restricted to particular events. Also at `GET /v1/awards/workspace`.",
         "tags": [
-          "Awards"
+          "Awards workspace"
         ],
         "parameters": [
           {
             "$ref": "#/components/parameters/AwardsOrgId"
-          },
-          {
-            "$ref": "#/components/parameters/Page"
-          },
-          {
-            "$ref": "#/components/parameters/AwardsPageSize"
           }
         ],
         "responses": {
@@ -62,14 +56,11 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/AwardsProgram"
-                      }
+                    "success": {
+                      "type": "boolean"
                     },
-                    "pagination": {
-                      "$ref": "#/components/schemas/ListPagination"
+                    "payload": {
+                      "$ref": "#/components/schemas/AwardsWorkspaceHome"
                     }
                   }
                 }
@@ -77,46 +68,271 @@
             }
           },
           "401": {
-            "description": "Missing or invalid token"
+            "$ref": "#/components/responses/AwardsWorkspaceUnauthorized"
           },
           "403": {
-            "description": "Token lacks `read:awards`",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "SCOPE_REQUIRED",
-                  "message": "Token missing required scope: read:awards"
-                }
-              }
-            }
+            "$ref": "#/components/responses/AwardsWorkspaceReadForbidden"
           },
           "404": {
-            "description": "Not found — also returned for any id belonging to another organization",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "NOT_FOUND",
-                  "message": "Not found"
-                }
-              }
-            }
+            "$ref": "#/components/responses/AwardsWorkspaceOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/AwardsWorkspaceTooManyRequests"
           }
         }
       }
     },
-    "/v1/organization/{orgId}/awards/programs/create": {
-      "post": {
-        "operationId": "create-awards-program",
-        "summary": "Create a program",
-        "description": "Creates the program with its submission form, a default round, and the token owner as program manager — the same as creating it in the admin app. Counts against the plan's Awards program limit. Requires the `write:awards` scope.",
+    "/v1/organization/{orgId}/awards/workspace/profile": {
+      "get": {
+        "operationId": "awards-workspace-get-profile",
+        "summary": "Get the setup answers",
+        "description": "Who the organization's awards are for (`audience`) and what it awards (`awarding`), as answered on first run. The audience sets the defaults a new program starts with (nomination mode and starter categories). Any member of the organization can read it. Reads only. Requires `read:awards`. Refused for a key restricted to particular events. Also at `GET /v1/awards/workspace/profile`.",
         "tags": [
-          "Awards"
+          "Awards workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AwardsOrgId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "profile": {
+                          "$ref": "#/components/schemas/AwardsWorkspaceProfile"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/AwardsWorkspaceUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/AwardsWorkspaceReadForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/AwardsWorkspaceOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/AwardsWorkspaceTooManyRequests"
+          }
+        }
+      },
+      "put": {
+        "operationId": "awards-workspace-update-profile",
+        "summary": "Update the setup answers",
+        "description": "Saves who the awards are for and what is being awarded. Only the fields you send change; `awarding: \"\"` clears it. `finished: true` marks setup done (the first time only; `false` does not undo it). Programs created afterwards take their defaults from the audience; existing programs do not change. Sends nothing. The token's user must be an organization admin. Requires `write:awards`. Refused for a key restricted to particular events. Also at `PUT /v1/awards/workspace/profile`.",
+        "tags": [
+          "Awards workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AwardsOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "audience": {
+                    "$ref": "#/components/schemas/AwardsWorkspaceAudience"
+                  },
+                  "awarding": {
+                    "type": "string",
+                    "maxLength": 300,
+                    "description": "What is being awarded, in a few words. An empty string clears it."
+                  },
+                  "finished": {
+                    "type": "boolean",
+                    "description": "`true` marks setup finished."
+                  },
+                  "source": {
+                    "$ref": "#/components/schemas/AwardsWorkspaceSource"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "profile": {
+                          "$ref": "#/components/schemas/AwardsWorkspaceProfile"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/AwardsWorkspaceBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/AwardsWorkspaceUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/AwardsWorkspaceWriteForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/AwardsWorkspaceOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/AwardsWorkspaceTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/awards/workspace/enterprise": {
+      "get": {
+        "operationId": "awards-workspace-list-enterprise-features",
+        "summary": "List what Enterprise Awards adds",
+        "description": "What only Enterprise Awards includes (review rounds and Review plans, submission fees and payments, single sign-on, a named CSM and an SLA, the connection to your events and Speaker CRM), each with `locked: true` when the organization is on a self-serve Awards plan. Every item is always listed. Reads only. Requires `read:awards`. Refused for a key restricted to particular events. Also at `GET /v1/awards/workspace/enterprise`.",
+        "tags": [
+          "Awards workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AwardsOrgId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "tier": {
+                          "$ref": "#/components/schemas/AwardsWorkspaceTier"
+                        },
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/AwardsWorkspaceEnterpriseItem"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/AwardsWorkspaceUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/AwardsWorkspaceReadForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/AwardsWorkspaceOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/AwardsWorkspaceTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/awards/workspace/programs": {
+      "get": {
+        "operationId": "awards-workspace-list-programs",
+        "summary": "List awards programs",
+        "description": "Every awards program the token's user may see (the programs they manage, within their portfolios), newest first, each with its status, categories, its review pass dates, its public link once open, and counts (submitted, drafts, reviewers, complete scorecards, reviewed nominations, winners). Not paginated. Reads only. Requires `read:awards`; the token's user needs the Awards read permission. Refused for a key restricted to particular events. Also at `GET /v1/awards/workspace/programs`.",
+        "tags": [
+          "Awards workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AwardsOrgId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "programs": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/AwardsWorkspaceProgram"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/AwardsWorkspaceUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/AwardsWorkspaceReadForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/AwardsWorkspaceOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/AwardsWorkspaceTooManyRequests"
+          }
+        }
+      },
+      "post": {
+        "operationId": "awards-workspace-create-program",
+        "summary": "Create a draft awards program",
+        "description": "Creates a working draft that is ready to review: the program with you as a manager, its categories (yours, or the starter categories for the organization's audience, at most 50), a four-question nomination form, a scorecard (Impact, Originality and Evidence on a 1–5 scale, plus comments) on the program's one review pass, and the winner types Winner and Finalist. The deadline sets the review pass dates: nominations from now until the deadline (30 days from now when omitted), then three weeks of review. Nothing is public and nothing is sent until nominations are opened. Requires `write:awards`; the token's user needs the Awards create permission. Refused for a key restricted to particular events. Also at `POST /v1/awards/workspace/programs`.",
+        "tags": [
+          "Awards workspace"
         ],
         "parameters": [
           {
@@ -128,28 +344,64 @@
           "content": {
             "application/json": {
               "schema": {
-                "allOf": [
-                  {
-                    "$ref": "#/components/schemas/AwardsProgramWrite"
-                  }
-                ],
+                "type": "object",
+                "additionalProperties": false,
                 "required": [
                   "name"
-                ]
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 2000
+                  },
+                  "categories": {
+                    "type": "array",
+                    "maxItems": 50,
+                    "items": {
+                      "type": "string",
+                      "maxLength": 120
+                    },
+                    "description": "Category names, in order. Omit (or send `[]`) for the audience's starter categories."
+                  },
+                  "deadline": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "When nominations close, as a full date and time with a time zone (for example `2026-12-01T17:00:00Z`). A date alone is refused."
+                  },
+                  "nominationMode": {
+                    "$ref": "#/components/schemas/AwardsWorkspaceNominationMode"
+                  },
+                  "source": {
+                    "$ref": "#/components/schemas/AwardsWorkspaceSource"
+                  }
+                }
               }
             }
           }
         },
         "responses": {
           "201": {
-            "description": "Program created",
+            "description": "Created",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "data": {
-                      "$ref": "#/components/schemas/AwardsProgram"
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "program": {
+                          "$ref": "#/components/schemas/AwardsWorkspaceProgram"
+                        }
+                      }
                     }
                   }
                 }
@@ -157,124 +409,44 @@
             }
           },
           "400": {
-            "description": "Invalid body or id",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "VALIDATION_ERROR",
-                  "message": "\"name\" is not allowed to be empty"
-                }
-              }
-            }
+            "$ref": "#/components/responses/AwardsWorkspaceBadRequest"
           },
           "401": {
-            "description": "Missing or invalid token"
+            "$ref": "#/components/responses/AwardsWorkspaceUnauthorized"
           },
           "403": {
-            "description": "Your plan allows 3 Awards programs (403 also means the token lacks `write:awards`)",
+            "description": "One of the codes in `AwardsWorkspaceWriteForbidden`, or `FORBIDDEN` with a message saying the plan does not\nallow another awards program (Enterprise organizations have a program limit; self-serve Awards plans do not).\n",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
+                  "$ref": "#/components/schemas/AwardsWorkspaceError"
                 },
                 "example": {
                   "error": "FORBIDDEN",
-                  "message": "Your plan allows 3 Awards programs (403 also means the token lacks `write:awards`)"
+                  "message": "You have reached the maximum number of award programs (3) for your account. Contact your Sessionboard account manager to increase your limit."
                 }
               }
             }
           },
           "404": {
-            "description": "Not found — also returned for any id belonging to another organization",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "NOT_FOUND",
-                  "message": "Not found"
-                }
-              }
-            }
+            "$ref": "#/components/responses/AwardsWorkspaceOrgNotFound"
+          },
+          "423": {
+            "$ref": "#/components/responses/AwardsWorkspacePaused"
+          },
+          "429": {
+            "$ref": "#/components/responses/AwardsWorkspaceTooManyRequests"
           }
         }
       }
     },
-    "/v1/organization/{orgId}/awards/programs/{programId}": {
+    "/v1/organization/{orgId}/awards/workspace/programs/{programId}": {
       "get": {
-        "operationId": "get-awards-program",
-        "summary": "Get a program",
-        "description": "Requires the `read:awards` scope.",
+        "operationId": "awards-workspace-get-program",
+        "summary": "Get an awards program",
+        "description": "One program in full: its counts and review pass, the nomination form's questions, the scorecard, the winner types, every submitted nomination with its average score (scale questions only), reviewer progress, the winner announcement and its delivery progress (or `null`), and what the plan allows (`plan`: one review pass and free submissions on self-serve). Reads only. Requires `read:awards`; the token's user needs the Awards read permission and must manage the program. Refused for a key restricted to particular events. Also at `GET /v1/awards/workspace/programs/{programId}`.",
         "tags": [
-          "Awards"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "$ref": "#/components/schemas/AwardsProgram"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing or invalid token"
-          },
-          "403": {
-            "description": "Token lacks `read:awards`",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "SCOPE_REQUIRED",
-                  "message": "Token missing required scope: read:awards"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found — also returned for any id belonging to another organization",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "NOT_FOUND",
-                  "message": "Not found"
-                }
-              }
-            }
-          }
-        },
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/AwardsOrgId"
-          },
-          {
-            "$ref": "#/components/parameters/AwardsProgramId"
-          }
-        ]
-      },
-      "put": {
-        "operationId": "update-awards-program",
-        "summary": "Update a program",
-        "description": "Fields you omit keep their stored value. `PUT` and `PATCH` behave the same: send only the fields you are changing. Requires the `write:awards` scope.",
-        "tags": [
-          "Awards"
+          "Awards workspace"
         ],
         "parameters": [
           {
@@ -282,259 +454,6 @@
           },
           {
             "$ref": "#/components/parameters/AwardsProgramId"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AwardsProgramWrite"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Program updated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "$ref": "#/components/schemas/AwardsProgram"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid body or id",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "VALIDATION_ERROR",
-                  "message": "\"name\" is not allowed to be empty"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing or invalid token"
-          },
-          "403": {
-            "description": "Token lacks `write:awards`",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "SCOPE_REQUIRED",
-                  "message": "Token missing required scope: write:awards"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found — also returned for any id belonging to another organization",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "NOT_FOUND",
-                  "message": "Not found"
-                }
-              }
-            }
-          }
-        }
-      },
-      "patch": {
-        "operationId": "patch-awards-program",
-        "summary": "Update a program (PATCH)",
-        "description": "Fields you omit keep their stored value. `PUT` and `PATCH` behave the same: send only the fields you are changing. Requires the `write:awards` scope.",
-        "tags": [
-          "Awards"
-        ],
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/AwardsOrgId"
-          },
-          {
-            "$ref": "#/components/parameters/AwardsProgramId"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AwardsProgramWrite"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Program updated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "$ref": "#/components/schemas/AwardsProgram"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid body or id",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "VALIDATION_ERROR",
-                  "message": "\"name\" is not allowed to be empty"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing or invalid token"
-          },
-          "403": {
-            "description": "Token lacks `write:awards`",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "SCOPE_REQUIRED",
-                  "message": "Token missing required scope: write:awards"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found — also returned for any id belonging to another organization",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "NOT_FOUND",
-                  "message": "Not found"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "operationId": "delete-awards-program",
-        "summary": "Delete a program",
-        "description": "Soft-deletes the program (it moves to Trash and can be restored in the admin app). A program that has submissions returns `409` unless `force=true` is sent — the API equivalent of the admin app's confirmation dialog. Requires the `write:awards` scope.",
-        "tags": [
-          "Awards"
-        ],
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/AwardsOrgId"
-          },
-          {
-            "$ref": "#/components/parameters/AwardsProgramId"
-          },
-          {
-            "$ref": "#/components/parameters/AwardsForce"
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Program deleted"
-          },
-          "401": {
-            "description": "Missing or invalid token"
-          },
-          "403": {
-            "description": "Token lacks `write:awards`",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "SCOPE_REQUIRED",
-                  "message": "Token missing required scope: write:awards"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found — also returned for any id belonging to another organization",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "NOT_FOUND",
-                  "message": "Not found"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Program has 12 submissions; send force=true to delete it",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "CONFLICT",
-                  "message": "Program has 12 submissions; send force=true to delete it"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/organization/{orgId}/awards/programs/{programId}/categories": {
-      "get": {
-        "operationId": "list-awards-categorys",
-        "summary": "List categorys",
-        "description": "Requires the `read:awards` scope.",
-        "tags": [
-          "Awards"
-        ],
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/AwardsOrgId"
-          },
-          {
-            "$ref": "#/components/parameters/AwardsProgramId"
-          },
-          {
-            "$ref": "#/components/parameters/Page"
-          },
-          {
-            "$ref": "#/components/parameters/AwardsPageSize"
           }
         ],
         "responses": {
@@ -545,61 +464,40 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/AwardsCategory"
-                      }
+                    "success": {
+                      "type": "boolean"
                     },
-                    "pagination": {
-                      "$ref": "#/components/schemas/ListPagination"
+                    "payload": {
+                      "$ref": "#/components/schemas/AwardsWorkspaceProgramDetail"
                     }
                   }
                 }
               }
             }
           },
+          "400": {
+            "$ref": "#/components/responses/AwardsWorkspaceBadRequest"
+          },
           "401": {
-            "description": "Missing or invalid token"
+            "$ref": "#/components/responses/AwardsWorkspaceUnauthorized"
           },
           "403": {
-            "description": "Token lacks `read:awards`",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "SCOPE_REQUIRED",
-                  "message": "Token missing required scope: read:awards"
-                }
-              }
-            }
+            "$ref": "#/components/responses/AwardsWorkspaceReadForbidden"
           },
           "404": {
-            "description": "Not found — also returned for any id belonging to another organization",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "NOT_FOUND",
-                  "message": "Not found"
-                }
-              }
-            }
+            "$ref": "#/components/responses/AwardsWorkspaceProgramNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/AwardsWorkspaceTooManyRequests"
           }
         }
-      }
-    },
-    "/v1/organization/{orgId}/awards/programs/{programId}/categories/create": {
-      "post": {
-        "operationId": "create-awards-category",
-        "summary": "Create a category",
-        "description": "Set `parent_category_id` to another category in the same program to create a subcategory. `order` defaults to the end of the list. Requires the `write:awards` scope.",
+      },
+      "put": {
+        "operationId": "awards-workspace-update-program",
+        "summary": "Update an awards program",
+        "description": "Changes the program's name, description, nomination deadline or nomination mode. Only the fields you send change. A new deadline moves the review pass with it: review starts at the deadline and runs three weeks. The nomination mode cannot change once the program has a nomination (`422`). Sends nothing. Requires `write:awards`; the token's user needs the Awards update permission and must manage the program. Refused for a key restricted to particular events. Also at `PUT /v1/awards/workspace/programs/{programId}`.",
         "tags": [
-          "Awards"
+          "Awards workspace"
         ],
         "parameters": [
           {
@@ -610,94 +508,39 @@
           }
         ],
         "requestBody": {
-          "required": true,
+          "required": false,
           "content": {
             "application/json": {
               "schema": {
-                "allOf": [
-                  {
-                    "$ref": "#/components/schemas/AwardsCategoryWrite"
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "description": "An empty string clears it."
+                  },
+                  "deadline": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "When nominations close, as a full date and time with a time zone. A date alone is refused."
+                  },
+                  "nominationMode": {
+                    "$ref": "#/components/schemas/AwardsWorkspaceNominationMode"
+                  },
+                  "source": {
+                    "$ref": "#/components/schemas/AwardsWorkspaceSource"
                   }
-                ],
-                "required": [
-                  "name"
-                ]
+                }
               }
             }
           }
         },
-        "responses": {
-          "201": {
-            "description": "Category created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "$ref": "#/components/schemas/AwardsCategory"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid body or id",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "VALIDATION_ERROR",
-                  "message": "\"name\" is not allowed to be empty"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing or invalid token"
-          },
-          "403": {
-            "description": "Token lacks `write:awards`",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "SCOPE_REQUIRED",
-                  "message": "Token missing required scope: write:awards"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found — also returned for any id belonging to another organization",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "NOT_FOUND",
-                  "message": "Not found"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/organization/{orgId}/awards/programs/{programId}/categories/{categoryId}": {
-      "get": {
-        "operationId": "get-awards-category",
-        "summary": "Get a category",
-        "description": "Requires the `read:awards` scope.",
-        "tags": [
-          "Awards"
-        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -706,465 +549,16 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "data": {
-                      "$ref": "#/components/schemas/AwardsCategory"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing or invalid token"
-          },
-          "403": {
-            "description": "Token lacks `read:awards`",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "SCOPE_REQUIRED",
-                  "message": "Token missing required scope: read:awards"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found — also returned for any id belonging to another organization",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "NOT_FOUND",
-                  "message": "Not found"
-                }
-              }
-            }
-          }
-        },
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/AwardsOrgId"
-          },
-          {
-            "$ref": "#/components/parameters/AwardsProgramId"
-          },
-          {
-            "name": "categoryId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "description": "The category ID."
-          }
-        ]
-      },
-      "put": {
-        "operationId": "update-awards-category",
-        "summary": "Update a category",
-        "description": "A parent in another program, the category itself, or one of its own subcategories returns `400`. `PUT` and `PATCH` behave the same: send only the fields you are changing. Requires the `write:awards` scope.",
-        "tags": [
-          "Awards"
-        ],
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/AwardsOrgId"
-          },
-          {
-            "$ref": "#/components/parameters/AwardsProgramId"
-          },
-          {
-            "name": "categoryId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "description": "The category ID."
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AwardsCategoryWrite"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Category updated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "$ref": "#/components/schemas/AwardsCategory"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid body or id",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "VALIDATION_ERROR",
-                  "message": "\"name\" is not allowed to be empty"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing or invalid token"
-          },
-          "403": {
-            "description": "Token lacks `write:awards`",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "SCOPE_REQUIRED",
-                  "message": "Token missing required scope: write:awards"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found — also returned for any id belonging to another organization",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "NOT_FOUND",
-                  "message": "Not found"
-                }
-              }
-            }
-          }
-        }
-      },
-      "patch": {
-        "operationId": "patch-awards-category",
-        "summary": "Update a category (PATCH)",
-        "description": "A parent in another program, the category itself, or one of its own subcategories returns `400`. `PUT` and `PATCH` behave the same: send only the fields you are changing. Requires the `write:awards` scope.",
-        "tags": [
-          "Awards"
-        ],
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/AwardsOrgId"
-          },
-          {
-            "$ref": "#/components/parameters/AwardsProgramId"
-          },
-          {
-            "name": "categoryId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "description": "The category ID."
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AwardsCategoryWrite"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Category updated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "$ref": "#/components/schemas/AwardsCategory"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid body or id",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "VALIDATION_ERROR",
-                  "message": "\"name\" is not allowed to be empty"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing or invalid token"
-          },
-          "403": {
-            "description": "Token lacks `write:awards`",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "SCOPE_REQUIRED",
-                  "message": "Token missing required scope: write:awards"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found — also returned for any id belonging to another organization",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "NOT_FOUND",
-                  "message": "Not found"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "operationId": "delete-awards-category",
-        "summary": "Delete a category",
-        "description": "Soft-deletes the category. One with subcategories returns `409` unless `cascade=true` is sent, which deletes the whole subtree. One that submissions are filed under (directly or through a subcategory) also returns `409` unless `force=true` is sent. Requires the `write:awards` scope.",
-        "tags": [
-          "Awards"
-        ],
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/AwardsOrgId"
-          },
-          {
-            "$ref": "#/components/parameters/AwardsProgramId"
-          },
-          {
-            "name": "categoryId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "description": "The category ID."
-          },
-          {
-            "$ref": "#/components/parameters/AwardsCascade"
-          },
-          {
-            "$ref": "#/components/parameters/AwardsForce"
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Category deleted"
-          },
-          "401": {
-            "description": "Missing or invalid token"
-          },
-          "403": {
-            "description": "Token lacks `write:awards`",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "SCOPE_REQUIRED",
-                  "message": "Token missing required scope: write:awards"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found — also returned for any id belonging to another organization",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "NOT_FOUND",
-                  "message": "Not found"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Category has 2 subcategories; send cascade=true to delete them too",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "CONFLICT",
-                  "message": "Category has 2 subcategories; send cascade=true to delete them too"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/organization/{orgId}/awards/programs/{programId}/rounds": {
-      "get": {
-        "operationId": "list-awards-rounds",
-        "summary": "List rounds",
-        "description": "Requires the `read:awards` scope.",
-        "tags": [
-          "Awards"
-        ],
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/AwardsOrgId"
-          },
-          {
-            "$ref": "#/components/parameters/AwardsProgramId"
-          },
-          {
-            "$ref": "#/components/parameters/Page"
-          },
-          {
-            "$ref": "#/components/parameters/AwardsPageSize"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/AwardsRound"
-                      }
+                    "success": {
+                      "type": "boolean"
                     },
-                    "pagination": {
-                      "$ref": "#/components/schemas/ListPagination"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing or invalid token"
-          },
-          "403": {
-            "description": "Token lacks `read:awards`",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "SCOPE_REQUIRED",
-                  "message": "Token missing required scope: read:awards"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found — also returned for any id belonging to another organization",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "NOT_FOUND",
-                  "message": "Not found"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/organization/{orgId}/awards/programs/{programId}/rounds/create": {
-      "post": {
-        "operationId": "create-awards-round",
-        "summary": "Create a round",
-        "description": "Adds a review round to the program. Requires the `write:awards` scope.",
-        "tags": [
-          "Awards"
-        ],
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/AwardsOrgId"
-          },
-          {
-            "$ref": "#/components/parameters/AwardsProgramId"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "allOf": [
-                  {
-                    "$ref": "#/components/schemas/AwardsRoundWrite"
-                  }
-                ],
-                "required": [
-                  "name"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Round created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "$ref": "#/components/schemas/AwardsRound"
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "program": {
+                          "$ref": "#/components/schemas/AwardsWorkspaceProgram"
+                        }
+                      }
                     }
                   }
                 }
@@ -1172,503 +566,47 @@
             }
           },
           "400": {
-            "description": "Invalid body or id",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "VALIDATION_ERROR",
-                  "message": "\"name\" is not allowed to be empty"
-                }
-              }
-            }
+            "$ref": "#/components/responses/AwardsWorkspaceBadRequest"
           },
           "401": {
-            "description": "Missing or invalid token"
+            "$ref": "#/components/responses/AwardsWorkspaceUnauthorized"
           },
           "403": {
-            "description": "Token lacks `write:awards`",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "SCOPE_REQUIRED",
-                  "message": "Token missing required scope: write:awards"
-                }
-              }
-            }
+            "$ref": "#/components/responses/AwardsWorkspaceWriteForbidden"
           },
           "404": {
-            "description": "Not found — also returned for any id belonging to another organization",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "NOT_FOUND",
-                  "message": "Not found"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/organization/{orgId}/awards/programs/{programId}/rounds/{roundId}": {
-      "get": {
-        "operationId": "get-awards-round",
-        "summary": "Get a round",
-        "description": "Requires the `read:awards` scope.",
-        "tags": [
-          "Awards"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "$ref": "#/components/schemas/AwardsRound"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing or invalid token"
-          },
-          "403": {
-            "description": "Token lacks `read:awards`",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "SCOPE_REQUIRED",
-                  "message": "Token missing required scope: read:awards"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found — also returned for any id belonging to another organization",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "NOT_FOUND",
-                  "message": "Not found"
-                }
-              }
-            }
-          }
-        },
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/AwardsOrgId"
-          },
-          {
-            "$ref": "#/components/parameters/AwardsProgramId"
-          },
-          {
-            "name": "roundId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "description": "The round ID."
-          }
-        ]
-      },
-      "put": {
-        "operationId": "update-awards-round",
-        "summary": "Update a round",
-        "description": "Fields you omit keep their stored value. `PUT` and `PATCH` behave the same: send only the fields you are changing. Requires the `write:awards` scope.",
-        "tags": [
-          "Awards"
-        ],
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/AwardsOrgId"
-          },
-          {
-            "$ref": "#/components/parameters/AwardsProgramId"
-          },
-          {
-            "name": "roundId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "description": "The round ID."
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AwardsRoundWrite"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Round updated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "$ref": "#/components/schemas/AwardsRound"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid body or id",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "VALIDATION_ERROR",
-                  "message": "\"name\" is not allowed to be empty"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing or invalid token"
-          },
-          "403": {
-            "description": "Token lacks `write:awards`",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "SCOPE_REQUIRED",
-                  "message": "Token missing required scope: write:awards"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found — also returned for any id belonging to another organization",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "NOT_FOUND",
-                  "message": "Not found"
-                }
-              }
-            }
-          }
-        }
-      },
-      "patch": {
-        "operationId": "patch-awards-round",
-        "summary": "Update a round (PATCH)",
-        "description": "Fields you omit keep their stored value. `PUT` and `PATCH` behave the same: send only the fields you are changing. Requires the `write:awards` scope.",
-        "tags": [
-          "Awards"
-        ],
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/AwardsOrgId"
-          },
-          {
-            "$ref": "#/components/parameters/AwardsProgramId"
-          },
-          {
-            "name": "roundId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "description": "The round ID."
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AwardsRoundWrite"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Round updated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "$ref": "#/components/schemas/AwardsRound"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid body or id",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "VALIDATION_ERROR",
-                  "message": "\"name\" is not allowed to be empty"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing or invalid token"
-          },
-          "403": {
-            "description": "Token lacks `write:awards`",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "SCOPE_REQUIRED",
-                  "message": "Token missing required scope: write:awards"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found — also returned for any id belonging to another organization",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "NOT_FOUND",
-                  "message": "Not found"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "operationId": "delete-awards-round",
-        "summary": "Delete a round",
-        "description": "Soft-deletes the round and moves its submissions back to the previous round, as the admin app does. The program's default (first) round cannot be deleted and returns `422`. A round with reviewer assignments returns `409` unless `force=true` is sent. Requires the `write:awards` scope.",
-        "tags": [
-          "Awards"
-        ],
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/AwardsOrgId"
-          },
-          {
-            "$ref": "#/components/parameters/AwardsProgramId"
-          },
-          {
-            "name": "roundId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "description": "The round ID."
-          },
-          {
-            "$ref": "#/components/parameters/AwardsForce"
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Round deleted"
-          },
-          "401": {
-            "description": "Missing or invalid token"
-          },
-          "403": {
-            "description": "Token lacks `write:awards`",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "SCOPE_REQUIRED",
-                  "message": "Token missing required scope: write:awards"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found — also returned for any id belonging to another organization",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "NOT_FOUND",
-                  "message": "Not found"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Round has 8 reviewer assignments; send force=true to delete it",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "CONFLICT",
-                  "message": "Round has 8 reviewer assignments; send force=true to delete it"
-                }
-              }
-            }
+            "$ref": "#/components/responses/AwardsWorkspaceProgramNotFound"
           },
           "422": {
-            "description": "The default round cannot be deleted",
+            "description": "The program has nominations, so its nomination mode cannot change. Duplicate the program to run it with the other mode.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
+                  "$ref": "#/components/schemas/AwardsWorkspaceError"
                 },
                 "example": {
                   "error": "VALIDATION_ERROR",
-                  "message": "The default round cannot be deleted"
+                  "message": "Nomination mode can't be changed once a program has submissions. Duplicate the program to run it with the other mode."
                 }
               }
             }
+          },
+          "423": {
+            "$ref": "#/components/responses/AwardsWorkspacePaused"
+          },
+          "429": {
+            "$ref": "#/components/responses/AwardsWorkspaceTooManyRequests"
           }
         }
       }
     },
-    "/v1/organization/{orgId}/awards/programs/{programId}/promo-codes": {
-      "get": {
-        "operationId": "list-awards-promo-codes",
-        "summary": "List promo codes",
-        "description": "Requires the `read:awards` scope.",
+    "/v1/organization/{orgId}/awards/workspace/programs/{programId}/categories": {
+      "put": {
+        "operationId": "awards-workspace-replace-categories",
+        "summary": "Replace a program's categories",
+        "description": "Sends the program's full category list, in order (1 to 50). A category with an `id` is kept (renamed and moved as sent); one without an `id` is added; any existing category left out is removed. Send back the `categories_revision` you read as `baseRevision` and a list built from an out-of-date read is refused with `409` instead of undoing someone else's change. Sends nothing. Requires `write:awards`; the token's user needs the Awards update permission and must manage the program. Refused for a key restricted to particular events. Also at `PUT /v1/awards/workspace/programs/{programId}/categories`.",
         "tags": [
-          "Awards"
-        ],
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/AwardsOrgId"
-          },
-          {
-            "$ref": "#/components/parameters/AwardsProgramId"
-          },
-          {
-            "$ref": "#/components/parameters/Page"
-          },
-          {
-            "$ref": "#/components/parameters/AwardsPageSize"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/AwardsPromoCode"
-                      }
-                    },
-                    "pagination": {
-                      "$ref": "#/components/schemas/ListPagination"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing or invalid token"
-          },
-          "403": {
-            "description": "Token lacks `read:awards`",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "SCOPE_REQUIRED",
-                  "message": "Token missing required scope: read:awards"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found — also returned for any id belonging to another organization",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "NOT_FOUND",
-                  "message": "Not found"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/organization/{orgId}/awards/programs/{programId}/promo-codes/create": {
-      "post": {
-        "operationId": "create-awards-promo-code",
-        "summary": "Create a promo code",
-        "description": "Codes are stored upper-case and must be unique within the program. A `percentage` amount above 100 returns `400`; `percentage` 100 waives the fee entirely. Requires the `write:awards` scope.",
-        "tags": [
-          "Awards"
+          "Awards workspace"
         ],
         "parameters": [
           {
@@ -1683,919 +621,73 @@
           "content": {
             "application/json": {
               "schema": {
-                "allOf": [
-                  {
-                    "$ref": "#/components/schemas/AwardsPromoCodeWrite"
-                  }
-                ],
+                "type": "object",
+                "additionalProperties": false,
                 "required": [
-                  "code",
-                  "type",
-                  "amount"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Promo code created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "$ref": "#/components/schemas/AwardsPromoCode"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid body or id",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "VALIDATION_ERROR",
-                  "message": "\"name\" is not allowed to be empty"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing or invalid token"
-          },
-          "403": {
-            "description": "Token lacks `write:awards`",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "SCOPE_REQUIRED",
-                  "message": "Token missing required scope: write:awards"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found — also returned for any id belonging to another organization",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "NOT_FOUND",
-                  "message": "Not found"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Promo code SAVE20 already exists in this program",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "CONFLICT",
-                  "message": "Promo code SAVE20 already exists in this program"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/organization/{orgId}/awards/programs/{programId}/promo-codes/{promoCodeId}": {
-      "get": {
-        "operationId": "get-awards-promo-code",
-        "summary": "Get a promo code",
-        "description": "Requires the `read:awards` scope.",
-        "tags": [
-          "Awards"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "$ref": "#/components/schemas/AwardsPromoCode"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing or invalid token"
-          },
-          "403": {
-            "description": "Token lacks `read:awards`",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "SCOPE_REQUIRED",
-                  "message": "Token missing required scope: read:awards"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found — also returned for any id belonging to another organization",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "NOT_FOUND",
-                  "message": "Not found"
-                }
-              }
-            }
-          }
-        },
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/AwardsOrgId"
-          },
-          {
-            "$ref": "#/components/parameters/AwardsProgramId"
-          },
-          {
-            "name": "promoCodeId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "description": "The promo code ID."
-          }
-        ]
-      },
-      "put": {
-        "operationId": "update-awards-promo-code",
-        "summary": "Update a promo code",
-        "description": "Renaming to a code already used in the program returns `409`. `PUT` and `PATCH` behave the same: send only the fields you are changing. Requires the `write:awards` scope.",
-        "tags": [
-          "Awards"
-        ],
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/AwardsOrgId"
-          },
-          {
-            "$ref": "#/components/parameters/AwardsProgramId"
-          },
-          {
-            "name": "promoCodeId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "description": "The promo code ID."
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AwardsPromoCodeWrite"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Promo code updated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "$ref": "#/components/schemas/AwardsPromoCode"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid body or id",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "VALIDATION_ERROR",
-                  "message": "\"name\" is not allowed to be empty"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing or invalid token"
-          },
-          "403": {
-            "description": "Token lacks `write:awards`",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "SCOPE_REQUIRED",
-                  "message": "Token missing required scope: write:awards"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found — also returned for any id belonging to another organization",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "NOT_FOUND",
-                  "message": "Not found"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Promo code SAVE20 already exists in this program",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "CONFLICT",
-                  "message": "Promo code SAVE20 already exists in this program"
-                }
-              }
-            }
-          }
-        }
-      },
-      "patch": {
-        "operationId": "patch-awards-promo-code",
-        "summary": "Update a promo code (PATCH)",
-        "description": "Renaming to a code already used in the program returns `409`. `PUT` and `PATCH` behave the same: send only the fields you are changing. Requires the `write:awards` scope.",
-        "tags": [
-          "Awards"
-        ],
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/AwardsOrgId"
-          },
-          {
-            "$ref": "#/components/parameters/AwardsProgramId"
-          },
-          {
-            "name": "promoCodeId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "description": "The promo code ID."
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AwardsPromoCodeWrite"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Promo code updated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "$ref": "#/components/schemas/AwardsPromoCode"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid body or id",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "VALIDATION_ERROR",
-                  "message": "\"name\" is not allowed to be empty"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing or invalid token"
-          },
-          "403": {
-            "description": "Token lacks `write:awards`",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "SCOPE_REQUIRED",
-                  "message": "Token missing required scope: write:awards"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found — also returned for any id belonging to another organization",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "NOT_FOUND",
-                  "message": "Not found"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Promo code SAVE20 already exists in this program",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "CONFLICT",
-                  "message": "Promo code SAVE20 already exists in this program"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "operationId": "delete-awards-promo-code",
-        "summary": "Delete a promo code",
-        "description": "Soft-deletes the code. A code already applied to a submission returns `409` unless `force=true` is sent; those submissions keep their discount. Requires the `write:awards` scope.",
-        "tags": [
-          "Awards"
-        ],
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/AwardsOrgId"
-          },
-          {
-            "$ref": "#/components/parameters/AwardsProgramId"
-          },
-          {
-            "name": "promoCodeId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "description": "The promo code ID."
-          },
-          {
-            "$ref": "#/components/parameters/AwardsForce"
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Promo code deleted"
-          },
-          "401": {
-            "description": "Missing or invalid token"
-          },
-          "403": {
-            "description": "Token lacks `write:awards`",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "SCOPE_REQUIRED",
-                  "message": "Token missing required scope: write:awards"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found — also returned for any id belonging to another organization",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "NOT_FOUND",
-                  "message": "Not found"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Promo code has been redeemed 3 times; send force=true to delete it",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "CONFLICT",
-                  "message": "Promo code has been redeemed 3 times; send force=true to delete it"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/organization/{orgId}/awards/programs/{programId}/submissions": {
-      "get": {
-        "operationId": "list-awards-submissions",
-        "summary": "List submissions",
-        "description": "Lists top-level submissions (merged duplicates are folded into their primary). Submissions are created by submitters through the program's portal, not through the API. Requires the `read:awards` scope.",
-        "tags": [
-          "Awards"
-        ],
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/AwardsOrgId"
-          },
-          {
-            "$ref": "#/components/parameters/AwardsProgramId"
-          },
-          {
-            "$ref": "#/components/parameters/Page"
-          },
-          {
-            "$ref": "#/components/parameters/AwardsPageSize"
-          },
-          {
-            "name": "status",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Only submissions in this status, e.g. `submitted`."
-          },
-          {
-            "name": "category_id",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "current_round_id",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/AwardsSubmission"
+                  "categories"
+                ],
+                "properties": {
+                  "categories": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 50,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "name"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "description": "An existing category of this program. Omit to add a new one."
+                        },
+                        "name": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 120
+                        }
                       }
+                    }
+                  },
+                  "baseRevision": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "description": "The `categories_revision` the list was built from. Optional, but without it nothing guards against a stale read."
+                  },
+                  "source": {
+                    "$ref": "#/components/schemas/AwardsWorkspaceSource"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
                     },
-                    "pagination": {
-                      "$ref": "#/components/schemas/ListPagination"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing or invalid token"
-          },
-          "403": {
-            "description": "Token lacks `read:awards`",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "SCOPE_REQUIRED",
-                  "message": "Token missing required scope: read:awards"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found — also returned for any id belonging to another organization",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "NOT_FOUND",
-                  "message": "Not found"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/organization/{orgId}/awards/programs/{programId}/submissions/{submissionId}": {
-      "get": {
-        "operationId": "get-awards-submission",
-        "summary": "Get a submission",
-        "description": "Includes `values`, the form answers keyed by form field ID. Requires the `read:awards` scope.",
-        "tags": [
-          "Awards"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "$ref": "#/components/schemas/AwardsSubmission"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing or invalid token"
-          },
-          "403": {
-            "description": "Token lacks `read:awards`",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "SCOPE_REQUIRED",
-                  "message": "Token missing required scope: read:awards"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found — also returned for any id belonging to another organization",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "NOT_FOUND",
-                  "message": "Not found"
-                }
-              }
-            }
-          }
-        },
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/AwardsOrgId"
-          },
-          {
-            "$ref": "#/components/parameters/AwardsProgramId"
-          },
-          {
-            "$ref": "#/components/parameters/AwardsSubmissionId"
-          }
-        ]
-      },
-      "put": {
-        "operationId": "update-awards-submission",
-        "summary": "Update a submission",
-        "description": "Writes answers to the submission form, keyed by form field ID, with the same required-field checks and edit history as an admin edit. `PUT` and `PATCH` behave the same: send only the fields you are changing. Requires the `write:awards` scope.",
-        "tags": [
-          "Awards"
-        ],
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/AwardsOrgId"
-          },
-          {
-            "$ref": "#/components/parameters/AwardsProgramId"
-          },
-          {
-            "$ref": "#/components/parameters/AwardsSubmissionId"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AwardsSubmissionWrite"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Submission updated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "$ref": "#/components/schemas/AwardsSubmission"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid body or id",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "VALIDATION_ERROR",
-                  "message": "\"name\" is not allowed to be empty"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing or invalid token"
-          },
-          "403": {
-            "description": "Token lacks `write:awards`",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "SCOPE_REQUIRED",
-                  "message": "Token missing required scope: write:awards"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found — also returned for any id belonging to another organization",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "NOT_FOUND",
-                  "message": "Not found"
-                }
-              }
-            }
-          }
-        }
-      },
-      "patch": {
-        "operationId": "patch-awards-submission",
-        "summary": "Update a submission (PATCH)",
-        "description": "Writes answers to the submission form, keyed by form field ID, with the same required-field checks and edit history as an admin edit. `PUT` and `PATCH` behave the same: send only the fields you are changing. Requires the `write:awards` scope.",
-        "tags": [
-          "Awards"
-        ],
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/AwardsOrgId"
-          },
-          {
-            "$ref": "#/components/parameters/AwardsProgramId"
-          },
-          {
-            "$ref": "#/components/parameters/AwardsSubmissionId"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AwardsSubmissionWrite"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Submission updated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "$ref": "#/components/schemas/AwardsSubmission"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid body or id",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "VALIDATION_ERROR",
-                  "message": "\"name\" is not allowed to be empty"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing or invalid token"
-          },
-          "403": {
-            "description": "Token lacks `write:awards`",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "SCOPE_REQUIRED",
-                  "message": "Token missing required scope: write:awards"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found — also returned for any id belonging to another organization",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "NOT_FOUND",
-                  "message": "Not found"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "operationId": "delete-awards-submission",
-        "summary": "Delete a submission",
-        "description": "Soft-deletes the submission (it moves to Trash and can be restored in the admin app). Requires the `write:awards` scope.",
-        "tags": [
-          "Awards"
-        ],
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/AwardsOrgId"
-          },
-          {
-            "$ref": "#/components/parameters/AwardsProgramId"
-          },
-          {
-            "$ref": "#/components/parameters/AwardsSubmissionId"
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Submission deleted"
-          },
-          "401": {
-            "description": "Missing or invalid token"
-          },
-          "403": {
-            "description": "Token lacks `write:awards`",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "SCOPE_REQUIRED",
-                  "message": "Token missing required scope: write:awards"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found — also returned for any id belonging to another organization",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "NOT_FOUND",
-                  "message": "Not found"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/organization/{orgId}/awards/programs/{programId}/submissions/{submissionId}/reviews": {
-      "get": {
-        "operationId": "list-awards-reviews",
-        "summary": "List reviews",
-        "description": "One entry per reviewer assigned to the submission, with their scores. Reviews are written by reviewers in the review portal, not through the API. Requires the `read:awards` scope.",
-        "tags": [
-          "Awards"
-        ],
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/AwardsOrgId"
-          },
-          {
-            "$ref": "#/components/parameters/AwardsProgramId"
-          },
-          {
-            "$ref": "#/components/parameters/AwardsSubmissionId"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/AwardsReview"
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "categories": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/AwardsWorkspaceCategory"
+                          }
+                        },
+                        "categories_revision": {
+                          "type": "string",
+                          "description": "Send this as `baseRevision` with the next replacement."
+                        }
                       }
                     }
                   }
@@ -2603,47 +695,59 @@
               }
             }
           },
+          "400": {
+            "description": "`VALIDATION_ERROR`: the body does not match the schema, or an `id` is not a category of this program\n(`A category does not belong to this program.`).\n",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AwardsWorkspaceError"
+                },
+                "example": {
+                  "error": "VALIDATION_ERROR",
+                  "message": "A category does not belong to this program."
+                }
+              }
+            }
+          },
           "401": {
-            "description": "Missing or invalid token"
+            "$ref": "#/components/responses/AwardsWorkspaceUnauthorized"
           },
           "403": {
-            "description": "Token lacks `read:awards`",
+            "$ref": "#/components/responses/AwardsWorkspaceWriteForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/AwardsWorkspaceProgramNotFound"
+          },
+          "409": {
+            "description": "`CONFLICT`: the categories changed since `baseRevision` was read. Read the program again and resend the full list.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
+                  "$ref": "#/components/schemas/AwardsWorkspaceError"
                 },
                 "example": {
-                  "error": "SCOPE_REQUIRED",
-                  "message": "Token missing required scope: read:awards"
+                  "error": "CONFLICT",
+                  "message": "The categories changed since you read them. Read the program again and resend the full list."
                 }
               }
             }
           },
-          "404": {
-            "description": "Not found — also returned for any id belonging to another organization",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "NOT_FOUND",
-                  "message": "Not found"
-                }
-              }
-            }
+          "423": {
+            "$ref": "#/components/responses/AwardsWorkspacePaused"
+          },
+          "429": {
+            "$ref": "#/components/responses/AwardsWorkspaceTooManyRequests"
           }
         }
       }
     },
-    "/v1/organization/{orgId}/awards/programs/{programId}/submissions/{submissionId}/reviews/{reviewId}": {
-      "get": {
-        "operationId": "get-awards-review",
-        "summary": "Get a review",
-        "description": "Requires the `read:awards` scope.",
+    "/v1/organization/{orgId}/awards/workspace/programs/{programId}/open": {
+      "post": {
+        "operationId": "awards-workspace-open-nominations",
+        "summary": "Ask to open nominations",
+        "description": "Asks a person to open nominations. Opening puts the program on the organization's Awards Site (its public page and nomination form) and starts the nomination window now, until `deadline` (or the current deadline when it is still ahead, else 30 days from now). Because it makes the program public, an API call never opens it directly: it answers `202` with `status: needs_approval` and a link, and nothing changes until a person approves it in Sessionboard Awards. It then runs as that person. Do not call again for the same change. If it cannot run when approved, the approval records why: the program has no categories (`no_categories`), a self-serve trial has no card on file (`card_required`), or the plan is read-only (`trial_ended`, `plan_ended`). Requires `write:awards`; the token's user needs the Awards update permission and must manage the program. Refused for a key restricted to particular events. Also at `POST /v1/awards/workspace/programs/{programId}/open`.",
         "tags": [
-          "Awards"
+          "Awards workspace"
         ],
         "parameters": [
           {
@@ -2651,19 +755,68 @@
           },
           {
             "$ref": "#/components/parameters/AwardsProgramId"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "deadline": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "When nominations close, as a full date and time with a time zone. A date alone is refused."
+                  },
+                  "source": {
+                    "$ref": "#/components/schemas/AwardsWorkspaceSource"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "$ref": "#/components/responses/AwardsWorkspaceNeedsApproval"
+          },
+          "400": {
+            "$ref": "#/components/responses/AwardsWorkspaceBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/AwardsWorkspaceUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/AwardsWorkspaceWriteForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/AwardsWorkspaceProgramNotFound"
+          },
+          "423": {
+            "$ref": "#/components/responses/AwardsWorkspacePaused"
+          },
+          "429": {
+            "$ref": "#/components/responses/AwardsWorkspaceTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/awards/workspace/programs/{programId}/close": {
+      "post": {
+        "operationId": "awards-workspace-close-nominations",
+        "summary": "Close nominations",
+        "description": "Closes nominations now and starts review: the nomination window ends, the review pass starts now and runs until its current end date (or three weeks from now when that has passed), and the program's status becomes `reviewing`. Unfinished nominations stay drafts. Sends nothing. No request body. Requires `write:awards`; the token's user needs the Awards update permission and must manage the program. Refused for a key restricted to particular events. Also at `POST /v1/awards/workspace/programs/{programId}/close`.",
+        "tags": [
+          "Awards workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AwardsOrgId"
           },
           {
-            "$ref": "#/components/parameters/AwardsSubmissionId"
-          },
-          {
-            "name": "reviewId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "description": "The review (reviewer assignment) ID."
+            "$ref": "#/components/parameters/AwardsProgramId"
           }
         ],
         "responses": {
@@ -2674,53 +827,50 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "data": {
-                      "$ref": "#/components/schemas/AwardsReview"
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "program": {
+                          "$ref": "#/components/schemas/AwardsWorkspaceProgram"
+                        }
+                      }
                     }
                   }
                 }
               }
             }
           },
+          "400": {
+            "$ref": "#/components/responses/AwardsWorkspaceBadRequest"
+          },
           "401": {
-            "description": "Missing or invalid token"
+            "$ref": "#/components/responses/AwardsWorkspaceUnauthorized"
           },
           "403": {
-            "description": "Token lacks `read:awards`",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "SCOPE_REQUIRED",
-                  "message": "Token missing required scope: read:awards"
-                }
-              }
-            }
+            "$ref": "#/components/responses/AwardsWorkspaceWriteForbidden"
           },
           "404": {
-            "description": "Not found — also returned for any id belonging to another organization",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "NOT_FOUND",
-                  "message": "Not found"
-                }
-              }
-            }
+            "$ref": "#/components/responses/AwardsWorkspaceProgramNotFound"
+          },
+          "423": {
+            "$ref": "#/components/responses/AwardsWorkspacePaused"
+          },
+          "429": {
+            "$ref": "#/components/responses/AwardsWorkspaceTooManyRequests"
           }
         }
-      },
-      "delete": {
-        "operationId": "delete-awards-review",
-        "summary": "Remove a review",
-        "description": "Unassigns the reviewer from the submission for that round and removes their scores, as unassigning in the admin app does. Requires the `write:awards` scope.",
+      }
+    },
+    "/v1/organization/{orgId}/awards/workspace/programs/{programId}/review": {
+      "get": {
+        "operationId": "awards-workspace-get-review",
+        "summary": "Get review progress",
+        "description": "The program's review pass: each Reviewer with how many nominations they are assigned and how many scorecards they have finished, the totals, how many Reviewers have not started, and every submitted nomination with its average score (scale questions only), highest first. A scorecard counts as finished when every required question shown for that nomination is answered, or the Reviewer abstained. Reads only. Requires `read:awards`; the token's user needs the Awards read permission and must manage the program. Refused for a key restricted to particular events. Also at `GET /v1/awards/workspace/programs/{programId}/review`.",
         "tags": [
-          "Awards"
+          "Awards workspace"
         ],
         "parameters": [
           {
@@ -2728,55 +878,344 @@
           },
           {
             "$ref": "#/components/parameters/AwardsProgramId"
-          },
-          {
-            "$ref": "#/components/parameters/AwardsSubmissionId"
-          },
-          {
-            "name": "reviewId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "description": "The review (reviewer assignment) ID."
           }
         ],
         "responses": {
-          "204": {
-            "description": "Review removed"
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "review": {
+                          "$ref": "#/components/schemas/AwardsWorkspaceReviewProgress"
+                        },
+                        "submissions": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/AwardsWorkspaceSubmission"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/AwardsWorkspaceBadRequest"
           },
           "401": {
-            "description": "Missing or invalid token"
+            "$ref": "#/components/responses/AwardsWorkspaceUnauthorized"
           },
           "403": {
-            "description": "Token lacks `write:awards`",
+            "$ref": "#/components/responses/AwardsWorkspaceReadForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/AwardsWorkspaceProgramNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/AwardsWorkspaceTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/awards/workspace/programs/{programId}/reviewers": {
+      "post": {
+        "operationId": "awards-workspace-invite-reviewers",
+        "summary": "Ask to invite Reviewers",
+        "description": "Asks a person to add up to 50 people as Reviewers on the program's review pass. Inviting creates their accounts where needed and emails each one an invitation, so an API call never invites directly: it answers `202` with `status: needs_approval` and a link, and nothing is sent until a person approves it in Sessionboard Awards. It then runs as that person. Do not call again for the same people. Requires `write:awards`; the token's user needs the Awards update permission and must manage the program. Refused for a key restricted to particular events. Also at `POST /v1/awards/workspace/programs/{programId}/reviewers`.",
+        "tags": [
+          "Awards workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AwardsOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/AwardsProgramId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "reviewers"
+                ],
+                "properties": {
+                  "reviewers": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 50,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "email"
+                      ],
+                      "properties": {
+                        "email": {
+                          "type": "string",
+                          "format": "email"
+                        },
+                        "firstName": {
+                          "type": "string",
+                          "maxLength": 80
+                        },
+                        "lastName": {
+                          "type": "string",
+                          "maxLength": 80
+                        }
+                      }
+                    }
+                  },
+                  "source": {
+                    "$ref": "#/components/schemas/AwardsWorkspaceSource"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "$ref": "#/components/responses/AwardsWorkspaceNeedsApproval"
+          },
+          "400": {
+            "$ref": "#/components/responses/AwardsWorkspaceBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/AwardsWorkspaceUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/AwardsWorkspaceWriteForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/AwardsWorkspaceProgramNotFound"
+          },
+          "423": {
+            "$ref": "#/components/responses/AwardsWorkspacePaused"
+          },
+          "429": {
+            "$ref": "#/components/responses/AwardsWorkspaceTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/awards/workspace/programs/{programId}/assign": {
+      "post": {
+        "operationId": "awards-workspace-assign-reviews",
+        "summary": "Assign Reviewers to nominations",
+        "description": "Gives every submitted nomination `perSubmission` Reviewers (default 3, never more than the program has), least-loaded Reviewer first. Assignments already made are kept, and a pair that was unassigned earlier is restored rather than duplicated. Reviewers with a conflict of interest are still caught by the review portal's own check. `created` is how many assignments were added or restored; with no Reviewers or no submitted nominations it is `0` and `per_submission` is left out. Sends nothing. Requires `write:awards`; the token's user needs the Awards update permission and must manage the program. Refused for a key restricted to particular events. Also at `POST /v1/awards/workspace/programs/{programId}/assign`.",
+        "tags": [
+          "Awards workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AwardsOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/AwardsProgramId"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "perSubmission": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10,
+                    "default": 3,
+                    "description": "Reviewers per nomination."
+                  },
+                  "source": {
+                    "$ref": "#/components/schemas/AwardsWorkspaceSource"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "SCOPE_REQUIRED",
-                  "message": "Token missing required scope: write:awards"
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "required": [
+                        "created"
+                      ],
+                      "properties": {
+                        "created": {
+                          "type": "integer",
+                          "description": "Assignments added or restored by this call."
+                        },
+                        "per_submission": {
+                          "type": "integer",
+                          "description": "Reviewers per nomination used (the request's value, capped at the number of Reviewers)."
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }
           },
+          "400": {
+            "$ref": "#/components/responses/AwardsWorkspaceBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/AwardsWorkspaceUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/AwardsWorkspaceWriteForbidden"
+          },
           "404": {
-            "description": "Not found — also returned for any id belonging to another organization",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AwardsError"
-                },
-                "example": {
-                  "error": "NOT_FOUND",
-                  "message": "Not found"
+            "$ref": "#/components/responses/AwardsWorkspaceProgramNotFound"
+          },
+          "423": {
+            "$ref": "#/components/responses/AwardsWorkspacePaused"
+          },
+          "429": {
+            "$ref": "#/components/responses/AwardsWorkspaceTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/awards/workspace/programs/{programId}/announce": {
+      "post": {
+        "operationId": "awards-workspace-announce-winners",
+        "summary": "Ask to announce the winners",
+        "description": "Asks a person to email the results to everyone who submitted a nomination: winners and finalists get their news (with your `note`), and the rest a thank-you unless `notifyOthers` is `false`. Because it sends email, an API call never announces directly: it answers `202` with `status: needs_approval` and a link, and nothing is sent until a person approves it in Sessionboard Awards. It then runs as that person. Do not call again for the same announcement. Each program is announced once; approving it again later reports progress and resends only failed deliveries. If it cannot run when approved, the approval records why: no winners picked (`no_winners`), or, for a first announcement, a submitted nomination without a finished scorecard (`reviews_incomplete`). Winners are picked by a person in Sessionboard; the API cannot pick them. Requires `write:awards`; the token's user needs the Awards update permission and must manage the program. Refused for a key restricted to particular events. Also at `POST /v1/awards/workspace/programs/{programId}/announce`.",
+        "tags": [
+          "Awards workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AwardsOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/AwardsProgramId"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "note": {
+                    "type": "string",
+                    "maxLength": 1000,
+                    "description": "A personal note added to the winners' email."
+                  },
+                  "notifyOthers": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Also thank everyone whose nomination did not win."
+                  },
+                  "source": {
+                    "$ref": "#/components/schemas/AwardsWorkspaceSource"
+                  }
                 }
               }
             }
+          }
+        },
+        "responses": {
+          "202": {
+            "$ref": "#/components/responses/AwardsWorkspaceNeedsApproval"
+          },
+          "400": {
+            "$ref": "#/components/responses/AwardsWorkspaceBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/AwardsWorkspaceUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/AwardsWorkspaceWriteForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/AwardsWorkspaceProgramNotFound"
+          },
+          "423": {
+            "$ref": "#/components/responses/AwardsWorkspacePaused"
+          },
+          "429": {
+            "$ref": "#/components/responses/AwardsWorkspaceTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/awards/workspace/results": {
+      "get": {
+        "operationId": "awards-workspace-get-results",
+        "summary": "Get awards results",
+        "description": "The funnel for each program the token's user may see and in total: programs, submitted nominations, drafts, Reviewers, finished scorecards and winners, plus `completion_rate`, the share of started nominations that were submitted (a whole percentage, or `null` when none were started). Reads only. Requires `read:awards`; the token's user needs the Awards read permission. Refused for a key restricted to particular events. Also at `GET /v1/awards/workspace/results`.",
+        "tags": [
+          "Awards workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AwardsOrgId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "$ref": "#/components/schemas/AwardsWorkspaceResults"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/AwardsWorkspaceUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/AwardsWorkspaceReadForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/AwardsWorkspaceOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/AwardsWorkspaceTooManyRequests"
           }
         }
       }
@@ -2815,783 +1254,1247 @@
           "format": "uuid"
         },
         "description": "The Awards program ID."
-      },
-      "AwardsSubmissionId": {
-        "name": "submissionId",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string",
-          "format": "uuid"
-        },
-        "description": "The submission ID."
-      },
-      "AwardsPageSize": {
-        "name": "pageSize",
-        "in": "query",
-        "required": false,
-        "schema": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 100,
-          "default": 25
-        },
-        "description": "Results per page. `page_size` is also accepted."
-      },
-      "AwardsForce": {
-        "name": "force",
-        "in": "query",
-        "required": false,
-        "schema": {
-          "type": "boolean",
-          "default": false
-        },
-        "description": "Delete even though the record is in use (see the `409` response)."
-      },
-      "AwardsCascade": {
-        "name": "cascade",
-        "in": "query",
-        "required": false,
-        "schema": {
-          "type": "boolean",
-          "default": false
-        },
-        "description": "Also delete the category's subcategories."
-      },
-      "Page": {
-        "name": "page",
-        "in": "query",
-        "required": false,
-        "schema": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 999,
-          "default": 1
-        },
-        "description": "Page number for pagination."
       }
     },
     "schemas": {
-      "AwardsError": {
+      "TooManyRequestsError": {
         "type": "object",
+        "description": "Body of a `429` from the API's own request limits (per token, and per organization and user). Wait `Retry-After` seconds.",
+        "required": [
+          "name",
+          "message"
+        ],
+        "properties": {
+          "status": {
+            "type": "integer",
+            "example": 429
+          },
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "message": {
+            "type": "string",
+            "example": "Error while trying to reach the endpoint: Too many requests"
+          },
+          "name": {
+            "type": "string",
+            "enum": [
+              "TooManyRequestsError"
+            ]
+          }
+        }
+      },
+      "AwardsWorkspaceError": {
+        "type": "object",
+        "description": "Error body for the Awards workspace operations.",
+        "required": [
+          "error",
+          "message"
+        ],
         "properties": {
           "error": {
             "type": "string",
             "enum": [
               "VALIDATION_ERROR",
               "SCOPE_REQUIRED",
+              "ORG_WIDE_TOKEN_REQUIRED",
               "FORBIDDEN",
               "NOT_FOUND",
-              "CONFLICT"
+              "CONFLICT",
+              "QUOTA_EXCEEDED"
             ]
           },
           "message": {
             "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "description": "A more specific reason, when there is one (`trial_ended`, `plan_ended`)."
           }
         }
       },
-      "AwardsProgram": {
+      "AwardsWorkspaceStatusError": {
         "type": "object",
+        "description": "Error body for `423`.",
         "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
+          "status": {
+            "type": "integer"
           },
-          "org_id": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
             "type": "string"
           },
           "name": {
-            "type": "string",
-            "examples": [
-              "2027 Excellence Awards"
-            ]
-          },
-          "slug": {
-            "type": "string",
-            "examples": [
-              "2027-excellence-awards"
-            ]
-          },
-          "nomenclature": {
-            "type": "string",
-            "enum": [
-              "awards",
-              "grants",
-              "scholarships"
-            ]
-          },
-          "description": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "draft",
-              "open",
-              "reviewing",
-              "closed",
-              "archived"
-            ]
-          },
-          "year": {
-            "type": [
-              "integer",
-              "null"
-            ]
-          },
-          "deadline": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "format": "date-time"
-          },
-          "collects_fees": {
-            "type": "boolean"
-          },
-          "pricing_type": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "base_fee": {
-            "type": [
-              "number",
-              "null"
-            ]
-          },
-          "submitter_editing_policy": {
-            "type": "string",
-            "enum": [
-              "never",
-              "while_open",
-              "while_open_after_payment"
-            ]
-          },
-          "notify_on_submitter_edit": {
-            "type": "boolean"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time"
-          }
-        }
-      },
-      "AwardsProgramWrite": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "name": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 255
-          },
-          "nomenclature": {
-            "type": "string",
-            "enum": [
-              "awards",
-              "grants",
-              "scholarships"
-            ]
-          },
-          "description": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "slug": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 255,
-            "description": "Defaults to one derived from `name` on create."
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "draft",
-              "open",
-              "reviewing",
-              "closed",
-              "archived"
-            ],
-            "description": "Update only."
-          },
-          "year": {
-            "type": [
-              "integer",
-              "null"
-            ]
-          },
-          "deadline": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "format": "date-time"
-          },
-          "collects_fees": {
-            "type": "boolean",
-            "description": "Update only."
-          },
-          "submitter_editing_policy": {
-            "type": "string",
-            "enum": [
-              "never",
-              "while_open",
-              "while_open_after_payment"
-            ]
-          },
-          "notify_on_submitter_edit": {
-            "type": "boolean"
-          },
-          "default_submission_status": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "enum": [
-              "submitted",
-              "under_review",
-              "accepted",
-              "rejected",
-              "",
-              null
-            ],
-            "description": "Status a new submission starts in. Empty string or `null` clears it."
-          }
-        }
-      },
-      "AwardsCategory": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "program_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "name": {
-            "type": "string",
-            "examples": [
-              "Best Innovation"
-            ]
-          },
-          "description": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "parent_category_id": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "format": "uuid"
-          },
-          "submission_limit": {
-            "type": [
-              "integer",
-              "null"
-            ]
-          },
-          "expertise_tags": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "order": {
-            "type": "integer"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time"
-          }
-        }
-      },
-      "AwardsCategoryWrite": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "name": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 255
-          },
-          "description": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "maxLength": 10000
-          },
-          "parent_category_id": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "format": "uuid",
-            "description": "Another category in the same program. `null` makes it top-level."
-          },
-          "submission_limit": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "minimum": 0,
-            "description": "Most submissions one submitter may file in this category."
-          },
-          "expertise_tags": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "order": {
-            "type": "integer"
-          }
-        }
-      },
-      "AwardsRound": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "program_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "name": {
-            "type": "string",
-            "examples": [
-              "Final judging"
-            ]
-          },
-          "round_type": {
-            "type": "string",
-            "enum": [
-              "submission_review",
-              "review_only"
-            ]
-          },
-          "is_default": {
-            "type": "boolean",
-            "description": "The program's first round. It cannot be deleted."
-          },
-          "submission_start_date": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "submission_end_date": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "review_start_date": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "review_end_date": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "passing_score": {
-            "type": [
-              "number",
-              "null"
-            ]
-          },
-          "blind_review": {
-            "type": "boolean"
-          },
-          "instructions": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time"
-          }
-        }
-      },
-      "AwardsRoundWrite": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "name": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 255
-          },
-          "round_type": {
-            "type": "string",
-            "enum": [
-              "submission_review",
-              "review_only"
-            ]
-          },
-          "submission_start_date": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "`YYYY-MM-DD` or an ISO 8601 timestamp."
-          },
-          "submission_end_date": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "`YYYY-MM-DD` or an ISO 8601 timestamp."
-          },
-          "review_start_date": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "`YYYY-MM-DD` or an ISO 8601 timestamp."
-          },
-          "review_end_date": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "`YYYY-MM-DD` or an ISO 8601 timestamp."
-          },
-          "passing_score": {
-            "type": [
-              "number",
-              "null"
-            ]
-          },
-          "blind_review": {
-            "type": "boolean",
-            "description": "Hide submitter identity from reviewers."
-          },
-          "instructions": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "maxLength": 20000
-          }
-        }
-      },
-      "AwardsPromoCode": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "program_id": {
-            "type": "string",
-            "format": "uuid"
+            "type": "string"
           },
           "code": {
+            "type": "string"
+          },
+          "paused_at": {
             "type": "string",
-            "examples": [
-              "SAVE20"
+            "format": "date-time",
+            "description": "When assistants were paused."
+          }
+        }
+      },
+      "AwardsWorkspaceSource": {
+        "type": "object",
+        "description": "Optional on every write: which assistant is calling and what the person asked it. Recorded with the change in the organization's activity and on any approval request; never stored on the program.",
+        "properties": {
+          "client": {
+            "type": "string",
+            "description": "The assistant's client name (for example `Claude` or `ChatGPT`)."
+          },
+          "version": {
+            "type": "string"
+          },
+          "run_id": {
+            "type": "string",
+            "description": "Your own id for the conversation."
+          },
+          "prompt": {
+            "type": "string",
+            "maxLength": 2000,
+            "description": "What the person asked the assistant."
+          }
+        }
+      },
+      "AwardsWorkspaceTier": {
+        "type": "string",
+        "enum": [
+          "self_serve",
+          "enterprise"
+        ],
+        "description": "`self_serve` for an organization on a self-serve Awards plan; `enterprise` for every other organization."
+      },
+      "AwardsWorkspaceAudience": {
+        "type": "string",
+        "enum": [
+          "members",
+          "customers",
+          "industry",
+          "employees"
+        ],
+        "description": "Who the awards are for: `members` (member recognition, fellows, volunteers, scholarships), `customers` (customer and partner awards), `industry` (an open call across your field) or `employees` (internal recognition). Sets a new program's default nomination mode and starter categories."
+      },
+      "AwardsWorkspaceNominationMode": {
+        "type": "string",
+        "enum": [
+          "nominate_others",
+          "self_only"
+        ],
+        "description": "`nominate_others`: people nominate someone else. `self_only`: people submit for themselves. Defaults to the audience's mode."
+      },
+      "AwardsWorkspaceProfile": {
+        "type": "object",
+        "properties": {
+          "audience": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AwardsWorkspaceAudience"
+              },
+              {
+                "type": "null"
+              }
             ]
           },
-          "type": {
+          "audience_label": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "Members"
+          },
+          "awarding": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "What is being awarded."
+          },
+          "finished": {
+            "type": "boolean",
+            "description": "Setup is finished."
+          },
+          "finished_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "AwardsWorkspaceEnterpriseItem": {
+        "type": "object",
+        "properties": {
+          "key": {
             "type": "string",
             "enum": [
-              "percentage",
-              "flat"
+              "review_rounds",
+              "payments",
+              "sso",
+              "csm",
+              "platform"
             ]
           },
-          "amount": {
-            "type": "number",
-            "examples": [
-              20
-            ]
+          "label": {
+            "type": "string",
+            "example": "Review rounds and Review plans"
           },
-          "starts_at": {
+          "detail": {
+            "type": "string"
+          },
+          "locked": {
+            "type": "boolean",
+            "description": "`true` on a self-serve Awards plan."
+          }
+        }
+      },
+      "AwardsWorkspaceCategory": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "AwardsWorkspaceRound": {
+        "type": "object",
+        "description": "The program's review pass and its dates.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "submission_start_date": {
             "type": [
               "string",
               "null"
             ],
             "format": "date-time"
           },
-          "ends_at": {
+          "submission_end_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "The nomination deadline."
+          },
+          "review_start_date": {
             "type": [
               "string",
               "null"
             ],
             "format": "date-time"
           },
-          "redemption_count": {
+          "review_end_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "AwardsWorkspaceProgramCounts": {
+        "type": "object",
+        "properties": {
+          "submitted": {
             "type": "integer",
-            "description": "Submissions the code has been applied to. Returned by the single-code GET only."
+            "description": "Submitted nominations."
           },
-          "created_at": {
-            "type": "string",
-            "format": "date-time"
+          "drafts": {
+            "type": "integer",
+            "description": "Nominations started and not submitted."
           },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time"
+          "reviewers": {
+            "type": "integer"
+          },
+          "scorecards": {
+            "type": "integer",
+            "description": "Finished scorecards."
+          },
+          "reviewed": {
+            "type": "integer",
+            "description": "Submitted nominations with at least one finished scorecard."
+          },
+          "winners": {
+            "type": "integer"
           }
         }
       },
-      "AwardsPromoCodeWrite": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "code": {
-            "type": "string",
-            "maxLength": 255,
-            "pattern": "^[A-Za-z0-9]+$",
-            "description": "Letters and digits; stored upper-case."
-          },
-          "type": {
-            "type": "string",
-            "enum": [
-              "percentage",
-              "flat"
-            ]
-          },
-          "amount": {
-            "type": "number",
-            "minimum": 0,
-            "description": "Percent off (at most 100) or a flat amount in the program's currency."
-          },
-          "starts_at": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "format": "date-time"
-          },
-          "ends_at": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "format": "date-time"
-          }
-        }
-      },
-      "AwardsSubmission": {
+      "AwardsWorkspaceProgram": {
         "type": "object",
         "properties": {
           "id": {
             "type": "string",
             "format": "uuid"
           },
-          "program_id": {
-            "type": "string",
-            "format": "uuid"
+          "name": {
+            "type": "string"
           },
-          "category_id": {
+          "nomenclature": {
+            "type": "string",
+            "enum": [
+              "awards",
+              "grants",
+              "scholarships"
+            ]
+          },
+          "description": {
             "type": [
               "string",
               "null"
-            ],
-            "format": "uuid"
-          },
-          "friendly_id": {
-            "type": "string",
-            "examples": [
-              "AWD-0042"
             ]
+          },
+          "nomination_mode": {
+            "$ref": "#/components/schemas/AwardsWorkspaceNominationMode"
           },
           "status": {
             "type": "string",
-            "examples": [
-              "submitted"
+            "enum": [
+              "draft",
+              "open",
+              "reviewing",
+              "closed",
+              "archived"
+            ],
+            "description": "Worked out from the dates: `open` while it is on the Awards Site and its nomination window is running, `reviewing` after nominations close, `closed` when it has nominations and every date has passed."
+          },
+          "decided": {
+            "type": "boolean",
+            "description": "At least one winner has been picked."
+          },
+          "round": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AwardsWorkspaceRound"
+              },
+              {
+                "type": "null"
+              }
             ]
           },
-          "current_round_id": {
+          "rounds": {
+            "type": "integer",
+            "description": "How many Rounds the program has (one on self-serve)."
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AwardsWorkspaceCategory"
+            }
+          },
+          "categories_revision": {
+            "type": "string",
+            "description": "Send this as `baseRevision` when replacing the categories."
+          },
+          "public_url": {
             "type": [
               "string",
               "null"
             ],
-            "format": "uuid"
+            "description": "The program's sign-in page on the Awards Site, once it has been opened. Empty when the Site has no address yet."
           },
-          "payment_status": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "promo_code_id": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "format": "uuid"
-          },
-          "submitted_by_user_id": {
-            "type": [
-              "integer",
-              "null"
-            ]
-          },
-          "submitted_at": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "format": "date-time"
-          },
-          "total_score": {
-            "type": [
-              "number",
-              "null"
-            ]
-          },
-          "merged_into_submission_id": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "format": "uuid"
-          },
-          "values": {
-            "type": "object",
-            "additionalProperties": true,
-            "description": "Form answers keyed by form field ID. Returned by the single-submission GET and by updates."
+          "counts": {
+            "$ref": "#/components/schemas/AwardsWorkspaceProgramCounts"
           },
           "created_at": {
             "type": "string",
             "format": "date-time"
-          },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time"
           }
         }
       },
-      "AwardsSubmissionWrite": {
+      "AwardsWorkspaceHomeCounts": {
         "type": "object",
-        "additionalProperties": false,
+        "description": "Totals across the programs the token's user may see.",
         "properties": {
-          "values": {
-            "type": "object",
-            "additionalProperties": true,
-            "description": "Answers keyed by form field ID. Fields you omit are left unchanged; a required field sent empty returns `400`."
-          },
-          "allow_submitter_editing_override": {
-            "type": [
-              "boolean",
-              "null"
-            ],
-            "description": "Let this submitter edit regardless of the program's editing policy. `null` clears the override."
-          }
-        }
-      },
-      "AwardsReview": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "submission_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "round_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "reviewer_user_id": {
+          "programs": {
             "type": "integer"
           },
-          "is_abstained": {
-            "type": "boolean"
+          "submitted": {
+            "type": "integer"
           },
-          "abstain_reason": {
-            "type": [
-              "string",
-              "null"
-            ]
+          "drafts": {
+            "type": "integer"
           },
-          "scores": {
+          "reviewers": {
+            "type": "integer"
+          },
+          "scorecards": {
+            "type": "integer",
+            "description": "Finished scorecards."
+          },
+          "assigned": {
+            "type": "integer",
+            "description": "Reviewer assignments, not counting abstentions."
+          },
+          "winners": {
+            "type": "integer"
+          }
+        }
+      },
+      "AwardsWorkspaceReviewItem": {
+        "type": "object",
+        "description": "Something waiting on a person.",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "approvals",
+              "categories",
+              "drafts",
+              "winners"
+            ],
+            "description": "`approvals`: requests from an assistant waiting for a person. `categories`: a program with no categories. `drafts`: unfinished nominations in an open program. `winners`: every submitted nomination has a scorecard and no winner is picked yet."
+          },
+          "program_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Not on `approvals`."
+          },
+          "program_name": {
+            "type": "string",
+            "description": "Not on `approvals`."
+          },
+          "count": {
+            "type": "integer",
+            "description": "On `approvals` and `drafts`."
+          },
+          "title": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "href": {
+            "type": "string",
+            "description": "The page in the Awards workspace, relative to it."
+          }
+        }
+      },
+      "AwardsWorkspaceHome": {
+        "type": "object",
+        "properties": {
+          "organization": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          },
+          "profile": {
+            "$ref": "#/components/schemas/AwardsWorkspaceProfile"
+          },
+          "audiences": {
             "type": "array",
+            "description": "The audiences to choose from.",
             "items": {
               "type": "object",
               "properties": {
-                "field_id": {
-                  "type": "string",
-                  "format": "uuid"
+                "key": {
+                  "$ref": "#/components/schemas/AwardsWorkspaceAudience"
                 },
-                "value": {
-                  "description": "Number, text, or JSON depending on the scorecard field."
+                "label": {
+                  "type": "string"
+                },
+                "hint": {
+                  "type": "string"
                 }
               }
             }
           },
+          "tier": {
+            "$ref": "#/components/schemas/AwardsWorkspaceTier"
+          },
+          "can_read_awards": {
+            "type": "boolean",
+            "description": "The token's user has the Awards read permission. When `false`, the counts are `0` and the lists are empty."
+          },
+          "counts": {
+            "$ref": "#/components/schemas/AwardsWorkspaceHomeCounts"
+          },
+          "programs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AwardsWorkspaceProgram"
+            }
+          },
+          "review": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AwardsWorkspaceReviewItem"
+            }
+          },
+          "enterprise": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AwardsWorkspaceEnterpriseItem"
+            }
+          }
+        }
+      },
+      "AwardsWorkspaceSubmission": {
+        "type": "object",
+        "description": "A submitted nomination with its scores.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "friendly_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "nominee": {
+            "type": "string",
+            "description": "The nominee's name, else their organization, else the friendly id."
+          },
+          "organization": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The nominee's organization."
+          },
+          "category": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "draft",
+              "pending_payment",
+              "submitted",
+              "under_review",
+              "accepted",
+              "rejected",
+              null
+            ]
+          },
+          "submitted_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "average_score": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Average of the scale questions across Reviewers, to one decimal."
+          },
+          "reviews": {
+            "type": "integer",
+            "description": "Reviewers who saved any answer."
+          },
+          "winner": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "winner_type_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string",
+                "example": "Winner"
+              }
+            }
+          }
+        }
+      },
+      "AwardsWorkspaceReviewProgress": {
+        "type": "object",
+        "properties": {
+          "reviewers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "user_id": {
+                  "type": "integer"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "email": {
+                  "type": "string",
+                  "format": "email"
+                },
+                "assigned": {
+                  "type": "integer",
+                  "description": "Nominations assigned, not counting abstentions."
+                },
+                "done": {
+                  "type": "integer",
+                  "description": "Finished scorecards."
+                }
+              }
+            }
+          },
+          "assigned": {
+            "type": "integer"
+          },
+          "done": {
+            "type": "integer"
+          },
+          "not_started": {
+            "type": "integer",
+            "description": "Reviewers with assignments and no finished scorecard."
+          }
+        }
+      },
+      "AwardsWorkspaceAnnouncement": {
+        "type": "object",
+        "description": "The program's winner announcement and its delivery progress.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "sending",
+              "sent",
+              "partial"
+            ]
+          },
+          "job_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "announced_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "completed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "recipients": {
+            "type": "integer"
+          },
+          "winners": {
+            "type": "integer",
+            "description": "Recipients who won (any winner type)."
+          },
+          "progress": {
+            "type": "object",
+            "properties": {
+              "sent": {
+                "type": "integer"
+              },
+              "failed": {
+                "type": "integer"
+              },
+              "skipped": {
+                "type": "integer"
+              },
+              "pending": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "AwardsWorkspaceProgramDetail": {
+        "type": "object",
+        "properties": {
+          "program": {
+            "$ref": "#/components/schemas/AwardsWorkspaceProgram"
+          },
+          "form": {
+            "type": "array",
+            "description": "The nomination form's questions, in order.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string",
+                  "example": "textarea"
+                },
+                "required": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "scorecard": {
+            "type": "array",
+            "description": "The scorecard's questions, in order.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string",
+                  "example": "scale_1_5"
+                },
+                "required": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "winner_types": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "name": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "submissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AwardsWorkspaceSubmission"
+            }
+          },
+          "review": {
+            "$ref": "#/components/schemas/AwardsWorkspaceReviewProgress"
+          },
+          "announcement": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AwardsWorkspaceAnnouncement"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "plan": {
+            "type": "object",
+            "properties": {
+              "tier": {
+                "$ref": "#/components/schemas/AwardsWorkspaceTier"
+              },
+              "max_review_rounds": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "description": "`1` on self-serve; `null` when not limited."
+              },
+              "fees": {
+                "type": "string",
+                "enum": [
+                  "enterprise",
+                  "available"
+                ],
+                "description": "`enterprise`: submission fees need Enterprise Awards."
+              },
+              "sso": {
+                "type": "string",
+                "enum": [
+                  "enterprise",
+                  "available"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "AwardsWorkspaceResults": {
+        "type": "object",
+        "properties": {
+          "totals": {
+            "type": "object",
+            "properties": {
+              "programs": {
+                "type": "integer"
+              },
+              "submitted": {
+                "type": "integer"
+              },
+              "drafts": {
+                "type": "integer"
+              },
+              "reviewers": {
+                "type": "integer"
+              },
+              "scorecards": {
+                "type": "integer"
+              },
+              "winners": {
+                "type": "integer"
+              }
+            }
+          },
+          "completion_rate": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Submitted as a percentage of started nominations (submitted plus drafts); `null` when none were started."
+          },
+          "programs": {
+            "type": "array",
+            "items": {
+              "allOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "draft",
+                        "open",
+                        "reviewing",
+                        "closed",
+                        "archived"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "$ref": "#/components/schemas/AwardsWorkspaceProgramCounts"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "AwardsWorkspaceApproval": {
+        "type": "object",
+        "description": "A request from an assistant that waits for a person.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "approved",
+              "declined",
+              "failed"
+            ]
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "open_awards_program",
+              "invite_reviewers",
+              "announce_winners"
+            ]
+          },
+          "surface": {
+            "type": "string",
+            "enum": [
+              "award_programs",
+              "award_review",
+              "award_winners"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "example": "Open nominations for “Volunteer Awards 2027”"
+          },
+          "summary": {
+            "type": "string",
+            "description": "The person's request to the assistant, when `source.prompt` was sent."
+          },
+          "target": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "example": "awards_program"
+              },
+              "id": {
+                "type": "string"
+              }
+            }
+          },
+          "event_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "assistant": {
+            "type": "object",
+            "properties": {
+              "vendor": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              },
+              "client": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "via": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "api_token",
+                  "oauth",
+                  null
+                ]
+              }
+            }
+          },
+          "requested_by": {
+            "type": "object",
+            "properties": {
+              "user_id": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "decided_by": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "user_id": {
+                "type": "integer"
+              },
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "decided_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why an approved request could not run."
+          },
+          "remedy": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "A one-step fix offered next to Retry, when there is one."
+          },
+          "can_retry": {
+            "type": "boolean"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time"
           },
-          "updated_at": {
+          "product": {
             "type": "string",
-            "format": "date-time"
+            "enum": [
+              "awards"
+            ]
+          },
+          "url": {
+            "type": "string",
+            "description": "Where a person approves or declines it."
           }
         }
       },
-      "ListPagination": {
+      "AwardsWorkspaceApprovalRequest": {
         "type": "object",
-        "description": "Pagination metadata returned by the event-settings GET lists (tags, tracks, levels, formats, rooms, languages, statuses). Same numbers as `Pagination`, snake_case keys — these endpoints are served by a different layer, and the casing is longstanding.",
         "properties": {
-          "current_page": {
-            "type": "integer",
-            "examples": [
-              1
+          "status": {
+            "type": "string",
+            "enum": [
+              "needs_approval"
             ]
           },
-          "page_size": {
-            "type": "integer",
-            "examples": [
-              25
-            ]
+          "approval_id": {
+            "type": "string",
+            "format": "uuid"
           },
-          "total_pages": {
-            "type": "integer",
-            "examples": [
-              4
-            ]
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Where a person approves or declines the request in Sessionboard Awards (the workspace's approvals page, `/awards/{orgId}/approvals?id={approval_id}`)."
           },
-          "total_results": {
-            "type": "integer",
-            "examples": [
-              97
-            ]
+          "message": {
+            "type": "string",
+            "description": "`Waiting for your OK in Sessionboard: ` followed by `url`."
+          },
+          "note": {
+            "type": "string",
+            "example": "Nothing was sent or published. A person approves or declines this in Sessionboard Awards; it then runs as them. Do not call again."
+          },
+          "approval": {
+            "$ref": "#/components/schemas/AwardsWorkspaceApproval"
+          }
+        }
+      }
+    },
+    "responses": {
+      "AwardsWorkspaceUnauthorized": {
+        "description": "Missing, invalid or expired token."
+      },
+      "AwardsWorkspaceReadForbidden": {
+        "description": "- `SCOPE_REQUIRED`: the token lacks `read:awards`. A write scope does not grant reads; a legacy token with no scopes may read.\n- `ORG_WIDE_TOKEN_REQUIRED`: the key is restricted to particular events. The Awards workspace covers every awards program in the organization, so use a key without an event restriction.\n- `FORBIDDEN`: the token's user is not an active member of the organization, lacks the Awards read permission, or does not manage the program.\n",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/AwardsWorkspaceError"
+            },
+            "examples": {
+              "scope_required": {
+                "summary": "Token lacks the read scope",
+                "value": {
+                  "error": "SCOPE_REQUIRED",
+                  "message": "Token missing required scope: read:awards"
+                }
+              },
+              "org_wide_token_required": {
+                "summary": "Key restricted to particular events",
+                "value": {
+                  "error": "ORG_WIDE_TOKEN_REQUIRED",
+                  "message": "The Awards workspace covers every awards program in the organization, so this API key (restricted to particular events) cannot use it. Use a key without an event restriction."
+                }
+              }
+            }
+          }
+        }
+      },
+      "AwardsWorkspaceWriteForbidden": {
+        "description": "- `SCOPE_REQUIRED`: the token lacks `write:awards`. Legacy tokens with no scopes cannot write.\n- `ORG_WIDE_TOKEN_REQUIRED`: the key is restricted to particular events. The Awards workspace covers every awards program in the organization, so use a key without an event restriction.\n- `FORBIDDEN` with `code: trial_ended` or `code: plan_ended`: the organization's self-serve Awards plan is read-only (the trial ended, or the plan was canceled or is unpaid). Everything can still be read; choose a plan to make changes.\n- `FORBIDDEN` with no `code`: the token's user is not an active member of the organization, lacks the Awards permission the operation needs, does not manage the program, or (for the setup answers) is not an organization admin.\n\nThese operations do not return `enterprise_only`; the Enterprise-only items are listed by\n`GET /v1/organization/{orgId}/awards/workspace/enterprise`.\n",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/AwardsWorkspaceError"
+            },
+            "examples": {
+              "scope_required": {
+                "summary": "Token lacks the write scope",
+                "value": {
+                  "error": "SCOPE_REQUIRED",
+                  "message": "This operation requires the 'write:awards' scope."
+                }
+              },
+              "org_wide_token_required": {
+                "summary": "Key restricted to particular events",
+                "value": {
+                  "error": "ORG_WIDE_TOKEN_REQUIRED",
+                  "message": "The Awards workspace covers every awards program in the organization, so this API key (restricted to particular events) cannot use it. Use a key without an event restriction."
+                }
+              },
+              "trial_ended": {
+                "summary": "The self-serve trial has ended",
+                "value": {
+                  "error": "FORBIDDEN",
+                  "message": "Your Awards trial has ended. Choose a plan to keep going; everything you made is still here.",
+                  "code": "trial_ended"
+                }
+              },
+              "plan_ended": {
+                "summary": "The self-serve plan is read-only",
+                "value": {
+                  "error": "FORBIDDEN",
+                  "message": "Your Awards plan has ended, so the workspace is read-only. Choose a plan to pick up where you left off.",
+                  "code": "plan_ended"
+                }
+              },
+              "not_a_manager": {
+                "summary": "The token's user does not manage the program",
+                "value": {
+                  "error": "FORBIDDEN",
+                  "message": "User is not a manager of this program"
+                }
+              }
+            }
+          }
+        }
+      },
+      "AwardsWorkspaceBadRequest": {
+        "description": "`VALIDATION_ERROR`: the body or a path id does not match the schema. Unknown body fields are refused and named\nin the message; `source` is always accepted.\n",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/AwardsWorkspaceError"
+            },
+            "example": {
+              "error": "VALIDATION_ERROR",
+              "message": "Error on body parameter: data should NOT have additional properties: \"winners\""
+            }
+          }
+        }
+      },
+      "AwardsWorkspaceOrgNotFound": {
+        "description": "`NOT_FOUND`: `orgId` is not the token's organization.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/AwardsWorkspaceError"
+            },
+            "example": {
+              "error": "NOT_FOUND",
+              "message": "Organization not found"
+            }
+          }
+        }
+      },
+      "AwardsWorkspaceProgramNotFound": {
+        "description": "`NOT_FOUND`: `orgId` is not the token's organization, or the program is not in it.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/AwardsWorkspaceError"
+            },
+            "example": {
+              "error": "NOT_FOUND",
+              "message": "Awards Program could not be found"
+            }
+          }
+        }
+      },
+      "AwardsWorkspacePaused": {
+        "description": "A person has paused connected assistants for the organization, so writes from the API wait until they resume\nit in Sessionboard. `code` is `AGENT_WRITES_PAUSED`.\n",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/AwardsWorkspaceStatusError"
+            },
+            "example": {
+              "status": 423,
+              "success": false,
+              "message": "A person has paused connected assistants in Sessionboard. Ask them to resume it from their workspace before trying again.",
+              "name": "AgentWritesPausedError",
+              "code": "AGENT_WRITES_PAUSED",
+              "paused_at": "2026-11-06T15:04:05.000Z"
+            }
+          }
+        }
+      },
+      "AwardsWorkspaceTooManyRequests": {
+        "description": "- The token's request limit (100 requests per 15 minutes by default, per bucket). Wait `Retry-After` seconds.\n  The body is the `TooManyRequestsError` shape — see [Rate Limiting](/rate-limiting).\n- Writes only: `QUOTA_EXCEEDED`, the token's daily write quota (10,000 writes a day). It resets at midnight UTC.\n",
+        "headers": {
+          "Retry-After": {
+            "description": "Seconds to wait before retrying.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/TooManyRequestsError"
+                },
+                {
+                  "$ref": "#/components/schemas/AwardsWorkspaceError"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "AwardsWorkspaceNeedsApproval": {
+        "description": "Waiting for a person: nothing was sent or published. `payload.url` opens the request in Sessionboard Awards,\nwhere a person approves or declines it. An approved request runs as that person; if it cannot run, the\napproval's `status` becomes `failed` with the reason in `error`.\n",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean"
+                },
+                "payload": {
+                  "$ref": "#/components/schemas/AwardsWorkspaceApprovalRequest"
+                }
+              }
+            }
           }
         }
       }

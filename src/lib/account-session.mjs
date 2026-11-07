@@ -38,6 +38,8 @@
  * never set them on the production Worker.
  */
 
+import { normalizeDocsGrant } from './docs-grant.mjs';
+
 export const ACCOUNT_PREFIX = '/_account/';
 export const SESSION_PATH = '/_account/session';
 export const ME_PATH = '/_account/me';
@@ -196,6 +198,48 @@ export async function recheckStaff(request, env, site, fetchImpl = fetch) {
   return setCookie(STAFF_COOKIE, await signSession(secret, r.id), SESSION_TTL_S);
 }
 
+/** The session user id of a reader with only a staff grant (web-api lib/help-docs/docs-access.js). */
+export const DOCS_GRANT_READER_PREFIX = 'docs-grant-';
+
+/**
+ * May a staff-granted reader (no Sessionboard account) be served this page?
+ *
+ * Everyone else is unchanged: account holders read every built page, and a
+ * grant reader reads Platform guides. A grant reader's API docs and product
+ * suite pages are checked here, in the Worker, against what the API says the
+ * grant holds right now (`docs_grant.api_docs`, `docs_grant.products`): the
+ * entitlements page script sees are a convenience, not the gate.
+ *
+ * `apiProduct` is the API docs product of the path (null when it is not an
+ * API page); `suite` is the documentation suite of the path. Any doubt (no
+ * reader cookie, the API slow or failing, a different reader) answers false.
+ */
+export async function grantAllowsPath(request, env, site, { apiProduct = null, suite = 'platform' } = {}, fetchImpl = fetch) {
+  const secret = env?.STAFF_SESSION_SECRET;
+  if (!secret) return true;
+  const session = await verifySession(secret, readCookie(request, SESSION_COOKIE));
+  if (!session?.userId?.startsWith(DOCS_GRANT_READER_PREFIX)) return true;
+  if (!apiProduct && suite === 'platform') return true;
+  const reader = readReader(request, site, env);
+  if (!reader) return false;
+  let result;
+  try {
+    result = await fetchReader(reader.region, reader.token, fetchImpl, { signal: AbortSignal.timeout(STAFF_RECHECK_TIMEOUT_MS) });
+  } catch {
+    return false;
+  }
+  const r = result?.reader;
+  if (!r || r.token_scope !== 'help_reader' || sessionUserId(r.id) !== session.userId) return false;
+  const grant = normalizeDocsGrant(r.docs_grant);
+  if (!grant || new Date(grant.expires_at).getTime() <= Date.now()) return false;
+  if (apiProduct) {
+    if (r.api_docs === false || !grant.api_docs) return false;
+    if (apiProduct !== 'platform' && !grant.products.includes(apiProduct)) return false;
+  }
+  if (suite !== 'platform' && !grant.products.includes(suite)) return false;
+  return true;
+}
+
 // ── Reader cookie ────────────────────────────────────────────────────────
 
 /** `{ region, token }` from the reader cookie, or null. The region must still be configured. */
@@ -269,6 +313,11 @@ function publicReader(reader, region) {
     // Documentation suites the reader can read (web-api /help/reader/me):
     // 'platform', 'marketing', 'learning', 'awards'. Null when the API predates it.
     products: Array.isArray(reader.products) ? reader.products : null,
+    // The API docs (/api, /sessionboard-<product>/api): every account holder;
+    // a reader with only a staff grant when it says so. True when the API predates it.
+    api_docs: reader.api_docs !== false,
+    // Staff-granted access (src/lib/docs-grant.mjs): { products, api_docs, expires_at } or null.
+    docs_grant: normalizeDocsGrant(reader.docs_grant),
     region: region.id,
     app_origin: region.app,
   };

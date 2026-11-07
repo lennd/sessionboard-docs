@@ -6,20 +6,77 @@
  * (ForYou.astro, hidden until src/scripts/account.mjs reveals it), and under
  * the self-serve scope bar (src/lib/help-scope.mjs), which only shows while a
  * reader is in a product scope.
+ *
+ * Documentation suites (src/lib/suites.mjs): a page inside a self-serve suite
+ * (/sessionboard-marketing/…) renders that suite's own sidebar
+ * (src/data/suites/<key>.sidebar.json) and title instead of Platform's. When
+ * any self-serve suite is built, every page also carries the suite switcher,
+ * hidden until src/scripts/account.mjs finds the reader holds two or more
+ * suites. With no self-serve suite built, the output is what it always was.
  */
 import MobileMenuFooter from 'virtual:starlight/components/MobileMenuFooter';
 import SidebarPersister from '@astrojs/starlight/components/SidebarPersister.astro';
 import SidebarSublist from './SidebarSublist.astro';
 import ForYou from './ForYou.astro';
+import ProductBadge from './ProductBadge.astro';
 import helpScopes from '../data/help-scopes.json';
+import suitesConfig from '../data/suites.json';
+import { getCollection } from 'astro:content';
+import { PLATFORM, anySelfServeBuilt, builtSuites, resolveSidebar, suiteForId } from '../lib/suites.mjs';
 
-const { sidebar } = Astro.locals.starlightRoute;
+const { sidebar, id } = Astro.locals.starlightRoute;
+const built = builtSuites(suitesConfig, process.env);
+const suitesOn = anySelfServeBuilt(built);
+const suite = suiteForId(id, suitesConfig);
+const suiteConf = suite === PLATFORM ? null : suitesConfig.suites[suite as keyof typeof suitesConfig.suites];
+
+let suiteSidebar = null;
+// A product's API pages (/sessionboard-<key>/api/…, the API Docs build) set
+// Astro.locals.sbApiProduct and bring their own sidebar through route data;
+// the suite title and switcher stay, the suite's article sidebar does not.
+const apiPage = Boolean((Astro.locals as { sbApiProduct?: string }).sbApiProduct);
+if (suiteConf && 'sidebar' in suiteConf && !apiPage) {
+	const files = import.meta.glob<{ default: unknown[] }>('../data/suites/*.sidebar.json', { eager: true });
+	const file = files[`../data/suites/${suiteConf.sidebar}.sidebar.json`];
+	if (!file) throw new Error(`Suite "${suite}" has no sidebar file src/data/suites/${suiteConf.sidebar}.sidebar.json`);
+	const items = file.default;
+	const entries = (await getCollection('docs')).filter((e) => suiteForId(e.id, suitesConfig) === suite);
+	suiteSidebar = resolveSidebar(items, { entries, currentPath: Astro.url.pathname });
+}
+const switcher = suitesOn ? Object.keys(suitesConfig.suites).filter((k) => built.has(k)) : [];
 ---
 
 {
-	Object.entries(helpScopes.scopes).map(([key, scope]) => (
+	switcher.length > 0 && (
+		<nav class="sb-suite-switch" aria-label="Help for" data-current={suite} hidden>
+			<span class="sb-suite-switch-label">Help for</span>
+			{switcher.map((key) => {
+				const conf = suitesConfig.suites[key as keyof typeof suitesConfig.suites];
+				return (
+					<a href={key === PLATFORM ? '/?via=platform' : `${conf.home}?via=${key}`} data-suite={key} aria-current={key === suite ? 'page' : undefined} hidden>
+						<ProductBadge product={key as 'platform'} />
+						{conf.label}
+					</a>
+				);
+			})}
+		</nav>
+	)
+}
+
+{
+	suiteConf && (
+		<a class="sb-suite-title" href={suiteConf.home}>
+			<ProductBadge product={suite as 'marketing'} size="md" />
+			{suiteConf.product}
+		</a>
+	)
+}
+
+{
+	!suiteConf && Object.entries(helpScopes.scopes).map(([key, scope]) => (
 		<div class="sb-scope-bar" data-for={key}>
 			<a class="sb-scope-bar-title" href={scope.home}>
+				<ProductBadge product={key as 'marketing'} />
 				Help for {scope.label}
 			</a>
 			<a class="sb-scope-bar-all" href="?via=all">
@@ -30,8 +87,8 @@ const { sidebar } = Astro.locals.starlightRoute;
 }
 
 <SidebarPersister>
-	<ForYou />
-	<SidebarSublist sublist={sidebar} />
+	{!suiteConf && <ForYou />}
+	{suiteSidebar ? <SidebarSublist sublist={suiteSidebar} /> : <SidebarSublist sublist={sidebar} />}
 </SidebarPersister>
 
 <div class="md:sl-hidden">

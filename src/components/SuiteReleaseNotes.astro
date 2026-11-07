@@ -1,0 +1,50 @@
+---
+/**
+ * "What's new" inside one self-serve suite (src/data/suites.json): that
+ * product's own release entries (`product: "<key>"` in
+ * src/data/release-notes/*.json), once live for every customer. This is the
+ * only place a self-serve entry renders — the Platform page, feed, Slack,
+ * email, Enablement and Community read loadReleaseNotes()'s Platform view and
+ * never see it (src/lib/release-notes.mjs `forProduct`).
+ */
+import { formatDate, isPublic, loadReleaseNotes, renderInline } from '../lib/release-notes.mjs';
+
+interface Props {
+	product: 'marketing' | 'learning' | 'awards';
+}
+
+const { product } = Astro.props;
+const { releases, problems } = loadReleaseNotes({ product });
+if (problems.length) {
+	throw new Error(`release notes are invalid:\n${problems.join('\n')}\nRun node scripts/check-release-notes.mjs`);
+}
+const live = releases
+	.map((r) => ({ date: r.date, entries: r.entries.filter(isPublic) }))
+	.filter((r) => r.entries.length > 0);
+---
+
+{
+	live.length === 0 ? (
+		<p>Nothing new yet. Updates appear here once they are live for every workspace.</p>
+	) : (
+		live.map((release) => (
+			<section class="sb-suite-release">
+				<h2 id={`release-${release.date}`}>{formatDate(release.date)}</h2>
+				<ul>
+					{release.entries.map((entry) => (
+						<li>
+							<strong>{entry.title}</strong>
+							<span set:html={` ${renderInline(entry.summary)}`} />
+							{entry.article && (
+								<>
+									{' '}
+									<a href={entry.article}>Read the guide</a>
+								</>
+							)}
+						</li>
+					))}
+				</ul>
+			</section>
+		))
+	)
+}

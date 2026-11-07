@@ -24,6 +24,28 @@ Release notes for the Marketing API and its MCP tools. Entries are grouped by mo
 
 **Added — MCP tools `add_signup_form`, `gate_recording`, `count_signups` and `list_subscribers`.** See [Marketing MCP tools](/sessionboard-marketing/api/mcp-tools).
 
+### Marketing: video gates, buttons and premieres
+
+**Added — what happens around a recording.** `GET` / `PUT /v1/organization/{orgId}/marketing/video/items/{mediaId}` reads and changes a recording's gate, button and end card. With nothing set, anyone can watch, the button is "Register for" your next event at the end, and a "Watch next" card follows. `POST .../video/items/{mediaId}/gate` asks for an email before the recording plays or after a set time, using the recording's sign-up form.
+
+**Added — premieres.** `POST /v1/organization/{orgId}/marketing/video/premieres/ensure` plays a recording at a set time for everyone on the event page, with questions and polls beside it and reminders for visitors who ask; it goes on the page draft and publishing stays yours. Premieres are listed, moved, cancelled or ended under `.../video/premieres`, and `.../premieres/{premiereId}/room`, `/questions` and `/polls` read and manage the room. All are also served under `/v1/marketing/...` with the organization taken from the token, need the preview scopes `read:marketing` / `write:marketing`, and are refused for a key restricted to particular events.
+
+**Added — MCP tools `gate_video`, `get_video_options`, `set_video_options`, `schedule_premiere`, `list_premieres`, `update_premiere`, `get_premiere_room`, `manage_premiere_poll` and `moderate_premiere_question`.** Tools that change what visitors see are marked destructive and ask you first. See [Marketing MCP tools](/sessionboard-marketing/api/mcp-tools).
+
+### Marketing: podcasts, newsletter, journeys, video, website and sponsor links
+
+**Added — podcasts.** `/v1/organization/{orgId}/marketing/podcasts` lists, creates, changes and deletes shows; `POST .../podcasts/from-event` turns an event's recordings into a show of draft episodes; `.../podcasts/{showId}/episodes` adds draft episodes and `.../episodes/status` moves them to approved or published; `GET .../podcasts/stats` returns downloads.
+
+**Added — newsletter.** `GET` / `PUT /v1/organization/{orgId}/marketing/newsletter` reads and changes the newsletter; issues are drafted, read, changed and deleted under `.../newsletter/issues`, sent with `.../issues/{issueId}/schedule` (or held with `.../unschedule`), and `.../issues/{issueId}/results` returns deliveries, opens, clicks, unsubscribes and bounces.
+
+**Added — journeys.** `GET /v1/organization/{orgId}/marketing/journeys` lists the four follow-up journeys; `PUT .../journeys/{journeyId}` changes one or switches it on or off, and `POST .../journeys/{journeyId}/reset` puts its email back to the default.
+
+**Added — video, website tag, consent and sponsor links.** `GET .../marketing/video/media/{mediaId}/playback` and `.../watchers` return a recording's playback details and who watched it. `GET .../marketing/audience/website` and `.../website/visits` return your website tag and the known people who visited; `GET .../audience/people/{personKey}/website` and `.../consent` return one person's visits and consent history (read only). `.../audience/sponsor-shares` lists, creates and revokes private sponsor links to the people who opted in to hear from partners.
+
+Calls that publish, send, switch on emails to real people or share with a sponsor answer `202` with `status: needs_approval` and a link when an assistant makes them; a person approves the request in Sessionboard. All of these are also served under `/v1/marketing/...` with the organization taken from the token, need the preview scopes `read:marketing` / `write:marketing`, and are refused for a key restricted to particular events.
+
+**Added — 21 MCP tools** for the same areas, from `make_podcast_from_event` and `draft_newsletter_issue` to `get_watch_report` and `share_with_sponsor`. See [Marketing MCP tools](/sessionboard-marketing/api/mcp-tools).
+
 <Note>
 These arrive with an upcoming Sessionboard release. The date will be added here when they are live.
 </Note>
