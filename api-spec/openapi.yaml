@@ -13024,6 +13024,470 @@ paths:
           $ref: '#/components/responses/LearningOrgNotFound'
         '429':
           $ref: '#/components/responses/LearningTooManyRequests'
+  /v1/organization/{orgId}/learning/workspace/question-bank:
+    get:
+      operationId: learning-list-question-bank
+      summary: List the question bank
+      description: >-
+        The organization's reusable quiz questions, newest first, 50 a page. Each item is a question block (any of the
+        fourteen question types, answers included) with its tags. Quizzes draw from the bank by tag. Requires
+        `read:learning`; refused for a key restricted to particular events. Also at
+        `GET /v1/learning/workspace/question-bank`.
+      tags:
+        - Learning workspace
+      parameters:
+        - $ref: '#/components/parameters/LearningOrgId'
+        - name: tags
+          in: query
+          schema: { type: string, maxLength: 700 }
+          description: Comma-separated tags. Only questions carrying every one (any of them with `match=any`).
+        - name: match
+          in: query
+          schema: { type: string, enum: [all, any] }
+        - name: q
+          in: query
+          schema: { type: string, maxLength: 100 }
+          description: Words in the question.
+        - name: archived
+          in: query
+          schema: { type: string, enum: ['true', 'false'] }
+          description: '`true` for archived questions instead of live ones.'
+        - name: offset
+          in: query
+          schema: { type: string }
+          description: Skip this many (pages of 50).
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  payload:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id: { type: string, format: uuid }
+                            question: { type: object, description: 'A question block, answers included.' }
+                            question_type: { type: string }
+                            prompt: { type: string }
+                            tags: { type: array, items: { type: string } }
+                            archived: { type: boolean }
+                            updated_at: { type: string, format: date-time }
+                      total: { type: integer }
+                      limit: { type: integer }
+                      offset: { type: integer }
+        '401':
+          $ref: '#/components/responses/LearningUnauthorized'
+        '403':
+          $ref: '#/components/responses/LearningWorkspaceForbidden'
+        '404':
+          $ref: '#/components/responses/LearningOrgNotFound'
+        '429':
+          $ref: '#/components/responses/LearningTooManyRequests'
+  /v1/organization/{orgId}/learning/workspace/question-bank/tags:
+    get:
+      operationId: learning-list-question-bank-tags
+      summary: List the question bank's tags
+      description: >-
+        Every tag in use on live bank questions, with how many questions carry it, most used first. Requires
+        `read:learning`. Also at `GET /v1/learning/workspace/question-bank/tags`.
+      tags:
+        - Learning workspace
+      parameters:
+        - $ref: '#/components/parameters/LearningOrgId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  payload:
+                    type: object
+                    properties:
+                      tags:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            tag: { type: string }
+                            questions: { type: integer }
+        '401':
+          $ref: '#/components/responses/LearningUnauthorized'
+        '403':
+          $ref: '#/components/responses/LearningWorkspaceForbidden'
+        '404':
+          $ref: '#/components/responses/LearningOrgNotFound'
+        '429':
+          $ref: '#/components/responses/LearningTooManyRequests'
+  /v1/organization/{orgId}/learning/workspace/question-bank/manage:
+    post:
+      operationId: learning-manage-question-bank
+      summary: Add, edit, archive or restore a bank question
+      description: >-
+        `create` adds a question block with tags; `update` changes a question or its tags; `archive` and `restore` take
+        it out of the bank and bring it back. Quizzes that drew a question keep their copy until their course is
+        published again. The token's user needs the Lessons update permission. Requires `write:learning`. Also at
+        `POST /v1/learning/workspace/question-bank/manage`.
+      tags:
+        - Learning workspace
+      parameters:
+        - $ref: '#/components/parameters/LearningOrgId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [action]
+              properties:
+                action: { type: string, enum: [create, update, archive, restore] }
+                itemId: { type: string, format: uuid, description: 'The bank question (update, archive, restore).' }
+                question: { type: object, description: 'A question block, answers included. Required for create.' }
+                tags: { type: array, maxItems: 10, items: { type: string, maxLength: 64 } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  payload:
+                    type: object
+                    properties:
+                      item: { type: object }
+        '400':
+          $ref: '#/components/responses/LearningBadRequest'
+        '401':
+          $ref: '#/components/responses/LearningUnauthorized'
+        '403':
+          $ref: '#/components/responses/LearningWorkspaceForbidden'
+        '404':
+          $ref: '#/components/responses/LearningOrgNotFound'
+        '429':
+          $ref: '#/components/responses/LearningTooManyRequests'
+  /v1/organization/{orgId}/learning/workspace/question-bank/import:
+    post:
+      operationId: learning-import-questions
+      summary: Import questions from GIFT, Aiken or CSV
+      description: >-
+        Reads a GIFT, Aiken or CSV file (sent as `text`) and lists every question found as a row, ready or with its
+        problems. Without `commit` nothing is written. With `commit: true` the ready rows are added to the bank; rows
+        with problems are only left out when `skipInvalid` is `true`, and the answer lists every row not imported with
+        its reason. Up to 1 MB and 500 questions. Requires `write:learning`. Also at
+        `POST /v1/learning/workspace/question-bank/import`.
+      tags:
+        - Learning workspace
+      parameters:
+        - $ref: '#/components/parameters/LearningOrgId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [text]
+              properties:
+                text: { type: string, maxLength: 1100000, description: The file's contents. }
+                format: { type: string, enum: [gift, aiken, csv], description: Leave out to detect it. }
+                filename: { type: string, maxLength: 255 }
+                tags: { type: array, maxItems: 10, items: { type: string, maxLength: 64 }, description: Added to every question. }
+                commit: { type: boolean }
+                skipRows: { type: array, maxItems: 500, items: { type: integer, minimum: 1 }, description: Preview rows to leave out. }
+                skipInvalid: { type: boolean, description: Import the ready rows when other rows have problems. }
+      responses:
+        '200':
+          description: The preview, or what was imported.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  payload:
+                    type: object
+                    properties:
+                      format: { type: string, enum: [gift, aiken, csv] }
+                      fatal: { type: string, description: Why nothing could be read (an empty file, no Question column). }
+                      summary:
+                        type: object
+                        properties:
+                          total: { type: integer }
+                          ready: { type: integer }
+                          with_errors: { type: integer }
+                      rows:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            row: { type: integer }
+                            line: { type: integer }
+                            prompt: { type: string, nullable: true }
+                            type_label: { type: string, nullable: true }
+                            tags: { type: array, items: { type: string } }
+                            errors: { type: array, items: { type: string } }
+                            warnings: { type: array, items: { type: string } }
+                            question: { type: object, nullable: true }
+                      imported: { type: integer }
+                      not_imported:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            row: { type: integer }
+                            prompt: { type: string }
+                            reason: { type: string }
+        '400':
+          $ref: '#/components/responses/LearningBadRequest'
+        '401':
+          $ref: '#/components/responses/LearningUnauthorized'
+        '403':
+          $ref: '#/components/responses/LearningWorkspaceForbidden'
+        '404':
+          $ref: '#/components/responses/LearningOrgNotFound'
+        '429':
+          $ref: '#/components/responses/LearningTooManyRequests'
+  /v1/organization/{orgId}/learning/workspace/packages/presign:
+    post:
+      operationId: learning-presign-package
+      summary: Get an upload URL for a course package
+      description: >-
+        A 15-minute upload URL for a SCORM 1.2, SCORM 2004, xAPI or cmi5 zip (up to 500 MB). `PUT` the bytes to `url`
+        with exactly the returned `headers`, then call Add a course package with `key`. Requires `write:learning`. Also
+        at `POST /v1/learning/workspace/packages/presign`.
+      tags:
+        - Learning workspace
+      parameters:
+        - $ref: '#/components/parameters/LearningOrgId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [filename, sizeBytes]
+              properties:
+                filename: { type: string, maxLength: 255, description: Must end in .zip. }
+                contentType: { type: string, maxLength: 255 }
+                sizeBytes: { type: integer, minimum: 1 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  payload:
+                    type: object
+                    properties:
+                      upload:
+                        type: object
+                        properties:
+                          key: { type: string }
+                          url: { type: string }
+                          method: { type: string, enum: [PUT] }
+                          headers: { type: object, additionalProperties: { type: string } }
+                          max_bytes: { type: integer }
+        '400':
+          $ref: '#/components/responses/LearningBadRequest'
+        '401':
+          $ref: '#/components/responses/LearningUnauthorized'
+        '403':
+          $ref: '#/components/responses/LearningWorkspaceForbidden'
+        '404':
+          $ref: '#/components/responses/LearningOrgNotFound'
+        '429':
+          $ref: '#/components/responses/LearningTooManyRequests'
+  /v1/organization/{orgId}/learning/workspace/packages:
+    get:
+      operationId: learning-list-packages
+      summary: List course packages
+      description: >-
+        The organization's SCORM, xAPI and cmi5 packages, newest first. Requires `read:learning`. Also at
+        `GET /v1/learning/workspace/packages`.
+      tags:
+        - Learning workspace
+      parameters:
+        - $ref: '#/components/parameters/LearningOrgId'
+        - name: q
+          in: query
+          schema: { type: string, maxLength: 100 }
+          description: Words in the title.
+        - name: archived
+          in: query
+          schema: { type: string, enum: ['true', 'false'] }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  payload:
+                    type: object
+                    properties:
+                      packages:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/LearningCoursePackage'
+        '401':
+          $ref: '#/components/responses/LearningUnauthorized'
+        '403':
+          $ref: '#/components/responses/LearningWorkspaceForbidden'
+        '404':
+          $ref: '#/components/responses/LearningOrgNotFound'
+        '429':
+          $ref: '#/components/responses/LearningTooManyRequests'
+    post:
+      operationId: learning-create-package
+      summary: Add a course package
+      description: >-
+        Registers an uploaded zip. It is unpacked and every file checked in the background (no paths outside the
+        package, no links, no programs), and the answer is `202` with `status: processing`. Poll Get a course package
+        until `status` is `ready` (or `failed`, with `error`). A lesson plays it with a `package` block. Requires
+        `write:learning`. Also at `POST /v1/learning/workspace/packages`.
+      tags:
+        - Learning workspace
+      parameters:
+        - $ref: '#/components/parameters/LearningOrgId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [key]
+              properties:
+                key: { type: string, maxLength: 500, description: The `key` from Get an upload URL for a course package. }
+                title: { type: string, maxLength: 255, description: Leave out to use the course's own title. }
+      responses:
+        '202':
+          description: Unpacking.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  payload:
+                    type: object
+                    properties:
+                      package:
+                        $ref: '#/components/schemas/LearningCoursePackage'
+        '400':
+          $ref: '#/components/responses/LearningBadRequest'
+        '401':
+          $ref: '#/components/responses/LearningUnauthorized'
+        '403':
+          $ref: '#/components/responses/LearningWorkspaceForbidden'
+        '404':
+          $ref: '#/components/responses/LearningOrgNotFound'
+        '429':
+          $ref: '#/components/responses/LearningTooManyRequests'
+  /v1/organization/{orgId}/learning/workspace/packages/{packageId}:
+    get:
+      operationId: learning-get-package
+      summary: Get a course package
+      description: One package, while it unpacks and after. Requires `read:learning`. Also at `GET /v1/learning/workspace/packages/{packageId}`.
+      tags:
+        - Learning workspace
+      parameters:
+        - $ref: '#/components/parameters/LearningOrgId'
+        - name: packageId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  payload:
+                    type: object
+                    properties:
+                      package:
+                        $ref: '#/components/schemas/LearningCoursePackage'
+        '401':
+          $ref: '#/components/responses/LearningUnauthorized'
+        '403':
+          $ref: '#/components/responses/LearningWorkspaceForbidden'
+        '404':
+          $ref: '#/components/responses/LearningOrgNotFound'
+        '429':
+          $ref: '#/components/responses/LearningTooManyRequests'
+  /v1/organization/{orgId}/learning/workspace/packages/{packageId}/manage:
+    post:
+      operationId: learning-manage-package
+      summary: Rename, archive, restore or retry a course package
+      description: >-
+        `rename` with `title`; `archive` (lessons already playing it keep playing it) and `restore`; `retry` unpacks a
+        failed package again. Requires `write:learning`. Also at `POST /v1/learning/workspace/packages/{packageId}/manage`.
+      tags:
+        - Learning workspace
+      parameters:
+        - $ref: '#/components/parameters/LearningOrgId'
+        - name: packageId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [action]
+              properties:
+                action: { type: string, enum: [rename, archive, restore, retry] }
+                title: { type: string, maxLength: 255 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  payload:
+                    type: object
+                    properties:
+                      package:
+                        $ref: '#/components/schemas/LearningCoursePackage'
+        '400':
+          $ref: '#/components/responses/LearningBadRequest'
+        '401':
+          $ref: '#/components/responses/LearningUnauthorized'
+        '403':
+          $ref: '#/components/responses/LearningWorkspaceForbidden'
+        '404':
+          $ref: '#/components/responses/LearningOrgNotFound'
+        '429':
+          $ref: '#/components/responses/LearningTooManyRequests'
 
 
 
@@ -23646,6 +24110,34 @@ components:
         approval:
           $ref: '#/components/schemas/AwardsWorkspaceApproval'
     # ── Errors and approvals ────────────────────
+    LearningCoursePackage:
+      type: object
+      description: A SCORM 1.2, SCORM 2004, xAPI or cmi5 course package.
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        standard: { type: string, enum: [scorm12, scorm2004, xapi, cmi5], nullable: true }
+        standard_label: { type: string, nullable: true, example: SCORM 2004 }
+        status: { type: string, enum: [processing, ready, failed] }
+        error: { type: string, nullable: true, description: Why it couldn't be unpacked. }
+        file_count: { type: integer, nullable: true }
+        size_bytes: { type: integer, nullable: true }
+        version: { type: string, nullable: true }
+        mastery_score: { type: number, nullable: true, description: The pass mark the package sets, 0 to 1. }
+        warnings: { type: array, items: { type: string } }
+        skipped:
+          type: array
+          description: Files in the zip that aren't served, and why.
+          items:
+            type: object
+            properties:
+              path: { type: string }
+              reason: { type: string }
+        skipped_count: { type: integer }
+        preview_url: { type: string, nullable: true, description: The launcher, for a preview that saves nothing. }
+        archived: { type: boolean }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
     LearningError:
       type: object
       description: >-
