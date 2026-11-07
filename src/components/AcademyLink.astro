@@ -1,0 +1,61 @@
+---
+/**
+ * "Learn this in Academy": under an article that an Academy lesson teaches
+ * (its read step links here), a card that opens that lesson's path on the
+ * Academy tab. Found from the built-in catalog (src/lib/academy.mjs), so
+ * nothing is added to articles by hand. Paths of an unreleased product only
+ * show on its own (unreleased) suite pages.
+ */
+import catalog from '../data/academy/catalog.json';
+import { lessonsForArticle } from '../lib/academy.mjs';
+
+const found = lessonsForArticle(catalog, Astro.url.pathname).filter((l: { released: boolean }) => l.released).slice(0, 3);
+---
+
+{
+	found.length > 0 && (
+		<aside class="sb-academy-link not-content" aria-labelledby="sb-academy-link-title" data-pagefind-ignore>
+			<p class="sb-academy-link-title" id="sb-academy-link-title">Learn this in Academy</p>
+			<ul>
+				{found.map((l: { key: string; title: string; pathTitle: string; minutes?: number | null }) => (
+					<li>
+						<a href={`/academy?learn=${encodeURIComponent(l.key)}#path-${l.path}`}>{l.title}</a>
+						<span>
+							{l.minutes ? `${l.minutes} min lesson · ` : ''}part of {l.pathTitle}
+						</span>
+					</li>
+				))}
+			</ul>
+		</aside>
+	)
+}
+
+<style>
+	.sb-academy-link {
+		margin-top: 2rem;
+		padding: 1rem 1.25rem;
+		border-radius: 16px;
+		border: 1px solid var(--sb-border);
+		background: var(--sb-bg-alt);
+	}
+	.sb-academy-link-title {
+		margin: 0;
+		font-weight: 600;
+		color: var(--sl-color-white);
+	}
+	.sb-academy-link ul {
+		margin: 0.4rem 0 0;
+		padding: 0;
+		list-style: none;
+	}
+	.sb-academy-link li {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.25rem 0.6rem;
+		margin-top: 0.25rem;
+		font-size: var(--sl-text-sm);
+	}
+	.sb-academy-link span {
+		color: var(--sl-color-gray-3);
+	}
+</style>
