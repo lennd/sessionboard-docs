@@ -57,7 +57,10 @@ const title = entry.data.title;
 // reader's "this guide is for organizers" note (src/scripts/account.mjs).
 const audience = ((entry.data as { audience?: string[] }).audience ?? ['organizer']) as string[];
 const description = entry.data.description ?? '';
-const ogKey = slug === '' ? 'home' : slug.replace(/\//g, '--');
+// Generated API endpoint pages (src/pages/api/reference/[...slug].astro) share the API
+// reference overview's card rather than 255 near-identical PNGs.
+const isApiEndpoint = /^api\/reference\/[^/]+\/[^/]+$/.test(slug);
+const ogKey = slug === '' ? 'home' : isApiEndpoint ? 'api--reference--overview' : slug.replace(/\//g, '--');
 // Content-hash version param busts edge + social-scraper caches when a card changes.
 let ogVersion = '';
 try {

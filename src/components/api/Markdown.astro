@@ -1,0 +1,9 @@
+---
+import { renderMarkdown } from '../../lib/api-docs/markdown.mjs';
+interface Props { text?: string; inline?: boolean }
+const { text, inline = false } = Astro.props;
+let html = await renderMarkdown(text);
+// A one-paragraph description inside a field row reads better without the <p> margins.
+if (inline) html = html.replace(/^<p>([\s\S]*?)<\/p>\s*$/, '$1');
+---
+{html && (inline ? <span class="api-md" set:html={html} /> : <div class="api-md" set:html={html} />)}

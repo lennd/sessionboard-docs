@@ -108,6 +108,19 @@ The Guides order is Josh's (2026-10-10) and is not alphabetical or nav-order; ke
 
 When adding a page: put the MDX file in the matching folder under `src/content/docs/`, add its slug to the matching group in `src/sidebar.json`, and add a row to `redirects-301.csv` if it replaces a HubSpot article.
 
+## API Docs tab (`/api`): Platform Public API, synced from Mintlify
+
+The header's **API Docs** tab is the Platform Public API reference, moved here from Mintlify (`apidocs.sessionboard.com`, repo `lennd/sessionboard-public-api-docs`). Until Josh retires the Mintlify site, **that repo stays the single source**: the OpenAPI spec, the navigation (`docs.json`) and every guide. Never edit these by hand; change them there, then sync:
+
+```bash
+npm run api:sync -- --from ../sessionboard-public-api-docs --ref origin/main   # or let .github/workflows/api-docs-sync.yml open the PR
+npm run api:check -- --from ../sessionboard-public-api-docs --ref origin/main  # exit 1 if this repo is behind
+```
+
+Generated: `src/content/docs/api.mdx` and `src/content/docs/api/**` (guides converted from Mintlify MDX), `src/data/api/` (spec, nav, source commit, `mintlify-redirects.json`), `public/api/openapi.{yaml,json}`, `public/images/api/`. Hand-written: `scripts/api-docs-sync.mjs`, `src/lib/api-docs/` (URLs, spec reading, sidebar), `src/pages/api/reference/[...slug].astro` (one page per operation: parameters, schemas, examples, cURL/JavaScript/Python/PHP/Go/Java samples, Try it), `src/components/api/`, `src/components/Header.astro` (the tabs), `src/route-data.ts` (swaps in the API sidebar on `/api` pages), `src/styles/api.css`, `tests/api-docs.test.mjs`.
+
+URLs mirror Mintlify's under `/api`: `/introduction` is `/api`, `/authentication` is `/api/authentication`, `/api-reference/<tag>/<summary>` is `/api/reference/<tag>/<summary>`. `src/data/api/mintlify-redirects.json` maps every Mintlify URL here; **it is not enabled anywhere**, and the 30-day breaking-change notice applies before it is. API pages are not in `src/sidebar.json` and are Platform-suite only (`.cursor/rules/product-docs-suites.mdc`). Try it sends requests from the reader's browser straight to `public-api*.sessionboard.com` with the token they paste; never store that token or proxy it through the Worker.
+
 ## Release notes (mandatory with every product-docs round)
 
 Release notes are **data, not prose**: one file per date in `src/data/release-notes/YYYY-MM-DD.json`. **Any docs round that documents a shipped product change must also add an entry there, in the same commit.** `src/content/docs/help/release-notes.mdx` only renders the data — never add bullets to it. The same entry feeds the public page, the staff-only enablement section (`/enablement`, see below), the daily Slack digest to #product-development, `dist/_internal/release-notes.json` (TAM Hub, Community drafts) and CI. There is no second list to keep in sync. The Slack post, the morning email and the hub's Product Updates list carry **the same seven line items as the entry's Enablement page** — why it matters, when to bring it up, who should get it, what CS has to do, turn it on (customer + staff), where to find it, show the customer (guide, related guides, the pertinent training chapter) — built once by `enablementFacts()` in `src/lib/release-digest.mjs` and shipped in the feed as `entry.enablement`. Write those fields in the entry (`use_case`, `internal.when_to_bring_up`, `internal.who_should_get_it`, `internal.cs_action`, `enable.path`, `internal.staff_path`, `where.path`, `related`) and every surface gets them; leave one empty and every surface shows the gap.

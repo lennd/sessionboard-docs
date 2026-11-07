@@ -1,0 +1,164 @@
+---
+/**
+ * Starlight's header plus the top-level tabs: "Help Center" (every guide) and
+ * "API Docs" (the Platform Public API: /api, src/content/docs/api and src/pages/api).
+ * Markup and layout are Starlight's own Header.astro; only the tab bar is new.
+ * Each tab's sidebar is chosen in src/route-data.ts.
+ */
+import config from 'virtual:starlight/user-config';
+
+import LanguageSelect from 'virtual:starlight/components/LanguageSelect';
+import Search from 'virtual:starlight/components/Search';
+import SiteTitle from 'virtual:starlight/components/SiteTitle';
+import SocialIcons from 'virtual:starlight/components/SocialIcons';
+import ThemeSelect from 'virtual:starlight/components/ThemeSelect';
+import { isApiPath } from '../lib/api-docs/urls.mjs';
+
+const shouldRenderSearch =
+	config.pagefind || config.components.Search !== '@astrojs/starlight/components/Search.astro';
+
+const onApi = isApiPath(Astro.url.pathname);
+const tabs = [
+	{ label: 'Help Center', short: 'Help', href: '/', current: !onApi },
+	{ label: 'API Docs', short: 'API', href: '/api', current: onApi },
+];
+---
+
+<div class="header">
+	<div class="title-wrapper sl-flex">
+		<SiteTitle />
+		<nav class="sb-top-tabs print:hidden" aria-label="Documentation">
+			{
+				tabs.map((t) => (
+					<a href={t.href} aria-current={t.current ? 'page' : undefined} data-tab={t.short.toLowerCase()}>
+						<span class="sb-tab-long">{t.label}</span>
+						<span class="sb-tab-short" aria-hidden="true">{t.short}</span>
+					</a>
+				))
+			}
+		</nav>
+	</div>
+	<div class="sl-flex print:hidden">
+		{shouldRenderSearch && <Search />}
+	</div>
+	<div class="sl-hidden md:sl-flex print:hidden right-group">
+		<div class="sl-flex social-icons">
+			<SocialIcons />
+		</div>
+		<ThemeSelect />
+		<LanguageSelect />
+	</div>
+</div>
+
+<style>
+	@layer starlight.core {
+		.header {
+			display: flex;
+			gap: var(--sl-nav-gap);
+			justify-content: space-between;
+			align-items: center;
+			height: 100%;
+		}
+
+		.title-wrapper {
+			overflow: clip;
+			padding: 0.25rem;
+			margin: -0.25rem;
+			min-width: 0;
+			align-items: center;
+			gap: 1rem;
+		}
+
+		.right-group,
+		.social-icons {
+			gap: 1rem;
+			align-items: center;
+		}
+		.social-icons::after {
+			content: '';
+			height: 2rem;
+			border-inline-end: 1px solid var(--sl-color-gray-5);
+		}
+
+		@media (min-width: 50rem) {
+			:global(:root[data-has-sidebar]) {
+				--__sidebar-pad: calc(2 * var(--sl-nav-pad-x));
+			}
+			:global(:root:not([data-has-toc])) {
+				--__toc-width: 0rem;
+			}
+			.header {
+				--__sidebar-width: max(0rem, var(--sl-content-inline-start, 0rem) - var(--sl-nav-pad-x));
+				--__main-column-fr: calc(
+					(
+							100% + var(--__sidebar-pad, 0rem) - var(--__toc-width, var(--sl-sidebar-width)) -
+								(2 * var(--__toc-width, var(--sl-nav-pad-x))) - var(--sl-content-inline-start, 0rem) -
+								var(--sl-content-width)
+						) / 2
+				);
+				display: grid;
+				grid-template-columns:
+					minmax(
+						calc(var(--__sidebar-width) + max(0rem, var(--__main-column-fr) - var(--sl-nav-gap))),
+						auto
+					)
+					1fr
+					auto;
+				align-content: center;
+			}
+		}
+	}
+
+	.sb-top-tabs {
+		display: flex;
+		align-items: stretch;
+		gap: 0.25rem;
+		flex-shrink: 0;
+		height: 100%;
+	}
+	.sb-top-tabs a {
+		display: inline-flex;
+		align-items: center;
+		padding: 0.25rem 0.6rem;
+		border-radius: 0.4rem;
+		font-size: var(--sl-text-sm);
+		font-weight: 600;
+		color: var(--sl-color-gray-2);
+		text-decoration: none;
+		white-space: nowrap;
+		position: relative;
+	}
+	.sb-top-tabs a:hover {
+		color: var(--sl-color-white);
+		background: var(--sl-color-gray-6);
+	}
+	.sb-top-tabs a[aria-current='page'] {
+		color: var(--sl-color-text-accent);
+	}
+	.sb-top-tabs a[aria-current='page']::after {
+		content: '';
+		position: absolute;
+		inset-inline: 0.6rem;
+		bottom: -0.35rem;
+		height: 2px;
+		border-radius: 2px;
+		background: var(--sl-color-text-accent);
+	}
+	.sb-tab-short {
+		display: none;
+	}
+	@media (max-width: 50rem) {
+		.sb-top-tabs a {
+			padding: 0.25rem 0.4rem;
+		}
+		.sb-tab-long {
+			display: none;
+		}
+		.sb-tab-short {
+			display: inline;
+		}
+		.title-wrapper {
+			gap: 0.5rem;
+		}
+	}
+</style>
