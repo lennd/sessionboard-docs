@@ -1,0 +1,236 @@
+---
+/**
+ * "Try it": send this request to the live Public API from the browser with the reader's
+ * own token. The token lives only in this form's memory: it is never written to storage,
+ * cookies, the URL or our Worker, and goes only to the region the reader picks. The API
+ * answers CORS with `*` and allows the x-access-token / Authorization headers, so no proxy.
+ */
+import { exampleFor, parameters, requestBody, mediaExamples, multipartFields } from '../../lib/api-docs/spec.mjs';
+import { apiProduct } from '../../lib/api-docs/data';
+
+interface Props { o: any; product?: string }
+const { o, product = 'platform' } = Astro.props;
+const spec = apiProduct(product)!.spec;
+const params = parameters(spec, o.item, o.op);
+const body = requestBody(spec, o.op);
+const sec = (o.op.security ?? spec.security ?? []).flatMap((s: Record<string, unknown>) => Object.keys(s));
+const schemes = spec.components?.securitySchemes || {};
+const authOptions = sec
+  .map((n: string) => schemes[n])
+  .filter(Boolean)
+  .map((s: any) => (s.type === 'apiKey' ? { kind: 'apiKey', header: s.name, label: `API token (${s.name})` } : { kind: 'bearer', label: 'OAuth access token (Bearer)' }));
+const field = (p: any) => ({
+  name: p.name,
+  required: !!p.required,
+  placeholder: String(exampleFor(spec, p.schema || {}, p.name) ?? ''),
+  enum: p.schema?.enum ?? null,
+});
+const bodyExample = body ? mediaExamples(spec, body.media, body.schema)[0]?.value : undefined;
+const data = {
+  method: o.method.toUpperCase(),
+  path: o.path,
+  servers: spec.servers || [],
+  auth: authOptions,
+  path_params: params.path.map(field),
+  query: params.query.map(field),
+  headers: params.header.map(field),
+  contentType: body?.contentType ?? null,
+  // multipart/form-data: one control per part (a file input for binary parts), sent as FormData.
+  multipart: body?.contentType === 'multipart/form-data' ? multipartFields(spec, body.schema, bodyExample) : null,
+  body: bodyExample === undefined ? null : body?.contentType === 'application/x-www-form-urlencoded' ? new URLSearchParams(Object.entries(bodyExample || {}).map(([k, v]) => [k, String(v)])).toString() : JSON.stringify(bodyExample, null, 2),
+};
+const id = `tryit-${o.method}-${o.slug.replace(/[^a-z0-9]+/g, '-')}`;
+---
+<div class="api-tryit" data-op={JSON.stringify(data)} data-pagefind-ignore>
+  <form class="api-tryit-form" autocomplete="off" novalidate>
+    <div class="api-tryit-row">
+      <label for={`${id}-server`}>Region</label>
+      <select id={`${id}-server`} name="server">
+        {data.servers.map((s: any) => <option value={s.url}>{s.description ? `${s.description} — ${s.url}` : s.url}</option>)}
+      </select>
+    </div>
+    {data.auth.length > 0 && (
+      <fieldset class="api-tryit-group">
+        <legend>Authorization</legend>
+        {data.auth.length > 1 && (
+          <div class="api-tryit-row">
+            <label for={`${id}-authkind`}>Send as</label>
+            <select id={`${id}-authkind`} name="authkind">
+              {data.auth.map((a: any, i: number) => <option value={String(i)}>{a.label}</option>)}
+            </select>
+          </div>
+        )}
+        <div class="api-tryit-row">
+          <label for={`${id}-token`}>Token</label>
+          <input id={`${id}-token`} name="token" type="password" autocomplete="off" spellcheck="false" placeholder="Paste your token" data-lpignore="true" data-1p-ignore />
+        </div>
+        <p class="api-tryit-hint">Your token stays in this page. It is sent only to the region above and is never saved; it is gone when you leave or reload the page.</p>
+      </fieldset>
+    )}
+    {[['Path parameters', 'path_params', 'path'], ['Query parameters', 'query', 'query'], ['Headers', 'headers', 'header']].map(([legend, key, kind]) =>
+      (data as any)[key].length > 0 && (
+        <fieldset class="api-tryit-group">
+          <legend>{legend}</legend>
+          {(data as any)[key].map((p: any) => (
+            <div class="api-tryit-row">
+              <label for={`${id}-${kind}-${p.name}`}>{p.name}{p.required && <span class="api-tryit-req" title="required">*</span>}</label>
+              {p.enum ? (
+                <select id={`${id}-${kind}-${p.name}`} data-kind={kind} data-name={p.name}>
+                  {!p.required && <option value="">—</option>}
+                  {p.enum.map((v: unknown) => <option value={String(v)}>{String(v)}</option>)}
+                </select>
+              ) : (
+                <input id={`${id}-${kind}-${p.name}`} data-kind={kind} data-name={p.name} placeholder={p.placeholder} spellcheck="false" />
+              )}
+            </div>
+          ))}
+        </fieldset>
+      )
+    )}
+    {data.multipart ? (
+      <fieldset class="api-tryit-group">
+        <legend>Body <span class="api-tryit-ct">{data.contentType}</span></legend>
+        {data.multipart.map((f: any) => (
+          <div class="api-tryit-row">
+            <label for={`${id}-part-${f.name}`}>{f.name}{f.required && <span class="api-tryit-req" title="required">*</span>}</label>
+            {f.file ? (
+              <input id={`${id}-part-${f.name}`} type="file" data-part={f.name} data-required={f.required ? '1' : undefined} />
+            ) : (
+              <input id={`${id}-part-${f.name}`} data-part={f.name} data-required={f.required ? '1' : undefined} placeholder={f.value} spellcheck="false" />
+            )}
+          </div>
+        ))}
+      </fieldset>
+    ) : (
+      data.body !== null && (
+        <fieldset class="api-tryit-group">
+          <legend>Body <span class="api-tryit-ct">{data.contentType}</span></legend>
+          <textarea
+            name="body"
+            id={`${id}-body`}
+            aria-label={`Request body (${data.contentType})`}
+            rows={Math.min(18, data.body.split('\n').length + 1)}
+            spellcheck="false"
+          >{data.body}</textarea>
+        </fieldset>
+      )
+    )}
+    <div class="api-tryit-url"><span class={`api-method api-method-${o.method}`}>{data.method}</span><code data-url></code></div>
+    <div class="api-tryit-actions">
+      <button type="submit" class="api-tryit-send">Send request</button>
+      <span class="api-tryit-status" role="status" aria-live="polite"></span>
+    </div>
+  </form>
+  <div class="api-tryit-response" hidden>
+    <div class="api-tryit-meta"><span data-status></span><span data-time></span></div>
+    <details class="api-tryit-headers"><summary>Response headers</summary><pre data-headers></pre></details>
+    <pre class="api-tryit-body" data-body></pre>
+  </div>
+</div>
+
+<script>
+  type Field = { name: string; required: boolean; placeholder: string };
+  type Op = {
+    method: string; path: string; servers: { url: string }[];
+    auth: { kind: 'apiKey' | 'bearer'; header?: string }[];
+    path_params: Field[]; query: Field[]; headers: Field[];
+    contentType: string | null; body: string | null;
+    multipart: { name: string; file: boolean; required: boolean }[] | null;
+  };
+
+  function setup(root: HTMLElement) {
+    const op: Op = JSON.parse(root.dataset.op!);
+    const form = root.querySelector('form')!;
+    const urlEl = root.querySelector('[data-url]')!;
+    const status = root.querySelector('.api-tryit-status')!;
+    const out = root.querySelector<HTMLElement>('.api-tryit-response')!;
+
+    const values = (kind: string) =>
+      [...form.querySelectorAll<HTMLInputElement | HTMLSelectElement>(`[data-kind="${kind}"]`)].map((el) => [el.dataset.name!, el.value.trim()] as const);
+
+    function buildUrl() {
+      const server = (form.elements.namedItem('server') as HTMLSelectElement).value;
+      let path = op.path;
+      for (const [name, v] of values('path')) path = path.replace(`{${name}}`, v ? encodeURIComponent(v) : `{${name}}`);
+      const q = new URLSearchParams();
+      for (const [name, v] of values('query')) if (v) q.append(name, v);
+      const qs = q.toString();
+      return server + path + (qs ? `?${qs}` : '');
+    }
+    const refresh = () => (urlEl.textContent = buildUrl());
+    form.addEventListener('input', refresh);
+    form.addEventListener('change', refresh);
+    refresh();
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const missing = [...values('path'), ...values('query'), ...values('header')]
+        .filter(([name, v]) => !v && [...op.path_params, ...op.query, ...op.headers].some((p) => p.name === name && p.required))
+        .map(([n]) => n);
+      if (missing.length) {
+        status.textContent = `Fill in ${missing.join(', ')} first.`;
+        return;
+      }
+      if (op.method === 'DELETE' && !confirm('This sends a real DELETE to your organization’s live data. Continue?')) return;
+
+      const headers = new Headers();
+      const tokenEl = form.elements.namedItem('token') as HTMLInputElement | null;
+      const token = tokenEl?.value.trim();
+      if (token && op.auth.length) {
+        const kindEl = form.elements.namedItem('authkind') as HTMLSelectElement | null;
+        const a = op.auth[Number(kindEl?.value ?? 0)] ?? op.auth[0];
+        if (a.kind === 'apiKey') headers.set(a.header!, token);
+        else headers.set('Authorization', `Bearer ${token}`);
+      }
+      for (const [name, v] of values('header')) if (v) headers.set(name, v);
+      let body: string | FormData | undefined;
+      const bodyEl = form.elements.namedItem('body') as HTMLTextAreaElement | null;
+      if (op.multipart && op.method !== 'GET') {
+        // FormData: the browser writes the multipart boundary, so no Content-Type here.
+        const fd = new FormData();
+        const missingParts: string[] = [];
+        for (const el of form.querySelectorAll<HTMLInputElement>('[data-part]')) {
+          const name = el.dataset.part!;
+          if (el.type === 'file') {
+            if (el.files?.[0]) fd.append(name, el.files[0]);
+            else if (el.dataset.required) missingParts.push(name);
+          } else if (el.value.trim()) fd.append(name, el.value.trim());
+          else if (el.dataset.required) missingParts.push(name);
+        }
+        if (missingParts.length) {
+          status.textContent = `Fill in ${missingParts.join(', ')} first.`;
+          return;
+        }
+        body = fd;
+      } else if (bodyEl && op.method !== 'GET') {
+        body = bodyEl.value;
+        if (op.contentType) headers.set('Content-Type', op.contentType);
+        if (op.contentType === 'application/json' && body.trim()) {
+          try { JSON.parse(body); } catch { status.textContent = 'The body is not valid JSON.'; return; }
+        }
+      }
+
+      status.textContent = 'Sending…';
+      const started = performance.now();
+      try {
+        const res = await fetch(buildUrl(), { method: op.method, headers, body, credentials: 'omit', referrerPolicy: 'no-referrer', cache: 'no-store' });
+        const ms = Math.round(performance.now() - started);
+        const text = await res.text();
+        let pretty = text;
+        try { pretty = JSON.stringify(JSON.parse(text), null, 2); } catch {}
+        out.hidden = false;
+        const st = out.querySelector<HTMLElement>('[data-status]')!;
+        st.textContent = `${res.status} ${res.statusText}`;
+        st.dataset.ok = String(res.ok);
+        out.querySelector('[data-time]')!.textContent = `${ms} ms`;
+        out.querySelector('[data-headers]')!.textContent = [...res.headers].map(([k, v]) => `${k}: ${v}`).join('\n');
+        out.querySelector('[data-body]')!.textContent = pretty || '(empty body)';
+        status.textContent = '';
+      } catch (err) {
+        status.textContent = `The request did not complete: ${(err as Error).message}. Check the region and your network.`;
+      }
+    });
+  }
+
+  for (const el of document.querySelectorAll<HTMLElement>('.api-tryit')) setup(el);
+</script>

@@ -1,0 +1,37 @@
+---
+title: "Push registrations in"
+description: "Create registrations taken in another system, with idempotency so a retry never doubles an order."
+---
+
+Bring registrations taken somewhere else, such as a CRM, a partner portal or a phone order, into an event with Registration turned on. You need a token with `read:registrations` and `write:registrations`, which are preview scopes: see [API keys](/api/authentication).
+
+## 1. Look up the form and ticket types
+
+[`GET /v1/event/{eventId}/registration/forms`](/api/reference/registration/list-registration-forms) gives the form's `id`, and [`GET /v1/event/{eventId}/ticket-types`](/api/reference/registration/list-ticket-types) the `ticket_type_id` of each ticket the form sells.
+
+## 2. Create the order
+
+[`POST /v1/event/{eventId}/registrations`](/api/reference/registration/create-a-registration) places one order for one or more people. `payment` says how it was paid: `comp`, `invoice`, `paid_externally`, `cash` or `check`.
+
+```json
+{
+  "form_id": "6c1f2d9e-3b4a-4f5e-8a7b-1c2d3e4f5a6b",
+  "payment": "paid_externally",
+  "idempotency_key": "crm-order-58213",
+  "external_reference": "CRM order 58213",
+  "attendees": [
+    {
+      "email": "priya.raman@example.org",
+      "first_name": "Priya",
+      "last_name": "Raman",
+      "ticket_type_id": "0b9d6a3c-2e1f-4a5b-9c8d-7e6f5a4b3c2d"
+    }
+  ]
+}
+```
+
+Send an `idempotency_key` unique to the order in your system. Repeating a request with a key the event has already seen returns the original order with `200` and creates nothing, so a retry after a timeout is safe.
+
+## 3. Check what came in
+
+The order goes through the form's own checks: ticket types on sale, capacity, required questions, one registration per email. Read the result back with [`GET /v1/event/{eventId}/registrations`](/api/reference/registration/list-registrations).

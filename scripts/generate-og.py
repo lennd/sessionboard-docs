@@ -226,7 +226,8 @@ def main() -> None:
         slug = '' if slug == 'index' else slug
         fm = frontmatter(mdx)
         title = fm.get('title') or slug
-        section = (crumbs.get(slug) or {}).get('section') or 'Help Center'
+        api_tab = slug == 'api' or slug.startswith('api/')  # the API Docs tab, not in the sidebar
+        section = (crumbs.get(slug) or {}).get('section') or ('API Docs' if api_tab else 'Help Center')
         path_label = f'{CANONICAL_HOST}/{slug}' if slug else CANONICAL_HOST
 
         png = OUT / f'{og_key(slug)}.png'

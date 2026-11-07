@@ -10,6 +10,10 @@
  * script below runs that region's /help-center/sign-in in a hidden frame and
  * carries on to `return` (src/lib/account-session.mjs is the Worker half).
  * Everyone else gets Sign in, per region.
+ *
+ * `variant="api"` is the same page for the API docs (src/pages/api/welcome.astro, where
+ * worker.js sends signed-out requests for /api and every product's /…/api): it says what
+ * the API is and how to get access, so prospects and search engines are not dead-ended.
  */
 import '@fontsource/plus-jakarta-sans/400.css';
 import '@fontsource/plus-jakarta-sans/600.css';
@@ -17,6 +21,13 @@ import '@fontsource/plus-jakarta-sans/700.css';
 import site from '../../site.json';
 import wordmarkLight from '../assets/wordmark-light.png';
 import wordmarkDark from '../assets/wordmark-dark.png';
+
+interface Props {
+  variant?: 'help' | 'api';
+}
+const { variant = 'help' } = Astro.props;
+const api = variant === 'api';
+const canonicalPath = api ? '/api/welcome' : '/welcome';
 
 const account = (site as { account?: { regions?: { id: string; app: string }[]; signInPath?: string } }).account ?? {};
 const regions = account.regions ?? [];
@@ -32,10 +43,15 @@ const config = JSON.stringify({
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Sessionboard Help Center</title>
-    <meta name="description" content="Guides for Sessionboard customers. Sign in with your Sessionboard account to read them." />
+    <title>{api ? 'Sessionboard API documentation' : 'Sessionboard Help Center'}</title>
+    <meta
+      name="description"
+      content={api
+        ? 'The Sessionboard Public API: REST endpoints for sessions, speakers, contacts, sponsors, exhibitors, registrations and reports, in the US and EU, plus an MCP server for AI assistants. Sign in with your Sessionboard account to read the reference.'
+        : 'Guides for Sessionboard customers. Sign in with your Sessionboard account to read them.'}
+    />
     <meta name="robots" content="index, nofollow" />
-    <link rel="canonical" href={`https://${site.canonicalHost}/welcome`} />
+    <link rel="canonical" href={`https://${site.canonicalHost}${canonicalPath}`} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="icon" href="/favicon.png" type="image/png" />
     <meta name="theme-color" content="#1e62d8" />
@@ -46,12 +62,29 @@ const config = JSON.stringify({
       <img class="logo logo-dark" src={wordmarkDark.src} alt="Sessionboard" height="28" />
 
       <section class="card" aria-live="polite">
-        <p class="eyebrow">Help Center</p>
-        <h1>Guides for Sessionboard customers</h1>
-        <p class="lede">
-          Step-by-step help for organizers, speakers, reviewers and AV teams — personalized for your events. Sign in with
-          your Sessionboard account to read it.
-        </p>
+        {
+          api ? (
+            <>
+              <p class="eyebrow">API Docs</p>
+              <h1>Sessionboard API documentation</h1>
+              <p class="lede">
+                The Sessionboard Public API is a REST API for your event data: sessions, speakers, contacts, sponsors,
+                exhibitors, registrations, reports and more, served from the US and EU. An MCP server lets AI assistants
+                use the same data. The reference, guides and API changelog are for Sessionboard customers. Sign in with
+                your Sessionboard account to read the docs for the products you use.
+              </p>
+            </>
+          ) : (
+            <>
+              <p class="eyebrow">Help Center</p>
+              <h1>Guides for Sessionboard customers</h1>
+              <p class="lede">
+                Step-by-step help for organizers, speakers, reviewers and AV teams — personalized for your events. Sign in
+                with your Sessionboard account to read it.
+              </p>
+            </>
+          )
+        }
 
         <div class="checking" data-sb-checking hidden>
           <span class="spinner" aria-hidden="true"></span>
@@ -75,7 +108,26 @@ const config = JSON.stringify({
           </p>
         </div>
 
-        <ul class="who">
+        {
+          api && (
+            <ul class="who">
+              <li>
+                <strong>Read the docs</strong>
+                <span>Sign in above with the account you use for Sessionboard.</span>
+              </li>
+              <li>
+                <strong>Call the API</strong>
+                <span>An organization admin creates an API token under Organization Settings → API Tokens.</span>
+              </li>
+              <li>
+                <strong>Connect an AI assistant</strong>
+                <span>Claude, ChatGPT, Copilot and Gemini sign in with OAuth; no token to copy.</span>
+              </li>
+            </ul>
+          )
+        }
+
+        <ul class="who" hidden={api}>
           <li>
             <strong>Organizers and event teams</strong>
             <span>Sign in above with the account you use for Sessionboard.</span>

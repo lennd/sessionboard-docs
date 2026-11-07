@@ -1,0 +1,107 @@
+name: API docs sync
+
+# Keeps the Help Center's API Docs tab (/api) in step with lennd/sessionboard-public-api-docs,
+# which stays the single source for the OpenAPI spec, the navigation and every guide until
+# the Mintlify site is retired. Runs scripts/api-docs-sync.mjs against that repo's main and,
+# when anything changed, opens (or refreshes) one PR here on the `api-docs-sync` branch.
+# Nothing publishes until a person merges that PR; Docs CI then deploys as usual.
+#
+# Needs two secrets:
+#   PUBLIC_API_DOCS_TOKEN  fine-grained PAT, Contents: read on lennd/sessionboard-public-api-docs
+#                          (private). Without it the job says so and exits green.
+#   API_DOCS_SYNC_TOKEN    fine-grained PAT (or GitHub App token), Contents + Pull requests: write on
+#                          this repo. It pushes the branch and opens the PR, because pushes and PRs
+#                          made with the default GITHUB_TOKEN do not trigger Docs CI. Without it the
+#                          job falls back to GITHUB_TOKEN and warns that the PR's checks will not run
+#                          until someone pushes to the branch or closes and reopens the PR.
+# To sync on every merge there, add a step to that repo's CI that sends
+# `repository_dispatch` (event type `api-docs-updated`) to this repo.
+
+on:
+  schedule:
+    - cron: '17 * * * *'
+  repository_dispatch:
+    types: [api-docs-updated]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: api-docs-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Token present?
+        id: token
+        env:
+          TOKEN: ${{ secrets.PUBLIC_API_DOCS_TOKEN }}
+        run: |
+          if [ -z "$TOKEN" ]; then
+            echo "::notice::PUBLIC_API_DOCS_TOKEN is not set; skipping the API docs sync."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.token.outputs.ok == 'true'
+        with:
+          token: ${{ secrets.API_DOCS_SYNC_TOKEN || github.token }}
+
+      - uses: actions/checkout@v4
+        if: steps.token.outputs.ok == 'true'
+        with:
+          repository: lennd/sessionboard-public-api-docs
+          ref: main
+          path: .api-docs-source
+          token: ${{ secrets.PUBLIC_API_DOCS_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        if: steps.token.outputs.ok == 'true'
+        with:
+          node-version: 24
+
+      - name: Sync
+        if: steps.token.outputs.ok == 'true'
+        run: node scripts/api-docs-sync.mjs --from .api-docs-source
+
+      - name: Share images for new guide pages
+        if: steps.token.outputs.ok == 'true'
+        run: |
+          if [ -n "$(git status --porcelain -- src/content/docs/api src/content/docs/api.mdx)" ]; then
+            sudo apt-get install -y libcairo2 >/dev/null
+            pip install -r requirements.txt >/dev/null
+            python3 scripts/generate-og.py
+          fi
+
+      - name: Open or update the sync PR
+        if: steps.token.outputs.ok == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.API_DOCS_SYNC_TOKEN || github.token }}
+          HAS_SYNC_TOKEN: ${{ secrets.API_DOCS_SYNC_TOKEN != '' }}
+        run: |
+          if [ "$HAS_SYNC_TOKEN" != "true" ]; then
+            echo "::warning::API_DOCS_SYNC_TOKEN is not set: the sync PR is pushed with GITHUB_TOKEN, so Docs CI will not run on it until a person pushes to api-docs-sync or closes and reopens the PR."
+          fi
+          rm -rf .api-docs-source
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "API docs already match lennd/sessionboard-public-api-docs@main."
+            exit 0
+          fi
+          SRC=$(node -p "require('./src/data/api/source.json').commit.slice(0,7)")
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B api-docs-sync
+          git add -A
+          git commit -m "chore(api-docs): sync from sessionboard-public-api-docs@${SRC}"
+          git push --force origin HEAD:refs/heads/api-docs-sync
+          if [ -z "$(gh pr list --head api-docs-sync --state open --json number --jq '.[0].number')" ]; then
+            gh pr create --base main --head api-docs-sync \
+              --title "API docs: sync from sessionboard-public-api-docs" \
+              --body "Automated by \`.github/workflows/api-docs-sync.yml\` (\`scripts/api-docs-sync.mjs\`). Source: lennd/sessionboard-public-api-docs@${SRC}. Review the diff under \`src/content/docs/api/\` and \`src/data/api/\`, then merge; Docs CI deploys."
+          fi

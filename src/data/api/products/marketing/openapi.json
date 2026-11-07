@@ -1,0 +1,1210 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Sessionboard Public API",
+    "version": "1.0",
+    "description": "REST API for managing sessions, speakers, contacts, sponsors, exhibitors, and event data on the Sessionboard platform.",
+    "contact": {
+      "name": "Sessionboard Support",
+      "email": "support@sessionboard.com"
+    },
+    "termsOfService": "https://www.sessionboard.com/legal/terms-of-service"
+  },
+  "servers": [
+    {
+      "url": "https://public-api.sessionboard.com",
+      "description": "US Region"
+    },
+    {
+      "url": "https://public-api-eu.sessionboard.com",
+      "description": "EU Region"
+    }
+  ],
+  "security": [
+    {
+      "ApiKey": []
+    },
+    {
+      "BearerToken": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Marketing",
+      "description": "Sessionboard Marketing for any organization whose plan includes Marketing. Organization-level:\npaths start at `/v1/organization/{orgId}/marketing`, and the same operations are served under\n`/v1/marketing` with the organization taken from the token. Requires the preview scopes\n`read:marketing` / `write:marketing`, which a token or OAuth client gets only when they are\nnamed explicitly (not by default, and not listed in `scopes_supported`). A token restricted to\nparticular events cannot use these organization-wide operations.\n"
+    }
+  ],
+  "paths": {
+    "/v1/organization/{orgId}/marketing/goals/turnout": {
+      "get": {
+        "operationId": "get-event-turnout",
+        "summary": "How an event is doing (turnout and pacing)",
+        "description": "\"How's it doing?\" for one event or webinar. Defaults to the next upcoming event; pass `eventId` for another one. Returns registrations so far, an estimate of registrations and turnout at the event date, and pace against the event's goal. The estimate comes with a range, a confidence label (`low`, `medium`, `high`) and a plain sentence saying how it was estimated. You also get the last comparable edition, registrations by day before the event (for a chart), the time of week the organization's emails get opened most, and two or three suggestions. Every number under `prediction` is an estimate. When there is not enough history, `prediction.status` is `insufficient_history` (or `too_early`) and no number is returned. With no goal set, the goal is the last comparable edition's numbers (`goal.source: last_edition`, `goal.default: true`). Cancelled registrations are not counted. Comparisons with other organizations are aggregate statistics only, never another organization's events or numbers. Requires `read:marketing`. Also at `GET /v1/marketing/goals/turnout`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "eventId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "The event or webinar. Defaults to the next upcoming one, else the latest."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "$ref": "#/components/schemas/EventTurnout"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "The event is not in your organization."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/goals/turnout/{eventId}/goal": {
+      "post": {
+        "operationId": "set-event-turnout-goal",
+        "summary": "Set an event's registration and attendance goal",
+        "description": "Sets the event's registration goal, attendance goal, or both. `null` clears one; with no goal set, the last comparable edition's numbers are used. Answers with the same body as `GET /v1/organization/{orgId}/marketing/goals/turnout`, so pace against the new goal shows at once. Sends and spends nothing. Requires `write:marketing`. Also at `POST /v1/marketing/goals/turnout/{eventId}/goal`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "The event or webinar."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "At least one of the two. Each key is also accepted in snake_case (`registrations_goal`, `attendance_goal`).",
+                "properties": {
+                  "registrationsGoal": {
+                    "type": "integer",
+                    "nullable": true,
+                    "minimum": 1,
+                    "maximum": 10000000,
+                    "description": "Registrations wanted by the event date. `null` clears it."
+                  },
+                  "attendanceGoal": {
+                    "type": "integer",
+                    "nullable": true,
+                    "minimum": 1,
+                    "maximum": 10000000,
+                    "description": "People wanted at the event. `null` clears it."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "$ref": "#/components/schemas/EventTurnout"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Neither goal was given, or a goal is not a whole number from 1 to 10,000,000."
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "The event is not in your organization."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/audience/forms": {
+      "get": {
+        "operationId": "list-signup-forms",
+        "summary": "List sign-up forms",
+        "description": "The organization's sign-up forms (on event pages, libraries, clips and recordings), newest first, each with `signups` (total, pending, subscribed). Archived forms are left out unless `includeArchived=true`. Requires `read:marketing`. Also at `GET /v1/marketing/audience/forms`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "eventId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "placement",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "event_page",
+                "gallery",
+                "clip",
+                "recording_gate"
+              ]
+            }
+          },
+          {
+            "name": "includeArchived",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`payload.forms`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "forms": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/SignupForm"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/audience/forms/create": {
+      "post": {
+        "operationId": "create-signup-form",
+        "summary": "Create a sign-up form",
+        "description": "A new sign-up form. Everything is optional: the heading, line and button default from the event, the organization or the recording. A recording gate (`placement: recording_gate` or `clip`) needs `targetKind` and `targetId`. Double opt-in is on unless `doubleOptIn: false`. Requires `write:marketing`. Also at `POST /v1/marketing/audience/forms/create`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignupFormInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "`payload.form`"
+          },
+          "400": {
+            "description": "A field is not valid (for example a gate without the recording it unlocks)."
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "The event or recording is not in your organization."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/audience/forms/ensure": {
+      "post": {
+        "operationId": "ensure-signup-form",
+        "summary": "Add a sign-up form (no setup)",
+        "description": "The sign-up form for an event page, a library or a recording: the one already there, or a new one with good defaults. With `eventId` and `addToPage: true`, the form is also placed on the event page **draft** (made from the Brand kit when the event has no page yet); `payload.page` has `preview_url` and `revision`. Nothing is published. Calling it again returns the same form. Requires `write:marketing`. Also at `POST /v1/marketing/audience/forms/ensure`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/SignupFormInput"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "addToPage": {
+                        "type": "boolean",
+                        "description": "Also put the form on the event page draft (needs `eventId`). Never publishes."
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "`payload.form`, `payload.created`, and with `addToPage` `payload.page` and `payload.message`"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "The event or recording is not in your organization."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/audience/forms/{formId}": {
+      "get": {
+        "operationId": "get-signup-form",
+        "summary": "Get a sign-up form",
+        "description": "One form with its sign-up counts. Requires `read:marketing`. Also at `GET /v1/marketing/audience/forms/{formId}`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "formId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`payload.form`"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "Not found in your organization."
+          }
+        }
+      },
+      "put": {
+        "operationId": "update-signup-form",
+        "summary": "Update a sign-up form",
+        "description": "Change what was sent; anything left out stays. `status: archived` stops sign-ups (the people stay). Requires `write:marketing`. Also at `PUT /v1/marketing/audience/forms/{formId}`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "formId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/SignupFormInput"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "active",
+                          "archived"
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "`payload.form`"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "Not found in your organization."
+          }
+        }
+      },
+      "delete": {
+        "operationId": "archive-signup-form",
+        "summary": "Archive a sign-up form",
+        "description": "The form stops taking sign-ups; the people it brought in stay. Requires `write:marketing`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "formId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`payload.archived: true`"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "Not found in your organization."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/audience/subscribers": {
+      "get": {
+        "operationId": "list-subscribers",
+        "summary": "List sign-ups",
+        "description": "People who signed up on the organization's own pages, newest first, with `status` (`pending` = waiting to confirm their email), `source_kind`, `list_key` and dates, plus `counts` by status for the same filters. Requires `read:marketing`; refused for a key restricted to particular events. Also at `GET /v1/marketing/audience/subscribers`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "subscribed",
+                "unsubscribed",
+                "bounced",
+                "complained"
+              ]
+            }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "form",
+                "recording_gate",
+                "gallery",
+                "webinar",
+                "attendee_import",
+                "admin"
+              ]
+            }
+          },
+          {
+            "name": "listKey",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "eventId",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Search email, name or company."
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`payload.subscribers`, `payload.total`, `payload.counts`"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/audience/subscribers/export": {
+      "get": {
+        "operationId": "export-subscribers",
+        "summary": "Export sign-ups (CSV)",
+        "description": "The same filters as the list, as CSV text in `payload.csv` (up to 5,000 rows; `payload.truncated` says when there were more). Requires `read:marketing`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`payload.csv`, `payload.total`, `payload.truncated`"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/audience/subscribers/create": {
+      "post": {
+        "operationId": "add-subscriber",
+        "summary": "Add someone to a list",
+        "description": "Add a person who agreed elsewhere. With `confirmed: true` (your word that they agreed) they are subscribed now; otherwise they get the confirmation email first. An email on your suppression list is never subscribed. Requires `write:marketing`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "firstName": {
+                    "type": "string"
+                  },
+                  "lastName": {
+                    "type": "string"
+                  },
+                  "company": {
+                    "type": "string"
+                  },
+                  "listKey": {
+                    "type": "string",
+                    "description": "Default `newsletter`."
+                  },
+                  "eventId": {
+                    "type": "integer"
+                  },
+                  "confirmed": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "`payload.outcome` (`subscribed`, `pending`, `already_subscribed`, `suppressed`, `blocked`) and `payload.subscription`"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/audience/subscribers/unsubscribe": {
+      "post": {
+        "operationId": "unsubscribe-person",
+        "summary": "Unsubscribe someone",
+        "description": "Stop emailing a person: their list (or every list when `listKey` is left out) and your suppression list, so no other send reaches them. Requires `write:marketing`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "listKey": {
+                    "type": "string"
+                  },
+                  "reason": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "`payload.lists_changed`"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/audience/summary": {
+      "get": {
+        "operationId": "count-signups",
+        "summary": "How many people signed up",
+        "description": "Sign-ups in the last `days` (default 7): `total`, `by_status`, `by_source` and `message`, one plain sentence. Requires `read:marketing`. Also at `GET /v1/marketing/audience/summary`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "days",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 365
+            }
+          },
+          {
+            "name": "listKey",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`payload.total`, `payload.by_status`, `payload.by_source`, `payload.message`"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-access-token",
+        "description": "Organization API token. Generate from Organization Settings → API Tokens."
+      },
+      "BearerToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "OAuth 2.1 access token. Obtained via the OAuth PKCE flow at `/oauth/token`."
+      }
+    },
+    "parameters": {
+      "MarketingOrgId": {
+        "name": "orgId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string"
+        },
+        "description": "Your organization ID. Any other organization returns `404`."
+      }
+    },
+    "schemas": {
+      "SignupForm": {
+        "type": "object",
+        "description": "A sign-up form on the organization's own pages.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "event_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "placement": {
+            "type": "string",
+            "enum": [
+              "event_page",
+              "gallery",
+              "clip",
+              "recording_gate"
+            ]
+          },
+          "target_kind": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "media_item",
+              "content_item",
+              "gallery",
+              "gallery_item",
+              null
+            ]
+          },
+          "target_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "heading": {
+            "type": "string"
+          },
+          "body": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "button_text": {
+            "type": "string"
+          },
+          "fields": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "boolean"
+              },
+              "company": {
+                "type": "boolean"
+              }
+            }
+          },
+          "list_key": {
+            "type": "string"
+          },
+          "double_opt_in": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "archived"
+            ]
+          },
+          "signups": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer"
+              },
+              "pending": {
+                "type": "integer"
+              },
+              "subscribed": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "SignupFormInput": {
+        "type": "object",
+        "description": "Every field is optional; defaults come from the event, the organization or the recording.",
+        "properties": {
+          "eventId": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "placement": {
+            "type": "string",
+            "enum": [
+              "event_page",
+              "gallery",
+              "clip",
+              "recording_gate"
+            ]
+          },
+          "targetKind": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "media_item",
+              "content_item",
+              "gallery",
+              "gallery_item",
+              null
+            ]
+          },
+          "targetId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "description": "A label your team sees."
+          },
+          "heading": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "buttonText": {
+            "type": "string"
+          },
+          "fields": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "boolean"
+              },
+              "company": {
+                "type": "boolean"
+              }
+            }
+          },
+          "listKey": {
+            "type": "string"
+          },
+          "doubleOptIn": {
+            "type": "boolean"
+          },
+          "consentText": {
+            "type": "string",
+            "description": "What visitors agree to; `{org}` is replaced with your organization's name."
+          },
+          "successMessage": {
+            "type": "string"
+          }
+        }
+      },
+      "EventTurnout": {
+        "type": "object",
+        "description": "How one event is doing. Every number under `prediction` is an estimate.",
+        "properties": {
+          "event": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "id": {
+                "type": "integer"
+              },
+              "name": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "description": "`webinar`, `gathering` (in-person), `lite` or `standard`."
+              },
+              "date": {
+                "type": "string",
+                "format": "date",
+                "nullable": true
+              },
+              "time_zone": {
+                "type": "string"
+              }
+            }
+          },
+          "show_card": {
+            "type": "boolean",
+            "description": "True once the event has a registration."
+          },
+          "goal": {
+            "type": "object",
+            "properties": {
+              "registrations": {
+                "type": "integer",
+                "nullable": true
+              },
+              "attendance": {
+                "type": "integer",
+                "nullable": true
+              },
+              "source": {
+                "type": "string",
+                "nullable": true,
+                "enum": [
+                  "turnout",
+                  "goal",
+                  "last_edition"
+                ],
+                "description": "`turnout` set with this API; `goal` a Goals registration goal on the event; `last_edition` the default."
+              },
+              "default": {
+                "type": "boolean",
+                "description": "True when nobody set a goal and it is the last edition's numbers."
+              }
+            }
+          },
+          "prediction": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string",
+                "enum": [
+                  "Estimate"
+                ]
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "estimated",
+                  "insufficient_history",
+                  "too_early",
+                  "final",
+                  "no_date"
+                ]
+              },
+              "current_registrations": {
+                "type": "integer"
+              },
+              "current_attended": {
+                "type": "integer"
+              },
+              "days_left": {
+                "type": "integer",
+                "nullable": true
+              },
+              "expected_registrations": {
+                "type": "integer",
+                "nullable": true,
+                "description": "Estimate at the event date. `null` unless `status` is `estimated` or `final`."
+              },
+              "expected_turnout": {
+                "type": "integer",
+                "nullable": true
+              },
+              "range": {
+                "type": "object",
+                "nullable": true,
+                "properties": {
+                  "low": {
+                    "type": "integer"
+                  },
+                  "high": {
+                    "type": "integer"
+                  }
+                }
+              },
+              "confidence": {
+                "type": "string",
+                "nullable": true,
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ]
+              },
+              "how": {
+                "type": "string",
+                "description": "How the estimate was made, in a plain sentence."
+              },
+              "source": {
+                "type": "string",
+                "nullable": true,
+                "enum": [
+                  "org_history",
+                  "benchmark"
+                ],
+                "description": "`benchmark` means aggregate statistics across organizations (never one organization's numbers)."
+              }
+            }
+          },
+          "pace": {
+            "type": "object",
+            "properties": {
+              "registrations": {
+                "type": "object",
+                "nullable": true,
+                "properties": {
+                  "goal": {
+                    "type": "integer"
+                  },
+                  "current": {
+                    "type": "integer"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "ahead",
+                      "on_track",
+                      "behind",
+                      "reached",
+                      "missed",
+                      "unknown"
+                    ]
+                  },
+                  "expected_by_today": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "projected": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "gap_at_event": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "line": {
+                    "type": "string"
+                  }
+                }
+              },
+              "attendance": {
+                "type": "object",
+                "nullable": true
+              }
+            }
+          },
+          "last_edition": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "id": {
+                "type": "integer"
+              },
+              "name": {
+                "type": "string"
+              },
+              "date": {
+                "type": "string",
+                "format": "date",
+                "nullable": true
+              },
+              "registrations": {
+                "type": "integer"
+              },
+              "attended": {
+                "type": "integer"
+              }
+            }
+          },
+          "series": {
+            "type": "array",
+            "description": "Registrations by day before the event, from the furthest day with data (at most 120) to the event day.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "days_before": {
+                  "type": "integer"
+                },
+                "date": {
+                  "type": "string",
+                  "format": "date",
+                  "nullable": true
+                },
+                "this_event": {
+                  "type": "integer",
+                  "nullable": true
+                },
+                "last_edition": {
+                  "type": "integer",
+                  "nullable": true
+                },
+                "goal_path": {
+                  "type": "integer",
+                  "nullable": true
+                },
+                "projected": {
+                  "type": "integer",
+                  "nullable": true
+                }
+              }
+            }
+          },
+          "send_time": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "suggested",
+                  "no_history"
+                ]
+              },
+              "label": {
+                "type": "string",
+                "example": "Tuesday 10am"
+              },
+              "next_at": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true
+              },
+              "line": {
+                "type": "string"
+              }
+            }
+          },
+          "suggestions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string"
+                },
+                "ask": {
+                  "type": "string",
+                  "description": "A request an assistant can act on."
+                }
+              }
+            }
+          },
+          "summary": {
+            "type": "string",
+            "description": "One plain paragraph to lead with."
+          }
+        }
+      }
+    },
+    "responses": {
+      "MarketingForbidden": {
+        "description": "- `SCOPE_REQUIRED` — the token lacks `read:marketing` (reads) or `write:marketing` (writes).\n- `ORG_WIDE_TOKEN_REQUIRED` — the token is restricted to particular events; this operation reads the whole organization.\n- `FORBIDDEN` — the organization's plan does not include Marketing, or the token's user cannot change goals (writes need an organization admin or the organization settings permission).\n"
+      }
+    }
+  }
+}

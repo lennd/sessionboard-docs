@@ -1,0 +1,66 @@
+---
+/**
+ * One level of a schema's fields: name, type, required, description, facts. Objects and
+ * arrays of objects nest under a "Show child attributes" toggle (recursive, depth-capped,
+ * cycle-safe), like Mintlify's reference pages.
+ */
+import Markdown from './Markdown.astro';
+import { childProperties, flatten, schemaFacts, typeLabel, variants } from '../../lib/api-docs/spec.mjs';
+import { apiProduct } from '../../lib/api-docs/data';
+
+interface Field { name: string; schema: any; required?: boolean; location?: string; description?: string; deprecated?: boolean }
+interface Props { fields: Field[]; depth?: number; seen?: string[]; product?: string }
+const { fields, depth = 0, seen = [], product = 'platform' } = Astro.props;
+const spec = apiProduct(product)!.spec;
+const rows = fields.map((f) => {
+  const { schema: s } = flatten(spec, f.schema || {});
+  const refKey = (f.schema?.$ref || f.schema?.items?.$ref) ?? null;
+  const loops = refKey && seen.includes(refKey);
+  const options = depth < 6 && !loops ? variants(spec, f.schema || {}) : [];
+  const children = depth < 6 && !loops && options.length < 2 ? childProperties(spec, f.schema || {}) : [];
+  return {
+    ...f,
+    type: typeLabel(spec, f.schema || {}),
+    description: f.description ?? s.description,
+    deprecated: f.deprecated || s.deprecated,
+    readOnly: s.readOnly,
+    facts: schemaFacts(spec, f.schema || {}),
+    children,
+    options,
+    nextSeen: refKey ? [...seen, refKey] : seen,
+  };
+});
+---
+<ul class="api-fields" data-depth={depth}>
+  {rows.map((r) => (
+    <li class="api-field" id={depth === 0 && r.location ? `${r.location}-${r.name}` : undefined}>
+      <div class="api-field-head">
+        <code class="api-field-name">{r.name}</code>
+        <span class="api-field-type">{r.type}</span>
+        {r.location && <span class="api-field-loc">{r.location}</span>}
+        {r.required && <span class="api-field-req">required</span>}
+        {r.readOnly && <span class="api-field-flag">read-only</span>}
+        {r.deprecated && <span class="api-field-flag api-field-deprecated">deprecated</span>}
+      </div>
+      {r.description && <div class="api-field-desc"><Markdown text={r.description} product={product} /></div>}
+      {r.facts.length > 0 && (
+        <dl class="api-field-facts">
+          {r.facts.map(([k, v]) => (<><dt>{k}</dt><dd><code>{v}</code></dd></>))}
+        </dl>
+      )}
+      {r.options.length > 1 && r.options.map((v: any) => (
+        <details class="api-field-children">
+          <summary>{v.label}{v.name ? ` (${v.name})` : ''}</summary>
+          {v.description && <div class="api-field-desc"><Markdown text={v.description} product={product} /></div>}
+          {v.fields.length > 0 ? <Astro.self fields={v.fields} depth={depth + 1} seen={r.nextSeen} product={product} /> : <p class="api-field-type">{v.type}</p>}
+        </details>
+      ))}
+      {r.children.length > 0 && (
+        <details class="api-field-children">
+          <summary>Show child attributes</summary>
+          <Astro.self fields={r.children} depth={depth + 1} seen={r.nextSeen} product={product} />
+        </details>
+      )}
+    </li>
+  ))}
+</ul>

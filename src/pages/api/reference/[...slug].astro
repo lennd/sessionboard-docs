@@ -1,0 +1,17 @@
+---
+/**
+ * Platform API endpoint pages: /api/reference/<tag>/<summary>, one per operation in
+ * src/data/api/openapi.json. Rendering: src/components/api/EndpointPage.astro.
+ */
+import EndpointPage from '../../../components/api/EndpointPage.astro';
+import { apiProduct } from '../../../lib/api-docs/data';
+import { listOperations } from '../../../lib/api-docs/urls.mjs';
+
+export function getStaticPaths() {
+  const P = apiProduct('platform')!;
+  return listOperations(P.spec, P.base).map((o) => ({ params: { slug: o.slug }, props: { slug: o.slug } }));
+}
+
+const { slug } = Astro.props;
+---
+<EndpointPage product="platform" slug={slug} />
