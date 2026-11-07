@@ -110,7 +110,7 @@ async function isAncestor(owner, repo, base, head) {
 }
 
 const today = new Date().toISOString().slice(0, 10);
-const { releases, problems } = loadReleaseNotes({ product: 'all' });
+const { releases, problems } = loadReleaseNotes({ all: true });
 if (problems.length) {
   console.error(`\n✖ release notes invalid:\n${problems.map((p) => `  ${p}`).join('\n')}\n`);
   process.exit(1);

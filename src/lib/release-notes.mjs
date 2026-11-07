@@ -475,7 +475,9 @@ export function validateEntry(entry, date, contract, { file = '' } = {}) {
  * Load every release file, validate, and return `{ releases, problems }` where
  * `releases` is sorted newest first and each entry is resolved.
  */
-export function loadReleaseNotes({ contract = readContract(), product = 'platform' } = {}) {
+export function loadReleaseNotes({ contract = readContract(), product: requested = 'platform', all = false } = {}) {
+  // `all: true` is the same as `product: 'all'`: every entry, unfiltered.
+  const product = all ? 'all' : requested;
   const releases = [];
   const problems = [];
   if (!existsSync(DATA_DIR)) return { releases, problems: [`${DATA_DIR} does not exist`] };

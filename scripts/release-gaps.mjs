@@ -76,7 +76,7 @@ export function saveIntake(intake) {
 }
 
 /** Every PR named by any entry, as canonical refs → entry id. */
-export function coveredPrs(releases = loadReleaseNotes({ product: 'all' }).releases, config = releaseConfig()) {
+export function coveredPrs(releases = loadReleaseNotes({ all: true }).releases, config = releaseConfig()) {
   const map = new Map();
   for (const e of allEntries(releases)) {
     for (const raw of e.shipped?.prs || []) {
@@ -131,7 +131,7 @@ export function recordFor(pr, owner, repo) {
  * Reconcile the ledger with GitHub and the entries. Returns { intake, gaps, changed }.
  * Pure apart from the GitHub reads; the caller decides whether to write.
  */
-export async function reconcile({ days = DAYS, token = requireToken(), config = releaseConfig(), releases = loadReleaseNotes({ product: 'all' }).releases } = {}) {
+export async function reconcile({ days = DAYS, token = requireToken(), config = releaseConfig(), releases = loadReleaseNotes({ all: true }).releases } = {}) {
   const intake = loadIntake();
   // Never look back past the ledger's epoch: entries only became mandatory at
   // the cutover, and a 400-PR backlog nobody will triage is noise, not a worklist.

@@ -12,7 +12,7 @@
 
 import { loadReleaseNotes, allEntries, isGated, isLive, isPublic } from '../src/lib/release-notes.mjs';
 
-const { releases, problems } = loadReleaseNotes({ product: 'all' });
+const { releases, problems } = loadReleaseNotes({ all: true });
 
 if (problems.length) {
   console.error(`\n✖ ${problems.length} release-notes problem(s):\n`);

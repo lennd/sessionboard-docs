@@ -6,8 +6,14 @@
  *
  * Pagefind indexes the whole site, so results outside the reader's suite are
  * hidden: on a Platform page every suite page, on a suite page everything but
- * that suite. More results are loaded until some show. A product scope
- * (help-scope.mjs, Sidebar.astro) still narrows Platform further.
+ * that suite. More results are loaded until some show. Mounted from
+ * SocialIcons.astro (the top bar) because it is on every page, the splash
+ * home included, which has no sidebar.
+ *
+ * Pagefind reuses result rows as more load, so each row's `hidden` is set
+ * both ways on every pass. Under a product scope (help-scope.mjs, only on
+ * Platform pages) the scope's own filter in Sidebar.astro decides instead:
+ * its paths are all Platform pages already.
  */
 ---
 
@@ -18,7 +24,9 @@
 	const state = (window as unknown as { sbSuites?: Suites }).sbSuites;
 	const root = document.getElementById('starlight__search');
 
-	if (root && state) {
+	const scoped = Boolean((window as unknown as { sbHelpScope?: { scope: string | null } }).sbHelpScope?.scope);
+
+	if (root && state && !(scoped && state.here === 'platform')) {
 		const here = state.here;
 		const suiteOf = (href: string) => {
 			const path = normalizePath(href);
@@ -42,10 +50,9 @@
 			let shown = 0;
 			for (const li of root.querySelectorAll<HTMLLIElement>('li.pagefind-ui__result')) {
 				const href = li.querySelector<HTMLAnchorElement>('a.pagefind-ui__result-link')?.href;
-				// Only ever hides: a product scope (Sidebar.astro) may have hidden it too.
 				const keep = Boolean(href) && suiteOf(href as string) === here;
-				if (!keep) li.hidden = true;
-				else if (!li.hidden) shown += 1;
+				li.hidden = !keep;
+				if (keep) shown += 1;
 			}
 			const more = root.querySelector<HTMLButtonElement>('button.pagefind-ui__button');
 			if (more && shown < 5 && loads < 20) {

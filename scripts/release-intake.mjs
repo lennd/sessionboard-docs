@@ -165,7 +165,7 @@ function featureIndex() {
 }
 
 function exampleEntry() {
-  const { releases } = loadReleaseNotes({ product: 'all' });
+  const { releases } = loadReleaseNotes({ all: true });
   const e = allEntries(releases).find((x) => x.date >= '2026-10-07' && x.use_case && x.internal?.when_to_bring_up);
   if (!e) return null;
   const { date, ...rest } = e;
@@ -531,7 +531,7 @@ function git(...args) {
  * an entry on main (someone wrote or merged the entry under another id).
  */
 function collectDrafts(ref) {
-  const releases = loadReleaseNotes({ product: 'all' }).releases;
+  const releases = loadReleaseNotes({ all: true }).releases;
   const onMain = new Set(allEntries(releases).map((e) => e.id));
   const named = new Set(coveredPrs(releases, config).keys());
   const canonical = (raw) => parsePrRef(raw, config)?.ref || null;
@@ -568,7 +568,7 @@ function collectDrafts(ref) {
  */
 function recoverDrafts(carriedFiles, ledgerPath) {
   const ledger = JSON.parse(readFileSync(ledgerPath, 'utf8'));
-  const named = new Set(coveredPrs(loadReleaseNotes({ product: 'all' }).releases, config).keys());
+  const named = new Set(coveredPrs(loadReleaseNotes({ all: true }).releases, config).keys());
   const canonical = (raw) => parsePrRef(raw, config)?.ref || null;
   for (const f of carriedFiles.filter(existsSync)) {
     const parsed = JSON.parse(readFileSync(f, 'utf8'));
@@ -592,7 +592,7 @@ function recoverDrafts(carriedFiles, ledgerPath) {
     candidates.push(...collectDrafts(ref));
   }
   const { drafts, refs, lost } = pickRecovered(orphans, candidates, canonical);
-  const onMain = new Set(allEntries(loadReleaseNotes({ product: 'all' }).releases).map((e) => e.id));
+  const onMain = new Set(allEntries(loadReleaseNotes({ all: true }).releases).map((e) => e.id));
   const { requeued, stale } = requeueLost(ledger, lost, onMain, TODAY);
   if (requeued.length && !DRY) writeFileSync(ledgerPath, `${JSON.stringify(ledger, null, 2)}\n`);
   console.error(`${orphans.length} drafted PR(s) on no branch: recovered ${drafts.length} draft(s) for ${refs.length}, re-queued ${requeued.length}, ${stale.length} stale.`);
@@ -718,7 +718,7 @@ const articles = articleIndex();
 const features = featureIndex();
 const example = exampleEntry();
 const { data: release, file: releasePath } = releaseFile(TODAY);
-const taken = new Set(allEntries(loadReleaseNotes({ product: 'all' }).releases).map((e) => e.id));
+const taken = new Set(allEntries(loadReleaseNotes({ all: true }).releases).map((e) => e.id));
 let wroteEntries = false;
 
 for (const p of refs) {
