@@ -1,6 +1,6 @@
 /**
- * The API Docs tab's own sidebar, built from the synced Mintlify navigation
- * (src/data/api/nav.json) so its groups and order stay exactly what docs.json says.
+ * The API Docs tab's own sidebar, built from src/data/api/nav.json (the navigation in
+ * Mintlify's docs.json shape, edited by hand here) so its groups and order stay what it says.
  * src/route-data.ts swaps it in for every /api page; the Help Center sidebar
  * (src/sidebar.json) never lists API pages.
  *

@@ -1,8 +1,9 @@
 /**
  * URLs of the API Docs tab (/api/...), and how every Mintlify URL maps onto them.
  *
- * Shared by scripts/api-docs-sync.mjs (rewrites links inside ported guides, writes the
- * 301 map) and by the pages under src/pages/api/ (endpoint routes, sidebar). One function
+ * Used by the pages under src/pages/api/ (endpoint routes, sidebar, links in spec
+ * descriptions, which may still use Mintlify-style paths such as /authentication) and by
+ * tests/api-docs.test.mjs, which checks the frozen 301 map (src/data/api/mintlify-redirects.json). One function
  * per decision so a URL never has two spellings.
  *
  *   Mintlify (apidocs.sessionboard.com)        Help Center (learn.sessionboard.com)

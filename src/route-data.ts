@@ -6,7 +6,7 @@
  *    src/lib/staff-only.mjs.
  * 2. API docs pages (Platform's /api, and each built self-serve product's
  *    /sessionboard-<key>/api) get their product's own sidebar and prev/next links, built
- *    from the synced Mintlify navigation (src/lib/api-docs/sidebar.mjs). The Help Center
+ *    from src/data/api/nav.json + layout.json (src/lib/api-docs/sidebar.mjs, layout.mjs). The Help Center
  *    sidebar (src/sidebar.json) is untouched and never lists API pages.
  *    `locals.sbApiProduct` tells other components (the suite sidebar, the header) which
  *    product's API docs this page belongs to.

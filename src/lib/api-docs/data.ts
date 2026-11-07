@@ -1,7 +1,7 @@
 /**
  * The API docs data each product's pages render from, for products in this build only.
- * Platform: src/data/api/*.json (synced from Mintlify). Self-serve products:
- * src/data/api/products/<key>/*.json and src/api-docs/<key>/*.mdx (scripts/api-docs-sync.mjs).
+ * Platform: src/data/api/*.json (spec built from api-spec/openapi.yaml by scripts/api-spec.mjs).
+ * Self-serve products: src/data/api/products/<key>/*.json and src/api-docs/<key>/*.mdx.
  * Build-time only (Astro pages, components, route middleware).
  */
 import registry from '../../data/api/products.json';
