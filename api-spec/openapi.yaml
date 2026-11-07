@@ -13494,6 +13494,485 @@ paths:
 # ════════════════════════════════════════════════
 # Components
 # ════════════════════════════════════════════════
+  /v1/organization/{orgId}/learning/workspace/courses/{lessonId}/price:
+    put:
+      operationId: learning-set-course-price
+      summary: Set a course's price and member price
+      description: >-
+        What learners pay for a course, in cents. `amountCents: 0` makes it free again; `memberAmountCents` is what
+        members pay (0 = free for members, `null` removes the member price). A member is a learner marked Member, or
+        anyone the organization's AMS reports as a current member. Waits for a person's OK (`202 needs_approval`).
+        Requires `write:learning`. Also at `PUT /v1/learning/workspace/courses/{lessonId}/price`.
+      tags:
+        - Learning workspace
+      parameters:
+        - $ref: '#/components/parameters/LearningOrgId'
+        - $ref: '#/components/parameters/LearningLessonId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [amountCents]
+              properties:
+                amountCents: { type: integer, minimum: 0, maximum: 10000000, description: 'The price in cents. 0 = free; a paid course costs at least 50.' }
+                memberAmountCents: { type: [integer, 'null'], minimum: 0, maximum: 10000000, description: 'What members pay, in cents. null removes it.' }
+                currency: { type: string, enum: [USD, CAD, EUR, GBP, AUD], description: 'Defaults to USD.' }
+      responses:
+        '202':
+          $ref: '#/components/responses/LearningNeedsApproval'
+        '400':
+          $ref: '#/components/responses/LearningBadRequest'
+        '401':
+          $ref: '#/components/responses/LearningUnauthorized'
+        '403':
+          $ref: '#/components/responses/LearningWorkspaceForbidden'
+        '404':
+          $ref: '#/components/responses/LearningOrgNotFound'
+        '423':
+          $ref: '#/components/responses/LearningAssistantsPaused'
+        '429':
+          $ref: '#/components/responses/LearningTooManyRequests'
+  /v1/organization/{orgId}/learning/workspace/coupons:
+    get:
+      operationId: learning-list-coupons
+      summary: List coupons
+      description: >-
+        Every coupon with its code, discount, the courses it works on (empty = every course), dates, use limit, how
+        many times it was used and its state (`live`, `scheduled`, `expired`, `used_up`, `archived`). Requires
+        `read:learning`. Also at `GET /v1/learning/workspace/coupons`.
+      tags:
+        - Learning workspace
+      parameters:
+        - $ref: '#/components/parameters/LearningOrgId'
+        - name: archived
+          in: query
+          schema: { type: string, enum: ['true', 'false'] }
+          description: '`true` for stopped coupons instead of live ones.'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  payload:
+                    type: object
+                    properties:
+                      coupons:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id: { type: string, format: uuid }
+                            code: { type: string }
+                            kind: { type: string, enum: [percent, amount] }
+                            amount: { type: integer, description: 'Percent off, or cents off for kind amount.' }
+                            currency: { type: string }
+                            lesson_ids: { type: array, items: { type: string, format: uuid } }
+                            starts_at: { type: [string, 'null'], format: date-time }
+                            ends_at: { type: [string, 'null'], format: date-time }
+                            max_uses: { type: [integer, 'null'] }
+                            used_count: { type: integer }
+                            state: { type: string, enum: [live, scheduled, expired, used_up, archived] }
+        '401':
+          $ref: '#/components/responses/LearningUnauthorized'
+        '403':
+          $ref: '#/components/responses/LearningWorkspaceForbidden'
+        '404':
+          $ref: '#/components/responses/LearningOrgNotFound'
+        '429':
+          $ref: '#/components/responses/LearningTooManyRequests'
+  /v1/organization/{orgId}/learning/workspace/coupons/manage:
+    post:
+      operationId: learning-manage-coupon
+      summary: Create, change, stop or restore a coupon
+      description: >-
+        A coupon is a code and a discount (`kind` percent or amount). It works on every course unless `lessonIds` names
+        some; dates and a use limit are optional. Coupons come off after the member price. `archive` stops a coupon and
+        `restore` brings it back. Waits for a person's OK (`202 needs_approval`). Requires `write:learning`. Also at
+        `POST /v1/learning/workspace/coupons/manage`.
+      tags:
+        - Learning workspace
+      parameters:
+        - $ref: '#/components/parameters/LearningOrgId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [action]
+              properties:
+                action: { type: string, enum: [create, update, archive, restore] }
+                couponId: { type: string, format: uuid, description: 'The coupon (update, archive, restore).' }
+                code: { type: string, maxLength: 40, description: 'Letters and numbers; one is made up when left out on create.' }
+                kind: { type: string, enum: [percent, amount] }
+                amount: { type: integer, minimum: 1, maximum: 10000000, description: 'Percent off (1–100), or cents off for kind amount.' }
+                currency: { type: string, enum: [USD, CAD, EUR, GBP, AUD] }
+                lessonIds: { type: array, maxItems: 200, items: { type: string, format: uuid }, description: 'Only these courses. Empty = every course.' }
+                startsAt: { type: [string, 'null'], format: date-time }
+                endsAt: { type: [string, 'null'], format: date-time }
+                maxUses: { type: [integer, 'null'], minimum: 1, maximum: 1000000 }
+      responses:
+        '202':
+          $ref: '#/components/responses/LearningNeedsApproval'
+        '400':
+          $ref: '#/components/responses/LearningBadRequest'
+        '401':
+          $ref: '#/components/responses/LearningUnauthorized'
+        '403':
+          $ref: '#/components/responses/LearningWorkspaceForbidden'
+        '404':
+          $ref: '#/components/responses/LearningOrgNotFound'
+        '423':
+          $ref: '#/components/responses/LearningAssistantsPaused'
+        '429':
+          $ref: '#/components/responses/LearningTooManyRequests'
+  /v1/organization/{orgId}/learning/workspace/sales:
+    get:
+      operationId: learning-list-sales
+      summary: List course sales
+      description: >-
+        Course orders, newest first: the learner, the course, when, what they paid, the list price, member price or
+        coupon applied, and whether they still have access (`active`, or `removed`). Totals per currency count paid
+        orders. `selling.payments.ready` says whether card payments are on. Requires `read:learning`. Also at
+        `GET /v1/learning/workspace/sales`.
+      tags:
+        - Learning workspace
+      parameters:
+        - $ref: '#/components/parameters/LearningOrgId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  payload:
+                    type: object
+                    properties:
+                      selling: { type: object, description: 'Prices set, coupons live and `payments.ready`.' }
+                      totals:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            currency: { type: string }
+                            amount_cents: { type: integer }
+                      orders:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id: { type: string, format: uuid }
+                            status: { type: string, enum: [paid, refunded] }
+                            created_at: { type: string, format: date-time }
+                            currency: { type: string }
+                            amount_cents: { type: integer }
+                            list_amount_cents: { type: [integer, 'null'] }
+                            member: { type: boolean }
+                            coupon: { type: [string, 'null'] }
+                            discount_cents: { type: integer }
+                            course: { type: [object, 'null'], properties: { id: { type: string, format: uuid }, title: { type: string } } }
+                            access: { type: string, enum: [active, removed] }
+                            learner: { type: [object, 'null'], properties: { id: { type: string, format: uuid }, name: { type: string }, email: { type: string } } }
+        '401':
+          $ref: '#/components/responses/LearningUnauthorized'
+        '403':
+          $ref: '#/components/responses/LearningWorkspaceForbidden'
+        '404':
+          $ref: '#/components/responses/LearningOrgNotFound'
+        '429':
+          $ref: '#/components/responses/LearningTooManyRequests'
+  /v1/organization/{orgId}/learning/workspace/sales/{orderId}/remove-access:
+    post:
+      operationId: learning-remove-course-access
+      summary: Remove a buyer's access
+      description: >-
+        Ends the learner's access to the order's course. The sale stays on record. A refund in the payment gateway
+        keeps access until this is called. Waits for a person's OK (`202 needs_approval`). Requires `write:learning`.
+        Also at `POST /v1/learning/workspace/sales/{orderId}/remove-access`.
+      tags:
+        - Learning workspace
+      parameters:
+        - $ref: '#/components/parameters/LearningOrgId'
+        - name: orderId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+          description: The order id (from List course sales).
+      responses:
+        '202':
+          $ref: '#/components/responses/LearningNeedsApproval'
+        '400':
+          $ref: '#/components/responses/LearningBadRequest'
+        '401':
+          $ref: '#/components/responses/LearningUnauthorized'
+        '403':
+          $ref: '#/components/responses/LearningWorkspaceForbidden'
+        '404':
+          $ref: '#/components/responses/LearningOrgNotFound'
+        '423':
+          $ref: '#/components/responses/LearningAssistantsPaused'
+        '429':
+          $ref: '#/components/responses/LearningTooManyRequests'
+  /v1/organization/{orgId}/learning/workspace/payments:
+    get:
+      operationId: learning-get-payments
+      summary: Read whether card payments are on
+      description: >-
+        Whether the organization's payment gateway is connected (`ready`), which one, whether it is in test mode, and
+        the gateways it can connect (100+ are supported). Connecting a gateway takes the organization's payment keys,
+        so a person does it in Sessionboard (Site › Selling › Get paid); there is no API for it. Requires
+        `read:learning`. Also at `GET /v1/learning/workspace/payments`.
+      tags:
+        - Learning workspace
+      parameters:
+        - $ref: '#/components/parameters/LearningOrgId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  payload:
+                    type: object
+                    properties:
+                      ready: { type: boolean }
+                      gateway: { type: [object, 'null'], description: 'The connected gateway: name, test mode.' }
+                      gateways: { type: array, items: { type: object }, description: 'The gateways the Get paid step offers.' }
+                      supported_count: { type: string, example: 100+ }
+        '401':
+          $ref: '#/components/responses/LearningUnauthorized'
+        '403':
+          $ref: '#/components/responses/LearningWorkspaceForbidden'
+        '404':
+          $ref: '#/components/responses/LearningOrgNotFound'
+        '429':
+          $ref: '#/components/responses/LearningTooManyRequests'
+  /v1/organization/{orgId}/learning/workspace/learners/{personId}/profile:
+    put:
+      operationId: learning-update-learner-profile
+      summary: Set a learner's member status and license
+      description: >-
+        `member` decides whether the learner gets member prices. The license (number, two-letter state, profession) is
+        what CE Broker matches credit to. Empty strings clear a value. Waits for a person's OK
+        (`202 needs_approval`). Requires `write:learning`. Also at `PUT /v1/learning/workspace/learners/{personId}/profile`.
+      tags:
+        - Learning workspace
+      parameters:
+        - $ref: '#/components/parameters/LearningOrgId'
+        - $ref: '#/components/parameters/LearningPersonId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                member: { type: boolean }
+                licenseNumber: { type: [string, 'null'], maxLength: 25 }
+                licenseState: { type: [string, 'null'], maxLength: 2, example: FL }
+                licenseProfession: { type: [string, 'null'], maxLength: 8, example: RN }
+      responses:
+        '202':
+          $ref: '#/components/responses/LearningNeedsApproval'
+        '400':
+          $ref: '#/components/responses/LearningBadRequest'
+        '401':
+          $ref: '#/components/responses/LearningUnauthorized'
+        '403':
+          $ref: '#/components/responses/LearningWorkspaceForbidden'
+        '404':
+          $ref: '#/components/responses/LearningOrgNotFound'
+        '423':
+          $ref: '#/components/responses/LearningAssistantsPaused'
+        '429':
+          $ref: '#/components/responses/LearningTooManyRequests'
+  /v1/organization/{orgId}/learning/workspace/reporting/ce-broker:
+    get:
+      operationId: learning-get-ce-broker-report
+      summary: Read CE Broker reporting
+      description: >-
+        Setup (provider number, default profession, course numbers, `mode` mock or live, whether it needs a real CE
+        Broker account), the credited courses, a summary (ready, missing, reported, failed) and every earned credit on
+        a numbered course with the learner's license and status. `direct_submit` says whether sending is on the plan
+        (Sessionboard Enterprise). Requires `read:learning`. Also at `GET /v1/learning/workspace/reporting/ce-broker`.
+      tags:
+        - Learning workspace
+      parameters:
+        - $ref: '#/components/parameters/LearningOrgId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  payload:
+                    type: object
+                    properties:
+                      setup: { type: object }
+                      courses: { type: array, items: { type: object } }
+                      summary: { type: object }
+                      rows: { type: array, items: { type: object }, description: 'One per earned credit; `status` ready, missing, reported or failed, with what is missing.' }
+                      direct_submit: { type: boolean }
+                      auto_report: { type: boolean }
+        '401':
+          $ref: '#/components/responses/LearningUnauthorized'
+        '403':
+          $ref: '#/components/responses/LearningWorkspaceForbidden'
+        '404':
+          $ref: '#/components/responses/LearningOrgNotFound'
+        '429':
+          $ref: '#/components/responses/LearningTooManyRequests'
+    put:
+      operationId: learning-set-up-ce-broker
+      summary: Set up CE Broker reporting
+      description: >-
+        The provider number, a default profession for learners who have not given theirs, and a CE Broker course number
+        per credited course (`null` removes one). Waits for a person's OK (`202 needs_approval`). Requires
+        `write:learning`. Also at `PUT /v1/learning/workspace/reporting/ce-broker`.
+      tags:
+        - Learning workspace
+      parameters:
+        - $ref: '#/components/parameters/LearningOrgId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                providerNumber: { type: [string, 'null'], maxLength: 20, example: 50-1234 }
+                defaultProfession: { type: [string, 'null'], maxLength: 8, example: RN }
+                courseNumbers:
+                  type: object
+                  additionalProperties: { type: [string, 'null'], maxLength: 20 }
+                  description: 'Course id → CE Broker course number (20-123456).'
+                uploadKey: { type: [string, 'null'], maxLength: 200, description: 'The CE Broker upload key, for a live account. Write-only; never returned.' }
+      responses:
+        '202':
+          $ref: '#/components/responses/LearningNeedsApproval'
+        '400':
+          $ref: '#/components/responses/LearningBadRequest'
+        '401':
+          $ref: '#/components/responses/LearningUnauthorized'
+        '403':
+          $ref: '#/components/responses/LearningWorkspaceForbidden'
+        '404':
+          $ref: '#/components/responses/LearningOrgNotFound'
+        '423':
+          $ref: '#/components/responses/LearningAssistantsPaused'
+        '429':
+          $ref: '#/components/responses/LearningTooManyRequests'
+  /v1/organization/{orgId}/learning/workspace/reporting/ce-broker/export:
+    get:
+      operationId: learning-export-ce-broker-report
+      summary: Export the CE Broker roster
+      description: >-
+        The roster as text with its filename, on every plan. `format=xml` (default) is CE Broker's upload format with
+        the ready rows; `format=csv` lists every row with its status. The person uploads the XML in CE Broker's
+        provider portal. 400 when nothing is ready or the provider number is missing. Requires `read:learning`. Also
+        at `GET /v1/learning/workspace/reporting/ce-broker/export`.
+      tags:
+        - Learning workspace
+      parameters:
+        - $ref: '#/components/parameters/LearningOrgId'
+        - name: format
+          in: query
+          schema: { type: string, enum: [xml, csv] }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  payload:
+                    type: object
+                    properties:
+                      filename: { type: string }
+                      content_type: { type: string }
+                      rows: { type: integer }
+                      content: { type: string, description: The file's contents. }
+                      where: { type: string, description: Where a person downloads the same file in Sessionboard. }
+                      next: { type: string }
+        '400':
+          $ref: '#/components/responses/LearningBadRequest'
+        '401':
+          $ref: '#/components/responses/LearningUnauthorized'
+        '403':
+          $ref: '#/components/responses/LearningWorkspaceForbidden'
+        '404':
+          $ref: '#/components/responses/LearningOrgNotFound'
+        '429':
+          $ref: '#/components/responses/LearningTooManyRequests'
+  /v1/organization/{orgId}/learning/workspace/reporting/ce-broker/submit:
+    post:
+      operationId: learning-report-to-ce-broker
+      summary: Send ready credit to CE Broker
+      description: >-
+        `dryRun: true` counts what would be sent, on every plan. Sending is Sessionboard Enterprise
+        (`403 enterprise_only` otherwise: export the roster instead) and waits for a person's OK
+        (`202 needs_approval`), because it sends learners' names and license numbers to a state-board system. Until a
+        live CE Broker account is connected it runs in practice mode: nothing leaves Sessionboard and nothing is
+        recorded. A row is never sent twice. Requires `write:learning`. Also at
+        `POST /v1/learning/workspace/reporting/ce-broker/submit`.
+      tags:
+        - Learning workspace
+      parameters:
+        - $ref: '#/components/parameters/LearningOrgId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                dryRun: { type: boolean, description: 'true = only count.' }
+      responses:
+        '200':
+          description: 'A dry run: `would_send`, `mode`.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  payload: { type: object }
+        '202':
+          $ref: '#/components/responses/LearningNeedsApproval'
+        '400':
+          $ref: '#/components/responses/LearningBadRequest'
+        '401':
+          $ref: '#/components/responses/LearningUnauthorized'
+        '403':
+          $ref: '#/components/responses/LearningWorkspaceForbidden'
+        '404':
+          $ref: '#/components/responses/LearningOrgNotFound'
+        '423':
+          $ref: '#/components/responses/LearningAssistantsPaused'
+        '429':
+          $ref: '#/components/responses/LearningTooManyRequests'
   # ──────────────────────────────────────────────
   # Awards
   # ──────────────────────────────────────────────
