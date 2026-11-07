@@ -9,9 +9,11 @@
  * is reported, not enforced, until its sections are all documented.
  */
 export const PRODUCT_ROUTE_PREFIXES = {
-  learning: ['/organization/:orgId/learning'],
-  awards: ['/organization/:orgId/awards/workspace'],
-  marketing: ['/organization/:orgId/marketing'],
+  // `/sites` is the one Site builder, shared by all three products: each
+  // documents it in its own section (`x-sb-product` on the operations).
+  learning: ['/organization/:orgId/learning', '/organization/:orgId/sites'],
+  awards: ['/organization/:orgId/awards/workspace', '/organization/:orgId/sites'],
+  marketing: ['/organization/:orgId/marketing', '/organization/:orgId/sites'],
 };
 
 export const ENFORCED = ['learning', 'awards'];

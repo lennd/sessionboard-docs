@@ -8,7 +8,7 @@ import registry from '../../data/api/products.json';
 import platformSpec from '../../data/api/openapi.json';
 import platformNav from '../../data/api/nav.json';
 import platformSource from '../../data/api/source.json';
-import { PLATFORM, apiProductForPath, builtApiProducts, productKeys } from './products.mjs';
+import { PLATFORM, apiProductForPath, deployedApiProducts, productKeys } from './products.mjs';
 import { operationIndex } from './urls.mjs';
 
 type Json = Record<string, any>;
@@ -27,7 +27,8 @@ const navs = import.meta.glob<Json>('../../data/api/products/*/nav.json', { eage
 const sources = import.meta.glob<Json>('../../data/api/products/*/source.json', { eager: true, import: 'default' });
 
 export { registry };
-export const BUILT = builtApiProducts(registry, process.env);
+// Every product; an unreleased one's API pages are staff-only with its suite (src/lib/staff-only.mjs).
+export const BUILT = deployedApiProducts(registry, process.env);
 
 const cache = new Map<string, ApiProduct | null>();
 

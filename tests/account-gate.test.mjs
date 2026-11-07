@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { isStaffOnlyHref, isStaffOnlyPath, isStaffOnlySlug, staffOnlyGlobs } from '../src/lib/staff-only.mjs';
+import { isStaffOnlyHref, isStaffOnlyPath, isStaffOnlySlug, setPreviewSuites, staffOnlyGlobs } from '../src/lib/staff-only.mjs';
 import {
   CONTEXT_PATH,
   HINT_COOKIE,
@@ -24,6 +24,7 @@ import {
   verifySession,
 } from '../src/lib/account-session.mjs';
 import realSite from '../site.json' with { type: 'json' };
+import suitesConfig from '../src/data/suites.json' with { type: 'json' };
 
 const SITE = {
   canonicalHost: 'learn.example.com',
@@ -78,14 +79,45 @@ test('hrefs: root-relative and same-site absolute links, with hashes and queries
   assert.equal(isStaffOnlyHref('/attend', SITE), false);
 });
 
-test('llms globs list each section and page', () => {
+test('llms globs list each section and page, unreleased product suites included', () => {
+  const unreleased = Object.values(suitesConfig.suites)
+    .filter((s) => s.path && !s.released)
+    .flatMap((s) => [s.path.slice(1), `${s.path.slice(1)}/**`]);
   assert.deepEqual(staffOnlyGlobs(SITE), [
     'registration',
     'registration/**',
     'onsite',
     'onsite/**',
+    ...unreleased,
     'participants/register-for-an-event',
   ]);
+});
+
+test('an unreleased product suite is staff-only: pages, API pages, share cards and screenshots', () => {
+  for (const [key, s] of Object.entries(suitesConfig.suites)) {
+    if (!s.path) continue;
+    const root = s.path.slice(1);
+    const paths = [s.path, `${s.home}`, `${s.path}/api`, `/og/${root}--get-started.png`, `/images/suites/${key}/shot.png`];
+    for (const p of paths) assert.equal(isStaffOnlyPath(p, SITE), !s.released, `${p} (released: ${s.released})`);
+    assert.equal(isStaffOnlyHref(`https://learn.example.com${s.home}`, { ...SITE, canonicalHost: 'learn.example.com' }), !s.released);
+  }
+  assert.equal(isStaffOnlyPath('/sessions/create-a-session', SITE), false);
+  assert.equal(isStaffOnlyPath('/images/kb/x.png', SITE), false);
+});
+
+test('a Worker preview (SB_PREVIEW_SUITES from its env) makes the named suite public, and only that one', () => {
+  const unreleased = Object.entries(suitesConfig.suites).filter(([, s]) => s.path && !s.released);
+  if (unreleased.length < 2) return;
+  const [[named, namedSuite], [other, otherSuite]] = unreleased;
+  try {
+    setPreviewSuites(named);
+    assert.equal(isStaffOnlyPath(namedSuite.home, SITE), false, named);
+    assert.equal(isStaffOnlyPath(`/images/suites/${named}/a.png`, SITE), false, named);
+    assert.equal(isStaffOnlyPath(otherSuite.home, SITE), true, other);
+  } finally {
+    setPreviewSuites('');
+  }
+  assert.equal(isStaffOnlyPath(namedSuite.home, SITE), true, 'closed again without the preview var');
 });
 
 test('site.json gates Registration, Expo, Onsite, the Attend app and Enablement to staff', () => {

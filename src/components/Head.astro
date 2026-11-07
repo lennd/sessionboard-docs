@@ -12,11 +12,12 @@ import { readFileSync } from 'node:fs';
 import breadcrumbs from '../breadcrumbs.json';
 import site from '../../site.json';
 import { isStaffOnlySlug } from '../lib/staff-only.mjs';
+import { ACADEMY_SLUG, academyOpen } from '../lib/academy.mjs';
 import { getCollection } from 'astro:content';
 import helpScopes from '../data/help-scopes.json';
 import { headScript, scopeCss, scopePaths } from '../lib/help-scope.mjs';
 import suitesConfig from '../data/suites.json';
-import { anySelfServeBuilt, builtSuites, suiteForPath, suiteHeadScript } from '../lib/suites.mjs';
+import { anySelfServeBuilt, builtSuites, deployedSuites, suiteForPath, suiteHeadScript } from '../lib/suites.mjs';
 
 const SITE = `https://${site.canonicalHost}`;
 const WWW = 'https://www.sessionboard.com';
@@ -53,7 +54,9 @@ const isInternal =
   slug === INTERNAL_PREFIX ||
   slug.startsWith(`${INTERNAL_PREFIX}/`) ||
   Boolean((entry.data as { unlisted?: boolean }).unlisted) ||
-  isStaffOnlySlug(slug, site);
+  isStaffOnlySlug(slug, site) ||
+  // A closed Academy is reachable only by its address (src/lib/academy.mjs).
+  (slug === ACADEMY_SLUG && !academyOpen(site));
 const title = entry.data.title;
 // Who the article is written for (frontmatter `audience`), for the signed-in
 // reader's "this guide is for organizers" note (src/scripts/account.mjs).
@@ -135,12 +138,16 @@ const jsonLd = {
 // that product's suite is built: `?via=marketing` then goes to the Marketing
 // suite instead of filtering Platform articles, so the scope is dropped from
 // the config here. With no self-serve suite built, both lines are as before.
+// Deployed = every suite (unreleased ones staff-only); public = what everyone can read.
+// A product's legacy scope gives way only to a public suite, so customers keep it
+// while that suite is staff-only.
 const builtSuiteKeys = builtSuites(suitesConfig, process.env);
-const suitesOn = anySelfServeBuilt(builtSuiteKeys);
-const activeScopes = suitesOn
+const deployedSuiteKeys = deployedSuites(suitesConfig, process.env);
+const suitesOn = anySelfServeBuilt(deployedSuiteKeys);
+const activeScopes = anySelfServeBuilt(builtSuiteKeys)
   ? { ...helpScopes, scopes: Object.fromEntries(Object.entries(helpScopes.scopes).filter(([key]) => !builtSuiteKeys.has(key))) }
   : helpScopes;
-const suiteHead = suitesOn ? suiteHeadScript(suitesConfig, builtSuiteKeys) : null;
+const suiteHead = suitesOn ? suiteHeadScript(suitesConfig, deployedSuiteKeys, builtSuiteKeys) : null;
 const scopeHead = headScript(activeScopes, scopePaths(await getCollection('docs'), activeScopes));
 const scopeStyle = scopeCss(activeScopes);
 // Legacy scopes filter Platform pages only. On a suite page a leftover

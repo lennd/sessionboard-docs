@@ -22,10 +22,12 @@ import ProductBadge from './ProductBadge.astro';
 import helpScopes from '../data/help-scopes.json';
 import suitesConfig from '../data/suites.json';
 import { getCollection } from 'astro:content';
-import { PLATFORM, anySelfServeBuilt, builtSuites, resolveSidebar, suiteForId } from '../lib/suites.mjs';
+import { PLATFORM, anySelfServeBuilt, deployedSuites, resolveSidebar, suiteForId } from '../lib/suites.mjs';
 
 const { sidebar, id } = Astro.locals.starlightRoute;
-const built = builtSuites(suitesConfig, process.env);
+// Every deployed suite; src/scripts/account.mjs shows a reader only the ones they may read
+// (staff: all of them, unreleased suites included).
+const built = deployedSuites(suitesConfig, process.env);
 const suitesOn = anySelfServeBuilt(built);
 const suite = suiteForId(id, suitesConfig);
 const suiteConf = suite === PLATFORM ? null : suitesConfig.suites[suite as keyof typeof suitesConfig.suites];

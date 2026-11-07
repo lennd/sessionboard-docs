@@ -15,7 +15,7 @@ import { existsSync, readdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { PLATFORM, builtSuites } from './suites.mjs';
+import { PLATFORM, deployedSuites } from './suites.mjs';
 
 /** dist-relative paths of every static file that belongs to a suite not in `built`. */
 export function unbuiltSuiteFiles(distDir, config, built) {
@@ -40,7 +40,9 @@ export function suiteStaticFiles(config, env = process.env) {
     hooks: {
       'astro:build:done': ({ dir, logger }) => {
         const distDir = fileURLToPath(dir);
-        const files = unbuiltSuiteFiles(distDir, config, builtSuites(config, env));
+        // Unreleased suites are deployed staff-only; the Worker gates their files
+        // (src/lib/staff-only.mjs). Only an SB_PUBLIC_SUITES_ONLY build removes them.
+        const files = unbuiltSuiteFiles(distDir, config, deployedSuites(config, env));
         for (const rel of files) rmSync(join(distDir, rel), { recursive: true, force: true });
         if (files.length) logger.info(`removed ${files.length} static file(s) of unreleased suites`);
       },
