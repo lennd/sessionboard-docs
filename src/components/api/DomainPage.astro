@@ -1,0 +1,66 @@
+---
+/**
+ * A Reference domain's landing page (<base>/reference/<slug>): what you use it for, the guides
+ * that explain it, and one table per resource with organization- and event-level endpoints
+ * side by side: scope, method, the endpoint, and the API-key scope it needs.
+ */
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+import { apiProduct, domainsFor } from '../../lib/api-docs/data';
+import { SCOPE_LABEL } from '../../lib/api-docs/layout.mjs';
+import { slugify } from '../../lib/api-docs/urls.mjs';
+
+interface Props { product: string; slug: string }
+const { product, slug } = Astro.props;
+const P = apiProduct(product)!;
+const d = domainsFor(P).find((x) => x.slug === slug)!;
+const headings = [
+  ...(d.pages.length ? [{ depth: 2, slug: 'guides', text: 'Guides' }] : []),
+  ...d.resources.filter((r) => r.ops.length).map((r) => ({ depth: 2, slug: slugify(r.label), text: r.label })),
+];
+---
+<StarlightPage frontmatter={{ title: d.label, description: d.about, editUrl: false }} headings={headings}>
+  <p class="api-domain-about">{d.about}</p>
+  {
+    d.pages.length > 0 && (
+      <>
+        <h2 id="guides">Guides</h2>
+        <ul>
+          {d.pages.map((p) => (
+            <li><a href={p.href}>{p.title}</a></li>
+          ))}
+        </ul>
+      </>
+    )
+  }
+  {
+    d.resources
+      .filter((r) => r.ops.length)
+      .map((r) => (
+        <>
+          <h2 id={slugify(r.label)}>{r.label}</h2>
+          <table class="api-domain-table">
+            <thead>
+              <tr>
+                <th scope="col">Endpoint</th>
+                <th scope="col">Level</th>
+                <th scope="col">Needs</th>
+              </tr>
+            </thead>
+            <tbody>
+              {r.ops.map((o) => (
+                <tr>
+                  <td>
+                    <span class={`api-method api-method-${o.method}`}>{o.method.toUpperCase()}</span>{' '}
+                    <a href={o.href}>{o.summary}</a>
+                    <code class="api-domain-path">{o.path}</code>
+                  </td>
+                  <td><span class="api-scope-chip" data-scope={o.scope}>{SCOPE_LABEL[o.scope]}</span></td>
+                  <td>{o.scopes.length ? o.scopes.map((s, i) => <>{i > 0 && ' '}<code>{s}</code></>) : <span class="api-domain-none">—</span>}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      ))
+  }
+</StarlightPage>

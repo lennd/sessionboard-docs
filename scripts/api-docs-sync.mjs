@@ -374,7 +374,10 @@ for (const dir of OWNED_DIRS) {
     }
   })(abs);
 }
-const stale = existingOwned.filter((rel) => !outputs.has(rel));
+// Hand-written pages that live beside the synced ones and are never pruned: the recipes
+// (src/content/docs/api/recipes/) exist only in the Help Center, not in Mintlify.
+const HAND_WRITTEN = ['src/content/docs/api/recipes/'];
+const stale = existingOwned.filter((rel) => !outputs.has(rel) && !HAND_WRITTEN.some((dir) => rel.startsWith(dir)));
 const changed = [...outputs].filter(([rel, data]) => {
   const abs = path.join(ROOT, rel);
   return !fs.existsSync(abs) || !fs.readFileSync(abs).equals(toBuf(data));

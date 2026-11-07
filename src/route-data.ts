@@ -13,8 +13,8 @@
  */
 import { defineRouteMiddleware } from '@astrojs/starlight/route-data';
 import { isStaffOnlySlug } from './lib/staff-only.mjs';
-import { buildApiSidebar, prevNext } from './lib/api-docs/sidebar.mjs';
-import { apiProductAt, registry } from './lib/api-docs/data';
+import { prevNext } from './lib/api-docs/sidebar.mjs';
+import { apiProductAt, apiSidebarFor } from './lib/api-docs/data';
 import site from '../site.json';
 
 export const onRequest = defineRouteMiddleware((context) => {
@@ -24,7 +24,7 @@ export const onRequest = defineRouteMiddleware((context) => {
   const P = apiProductAt(context.url.pathname);
   if (P) {
     (context.locals as Record<string, unknown>).sbApiProduct = P.key;
-    const sidebar = buildApiSidebar({ nav: P.nav, spec: P.spec, source: P.source, pathname: context.url.pathname, base: P.base, registry });
+    const sidebar = apiSidebarFor(P.key, context.url.pathname);
     route.sidebar = sidebar as typeof route.sidebar;
     route.hasSidebar = true;
     const { prev, next } = prevNext(sidebar);

@@ -66,3 +66,26 @@ export function indexFor(key: string) {
   }
   return indexes.get(key)!;
 }
+
+import layoutJson from '../../data/api/layout.json';
+import { buildLayoutSidebar, productLayout, referenceDomains } from './layout.mjs';
+
+/** A product's sidebar layout: Platform's is hand-written, a self-serve product's comes from its nav. */
+export function layoutFor(P: ApiProduct) {
+  return P.key === PLATFORM ? (layoutJson as any) : productLayout(P.nav, P.label);
+}
+
+/** The domain landing pages a product's reference has (<base>/reference/<slug>). */
+export function domainsFor(P: ApiProduct) {
+  return referenceDomains({ layout: layoutFor(P), nav: P.nav, spec: P.spec, base: P.base, registry, source: P.source });
+}
+
+/**
+ * A product's API sidebar (Starlight SidebarEntry[]) for a path. Used by src/route-data.ts
+ * and exported for the Help Center suites' Sidebar.astro.
+ */
+export function apiSidebarFor(productKey: string, currentPath: string) {
+  const P = apiProduct(productKey);
+  if (!P) return [];
+  return buildLayoutSidebar({ layout: layoutFor(P), nav: P.nav, spec: P.spec, source: P.source, pathname: currentPath, base: P.base, registry });
+}
