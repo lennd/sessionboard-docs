@@ -11584,6 +11584,109 @@ paths:
         '429':
           $ref: '#/components/responses/AwardsWorkspaceTooManyRequests'
 
+  /v1/organization/{orgId}/awards/workspace/programs/{programId}/nominations/{submissionId}/review-summary:
+    post:
+      operationId: awards-workspace-review-summary
+      summary: Summarize the reviews of a nomination
+      description: >-
+        What the reviewers wrote about one nomination, summarized by Ask: `summary` (two or three sentences) and up to
+        six `points`, each naming the reviewers who made it, plus `reviewers` with every comment as written. Only the
+        written comments are summarized; scores are never sent to the model or changed. Reviewers who abstained are
+        left out. Each call runs the model, so it is a POST, but it only reads. With AI turned off for the
+        organization, or when the model is unavailable, `summary` is null, `reason` is `unavailable` and the comments
+        still come back; with no comments yet, `reason` is `no_comments`. Requires `read:awards`; the token's user
+        must manage the program. Refused for a key restricted to particular events.
+        Also at `POST /v1/awards/workspace/programs/{programId}/nominations/{submissionId}/review-summary`.
+      tags:
+        - Awards workspace
+      parameters:
+        - $ref: '#/components/parameters/AwardsOrgId'
+        - $ref: '#/components/parameters/AwardsProgramId'
+        - name: submissionId
+          in: path
+          required: true
+          description: The nomination's id.
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                language:
+                  type: string
+                  maxLength: 20
+                  description: Language of the summary (`en`, `fr`, `es`, `de`). Defaults to the token user's language.
+      responses:
+        '200':
+          description: The summary and every reviewer's comments
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  summary:
+                    type: string
+                    nullable: true
+                  points:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        text:
+                          type: string
+                        reviewers:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              ref:
+                                type: integer
+                              name:
+                                type: string
+                  reviewers:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        ref:
+                          type: integer
+                        name:
+                          type: string
+                        comments:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              round:
+                                type: string
+                                nullable: true
+                              question:
+                                type: string
+                              text:
+                                type: string
+                  reason:
+                    type: string
+                    nullable: true
+                    enum:
+                      - no_comments
+                      - unavailable
+                      - null
+        '400':
+          $ref: '#/components/responses/AwardsWorkspaceBadRequest'
+        '401':
+          $ref: '#/components/responses/AwardsWorkspaceUnauthorized'
+        '403':
+          $ref: '#/components/responses/AwardsWorkspaceReadForbidden'
+        '404':
+          $ref: '#/components/responses/AwardsWorkspaceProgramNotFound'
+        '429':
+          $ref: '#/components/responses/AwardsWorkspaceTooManyRequests'
+
   /v1/organization/{orgId}/awards/workspace/programs/{programId}/reminders/{reminderId}:
     get:
       operationId: awards-workspace-get-reminder
