@@ -122,6 +122,15 @@ tags:
   - name: Awards workspace
     description: |
       The self-serve Sessionboard Awards workspace: Home, the awards profile, programs and their categories, opening and closing nominations, the one review pass (reviewers and assignments), announcing winners and results. Organization-level: paths start at `/v1/organization/{orgId}/awards/workspace`, and the same operations are served under `/v1/awards/workspace` with the organization taken from the token. Reads need `read:awards`, writes `write:awards`. A key restricted to particular events cannot use it. Opening nominations, inviting reviewers and announcing wait for a person's OK (`202 needs_approval`); picking winners is a person's alone and has no API.
+  - name: Sessions workspace
+    description: >
+      The self-serve Sessionboard Sessions workspace: Home, events, the call for speakers (text, open, close), submissions
+      and decisions, the agenda (times, rooms, tracks, sponsor tags, adding and importing sessions, publishing), speakers
+      and sponsors. Organization-level: paths start at `/v1/organization/{orgId}/sessions-workspace`, and the same
+      operations are served under `/v1/sessions-workspace` with the organization taken from the token. Reads need
+      `read:sessions`, writes `write:sessions`. A key restricted to particular events cannot use it. Opening the call and
+      publishing the agenda wait for a person's OK (`202 needs_approval`). Sessions sends no decision emails and has no
+      speaker portal.
   - name: Learning workspace
     description: |
       The self-serve Sessionboard Learning workspace: Home, courses, learners, putting a meeting on demand, credits and results, and publishing (which waits for a person's OK, `202 needs_approval`). Organization-level: paths start at `/v1/organization/{orgId}/learning/workspace`, and the same operations are served under `/v1/learning/workspace` with the organization taken from the token. Requires the preview scopes `read:learning` / `write:learning`, named explicitly. A key restricted to particular events cannot use it.
@@ -10532,6 +10541,1127 @@ paths:
                 $ref: '#/components/schemas/LogExportError'
         '429':
           description: Rate limited. 60 requests per minute per token; honor `Retry-After`.
+  /v1/organization/{orgId}/sessions-workspace:
+    get:
+      operationId: sessions-workspace-get-home
+      summary: Get the Sessions workspace home
+      description: >-
+        The workspace at a glance: the organization, the plan tier (`self_serve` or `enterprise`), every Sessions event
+        (newest first) with its counts and its call for speakers, the setup checklist for the newest event, and what only
+        the Sessionboard platform includes, each with `locked` for your plan. Reads only. Requires `read:sessions`.
+        Refused for a key restricted to particular events. Also at `GET /v1/sessions-workspace`.
+      tags:
+        - Sessions workspace
+      parameters:
+        - $ref: '#/components/parameters/SessionsOrgId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    $ref: '#/components/schemas/SessionsWorkspaceHome'
+        '401':
+          $ref: '#/components/responses/SessionsWorkspaceUnauthorized'
+        '403':
+          $ref: '#/components/responses/SessionsWorkspaceReadForbidden'
+        '404':
+          $ref: '#/components/responses/SessionsWorkspaceNotFound'
+        '429':
+          $ref: '#/components/responses/SessionsWorkspaceTooManyRequests'
+
+  /v1/organization/{orgId}/sessions-workspace/events:
+    get:
+      operationId: sessions-workspace-list-events
+      summary: List Sessions events
+      description: >-
+        Every Sessions event in the organization, newest first, with its counts. Reads only. Requires `read:sessions`.
+        Refused for a key restricted to particular events. Also at `GET /v1/sessions-workspace/events`.
+      tags:
+        - Sessions workspace
+      parameters:
+        - $ref: '#/components/parameters/SessionsOrgId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    properties:
+                      events:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/SessionsWorkspaceEvent'
+        '401':
+          $ref: '#/components/responses/SessionsWorkspaceUnauthorized'
+        '403':
+          $ref: '#/components/responses/SessionsWorkspaceReadForbidden'
+        '404':
+          $ref: '#/components/responses/SessionsWorkspaceNotFound'
+        '429':
+          $ref: '#/components/responses/SessionsWorkspaceTooManyRequests'
+    post:
+      operationId: sessions-workspace-create-event
+      summary: Create a Sessions event
+      description: >-
+        Creates an event with its one call for speakers (closed until opened, the standard questions, no speaker portal),
+        a few rooms and tracks to rename, and an empty agenda. On a self-serve plan, refused past the plan's events in the
+        last 12 months (`403 enterprise_only`, `upgrade: events`). The token's user must be an organization admin.
+        Requires `write:sessions`. Refused for a key restricted to particular events. Also at `POST
+        /v1/sessions-workspace/events`.
+      tags:
+        - Sessions workspace
+      parameters:
+        - $ref: '#/components/parameters/SessionsOrgId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                startDate:
+                  type: string
+                  format: date-time
+                endDate:
+                  type: string
+                  format: date-time
+                timezone:
+                  type: string
+                  maxLength: 64
+                  description: IANA time zone, e.g. `America/Chicago`.
+                location:
+                  type: string
+                  maxLength: 255
+                  description: City or venue, or Online.
+                source:
+                  $ref: '#/components/schemas/SessionsWorkspaceSource'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    properties:
+                      event:
+                        $ref: '#/components/schemas/SessionsWorkspaceEvent'
+        '400':
+          $ref: '#/components/responses/SessionsWorkspaceBadRequest'
+        '401':
+          $ref: '#/components/responses/SessionsWorkspaceUnauthorized'
+        '403':
+          $ref: '#/components/responses/SessionsWorkspaceWriteForbidden'
+        '404':
+          $ref: '#/components/responses/SessionsWorkspaceNotFound'
+        '423':
+          $ref: '#/components/responses/SessionsWorkspacePaused'
+        '429':
+          $ref: '#/components/responses/SessionsWorkspaceTooManyRequests'
+
+  /v1/organization/{orgId}/sessions-workspace/events/{eventId}:
+    get:
+      operationId: sessions-workspace-get-event
+      summary: Get a Sessions event
+      description: >-
+        One event: dates, timezone, location, counts and its call for speakers; its rooms, tracks and formats; its
+        sponsors; and, on a self-serve plan, `limits` (speakers per event, read-only). Reads only. Requires
+        `read:sessions`. Refused for a key restricted to particular events. Also at `GET
+        /v1/sessions-workspace/events/{eventId}`.
+      tags:
+        - Sessions workspace
+      parameters:
+        - $ref: '#/components/parameters/SessionsOrgId'
+        - $ref: '#/components/parameters/SessionsEventId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    $ref: '#/components/schemas/SessionsWorkspaceEventDetail'
+        '401':
+          $ref: '#/components/responses/SessionsWorkspaceUnauthorized'
+        '403':
+          $ref: '#/components/responses/SessionsWorkspaceReadForbidden'
+        '404':
+          $ref: '#/components/responses/SessionsWorkspaceNotFound'
+        '429':
+          $ref: '#/components/responses/SessionsWorkspaceTooManyRequests'
+    put:
+      operationId: sessions-workspace-update-event
+      summary: Update a Sessions event
+      description: >-
+        Changes the name, dates, timezone or location. Only the fields you send change. Requires `write:sessions`. Refused
+        for a key restricted to particular events. Also at `PUT /v1/sessions-workspace/events/{eventId}`.
+      tags:
+        - Sessions workspace
+      parameters:
+        - $ref: '#/components/parameters/SessionsOrgId'
+        - $ref: '#/components/parameters/SessionsEventId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                startDate:
+                  type: string
+                  format: date-time
+                endDate:
+                  type: string
+                  format: date-time
+                timezone:
+                  type: string
+                  maxLength: 64
+                location:
+                  type: string
+                  maxLength: 255
+                source:
+                  $ref: '#/components/schemas/SessionsWorkspaceSource'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    properties:
+                      event:
+                        $ref: '#/components/schemas/SessionsWorkspaceEvent'
+        '400':
+          $ref: '#/components/responses/SessionsWorkspaceBadRequest'
+        '401':
+          $ref: '#/components/responses/SessionsWorkspaceUnauthorized'
+        '403':
+          $ref: '#/components/responses/SessionsWorkspaceWriteForbidden'
+        '404':
+          $ref: '#/components/responses/SessionsWorkspaceNotFound'
+        '423':
+          $ref: '#/components/responses/SessionsWorkspacePaused'
+        '429':
+          $ref: '#/components/responses/SessionsWorkspaceTooManyRequests'
+
+  /v1/organization/{orgId}/sessions-workspace/events/{eventId}/cfp:
+    put:
+      operationId: sessions-workspace-update-call
+      summary: Update the call for speakers
+      description: >-
+        What speakers see above the questions: the title, the welcome text (plain text; a blank line starts a new
+        paragraph) and when the call closes by itself (an empty string clears it). Changes show on the public form at
+        once. Sends nothing. Requires `write:sessions`. Refused for a key restricted to particular events. Also at `PUT
+        /v1/sessions-workspace/events/{eventId}/cfp`.
+      tags:
+        - Sessions workspace
+      parameters:
+        - $ref: '#/components/parameters/SessionsOrgId'
+        - $ref: '#/components/parameters/SessionsEventId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                welcomeTitle:
+                  type: string
+                  maxLength: 255
+                welcomeDescription:
+                  type: string
+                  maxLength: 20000
+                closeAt:
+                  type: string
+                  description: ISO 8601 date and time, or an empty string to clear it.
+                source:
+                  $ref: '#/components/schemas/SessionsWorkspaceSource'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    properties:
+                      cfp:
+                        $ref: '#/components/schemas/SessionsWorkspaceCall'
+        '400':
+          $ref: '#/components/responses/SessionsWorkspaceBadRequest'
+        '401':
+          $ref: '#/components/responses/SessionsWorkspaceUnauthorized'
+        '403':
+          $ref: '#/components/responses/SessionsWorkspaceWriteForbidden'
+        '404':
+          $ref: '#/components/responses/SessionsWorkspaceNotFound'
+        '423':
+          $ref: '#/components/responses/SessionsWorkspacePaused'
+        '429':
+          $ref: '#/components/responses/SessionsWorkspaceTooManyRequests'
+
+  /v1/organization/{orgId}/sessions-workspace/events/{eventId}/cfp/open:
+    post:
+      operationId: sessions-workspace-open-call
+      summary: Ask to open the call for speakers
+      description: >-
+        Asks a person to open the call. Opening makes the public form take submissions, so an API call never opens it
+        directly: it answers `202` with `status: needs_approval` and a link, and nothing changes until a person approves
+        it in Sessionboard Sessions. It then runs as that person. Do not call again for the same change. A trial opens
+        without a card. Requires `write:sessions`. Refused for a key restricted to particular events. Also at `POST
+        /v1/sessions-workspace/events/{eventId}/cfp/open`.
+      tags:
+        - Sessions workspace
+      parameters:
+        - $ref: '#/components/parameters/SessionsOrgId'
+        - $ref: '#/components/parameters/SessionsEventId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                source:
+                  $ref: '#/components/schemas/SessionsWorkspaceSource'
+      responses:
+        '202':
+          $ref: '#/components/responses/SessionsWorkspaceNeedsApproval'
+        '400':
+          $ref: '#/components/responses/SessionsWorkspaceBadRequest'
+        '401':
+          $ref: '#/components/responses/SessionsWorkspaceUnauthorized'
+        '403':
+          $ref: '#/components/responses/SessionsWorkspaceWriteForbidden'
+        '404':
+          $ref: '#/components/responses/SessionsWorkspaceNotFound'
+        '423':
+          $ref: '#/components/responses/SessionsWorkspacePaused'
+        '429':
+          $ref: '#/components/responses/SessionsWorkspaceTooManyRequests'
+
+  /v1/organization/{orgId}/sessions-workspace/events/{eventId}/cfp/close:
+    post:
+      operationId: sessions-workspace-close-call
+      summary: Close the call for speakers
+      description: >-
+        Closes the call now. Submissions already in stay; the public link shows the call as closed. Sends nothing.
+        Requires `write:sessions`. Refused for a key restricted to particular events. Also at `POST
+        /v1/sessions-workspace/events/{eventId}/cfp/close`.
+      tags:
+        - Sessions workspace
+      parameters:
+        - $ref: '#/components/parameters/SessionsOrgId'
+        - $ref: '#/components/parameters/SessionsEventId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                source:
+                  $ref: '#/components/schemas/SessionsWorkspaceSource'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    properties:
+                      cfp:
+                        $ref: '#/components/schemas/SessionsWorkspaceCall'
+        '400':
+          $ref: '#/components/responses/SessionsWorkspaceBadRequest'
+        '401':
+          $ref: '#/components/responses/SessionsWorkspaceUnauthorized'
+        '403':
+          $ref: '#/components/responses/SessionsWorkspaceWriteForbidden'
+        '404':
+          $ref: '#/components/responses/SessionsWorkspaceNotFound'
+        '423':
+          $ref: '#/components/responses/SessionsWorkspacePaused'
+        '429':
+          $ref: '#/components/responses/SessionsWorkspaceTooManyRequests'
+
+  /v1/organization/{orgId}/sessions-workspace/events/{eventId}/sessions:
+    get:
+      operationId: sessions-workspace-list-sessions
+      summary: List the sessions and submissions
+      description: >-
+        The event's sessions with their speakers, decision, time, room, track and sponsor tags, and whether each came
+        through the call (`submitted`). Reads only. Requires `read:sessions`. Refused for a key restricted to particular
+        events. Also at `GET /v1/sessions-workspace/events/{eventId}/sessions`.
+      tags:
+        - Sessions workspace
+      parameters:
+        - $ref: '#/components/parameters/SessionsOrgId'
+        - $ref: '#/components/parameters/SessionsEventId'
+        - name: view
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - all
+              - submissions
+          description: '`submissions`: only what came through the call.'
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - pending
+              - accepted
+              - declined
+          description: '`pending` is undecided.'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    properties:
+                      sessions:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/SessionsWorkspaceSession'
+        '401':
+          $ref: '#/components/responses/SessionsWorkspaceUnauthorized'
+        '403':
+          $ref: '#/components/responses/SessionsWorkspaceReadForbidden'
+        '404':
+          $ref: '#/components/responses/SessionsWorkspaceNotFound'
+        '429':
+          $ref: '#/components/responses/SessionsWorkspaceTooManyRequests'
+    post:
+      operationId: sessions-workspace-add-session
+      summary: Add a session
+      description: >-
+        Adds a session the organizer invited (a keynote, a panel, a break), accepted at once, with its speakers. A speaker
+        is matched by email across the organization. Speakers count toward the plan's speakers per event (`403
+        enterprise_only`, `upgrade: speakers`). Sends nothing. Requires `write:sessions`. Refused for a key restricted to
+        particular events. Also at `POST /v1/sessions-workspace/events/{eventId}/sessions`.
+      tags:
+        - Sessions workspace
+      parameters:
+        - $ref: '#/components/parameters/SessionsOrgId'
+        - $ref: '#/components/parameters/SessionsEventId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - title
+              properties:
+                title:
+                  type: string
+                  minLength: 1
+                  maxLength: 500
+                description:
+                  type: string
+                  maxLength: 20000
+                  description: Plain text.
+                speakers:
+                  type: array
+                  maxItems: 20
+                  items:
+                    $ref: '#/components/schemas/SessionsWorkspaceSpeakerInput'
+                source:
+                  $ref: '#/components/schemas/SessionsWorkspaceSource'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    properties:
+                      session:
+                        $ref: '#/components/schemas/SessionsWorkspaceSession'
+        '400':
+          $ref: '#/components/responses/SessionsWorkspaceBadRequest'
+        '401':
+          $ref: '#/components/responses/SessionsWorkspaceUnauthorized'
+        '403':
+          $ref: '#/components/responses/SessionsWorkspaceWriteForbidden'
+        '404':
+          $ref: '#/components/responses/SessionsWorkspaceNotFound'
+        '423':
+          $ref: '#/components/responses/SessionsWorkspacePaused'
+        '429':
+          $ref: '#/components/responses/SessionsWorkspaceTooManyRequests'
+
+  /v1/organization/{orgId}/sessions-workspace/events/{eventId}/sessions/{sessionId}:
+    put:
+      operationId: sessions-workspace-update-session
+      summary: Update a session
+      description: >-
+        Changes a session's title, description, start and end (an empty string clears the time), room, track, format, or
+        its sponsor tags (`sponsorIds` is the full list). Only the fields you send change. Requires `write:sessions`.
+        Refused for a key restricted to particular events. Also at `PUT
+        /v1/sessions-workspace/events/{eventId}/sessions/{sessionId}`.
+      tags:
+        - Sessions workspace
+      parameters:
+        - $ref: '#/components/parameters/SessionsOrgId'
+        - $ref: '#/components/parameters/SessionsEventId'
+        - $ref: '#/components/parameters/SessionsSessionId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                title:
+                  type: string
+                  maxLength: 500
+                description:
+                  type: string
+                  maxLength: 20000
+                startsAt:
+                  type: string
+                  description: ISO 8601, or empty to clear.
+                endsAt:
+                  type: string
+                  description: ISO 8601, or empty to clear.
+                roomId:
+                  type: string
+                  description: A room id, or empty for no room.
+                trackId:
+                  type: string
+                  description: A track id, or empty for no track.
+                formatId:
+                  type: string
+                  description: A format id, or empty for none.
+                sponsorIds:
+                  type: array
+                  maxItems: 50
+                  items:
+                    type: string
+                    format: uuid
+                source:
+                  $ref: '#/components/schemas/SessionsWorkspaceSource'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    properties:
+                      session:
+                        $ref: '#/components/schemas/SessionsWorkspaceSession'
+        '400':
+          $ref: '#/components/responses/SessionsWorkspaceBadRequest'
+        '401':
+          $ref: '#/components/responses/SessionsWorkspaceUnauthorized'
+        '403':
+          $ref: '#/components/responses/SessionsWorkspaceWriteForbidden'
+        '404':
+          $ref: '#/components/responses/SessionsWorkspaceNotFound'
+        '423':
+          $ref: '#/components/responses/SessionsWorkspacePaused'
+        '429':
+          $ref: '#/components/responses/SessionsWorkspaceTooManyRequests'
+
+  /v1/organization/{orgId}/sessions-workspace/events/{eventId}/sessions/{sessionId}/decision:
+    put:
+      operationId: sessions-workspace-decide
+      summary: Accept or decline a submission
+      description: >-
+        Records the organizer's decision: `accept`, `decline` or `undecided`. No email is sent to the speakers. Accepting
+        is refused past the plan's speakers per event (`403 enterprise_only`, `upgrade: speakers`). Requires
+        `write:sessions`. Refused for a key restricted to particular events. Also at `PUT
+        /v1/sessions-workspace/events/{eventId}/sessions/{sessionId}/decision`.
+      tags:
+        - Sessions workspace
+      parameters:
+        - $ref: '#/components/parameters/SessionsOrgId'
+        - $ref: '#/components/parameters/SessionsEventId'
+        - $ref: '#/components/parameters/SessionsSessionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - decision
+              properties:
+                decision:
+                  type: string
+                  enum:
+                    - accept
+                    - decline
+                    - undecided
+                source:
+                  $ref: '#/components/schemas/SessionsWorkspaceSource'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    properties:
+                      session:
+                        $ref: '#/components/schemas/SessionsWorkspaceSession'
+        '400':
+          $ref: '#/components/responses/SessionsWorkspaceBadRequest'
+        '401':
+          $ref: '#/components/responses/SessionsWorkspaceUnauthorized'
+        '403':
+          $ref: '#/components/responses/SessionsWorkspaceWriteForbidden'
+        '404':
+          $ref: '#/components/responses/SessionsWorkspaceNotFound'
+        '423':
+          $ref: '#/components/responses/SessionsWorkspacePaused'
+        '429':
+          $ref: '#/components/responses/SessionsWorkspaceTooManyRequests'
+
+  /v1/organization/{orgId}/sessions-workspace/events/{eventId}/speakers:
+    get:
+      operationId: sessions-workspace-list-speakers
+      summary: List speakers
+      description: >-
+        Everyone on an accepted session, with their email and sessions, and `limit`, the speakers the plan includes per
+        event (`null` on the platform). Reads only. Requires `read:sessions`. Refused for a key restricted to particular
+        events. Also at `GET /v1/sessions-workspace/events/{eventId}/speakers`.
+      tags:
+        - Sessions workspace
+      parameters:
+        - $ref: '#/components/parameters/SessionsOrgId'
+        - $ref: '#/components/parameters/SessionsEventId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    properties:
+                      speakers:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/SessionsWorkspaceSpeaker'
+                      limit:
+                        type: integer
+                        nullable: true
+        '401':
+          $ref: '#/components/responses/SessionsWorkspaceUnauthorized'
+        '403':
+          $ref: '#/components/responses/SessionsWorkspaceReadForbidden'
+        '404':
+          $ref: '#/components/responses/SessionsWorkspaceNotFound'
+        '429':
+          $ref: '#/components/responses/SessionsWorkspaceTooManyRequests'
+
+  /v1/organization/{orgId}/sessions-workspace/events/{eventId}/rooms:
+    put:
+      operationId: sessions-workspace-set-rooms
+      summary: Set the rooms
+      description: >-
+        Replaces the room list, in order. Keep a room by sending its `id` (a new name renames it); add one with a name
+        only. A room left out is removed, unless a session still uses it: then nothing changes (`409`, `code: in_use`).
+        Requires `write:sessions`. Refused for a key restricted to particular events. Also at `PUT
+        /v1/sessions-workspace/events/{eventId}/rooms`.
+      tags:
+        - Sessions workspace
+      parameters:
+        - $ref: '#/components/parameters/SessionsOrgId'
+        - $ref: '#/components/parameters/SessionsEventId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - rooms
+              properties:
+                rooms:
+                  type: array
+                  maxItems: 50
+                  items:
+                    type: object
+                    required:
+                      - name
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      name:
+                        type: string
+                        maxLength: 255
+                      capacity:
+                        type: integer
+                        minimum: 0
+                source:
+                  $ref: '#/components/schemas/SessionsWorkspaceSource'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    properties:
+                      rooms:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/SessionsWorkspaceRoom'
+        '400':
+          $ref: '#/components/responses/SessionsWorkspaceBadRequest'
+        '401':
+          $ref: '#/components/responses/SessionsWorkspaceUnauthorized'
+        '403':
+          $ref: '#/components/responses/SessionsWorkspaceWriteForbidden'
+        '404':
+          $ref: '#/components/responses/SessionsWorkspaceNotFound'
+        '409':
+          $ref: '#/components/responses/SessionsWorkspaceInUse'
+        '423':
+          $ref: '#/components/responses/SessionsWorkspacePaused'
+        '429':
+          $ref: '#/components/responses/SessionsWorkspaceTooManyRequests'
+
+  /v1/organization/{orgId}/sessions-workspace/events/{eventId}/tracks:
+    put:
+      operationId: sessions-workspace-set-tracks
+      summary: Set the tracks
+      description: >-
+        Replaces the track list, in order, like the rooms. A track a session still uses cannot be removed (`409`, `code:
+        in_use`). Requires `write:sessions`. Refused for a key restricted to particular events. Also at `PUT
+        /v1/sessions-workspace/events/{eventId}/tracks`.
+      tags:
+        - Sessions workspace
+      parameters:
+        - $ref: '#/components/parameters/SessionsOrgId'
+        - $ref: '#/components/parameters/SessionsEventId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - tracks
+              properties:
+                tracks:
+                  type: array
+                  maxItems: 50
+                  items:
+                    type: object
+                    required:
+                      - name
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      name:
+                        type: string
+                        maxLength: 255
+                      color:
+                        type: string
+                        pattern: ^#[0-9a-fA-F]{6}$
+                source:
+                  $ref: '#/components/schemas/SessionsWorkspaceSource'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    properties:
+                      tracks:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/SessionsWorkspaceTrack'
+        '400':
+          $ref: '#/components/responses/SessionsWorkspaceBadRequest'
+        '401':
+          $ref: '#/components/responses/SessionsWorkspaceUnauthorized'
+        '403':
+          $ref: '#/components/responses/SessionsWorkspaceWriteForbidden'
+        '404':
+          $ref: '#/components/responses/SessionsWorkspaceNotFound'
+        '409':
+          $ref: '#/components/responses/SessionsWorkspaceInUse'
+        '423':
+          $ref: '#/components/responses/SessionsWorkspacePaused'
+        '429':
+          $ref: '#/components/responses/SessionsWorkspaceTooManyRequests'
+
+  /v1/organization/{orgId}/sessions-workspace/events/{eventId}/sponsors:
+    post:
+      operationId: sessions-workspace-add-sponsor
+      summary: Add a sponsor
+      description: >-
+        Adds a sponsor to the event's list (a name and optionally a website). Tag it on sessions with `sponsorIds` on
+        Update a session. Up to 50 sponsors per event. Requires `write:sessions`. Refused for a key restricted to
+        particular events. Also at `POST /v1/sessions-workspace/events/{eventId}/sponsors`.
+      tags:
+        - Sessions workspace
+      parameters:
+        - $ref: '#/components/parameters/SessionsOrgId'
+        - $ref: '#/components/parameters/SessionsEventId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 255
+                website:
+                  type: string
+                  format: uri
+                  maxLength: 2000
+                source:
+                  $ref: '#/components/schemas/SessionsWorkspaceSource'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    properties:
+                      sponsor:
+                        $ref: '#/components/schemas/SessionsWorkspaceSponsor'
+        '400':
+          $ref: '#/components/responses/SessionsWorkspaceBadRequest'
+        '401':
+          $ref: '#/components/responses/SessionsWorkspaceUnauthorized'
+        '403':
+          $ref: '#/components/responses/SessionsWorkspaceWriteForbidden'
+        '404':
+          $ref: '#/components/responses/SessionsWorkspaceNotFound'
+        '423':
+          $ref: '#/components/responses/SessionsWorkspacePaused'
+        '429':
+          $ref: '#/components/responses/SessionsWorkspaceTooManyRequests'
+
+  /v1/organization/{orgId}/sessions-workspace/events/{eventId}/sponsors/{sponsorId}:
+    delete:
+      operationId: sessions-workspace-remove-sponsor
+      summary: Remove a sponsor
+      description: >-
+        Takes a sponsor off the event's list and off its sessions. Requires `write:sessions`. Refused for a key restricted
+        to particular events. Also at `DELETE /v1/sessions-workspace/events/{eventId}/sponsors/{sponsorId}`.
+      tags:
+        - Sessions workspace
+      parameters:
+        - $ref: '#/components/parameters/SessionsOrgId'
+        - $ref: '#/components/parameters/SessionsEventId'
+        - $ref: '#/components/parameters/SessionsSponsorId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    properties:
+                      deleted:
+                        type: boolean
+        '400':
+          $ref: '#/components/responses/SessionsWorkspaceBadRequest'
+        '401':
+          $ref: '#/components/responses/SessionsWorkspaceUnauthorized'
+        '403':
+          $ref: '#/components/responses/SessionsWorkspaceWriteForbidden'
+        '404':
+          $ref: '#/components/responses/SessionsWorkspaceNotFound'
+        '423':
+          $ref: '#/components/responses/SessionsWorkspacePaused'
+        '429':
+          $ref: '#/components/responses/SessionsWorkspaceTooManyRequests'
+
+  /v1/organization/{orgId}/sessions-workspace/events/{eventId}/agenda:
+    get:
+      operationId: sessions-workspace-get-agenda
+      summary: Get the agenda
+      description: >-
+        Every accepted session with its time (read it in the event's `timezone`), room, track and sponsor tags; the rooms,
+        tracks, formats and sponsors; and `agenda_published_at`. Reads only. Requires `read:sessions`. Refused for a key
+        restricted to particular events. Also at `GET /v1/sessions-workspace/events/{eventId}/agenda`.
+      tags:
+        - Sessions workspace
+      parameters:
+        - $ref: '#/components/parameters/SessionsOrgId'
+        - $ref: '#/components/parameters/SessionsEventId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    $ref: '#/components/schemas/SessionsWorkspaceAgenda'
+        '401':
+          $ref: '#/components/responses/SessionsWorkspaceUnauthorized'
+        '403':
+          $ref: '#/components/responses/SessionsWorkspaceReadForbidden'
+        '404':
+          $ref: '#/components/responses/SessionsWorkspaceNotFound'
+        '429':
+          $ref: '#/components/responses/SessionsWorkspaceTooManyRequests'
+
+  /v1/organization/{orgId}/sessions-workspace/events/{eventId}/agenda/publish:
+    post:
+      operationId: sessions-workspace-publish-agenda
+      summary: Ask to publish the agenda
+      description: >-
+        Asks a person to publish the agenda and speaker wall to the organizer's website. Because it is public, an API call
+        answers `202` with `status: needs_approval`; once a person approves it in Sessionboard Sessions, the agenda is
+        published and its embed snippets are on the agenda page. The embeds then show changes as they are made. Requires
+        `write:sessions`. Refused for a key restricted to particular events. Also at `POST
+        /v1/sessions-workspace/events/{eventId}/agenda/publish`.
+      tags:
+        - Sessions workspace
+      parameters:
+        - $ref: '#/components/parameters/SessionsOrgId'
+        - $ref: '#/components/parameters/SessionsEventId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                widgets:
+                  type: array
+                  maxItems: 4
+                  items:
+                    type: string
+                    enum:
+                      - agenda
+                      - speakers
+                      - schedule
+                      - rooms
+                  description: 'Which embeds. Default: `agenda` and `speakers`.'
+                source:
+                  $ref: '#/components/schemas/SessionsWorkspaceSource'
+      responses:
+        '202':
+          $ref: '#/components/responses/SessionsWorkspaceNeedsApproval'
+        '400':
+          $ref: '#/components/responses/SessionsWorkspaceBadRequest'
+        '401':
+          $ref: '#/components/responses/SessionsWorkspaceUnauthorized'
+        '403':
+          $ref: '#/components/responses/SessionsWorkspaceWriteForbidden'
+        '404':
+          $ref: '#/components/responses/SessionsWorkspaceNotFound'
+        '423':
+          $ref: '#/components/responses/SessionsWorkspacePaused'
+        '429':
+          $ref: '#/components/responses/SessionsWorkspaceTooManyRequests'
+
+  /v1/organization/{orgId}/sessions-workspace/events/{eventId}/import:
+    post:
+      operationId: sessions-workspace-import
+      summary: Import a program
+      description: >-
+        Adds sessions and their speakers from rows (up to 300): a title, and optionally a description, a track (a new name
+        adds a track) and speakers. A title already on the event is skipped, so a second import makes no duplicates.
+        Imported sessions are accepted unless `status` is `pending`. Speakers count toward the plan. Sends nothing.
+        Requires `write:sessions`. Refused for a key restricted to particular events. Also at `POST
+        /v1/sessions-workspace/events/{eventId}/import`.
+      tags:
+        - Sessions workspace
+      parameters:
+        - $ref: '#/components/parameters/SessionsOrgId'
+        - $ref: '#/components/parameters/SessionsEventId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - rows
+              properties:
+                rows:
+                  type: array
+                  minItems: 1
+                  maxItems: 300
+                  items:
+                    type: object
+                    properties:
+                      title:
+                        type: string
+                        maxLength: 500
+                      description:
+                        type: string
+                        maxLength: 20000
+                      track:
+                        type: string
+                        maxLength: 255
+                      speakers:
+                        type: array
+                        maxItems: 20
+                        items:
+                          $ref: '#/components/schemas/SessionsWorkspaceSpeakerInput'
+                status:
+                  type: string
+                  enum:
+                    - accepted
+                    - pending
+                source:
+                  $ref: '#/components/schemas/SessionsWorkspaceSource'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    properties:
+                      created:
+                        type: integer
+                      skipped:
+                        type: integer
+                      tracks_created:
+                        type: integer
+        '400':
+          $ref: '#/components/responses/SessionsWorkspaceBadRequest'
+        '401':
+          $ref: '#/components/responses/SessionsWorkspaceUnauthorized'
+        '403':
+          $ref: '#/components/responses/SessionsWorkspaceWriteForbidden'
+        '404':
+          $ref: '#/components/responses/SessionsWorkspaceNotFound'
+        '423':
+          $ref: '#/components/responses/SessionsWorkspacePaused'
+        '429':
+          $ref: '#/components/responses/SessionsWorkspaceTooManyRequests'
+
   /v1/organization/{orgId}/awards/workspace:
     get:
       operationId: awards-workspace-get-home
@@ -18563,6 +19693,36 @@ components:
         type: string
         format: uuid
       description: The registration ID.
+    SessionsOrgId:
+      name: orgId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Your organization ID. Any other organization returns `404`.
+    SessionsEventId:
+      name: eventId
+      in: path
+      required: true
+      schema:
+        type: integer
+      description: The Sessions event ID.
+    SessionsSessionId:
+      name: sessionId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: The session ID.
+    SessionsSponsorId:
+      name: sponsorId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: The sponsor ID.
     AwardsOrgId:
       name: orgId
       in: path
@@ -24590,6 +25750,436 @@ components:
           type: [string, 'null']
           format: uuid
           description: The booth package (a ticket type of type `booth`) to sell this booth in; `null` removes it from every package.
+    SessionsWorkspaceSource:
+      type: object
+      description: >-
+        Optional on every write: which assistant is calling and what the person asked it. Recorded with the change in the
+        organization's activity and on any approval request.
+      properties:
+        client:
+          type: string
+        version:
+          type: string
+        run_id:
+          type: string
+        prompt:
+          type: string
+          maxLength: 2000
+    SessionsWorkspaceCall:
+      type: object
+      description: An event's one call for speakers.
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        url:
+          type: string
+          format: uri
+          description: The public link to share.
+        is_open:
+          type: boolean
+        opened_at:
+          type: string
+          format: date-time
+          nullable: true
+        close_at:
+          type: string
+          format: date-time
+          nullable: true
+        welcome_title:
+          type: string
+          nullable: true
+        welcome_description:
+          type: string
+          nullable: true
+          description: Plain text.
+    SessionsWorkspaceEvent:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        slug:
+          type: string
+        date_from:
+          type: string
+          format: date-time
+          nullable: true
+        date_to:
+          type: string
+          format: date-time
+          nullable: true
+        timezone:
+          type: string
+          nullable: true
+        location:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        agenda_published_at:
+          type: string
+          format: date-time
+          nullable: true
+        counts:
+          type: object
+          properties:
+            submitted:
+              type: integer
+            undecided:
+              type: integer
+            accepted:
+              type: integer
+            declined:
+              type: integer
+            scheduled:
+              type: integer
+            speakers:
+              type: integer
+        cfp:
+          $ref: '#/components/schemas/SessionsWorkspaceCall'
+    SessionsWorkspaceRoom:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        capacity:
+          type: integer
+          nullable: true
+    SessionsWorkspaceTrack:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        color:
+          type: string
+          nullable: true
+    SessionsWorkspaceSponsor:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        website:
+          type: string
+          nullable: true
+        logo_url:
+          type: string
+          nullable: true
+          description: Set on the platform; Sessions does not take logos.
+        sessions:
+          type: integer
+          description: Sessions it is tagged on.
+    SessionsWorkspaceEventDetail:
+      type: object
+      properties:
+        event:
+          $ref: '#/components/schemas/SessionsWorkspaceEvent'
+        rooms:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionsWorkspaceRoom'
+        tracks:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionsWorkspaceTrack'
+        formats:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              name:
+                type: string
+        sponsors:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionsWorkspaceSponsor'
+        limits:
+          type: object
+          properties:
+            speakers_per_event:
+              type: integer
+            read_only:
+              type: boolean
+          nullable: true
+    SessionsWorkspaceSessionSpeaker:
+      type: object
+      properties:
+        contact_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        title:
+          type: string
+          nullable: true
+        role:
+          type: string
+          nullable: true
+    SessionsWorkspaceSession:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+          description: Plain text.
+        status:
+          type: string
+          description: '`pending` (undecided), `accepted` or `declined`.'
+        track_id:
+          type: string
+          nullable: true
+        format_id:
+          type: string
+          nullable: true
+        room_id:
+          type: string
+          nullable: true
+        starts_at:
+          type: string
+          format: date-time
+          nullable: true
+        ends_at:
+          type: string
+          format: date-time
+          nullable: true
+        submitted:
+          type: boolean
+          description: Came through the call for speakers.
+        created_at:
+          type: string
+          format: date-time
+        speakers:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionsWorkspaceSessionSpeaker'
+        sponsor_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+    SessionsWorkspaceSpeakerInput:
+      type: object
+      properties:
+        firstName:
+          type: string
+          maxLength: 100
+        lastName:
+          type: string
+          maxLength: 100
+        email:
+          type: string
+          format: email
+          maxLength: 255
+        title:
+          type: string
+          maxLength: 255
+          description: Job title.
+    SessionsWorkspaceSpeaker:
+      type: object
+      properties:
+        contact_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        title:
+          type: string
+          nullable: true
+        sessions:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              title:
+                type: string
+              role:
+                type: string
+                nullable: true
+    SessionsWorkspaceAgenda:
+      type: object
+      properties:
+        event:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+            date_from:
+              type: string
+              nullable: true
+            date_to:
+              type: string
+              nullable: true
+            timezone:
+              type: string
+              nullable: true
+            agenda_published_at:
+              type: string
+              nullable: true
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionsWorkspaceSession'
+        rooms:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionsWorkspaceRoom'
+        tracks:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionsWorkspaceTrack'
+        formats:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              name:
+                type: string
+        sponsors:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionsWorkspaceSponsor'
+    SessionsWorkspaceHome:
+      type: object
+      properties:
+        organization:
+          type: object
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+        tier:
+          type: string
+          enum:
+            - self_serve
+            - enterprise
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionsWorkspaceEvent'
+        checklist:
+          type: object
+          properties:
+            event_id:
+              type: integer
+              nullable: true
+            steps:
+              type: array
+              items:
+                type: object
+                properties:
+                  key:
+                    type: string
+                    enum:
+                      - event
+                      - cfp_open
+                      - first_submission
+                      - decided
+                      - scheduled
+                      - agenda_published
+                  done:
+                    type: boolean
+            done:
+              type: integer
+            total:
+              type: integer
+            next:
+              type: string
+              nullable: true
+        enterprise:
+          type: array
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+              label:
+                type: string
+              detail:
+                type: string
+              locked:
+                type: boolean
+          description: What only the Sessionboard platform includes.
+    SessionsWorkspaceError:
+      type: object
+      required:
+        - message
+      properties:
+        error:
+          type: string
+          enum:
+            - VALIDATION_ERROR
+            - SCOPE_REQUIRED
+            - ORG_WIDE_TOKEN_REQUIRED
+            - FORBIDDEN
+            - NOT_FOUND
+            - CONFLICT
+            - QUOTA_EXCEEDED
+        message:
+          type: string
+        code:
+          type: string
+          description: 'A more specific reason: `enterprise_only`, `trial_ended`, `plan_ended`, `in_use`.'
+        upgrade:
+          type: string
+          description: >-
+            With `enterprise_only`: what needs a bigger plan or the platform (`events`, `speakers`, `review_plans`, `forms`,
+            …).
+    SessionsWorkspaceApprovalRequest:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - needs_approval
+        approval_id:
+          type: string
+          format: uuid
+        url:
+          type: string
+          format: uri
+          description: >-
+            Where a person approves or declines it in Sessionboard Sessions
+            (`/sessions/{orgId}/approvals?id={approval_id}`).
+        note:
+          type: string
     AwardsWorkspaceError:
       type: object
       description: Error body for the Awards workspace operations.
@@ -26878,6 +28468,91 @@ components:
           description: Seconds to wait before retrying.
           schema:
             type: integer
+    SessionsWorkspaceUnauthorized:
+      description: Missing, invalid or expired token.
+    SessionsWorkspaceReadForbidden:
+      description: |
+        - `SCOPE_REQUIRED`: the token lacks `read:sessions`.
+        - `ORG_WIDE_TOKEN_REQUIRED`: the key is restricted to particular events; use a key without an event restriction.
+        - `FORBIDDEN`: the token's user is not an active member of the organization.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/SessionsWorkspaceError'
+    SessionsWorkspaceWriteForbidden:
+      description: >
+        - `SCOPE_REQUIRED`: the token lacks `write:sessions`.
+
+        - `ORG_WIDE_TOKEN_REQUIRED`: the key is restricted to particular events.
+
+        - `code: enterprise_only` with `upgrade`: the self-serve plan does not include it (another event this year, more
+        speakers on the event); a person chooses a bigger plan or talks to us about the platform.
+
+        - `code: trial_ended` or `plan_ended`: the self-serve plan is read-only; everything can still be read.
+
+        - `FORBIDDEN` with no `code`: the token's user is not an organization admin.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/SessionsWorkspaceError'
+          examples:
+            speakers:
+              summary: Past the plan's speakers per event
+              value:
+                message: >-
+                  This event has reached the speakers your plan includes. Bigger events are part of Growth or the
+                  Sessionboard platform.
+                code: enterprise_only
+                upgrade: speakers
+            trial_ended:
+              summary: The trial has ended
+              value:
+                message: Your Sessions trial has ended. Choose a plan to keep going.
+                code: trial_ended
+    SessionsWorkspaceNotFound:
+      description: '`NOT_FOUND`: `orgId` is not the token''s organization, or the event, session or sponsor is not in it.'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/SessionsWorkspaceError'
+    SessionsWorkspaceBadRequest:
+      description: '`VALIDATION_ERROR`: the body or a path id does not match the schema. `source` is always accepted.'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/SessionsWorkspaceError'
+    SessionsWorkspaceInUse:
+      description: '`code: in_use`: a room or track left out still has sessions. Nothing changed; move them first.'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/SessionsWorkspaceError'
+    SessionsWorkspacePaused:
+      description: >-
+        A person has paused connected assistants for the organization (`code: AGENT_WRITES_PAUSED`); writes wait until they
+        resume it in Sessionboard.
+    SessionsWorkspaceTooManyRequests:
+      description: >-
+        The token's request limit (100 requests per 15 minutes by default) or, for writes, its daily write quota. Wait
+        `Retry-After` seconds.
+      headers:
+        Retry-After:
+          description: Seconds to wait before retrying.
+          schema:
+            type: integer
+    SessionsWorkspaceNeedsApproval:
+      description: >-
+        Waiting for a person: nothing was published. `payload.url` opens the request in Sessionboard Sessions, where a
+        person approves or declines it. An approved request runs as that person.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+              payload:
+                $ref: '#/components/schemas/SessionsWorkspaceApprovalRequest'
     AwardsWorkspaceUnauthorized:
       description: Missing, invalid or expired token.
     AwardsWorkspaceReadForbidden:

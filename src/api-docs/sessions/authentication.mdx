@@ -1,0 +1,30 @@
+---
+title: "Sessions API authentication"
+description: "API tokens, scopes and AI assistant sign-in for the Sessionboard Sessions API"
+---
+
+## Scopes
+
+| Scope | What it allows |
+|-------|----------------|
+| `read:sessions` | Read your Sessions events, their call for speakers, submissions, agenda, speakers and sponsors |
+| `write:sessions` | Create and change them, record decisions, and ask to open a call or publish an agenda |
+
+A token whose scopes do not include the one an operation needs gets `403`. Another organization's id anywhere in the path returns `404`. Writes also need the token's user to be an organization admin.
+
+## API tokens
+
+An organization admin creates a token in Sessionboard under **Organization Settings → API Tokens** and ticks `read:sessions` and, to make changes, `write:sessions`. Copy the token when it is shown: it is displayed once. Send it in the `x-access-token` header:
+
+```bash
+curl https://public-api.sessionboard.com/v1/organization/{orgId}/sessions-workspace/events \
+  -H "x-access-token: <api-token>"
+```
+
+A token restricted to particular events cannot use the Sessions operations, because they act on every Sessions event in the organization.
+
+## AI assistants
+
+Claude, ChatGPT, Copilot and Gemini connect to the Sessionboard MCP server by signing in with OAuth; there is no token to copy. Add the Sessionboard connector in your assistant, sign in, then ask. OAuth clients can also request `read:sessions` and `write:sessions` directly and send the access token as `Authorization: Bearer <access-token>`.
+
+When an assistant asks to open your call for speakers or publish your agenda, Sessions shows the request on **Home** and under `/sessions/{orgId}/approvals`. Nothing happens until a person approves it.
