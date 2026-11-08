@@ -604,6 +604,174 @@
         }
       }
     },
+    "/v1/organization/{orgId}/awards/workspace/programs/{programId}/scorecard": {
+      "put": {
+        "operationId": "awards-workspace-replace-scorecard",
+        "summary": "Replace a program's scorecard",
+        "description": "Sends the scorecard reviewers fill in, in order (1 to 12 criteria). Each criterion is a score from 1 to 5 (`scale_1_5`), a score from 1 to 10 (`scale_1_10`) or a comment (`free_text`). A criterion with an `id` is kept and updated; one without an `id` is added; any existing criterion left out is removed. Scores are required and comments optional unless `required` says otherwise. These are the program's round questions, the same ones Awards round settings edit. Refused with `409` once any reviewer has scored. Sends nothing. Requires `write:awards`; the token's user needs the Awards update permission and must manage the program. Also at `PUT /v1/awards/workspace/programs/{programId}/scorecard`.",
+        "tags": [
+          "Awards workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AwardsOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/AwardsProgramId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "criteria"
+                ],
+                "properties": {
+                  "criteria": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 12,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "label",
+                        "type"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "description": "An existing criterion of this program's scorecard. Omit to add a new one."
+                        },
+                        "label": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 200
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "scale_1_5",
+                            "scale_1_10",
+                            "free_text"
+                          ]
+                        },
+                        "required": {
+                          "type": "boolean"
+                        },
+                        "weight": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 100,
+                          "description": "How much the criterion counts in the average. Omit to leave it unweighted."
+                        },
+                        "description": {
+                          "type": "string",
+                          "maxLength": 1000,
+                          "description": "Guidance reviewers see under the criterion."
+                        }
+                      }
+                    }
+                  },
+                  "source": {
+                    "$ref": "#/components/schemas/AwardsWorkspaceSource"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "scorecard": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "label": {
+                                "type": "string"
+                              },
+                              "type": {
+                                "type": "string"
+                              },
+                              "required": {
+                                "type": "boolean"
+                              },
+                              "weight": {
+                                "type": "number",
+                                "nullable": true
+                              },
+                              "description": {
+                                "type": "string",
+                                "nullable": true
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`VALIDATION_ERROR`: the body does not match the schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AwardsWorkspaceError"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/AwardsWorkspaceUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/AwardsWorkspaceWriteForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/AwardsWorkspaceProgramNotFound"
+          },
+          "409": {
+            "description": "`scoring_started`: a reviewer has already scored, so the scorecard can no longer change.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AwardsWorkspaceError"
+                },
+                "example": {
+                  "code": "scoring_started",
+                  "message": "Reviewers have started scoring, so the scorecard can no longer change."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/organization/{orgId}/awards/workspace/programs/{programId}/categories": {
       "put": {
         "operationId": "awards-workspace-replace-categories",
@@ -749,7 +917,7 @@
       "post": {
         "operationId": "awards-workspace-open-nominations",
         "summary": "Ask to open nominations",
-        "description": "Asks a person to open nominations. Opening puts the program on the organization's Awards Site (its public page and nomination form) and starts the nomination window now, until `deadline` (or the current deadline when it is still ahead, else 30 days from now). Because it makes the program public, an API call never opens it directly: it answers `202` with `status: needs_approval` and a link, and nothing changes until a person approves it in Sessionboard Awards. It then runs as that person. Do not call again for the same change. If it cannot run when approved, the approval records why: the program has no categories (`no_categories`), a self-serve trial has no card on file (`card_required`), or the plan is read-only (`trial_ended`, `plan_ended`). Requires `write:awards`; the token's user needs the Awards update permission and must manage the program. Refused for a key restricted to particular events. Also at `POST /v1/awards/workspace/programs/{programId}/open`.",
+        "description": "Asks a person to open nominations. Opening puts the program on the organization's Awards Site (its public page and nomination form) and starts the nomination window now, until `deadline` (or the current deadline when it is still ahead, else 30 days from now). Because it makes the program public, an API call never opens it directly: it answers `202` with `status: needs_approval` and a link, and nothing changes until a person approves it in Sessionboard Awards. It then runs as that person. Do not call again for the same change. If it cannot run when approved, the approval records why: the program has no categories (`no_categories`), or the plan is read-only (`trial_ended`, `plan_ended`). A trial opens without a card; during the trial each program takes up to 50 nominations before the person is asked to choose a plan, and nominations past that are still accepted. Requires `write:awards`; the token's user needs the Awards update permission and must manage the program. Refused for a key restricted to particular events. Also at `POST /v1/awards/workspace/programs/{programId}/open`.",
         "tags": [
           "Awards workspace"
         ],
@@ -1114,7 +1282,7 @@
       "post": {
         "operationId": "awards-workspace-announce-winners",
         "summary": "Ask to announce the winners",
-        "description": "Asks a person to email the results to everyone who submitted a nomination: winners and finalists get their news (with your `note`), and the rest a thank-you unless `notifyOthers` is `false`. Because it sends email, an API call never announces directly: it answers `202` with `status: needs_approval` and a link, and nothing is sent until a person approves it in Sessionboard Awards. It then runs as that person. Do not call again for the same announcement. Each program is announced once; approving it again later reports progress and resends only failed deliveries. If it cannot run when approved, the approval records why: no winners picked (`no_winners`), or, for a first announcement, a submitted nomination without a finished scorecard (`reviews_incomplete`). Winners are picked by a person in Sessionboard; the API cannot pick them. Requires `write:awards`; the token's user needs the Awards update permission and must manage the program. Refused for a key restricted to particular events. Also at `POST /v1/awards/workspace/programs/{programId}/announce`.",
+        "description": "Asks a person to email the results to everyone who submitted a nomination: whoever nominated each winner and finalist gets the news (with your `note`), and the rest a thank-you unless `notifyOthers` is `false`. Because it sends email, an API call never announces directly: it answers `202` with `status: needs_approval` and a link, and nothing is sent until a person approves it in Sessionboard Awards. It then runs as that person. Do not call again for the same announcement. Each program is announced once; approving it again later reports progress and resends only failed deliveries. Winners and finalists whose nomination gave their email are told directly too. If it cannot run when approved, the approval records why: no winners picked (`no_winners`), for a first announcement a submitted nomination without a finished scorecard (`reviews_incomplete`), or, during a trial with no plan chosen, more than 50 nominations in the program (`choose_plan`: a person chooses a plan first). Winners are picked by a person in Sessionboard; the API cannot pick them. Requires `write:awards`; the token's user needs the Awards update permission and must manage the program. Refused for a key restricted to particular events. Also at `POST /v1/awards/workspace/programs/{programId}/announce`.",
         "tags": [
           "Awards workspace"
         ],
@@ -1170,6 +1338,331 @@
           },
           "423": {
             "$ref": "#/components/responses/AwardsWorkspacePaused"
+          },
+          "429": {
+            "$ref": "#/components/responses/AwardsWorkspaceTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/awards/workspace/programs/{programId}/announce/preview": {
+      "get": {
+        "operationId": "awards-workspace-preview-announcement",
+        "summary": "Preview the winner announcement",
+        "description": "Who the announcement would email (the people who nominated each winner and finalist, and the thank-yous), whether it can run now and, if not, why (`blocked`: `no_winners` or `reviews_incomplete`), and the progress of an announcement already sent. Sends nothing. Requires `read:awards`; the token's user must manage the program. Refused for a key restricted to particular events. Also at `GET /v1/awards/workspace/programs/{programId}/announce/preview`.",
+        "tags": [
+          "Awards workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AwardsOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/AwardsProgramId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/AwardsWorkspaceUnauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/AwardsWorkspaceProgramNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/AwardsWorkspaceTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/awards/workspace/programs/{programId}/remind": {
+      "post": {
+        "operationId": "awards-workspace-remind",
+        "summary": "Remind reviewers or unfinished nominators",
+        "description": "Emails a reminder to `audience`: `reviewers` (reviewers with assigned scorecards still to finish, while the review pass is open) or `drafts` (people who started a nomination and have not submitted it, while nominations are open). Nobody gets the same reminder twice in 24 hours. With `?preview=true` it answers who would get it and who is skipped, and sends nothing. Without it, because it sends email, an API call answers `202` with `status: needs_approval` and a link, and nothing is sent until a person approves it in Sessionboard Awards; it then runs as that person. `422` when the program cannot take that reminder now (`nominations_closed`, `no_site`). Requires `write:awards`; the token's user must manage the program. Refused for a key restricted to particular events. Also at `POST /v1/awards/workspace/programs/{programId}/remind`.",
+        "tags": [
+          "Awards workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AwardsOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/AwardsProgramId"
+          },
+          {
+            "name": "preview",
+            "in": "query",
+            "required": false,
+            "description": "`true`: say who would get the reminder and send nothing.",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "audience"
+                ],
+                "properties": {
+                  "audience": {
+                    "type": "string",
+                    "enum": [
+                      "reviewers",
+                      "drafts"
+                    ]
+                  },
+                  "source": {
+                    "$ref": "#/components/schemas/AwardsWorkspaceSource"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The preview (`?preview=true`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "202": {
+            "$ref": "#/components/responses/AwardsWorkspaceNeedsApproval"
+          },
+          "400": {
+            "$ref": "#/components/responses/AwardsWorkspaceBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/AwardsWorkspaceUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/AwardsWorkspaceWriteForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/AwardsWorkspaceProgramNotFound"
+          },
+          "423": {
+            "$ref": "#/components/responses/AwardsWorkspacePaused"
+          },
+          "429": {
+            "$ref": "#/components/responses/AwardsWorkspaceTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/awards/workspace/programs/{programId}/nominations/{submissionId}/review-summary": {
+      "post": {
+        "operationId": "awards-workspace-review-summary",
+        "summary": "Summarize the reviews of a nomination",
+        "description": "What the reviewers wrote about one nomination, summarized by Ask: `summary` (two or three sentences) and up to six `points`, each naming the reviewers who made it, plus `reviewers` with every comment as written. Only the written comments are summarized; scores are never sent to the model or changed. Reviewers who abstained are left out. Each call runs the model, so it is a POST, but it only reads. With AI turned off for the organization, or when the model is unavailable, `summary` is null, `reason` is `unavailable` and the comments still come back; with no comments yet, `reason` is `no_comments`. Requires `read:awards`; the token's user must manage the program. Refused for a key restricted to particular events. Also at `POST /v1/awards/workspace/programs/{programId}/nominations/{submissionId}/review-summary`.",
+        "tags": [
+          "Awards workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AwardsOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/AwardsProgramId"
+          },
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "description": "The nomination's id.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "language": {
+                    "type": "string",
+                    "maxLength": 20,
+                    "description": "Language of the summary (`en`, `fr`, `es`, `de`). Defaults to the token user's language."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The summary and every reviewer's comments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "summary": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "points": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "text": {
+                            "type": "string"
+                          },
+                          "reviewers": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "ref": {
+                                  "type": "integer"
+                                },
+                                "name": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "reviewers": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "ref": {
+                            "type": "integer"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "comments": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "round": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "question": {
+                                  "type": "string"
+                                },
+                                "text": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "reason": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "enum": [
+                        "no_comments",
+                        "unavailable",
+                        null
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/AwardsWorkspaceBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/AwardsWorkspaceUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/AwardsWorkspaceReadForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/AwardsWorkspaceProgramNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/AwardsWorkspaceTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/awards/workspace/programs/{programId}/reminders/{reminderId}": {
+      "get": {
+        "operationId": "awards-workspace-get-reminder",
+        "summary": "Get a reminder's progress",
+        "description": "How far one reminder has got: sent, skipped, failed and still pending, per person. Requires `read:awards`; the token's user must manage the program. Refused for a key restricted to particular events. Also at `GET /v1/awards/workspace/programs/{programId}/reminders/{reminderId}`.",
+        "tags": [
+          "Awards workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AwardsOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/AwardsProgramId"
+          },
+          {
+            "name": "reminderId",
+            "in": "path",
+            "required": true,
+            "description": "The reminder's id, from the remind response once it runs.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/AwardsWorkspaceUnauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/AwardsWorkspaceProgramNotFound"
           },
           "429": {
             "$ref": "#/components/responses/AwardsWorkspaceTooManyRequests"
