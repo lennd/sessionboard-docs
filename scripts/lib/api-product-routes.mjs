@@ -15,9 +15,10 @@ export const PRODUCT_ROUTE_PREFIXES = {
   awards: ['/organization/:orgId/awards/workspace', '/organization/:orgId/sites'],
   marketing: ['/organization/:orgId/marketing', '/organization/:orgId/sites'],
   sessions: ['/organization/:orgId/sessions-workspace'],
+  crm: ['/organization/:orgId/crm'],
 };
 
-export const ENFORCED = ['learning', 'awards', 'sessions'];
+export const ENFORCED = ['learning', 'awards', 'sessions', 'crm'];
 
 /** Express `/organization/:orgId/x/:id` → spec `/v1/organization/{orgId}/x/{id}`. */
 export const toSpecPath = (path) => `/v1${path.replace(/:([A-Za-z0-9_]+)/g, '{$1}')}`;
