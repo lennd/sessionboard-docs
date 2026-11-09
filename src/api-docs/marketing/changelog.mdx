@@ -9,6 +9,18 @@ Release notes for the Marketing API and its MCP tools. Entries are grouped by mo
 
 ## Upcoming
 
+### Marketing: AI apps get the product scopes; actions that reach people wait for your OK
+
+**Added — scopes for the self-serve products.** `read:marketing`, `write:marketing`, `read:sites`, `write:sites`, `read:learning` and `write:learning` are now listed in `scopes_supported`, beside `read:brand_kits`, `write:brand_kits`, `read:awards` and `write:awards`. Claude, ChatGPT and Gemini connections get them when they connect, and API tokens for organizations on a Marketing, Learning, Awards or CRM plan can tick them under **Your products**. Every request still checks the organization's product and the person's role. See [Marketing API authentication](/sessionboard-marketing/api/authentication).
+
+**Changed — requests for scopes a client was not registered for.** `GET /oauth/authorize` now leaves out a known scope the client was not registered for and grants the rest, instead of refusing the whole request with `invalid_scope`. Unknown scopes are still refused. Clients registered earlier keep connecting; reconnect to pick up the new scopes.
+
+**Changed — MCP actions that send, publish or spend now wait for a person.** When an AI assistant asks to launch a campaign, send invitations or content kits, publish a page, course or library, approve ads, start captions or assign training, the response is `200` with `status: "needs_approval"`, an `approval_id` and a `url`. Nothing runs until someone on the team approves it in Sessionboard; approving runs the request as that person. Drafts, edits and reads are unchanged. See [Marketing MCP tools](/sessionboard-marketing/api/mcp-tools).
+
+<Note>
+These arrive with an upcoming Sessionboard release. The date will be added here when they are live.
+</Note>
+
 ### Marketing: build and edit your event page by API or chat
 
 **Added — the Sites API.** Read your event pages, edit a page's draft (its blocks, menu and theme), see what Publish would change in plain sentences, preview it as a visitor or an invited guest on desktop, tablet or phone, publish, and restore any earlier version into the draft. `POST /v1/organization/{orgId}/sites/make` makes a page for an event from the event itself and your Brand Kit, or rebuilds a page you point it at. Every edit lands in the draft, and nothing goes live until you publish with the person's OK; an AI assistant's publish waits for a person to approve it in Sessionboard. The same operations are served under `/v1/sites/...` with the organization taken from the token. They need `read:sites` / `write:sites` or `read:marketing` / `write:marketing`. See the [Marketing API overview](/sessionboard-marketing/api).
