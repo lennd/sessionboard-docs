@@ -31,7 +31,7 @@
   "tags": [
     {
       "name": "CRM",
-      "description": "Sessionboard CRM: the people an organization works with across its events (speakers, subject-matter experts, influencers, exhibitor and sponsor contacts), as Contacts with types and tags, the spreadsheet import, reading people from a connected CRM, AMS or event platform to review before importing, the pipeline, contracts sent for e-signature, and People: everyone the organization knows (attendees, members, prospects), warm opportunities and hand-offs to the other Sessionboard apps. Attendees and members are People, never Contacts until added. Organization-level: paths start at `/v1/organization/{orgId}/crm`; the same operations are served under `/v1/org/{orgId}/crm` and, with the organization taken from the token, `/v1/crm`. Requires the preview scopes `read:crm` / `write:crm`, which a token or OAuth client gets only when they are named explicitly. The POSTs that only read (`import/parse`, `import/preview`, `apps/{appId}/discover`) need `read:crm`. Request bodies are camelCase; responses are snake_case. A key restricted to particular events cannot use it. Only sending, resending and voiding a contract emails anyone."
+      "description": "Sessionboard CRM: People (everyone the organization knows, tagged speaker, member, customer, prospect, influencer or attendee) and Companies (sponsors and exhibitors, with the people who work there), the spreadsheet import, reading people from a connected CRM, AMS or event platform, the pipeline, contracts sent for e-signature, warm opportunities and hand-offs to the other Sessionboard apps. Contacts are the platform record behind a speaker or a company's person; the pipeline and contracts use them. Standard fields only: custom fields are a platform upgrade. Free up to 1,000 active contacts; nothing is blocked over the limit. Organization-level: paths start at `/v1/organization/{orgId}/crm`; the same operations are served under `/v1/org/{orgId}/crm` and, with the organization taken from the token, `/v1/crm`. Requires the preview scopes `read:crm` / `write:crm`, which a token or OAuth client gets only when they are named explicitly. The POSTs that only read (`import/parse`, `import/preview`, `apps/{appId}/discover`) need `read:crm`. Request bodies are camelCase; responses are snake_case. A key restricted to particular events cannot use it. Only sending, resending and voiding a contract emails anyone."
     },
     {
       "name": "CRM contacts",
@@ -60,6 +60,10 @@
     {
       "name": "CRM people",
       "description": "Everyone the organization knows (Marketing's People) with the CRM view, warm opportunities, adding people to contacts (linked, never merged), and handing a selection to Marketing, Sessions, Learning or Awards. Same scopes and paths as CRM."
+    },
+    {
+      "name": "CRM companies",
+      "description": "Companies (the Sessionboard platform's Accounts) tagged sponsor or exhibitor, and the people who work at each. Same scopes and paths as CRM."
     }
   ],
   "paths": {
@@ -1526,9 +1530,17 @@
                     "type": "string",
                     "description": "Where the rows came from: the app id after `apps/{appId}/discover`."
                   },
+                  "target": {
+                    "type": "string",
+                    "enum": [
+                      "people",
+                      "companies"
+                    ],
+                    "description": "`people` (rows: email, names, title, `roles`, `company` name, which is found or created and linked) or `companies` (rows: name, website, `tags`)."
+                  },
                   "as": {
                     "$ref": "#/components/schemas/CrmLandsAs",
-                    "description": "`contacts` (default), or `people` to bring members, prospects and customers into People with a signal per row instead of creating contacts. Use the `as` a discovery returned for the kind."
+                    "description": "Earlier form of `target`, still accepted."
                   }
                 }
               }
@@ -3349,6 +3361,33 @@
             "description": "Search name, email and company."
           },
           {
+            "name": "roles",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma-separated tag chips (`speaker,member`): people with any of them. Also `untagged`."
+          },
+          {
+            "name": "all_roles",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true"
+              ]
+            },
+            "description": "`true`: people with every tag in `roles`."
+          },
+          {
+            "name": "company_id",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "People who work at this company."
+          },
+          {
             "name": "role",
             "in": "query",
             "schema": {
@@ -3506,6 +3545,179 @@
           },
           "403": {
             "$ref": "#/components/responses/CrmReadForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/CrmNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/CrmTooManyRequests"
+          }
+        }
+      },
+      "post": {
+        "operationId": "crm-create-person",
+        "summary": "Add a person",
+        "description": "Adds a person (one per email in the organization). Tags have side effects, each idempotent: `speaker` also makes them a contact, `member` records their membership, `customer` and `prospect` record a lifecycle change. `companyId` links them to a company (which also makes them a contact of it). An email already here answers `409` with `code: exists`. Emails no one. Requires `write:crm`. Refused for a key restricted to particular events. Also at `POST /v1/org/{orgId}/crm/people`, and at `POST /v1/crm/people` with the organization taken from the token.",
+        "tags": [
+          "CRM people"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CrmOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "firstName": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "lastName": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "company": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "description": "A company name as text."
+                  },
+                  "title": {
+                    "type": "string",
+                    "maxLength": 255
+                  },
+                  "roles": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/CrmPersonRole"
+                    }
+                  },
+                  "companyId": {
+                    "type": "string",
+                    "description": "Link to this company."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "$ref": "#/components/schemas/CrmPerson"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/CrmBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/CrmUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/CrmWriteForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/CrmNotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/CrmContactExists"
+          },
+          "429": {
+            "$ref": "#/components/responses/CrmTooManyRequests"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "crm-delete-people",
+        "summary": "Delete people",
+        "description": "Deletes people by key. Their contacts, contracts and pipeline entries are not deleted. Ask the person first. Requires `write:crm`. Refused for a key restricted to particular events. Also at `DELETE /v1/org/{orgId}/crm/people`, and at `DELETE /v1/crm/people` with the organization taken from the token.",
+        "tags": [
+          "CRM people"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CrmOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "keys"
+                ],
+                "properties": {
+                  "keys": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 500,
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "deleted": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/CrmBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/CrmUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/CrmWriteForbidden"
           },
           "404": {
             "$ref": "#/components/responses/CrmNotFound"
@@ -3747,6 +3959,26 @@
                             "$ref": "#/components/schemas/CrmSignal"
                           }
                         },
+                        "companies": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "tags": {
+                                "type": "array",
+                                "items": {
+                                  "$ref": "#/components/schemas/CrmCompanyTag"
+                                }
+                              }
+                            }
+                          }
+                        },
                         "contact": {
                           "oneOf": [
                             {
@@ -3769,6 +4001,94 @@
           },
           "403": {
             "$ref": "#/components/responses/CrmReadForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/CrmNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/CrmTooManyRequests"
+          }
+        }
+      },
+      "put": {
+        "operationId": "crm-update-person",
+        "summary": "Update a person",
+        "description": "Changes the fields sent. `roles` and `companyIds` replace the whole list (tag side effects as on create). Standard fields only: custom fields are a Sessionboard platform upgrade (`GET …/crm/fields`). Requires `write:crm`. Refused for a key restricted to particular events. Also at `PUT /v1/org/{orgId}/crm/people/{key}`, and at `PUT /v1/crm/people/{key}` with the organization taken from the token.",
+        "tags": [
+          "CRM people"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CrmOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/CrmPersonKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "minProperties": 1,
+                "properties": {
+                  "firstName": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "lastName": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "title": {
+                    "type": "string",
+                    "maxLength": 255
+                  },
+                  "roles": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/CrmPersonRole"
+                    }
+                  },
+                  "companyIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "$ref": "#/components/schemas/CrmPerson"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/CrmBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/CrmUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/CrmWriteForbidden"
           },
           "404": {
             "$ref": "#/components/responses/CrmNotFound"
@@ -4211,6 +4531,847 @@
           }
         }
       }
+    },
+    "/v1/organization/{orgId}/crm/people/roles": {
+      "post": {
+        "operationId": "crm-tag-people",
+        "summary": "Tag or untag people",
+        "description": "Adds and removes tags on up to 500 people at once; their other tags stay. Adding `speaker` makes contacts of those without one (`contacts_created`). Removing a tag undoes only what can be undone (membership); contacts, pipeline entries and contracts stay. Requires `write:crm`. Refused for a key restricted to particular events. Also at `POST /v1/org/{orgId}/crm/people/roles`, and at `POST /v1/crm/people/roles` with the organization taken from the token.",
+        "tags": [
+          "CRM people"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CrmOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "keys"
+                ],
+                "properties": {
+                  "keys": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 500,
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "add": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/CrmPersonRole"
+                    }
+                  },
+                  "remove": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/CrmPersonRole"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "updated": {
+                          "type": "integer"
+                        },
+                        "contacts_created": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/CrmBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/CrmUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/CrmWriteForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/CrmNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/CrmTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/crm/companies": {
+      "get": {
+        "operationId": "crm-list-companies",
+        "summary": "List companies",
+        "description": "The organization's companies (the Accounts module): search, filter by tag chips (`tags`, any of), sort and page. `facets.tags` counts sponsor, exhibitor and untagged. Reads only. Requires `read:crm`. Refused for a key restricted to particular events. Also at `GET /v1/org/{orgId}/crm/companies`, and at `GET /v1/crm/companies` with the organization taken from the token.",
+        "tags": [
+          "CRM companies"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CrmOrgId"
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "description": "Search the name."
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma-separated tags: `sponsor`, `exhibitor` (any of)."
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "name",
+                "-name",
+                "people",
+                "-people",
+                "created"
+              ]
+            },
+            "description": "A leading `-` sorts descending."
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9]+$",
+              "default": "1"
+            },
+            "description": "Page, from 1."
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9]+$",
+              "default": "50"
+            },
+            "description": "Rows per page, up to 100."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "companies": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/CrmCompany"
+                          }
+                        },
+                        "total": {
+                          "type": "integer"
+                        },
+                        "page": {
+                          "type": "integer"
+                        },
+                        "per_page": {
+                          "type": "integer"
+                        },
+                        "facets": {
+                          "type": "object",
+                          "properties": {
+                            "tags": {
+                              "type": "object",
+                              "properties": {
+                                "sponsor": {
+                                  "type": "integer"
+                                },
+                                "exhibitor": {
+                                  "type": "integer"
+                                },
+                                "untagged": {
+                                  "type": "integer"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/CrmUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/CrmReadForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/CrmNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/CrmTooManyRequests"
+          }
+        }
+      },
+      "post": {
+        "operationId": "crm-create-company",
+        "summary": "Add a company",
+        "description": "Adds a company. A `sponsor` or `exhibitor` tag also shows it on the Sessionboard platform's sponsor or exhibitor pages. Requires `write:crm`. Refused for a key restricted to particular events. Also at `POST /v1/org/{orgId}/crm/companies`, and at `POST /v1/crm/companies` with the organization taken from the token.",
+        "tags": [
+          "CRM companies"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CrmOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 255
+                  },
+                  "website": {
+                    "type": "string",
+                    "maxLength": 255
+                  },
+                  "tags": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/CrmCompanyTag"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "$ref": "#/components/schemas/CrmCompany"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/CrmBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/CrmUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/CrmWriteForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/CrmNotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/CrmContactExists"
+          },
+          "429": {
+            "$ref": "#/components/responses/CrmTooManyRequests"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "crm-delete-companies",
+        "summary": "Delete companies",
+        "description": "Deletes companies by id (to the Sessionboard platform's Trash). Their people stay. Ask the person first. Requires `write:crm`. Refused for a key restricted to particular events. Also at `DELETE /v1/org/{orgId}/crm/companies`, and at `DELETE /v1/crm/companies` with the organization taken from the token.",
+        "tags": [
+          "CRM companies"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CrmOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "ids"
+                ],
+                "properties": {
+                  "ids": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "deleted": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/CrmBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/CrmUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/CrmWriteForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/CrmNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/CrmTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/crm/companies/export": {
+      "get": {
+        "operationId": "crm-export-companies",
+        "summary": "Export companies",
+        "description": "The companies, filtered like `GET …/crm/companies`, as columns and rows for a spreadsheet. Reads only. Requires `read:crm`. Refused for a key restricted to particular events. Also at `GET /v1/org/{orgId}/crm/companies/export`, and at `GET /v1/crm/companies/export` with the organization taken from the token.",
+        "tags": [
+          "CRM companies"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CrmOrgId"
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "description": "Search the name."
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma-separated tags."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "columns": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "label": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        },
+                        "rows": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": true
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/CrmUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/CrmReadForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/CrmNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/CrmTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/crm/companies/{companyId}": {
+      "get": {
+        "operationId": "crm-get-company",
+        "summary": "Get a company",
+        "description": "One company with its people, contracts and pipeline entries. Reads only. Requires `read:crm`. Refused for a key restricted to particular events. Also at `GET /v1/org/{orgId}/crm/companies/{companyId}`, and at `GET /v1/crm/companies/{companyId}` with the organization taken from the token.",
+        "tags": [
+          "CRM companies"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CrmOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/CrmCompanyId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "company": {
+                          "$ref": "#/components/schemas/CrmCompany"
+                        },
+                        "people": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/CrmPerson"
+                          }
+                        },
+                        "contracts": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/CrmContract"
+                          }
+                        },
+                        "pipeline": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/CrmPipelineEntry"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/CrmUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/CrmReadForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/CrmNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/CrmTooManyRequests"
+          }
+        }
+      },
+      "put": {
+        "operationId": "crm-update-company",
+        "summary": "Update a company",
+        "description": "Changes the fields sent; `tags` replaces the list. Standard fields only. Requires `write:crm`. Refused for a key restricted to particular events. Also at `PUT /v1/org/{orgId}/crm/companies/{companyId}`, and at `PUT /v1/crm/companies/{companyId}` with the organization taken from the token.",
+        "tags": [
+          "CRM companies"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CrmOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/CrmCompanyId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "minProperties": 1,
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 255
+                  },
+                  "website": {
+                    "type": "string",
+                    "maxLength": 255
+                  },
+                  "tags": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/CrmCompanyTag"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "$ref": "#/components/schemas/CrmCompany"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/CrmBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/CrmUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/CrmWriteForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/CrmNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/CrmTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/crm/companies/{companyId}/people": {
+      "post": {
+        "operationId": "crm-link-company-people",
+        "summary": "Link people to a company",
+        "description": "Links existing people (`keys`) or a new person (`email`, with names and title) to the company. Each becomes a contact of the company, a sponsor or exhibitor contact matching its tags. Emails no one. Requires `write:crm`. Refused for a key restricted to particular events. Also at `POST /v1/org/{orgId}/crm/companies/{companyId}/people`, and at `POST /v1/crm/companies/{companyId}/people` with the organization taken from the token.",
+        "tags": [
+          "CRM companies"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CrmOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/CrmCompanyId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "keys": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "firstName": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "lastName": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "title": {
+                    "type": "string",
+                    "maxLength": 255
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "linked": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/CrmBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/CrmUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/CrmWriteForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/CrmNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/CrmTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/crm/companies/{companyId}/people/{key}": {
+      "delete": {
+        "operationId": "crm-unlink-company-person",
+        "summary": "Unlink a person from a company",
+        "description": "Removes the person from the company; the person stays. Requires `write:crm`. Refused for a key restricted to particular events. Also at `DELETE /v1/org/{orgId}/crm/companies/{companyId}/people/{key}`, and at `DELETE /v1/crm/companies/{companyId}/people/{key}` with the organization taken from the token.",
+        "tags": [
+          "CRM companies"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CrmOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/CrmCompanyId"
+          },
+          {
+            "$ref": "#/components/parameters/CrmPersonKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "unlinked": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/CrmBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/CrmUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/CrmWriteForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/CrmNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/CrmTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/crm/fields": {
+      "get": {
+        "operationId": "crm-list-fields",
+        "summary": "List fields",
+        "description": "The standard fields of people and companies. Custom fields are a Sessionboard platform upgrade: `custom.available` is `false` and `custom.upgrade` is `platform`. Reads only. Requires `read:crm`. Refused for a key restricted to particular events. Also at `GET /v1/org/{orgId}/crm/fields`, and at `GET /v1/crm/fields` with the organization taken from the token.",
+        "tags": [
+          "CRM"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CrmOrgId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "standard": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": true
+                          }
+                        },
+                        "custom": {
+                          "type": "object",
+                          "properties": {
+                            "available": {
+                              "type": "boolean"
+                            },
+                            "upgrade": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/CrmUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/CrmReadForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/CrmNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/CrmTooManyRequests"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -4290,6 +5451,15 @@
           "type": "string"
         },
         "description": "The person key, from `GET …/crm/people`."
+      },
+      "CrmCompanyId": {
+        "name": "companyId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string"
+        },
+        "description": "The company ID, from `GET …/crm/companies`."
       }
     },
     "schemas": {
@@ -5456,11 +6626,80 @@
         ],
         "description": "Where brought-in rows land: contacts, or people (members, prospects, customers)."
       },
+      "CrmPersonRole": {
+        "type": "string",
+        "enum": [
+          "speaker",
+          "member",
+          "customer",
+          "prospect",
+          "influencer",
+          "attendee"
+        ],
+        "description": "A person tag. A person can have any number."
+      },
+      "CrmCompanyTag": {
+        "type": "string",
+        "enum": [
+          "sponsor",
+          "exhibitor"
+        ],
+        "description": "A company tag. A company can have both."
+      },
+      "CrmCompany": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "website": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "logo_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CrmCompanyTag"
+            }
+          },
+          "people_count": {
+            "type": "integer"
+          },
+          "contracts_count": {
+            "type": "integer"
+          },
+          "pipeline_count": {
+            "type": "integer"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "CrmPerson": {
         "type": "object",
         "properties": {
           "key": {
             "type": "string"
+          },
+          "id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The People record id; `null` for someone known only from a source."
           },
           "email": {
             "type": "string",
@@ -5472,7 +6711,13 @@
               "null"
             ]
           },
-          "company": {
+          "first_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "last_name": {
             "type": [
               "string",
               "null"
@@ -5484,38 +6729,52 @@
               "null"
             ]
           },
+          "company": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The company name as text."
+          },
+          "companies": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                }
+              }
+            }
+          },
           "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CrmPersonRole"
+            },
+            "description": "The tags set on the person."
+          },
+          "derived_roles": {
             "type": "array",
             "items": {
               "type": "string"
             },
-            "description": "speaker, sponsor, attendee, member, added…"
+            "description": "Roles read from their activity (for example attendee from an attended event), not set as tags."
           },
           "contact_id": {
             "type": [
               "string",
               "null"
             ],
-            "description": "The linked contact; `null` when the person is not a contact."
-          },
-          "types": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/CrmContactType"
-            },
-            "description": "The linked contact's types."
+            "description": "The linked contact, the record the pipeline and contracts use."
           },
           "member": {
             "type": "boolean"
           },
           "lifecycle": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "The CRM's latest lifecycle stage."
-          },
-          "crm_owner": {
             "type": [
               "string",
               "null"
@@ -5528,9 +6787,6 @@
             ]
           },
           "events_attended": {
-            "type": "integer"
-          },
-          "events_registered": {
             "type": "integer"
           },
           "webinars_attended": {
