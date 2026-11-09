@@ -1,0 +1,93 @@
+---
+title: "Map your AMS fields"
+description: "Confirm which field in Fonteva, Nimble AMS or Protech holds each part of a membership and a registration, which ones are required, and how to point one at your own field."
+sidebar:
+  order: 4
+audience: ["organizer"]
+jtbd: "make sure Sessionboard reads our member type from the field we actually use"
+---
+
+import { Note } from '@compat';
+
+Before Sessionboard CRM reads your members, it needs to know which field holds each part of a membership: the email, the member type, the status, the renewal date. Each of these is a **slot**. The mapping shows, for every slot, the field it reads, whether that field exists in your AMS, and which slots are required.
+
+Fonteva and Nimble AMS come with defaults taken from each vendor's own objects, so most organizations only check them. Protech publishes no schema, so Sessionboard suggests tables and columns from your environment and you confirm them.
+
+## Why use it
+
+Associations customize their AMS. If your member type lives in a field of your own, or your renewal date is on a different field, the snapshot and the Member tag would otherwise read the wrong thing. Checking the mapping once means every read after it uses the fields your membership team trusts.
+
+## Member slots
+
+**Person ID** and **Email** are required. Without them, nobody can be read.
+
+| Slot | Fonteva default (`OrderApi__Subscription__c`) | Nimble AMS default (`NU__Membership__c`) |
+| --- | --- | --- |
+| Person ID (required) | `OrderApi__Contact__c` | `NU__Account2__c`, else `NU__Account__c` |
+| Email (required) | `OrderApi__Contact__r.Email` | `NU__Account2__r.PersonEmail` |
+| First name | `OrderApi__Contact__r.FirstName` | `NU__Account2__r.FirstName` |
+| Last name | `OrderApi__Contact__r.LastName` | `NU__Account2__r.LastName` |
+| Title | `OrderApi__Contact__r.Title` | `NU__Account2__r.PersonTitle` |
+| Company | `OrderApi__Account__r.Name`, else `OrderApi__Contact__r.Account.Name` | `NU__Account2__r.NU__PrimaryAffiliation__r.Name` |
+| Status | `OrderApi__Status__c` | `NU__Status__c` |
+| Active | `OrderApi__Is_Active__c` | (Fonteva only) |
+| In grace period | `OrderApi__In_Grace_Period__c` | (Fonteva only) |
+| Member type | `OrderApi__Item__r.Name` | `NU__MembershipType2__r.Name` |
+| Joined on | `OrderApi__Activated_Date__c`, else `OrderApi__Term_Start_Date__c` | `NU__StartDate__c` |
+| Renews on | `OrderApi__Paid_Through_Date__c`, else `OrderApi__Term_End_Date__c` | `NU__EndDate__c` |
+
+Where a slot lists two fields, Sessionboard uses the first one your object has. Where your Nimble AMS org uses the older `NU__Account__c` and `NU__MembershipType__c` lookups, the same fallback applies to the email, names, title, company and member type. Fonteva reads only subscriptions that have a contact.
+
+## Registration slots
+
+Registrations are optional. They add the events your AMS ran to each member's activity. **Email** and **Event ID** are required for a registration to count.
+
+| Slot | Fonteva default (`EventApi__Attendee__c`) | Nimble AMS default (`NU__Registration2__c`) |
+| --- | --- | --- |
+| Person ID | `EventApi__Contact__c` | `NU__Account__c`, else `NU__Account2__c` |
+| Email (required) | `EventApi__Email__c`, else `EventApi__Contact__r.Email` | `NU__Account__r.PersonEmail` |
+| Event ID (required) | `EventApi__Event__c` | `NU__Event__c`, else `NU__Event2__c` |
+| Event name | `EventApi__Event__r.Name` | `NU__Event__r.Name` |
+| Event start | `EventApi__Event__r.EventApi__Start_Date__c`, else `EventApi__Event__r.EventApi__Start_Date_Time__c` | `NU__EventStartDate2__c` |
+| Status | `EventApi__Status__c` | `NU__Status__c` |
+| Checked in | `EventApi__Is_Checked_In__c` | (Fonteva only) |
+
+A registration whose status says cancelled, declined, invited or waitlisted is skipped. A registration counts as attended when its checked-in field is set, or its status says attended or checked in.
+
+## Point a slot at your own field
+
+For Fonteva and Nimble AMS, an admin can point any slot at another field by its Salesforce API name, such as `OrderApi__Contact__r.Member_Type__c`. A path can follow up to four relationships. Clearing a slot restores the default. Sessionboard checks each field against your object before it reads, so a field your org doesn't have is shown as missing rather than guessed. Changes to the mapping are recorded in your organization's audit log.
+
+If Salesforce refuses a field during a read, usually because the run-as user can't see it, Sessionboard leaves that field out, finishes the read and lists the fields it dropped. Give the run-as user read access to them and read again.
+
+## How a membership is read
+
+One person can have several terms. Sessionboard reads one member per person:
+
+- The current term wins. Otherwise, the term with the latest renewal date.
+- **Joined on** is the earliest start date across all their terms.
+- A term is current when **Active** or **In grace period** is set, or when its status reads as current, such as Active, Current, Paid, Grace, Pending or Renewed (Nimble AMS's Green and Grace too).
+- A status such as Lapsed, Expired, Cancelled, Inactive, Suspended or Terminated (Nimble AMS's Grey and Red too) is lapsed. So is a term with no status or flag, so map **Status** or **Active**.
+
+Current members are tagged **Member** when they come in. Lapsed members come in as people without the tag.
+
+## Protech: confirm your tables and columns
+
+Protech's tables and columns differ by environment, so the mapping starts with discovery. Sessionboard reads your environment's table definitions and suggests, best first, the tables whose names look like memberships (membership, member, subscription, dues) and registrations (registration, attendee, registrant).
+
+1. Choose your membership table. Sessionboard suggests a column for each slot from the table's own columns and lookups.
+2. Review the suggestions, change any that are wrong, and save.
+3. Do the same for your registration table, if you want registrations.
+
+The member slots are the same as above without **Active** and **In grace period**. The contact the membership points at supplies the email, names, job title and company. The registration slots are the same without **Event name**. **Contact** and **Email** are required for members; **Email** and **Event** for registrations.
+
+A lookup or choice column reads as its label, so member type and status come back as words, not ids. Dates, ids and the checked-in column read as raw values.
+
+<Note>
+The mapping only reads table and field definitions. Nothing is saved in Sessionboard CRM, or changed in your AMS, until you bring members in.
+</Note>
+
+## Related
+
+- [Read the member engagement snapshot](/sessionboard-crm/ams/member-snapshot)
+- [Keep members in sync nightly](/sessionboard-crm/ams/nightly-sync)

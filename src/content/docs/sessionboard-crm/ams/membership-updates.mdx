@@ -1,0 +1,80 @@
+---
+title: "Get membership updates as they happen"
+description: "Opt in to near real-time membership changes from your AMS: a Salesforce Flow HTTP callout for Fonteva and Nimble AMS, or a Dataverse webhook for Protech."
+sidebar:
+  label: "Membership updates"
+  order: 8
+audience: ["organizer"]
+jtbd: "see a new member tagged Member the day they join"
+---
+
+import { Note, Steps, Step } from '@compat';
+
+The [nightly read](/sessionboard-crm/ams/nightly-sync) keeps your members current by the next morning. Membership updates make it minutes: when a membership is created or changed in your AMS, your AMS tells Sessionboard which record changed, and Sessionboard reads that one member again. It is off until an admin turns it on.
+
+## Why use it
+
+When someone joins or lapses, the **Member** tag, the member engagement snapshot and every list you build from them change within minutes instead of the next morning. The nightly read stays on underneath, so a change your AMS fails to send is still caught the next night.
+
+## Before you start
+
+- The AMS is connected and its [field mapping](/sessionboard-crm/ams/map-fields) is confirmed.
+- **Keep in sync** is on. Updates run as the admin who turned it on.
+
+## Turn it on in Sessionboard CRM
+
+When an admin turns on membership updates for the connection, Sessionboard shows three things for your AMS admin:
+
+- the **URL** to send changes to,
+- the header name, `x-connector-token`,
+- the **token** to send in that header.
+
+Copy the token straight away: it's shown only once. If it's lost, turn updates off and on again with a new token; the old token then stops working. Turning updates off stops Sessionboard from acting on changes. The nightly read carries on.
+
+## Set it up in your AMS
+
+### Fonteva and Nimble AMS (Salesforce)
+
+<Steps>
+<Step title="Create a record-triggered Flow">
+In Salesforce **Setup**, create a record-triggered Flow on `OrderApi__Subscription__c` (Fonteva) or `NU__Membership__c` (Nimble AMS) that runs when a record is created or updated.
+</Step>
+<Step title="Add an HTTP callout">
+Add an **HTTP Callout** action that sends a `POST` to the URL Sessionboard gave you, with the header `x-connector-token` set to the token, and this body:
+
+```json
+{"event":"member.changed","ids":["<the record Id>"]}
+```
+</Step>
+<Step title="Activate it">
+Save and activate the Flow. Each change sends the record's id, and Sessionboard reads that member again through your mapping.
+</Step>
+</Steps>
+
+Nothing is installed in your org beyond your own Flow.
+
+### Protech (Dataverse)
+
+<Steps>
+<Step title="Register a web hook">
+In the Plugin Registration Tool, register a new **Web Hook** with the URL Sessionboard gave you. Set the authentication to **HttpHeader**, with the key `x-connector-token` and the token as the value.
+</Step>
+<Step title="Register a step">
+Register a step on the membership table you mapped, for the **Create** and **Update** messages, running asynchronously, pointing at that web hook.
+</Step>
+</Steps>
+
+Each change posts the membership row, and Sessionboard reads that row again through your mapping.
+
+## What happens with each change
+
+Sessionboard answers your AMS straight away, then reads only the records the change names, up to 200 at a time. Each one comes into **People** with its term updated. A current member is tagged **Member**. A member who now reads as lapsed loses the tag, if this connection tagged them; someone tagged by hand keeps it.
+
+<Note>
+Updates only read. Sessionboard writes nothing to your AMS when a change arrives.
+</Note>
+
+## Related
+
+- [Keep members in sync nightly](/sessionboard-crm/ams/nightly-sync)
+- [Map your AMS fields](/sessionboard-crm/ams/map-fields)
