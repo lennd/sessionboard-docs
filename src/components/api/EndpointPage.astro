@@ -1,0 +1,184 @@
+---
+/**
+ * One API operation's page, for any product (src/lib/api-docs/data.ts): Platform's
+ * /api/reference/<tag>/<summary> (the slugs Mintlify uses under /api-reference/) and each
+ * self-serve product's <base>/reference/<tag>/<summary>. Generated from that product's
+ * spec (Platform: api-spec/openapi.yaml, built by scripts/api-spec.mjs). Sidebar and prev/next: src/route-data.ts.
+ */
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+import { Code, Tabs, TabItem } from '@astrojs/starlight/components';
+import Markdown from './Markdown.astro';
+import SchemaFields from './SchemaFields.astro';
+import TryIt from './TryIt.astro';
+import { apiProduct } from '../../lib/api-docs/data';
+import { listOperations } from '../../lib/api-docs/urls.mjs';
+import { childProperties, codeSamples, deref, flatten, mediaExamples, parameters, requestBody, responses, sampleRequest, variants } from '../../lib/api-docs/spec.mjs';
+
+interface Props { product?: string; slug: string }
+const { product = 'platform', slug } = Astro.props;
+const P = apiProduct(product)!;
+const spec = P.spec;
+const o = listOperations(spec, P.base).find((x) => x.slug === slug)!;
+// The product's own authentication page, when it has one (self-serve suites never link into Platform).
+const authRoute = `${P.base.replace(/^\//, '')}/authentication`;
+const authHref = P.source?.guides?.[authRoute] ? `/${authRoute}` : null;
+const method = o.method.toUpperCase();
+const params = parameters(spec, o.item, o.op);
+const body = requestBody(spec, o.op);
+const resps = responses(spec, o.op);
+const samples = codeSamples(sampleRequest(spec, o));
+const schemes = spec.components?.securitySchemes || {};
+const securityNames = (o.op.security ?? spec.security ?? []).flatMap((s: Record<string, unknown>) => Object.keys(s));
+
+const firstSentence = (text = '') => {
+  const plain = text.replace(/[`*_>#\[\]]/g, '').replace(/\(([^)]*)\)/g, '').replace(/\s+/g, ' ').trim();
+  const m = plain.match(/^(.{20,200}?[.!?])(\s|$)/);
+  return (m ? m[1] : plain.slice(0, 160)).trim();
+};
+const description = firstSentence(o.op.description) || `${method} ${o.path} — ${o.tag}`;
+
+const responseExamples = resps
+  .filter((r) => r.contentType)
+  .flatMap((r) => mediaExamples(spec, r.media, r.schema).map((ex) => ({ status: r.status, label: ex.label, value: ex.value })));
+const bodyExamples = body ? mediaExamples(spec, body.media, body.schema) : [];
+// Object bodies and responses list their properties at the top level, like Mintlify; arrays
+// and scalars show one row whose children (if any) open under "Show child attributes".
+const isUnion = (schema: any) => variants(spec, schema || {}).length > 1;
+const topFields = (schema: any, fallback: string, required = false) => {
+  const { schema: s } = flatten(spec, schema || {});
+  const isArray = s.type === 'array' || (Array.isArray(s.type) && s.type.includes('array')) || !!s.items;
+  // A root-level oneOf/anyOf (e.g. the OAuth token grants) stays one row, so every option renders.
+  const kids = isArray || isUnion(schema) ? [] : childProperties(spec, schema || {});
+  return kids.length ? kids : [{ name: fallback, schema: schema || {}, required }];
+};
+// The schema's own description, shown above its properties when they are listed top-level.
+const topDescription = (schema: any) => {
+  const { schema: s } = flatten(spec, schema || {});
+  const isArray = s.type === 'array' || !!s.items;
+  return !isArray && !isUnion(schema) && childProperties(spec, schema || {}).length ? s.description : undefined;
+};
+
+const headings = [
+  { depth: 2, slug: 'request-example', text: 'Request example' },
+  { depth: 2, slug: 'try-it', text: 'Try it' },
+  securityNames.length ? { depth: 2, slug: 'authorizations', text: 'Authorizations' } : null,
+  params.path.length ? { depth: 2, slug: 'path-parameters', text: 'Path parameters' } : null,
+  params.query.length ? { depth: 2, slug: 'query-parameters', text: 'Query parameters' } : null,
+  params.header.length ? { depth: 2, slug: 'headers', text: 'Headers' } : null,
+  body ? { depth: 2, slug: 'request-body', text: 'Request body' } : null,
+  { depth: 2, slug: 'responses', text: 'Responses' },
+].filter(Boolean) as { depth: number; slug: string; text: string }[];
+
+const asField = (p: any, location: string) => ({ name: p.name, schema: p.schema || {}, required: !!p.required, location, description: p.description, deprecated: p.deprecated });
+const pretty = (v: unknown) => (typeof v === 'string' ? v : JSON.stringify(v, null, 2));
+const statusClass = (s: string) => (s.startsWith('2') ? 'ok' : s.startsWith('4') || s.startsWith('5') ? 'err' : 'other');
+---
+<StarlightPage frontmatter={{ title: o.summary, description, editUrl: false }} headings={headings}>
+  <div class="api-endpoint" data-method={o.method}>
+    <div class="api-endpoint-bar">
+      <span class={`api-method api-method-${o.method}`}>{method}</span>
+      <code class="api-endpoint-path">{o.path}</code>
+      {o.op.deprecated && <span class="api-field-flag api-field-deprecated">deprecated</span>}
+    </div>
+    <p class="api-endpoint-servers" data-pagefind-ignore>
+      {(spec.servers || []).map((s: any, i: number) => (<>{i > 0 && ' · '}<span>{s.description}: <code>{s.url}</code></span></>))}
+    </p>
+
+    <Markdown product={product} text={o.op.description} />
+
+    <h2 id="request-example">Request example</h2>
+    <div data-pagefind-ignore>
+      <Tabs syncKey="api-lang">
+        {samples.map((s) => (
+          <TabItem label={s.label}>
+            <Code code={s.code} lang={s.lang} />
+          </TabItem>
+        ))}
+      </Tabs>
+    </div>
+
+    <h2 id="try-it">Try it</h2>
+    <TryIt o={o} product={product} />
+
+    {securityNames.length > 0 && (
+      <>
+        <h2 id="authorizations">Authorizations</h2>
+        <ul class="api-fields">
+          {securityNames.map((n: string, i: number) => {
+            const s: any = schemes[n] || {};
+            return (
+              <li class="api-field">
+                <div class="api-field-head">
+                  <code class="api-field-name">{s.type === 'apiKey' ? s.name : 'Authorization'}</code>
+                  <span class="api-field-type">{s.type === 'apiKey' ? 'string' : `Bearer <token>`}</span>
+                  <span class="api-field-loc">{s.type === 'apiKey' ? s.in : 'header'}</span>
+                  {securityNames.length > 1 && i > 0 && <span class="api-field-flag">or</span>}
+                  {securityNames.length === 1 && <span class="api-field-req">required</span>}
+                </div>
+                {s.description && <div class="api-field-desc"><Markdown product={product} text={s.description} /></div>}
+              </li>
+            );
+          })}
+        </ul>
+        {securityNames.length > 1 && <p class="api-note">Send one of these.{authHref && <> See <a href={authHref}>Authentication</a>.</>}</p>}
+      </>
+    )}
+
+    {params.path.length > 0 && (<><h2 id="path-parameters">Path parameters</h2><SchemaFields product={product} fields={params.path.map((p: any) => asField(p, 'path'))} /></>)}
+    {params.query.length > 0 && (<><h2 id="query-parameters">Query parameters</h2><SchemaFields product={product} fields={params.query.map((p: any) => asField(p, 'query'))} /></>)}
+    {params.header.length > 0 && (<><h2 id="headers">Headers</h2><SchemaFields product={product} fields={params.header.map((p: any) => asField(p, 'header'))} /></>)}
+
+    {body && (
+      <>
+        <h2 id="request-body">Request body</h2>
+        <p class="api-body-meta"><code>{body.contentType}</code>{body.required && <span class="api-field-req">required</span>}</p>
+        {body.description && <Markdown product={product} text={body.description} />}
+        <Markdown product={product} text={topDescription(body.schema)} />
+        <SchemaFields product={product} fields={topFields(body.schema, 'body', body.required)} />
+        {bodyExamples.length > 0 && (
+          <div data-pagefind-ignore>
+            <Tabs>
+              {bodyExamples.map((ex) => (
+                <TabItem label={ex.label}>
+                  <Code code={pretty(ex.value)} lang={body.contentType.includes('json') ? 'json' : 'text'} />
+                </TabItem>
+              ))}
+            </Tabs>
+          </div>
+        )}
+      </>
+    )}
+
+    <h2 id="responses">Responses</h2>
+    {resps.map((r) => (
+      <section class="api-response">
+        <h3 id={`response-${r.status}`} class="api-response-head">
+          <span class={`api-status api-status-${statusClass(r.status)}`}>{r.status}</span>
+          {r.contentType && <code class="api-response-ct">{r.contentType}</code>}
+        </h3>
+        <Markdown product={product} text={r.description} />
+        {r.schema && <Markdown product={product} text={topDescription(r.schema)} />}
+        {r.schema && <SchemaFields product={product} fields={topFields(r.schema, 'response')} />}
+        {r.headers && Object.keys(r.headers).length > 0 && (
+          <SchemaFields product={product} fields={Object.entries(r.headers).map(([name, h]: [string, any]) => {
+            const { node } = deref(spec, h);
+            return { name, schema: node.schema || {}, location: 'header', description: node.description };
+          })} />
+        )}
+      </section>
+    ))}
+
+    {responseExamples.length > 0 && (
+      <div data-pagefind-ignore>
+        <h3 id="response-examples">Response examples</h3>
+        <Tabs>
+          {responseExamples.map((ex) => (
+            <TabItem label={ex.label === 'Example' ? ex.status : `${ex.status} · ${ex.label}`}>
+              <Code code={pretty(ex.value)} lang="json" />
+            </TabItem>
+          ))}
+        </Tabs>
+      </div>
+    )}
+  </div>
+</StarlightPage>

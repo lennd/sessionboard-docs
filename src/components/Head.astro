@@ -12,9 +12,12 @@ import { readFileSync } from 'node:fs';
 import breadcrumbs from '../breadcrumbs.json';
 import site from '../../site.json';
 import { isStaffOnlySlug } from '../lib/staff-only.mjs';
+import { ACADEMY_SLUG, academyOpen } from '../lib/academy.mjs';
 import { getCollection } from 'astro:content';
 import helpScopes from '../data/help-scopes.json';
 import { headScript, scopeCss, scopePaths } from '../lib/help-scope.mjs';
+import suitesConfig from '../data/suites.json';
+import { anySelfServeBuilt, builtSuites, deployedSuites, suiteForPath, suiteHeadScript } from '../lib/suites.mjs';
 
 const SITE = `https://${site.canonicalHost}`;
 const WWW = 'https://www.sessionboard.com';
@@ -51,13 +54,18 @@ const isInternal =
   slug === INTERNAL_PREFIX ||
   slug.startsWith(`${INTERNAL_PREFIX}/`) ||
   Boolean((entry.data as { unlisted?: boolean }).unlisted) ||
-  isStaffOnlySlug(slug, site);
+  isStaffOnlySlug(slug, site) ||
+  // A closed Academy is reachable only by its address (src/lib/academy.mjs).
+  (slug === ACADEMY_SLUG && !academyOpen(site));
 const title = entry.data.title;
 // Who the article is written for (frontmatter `audience`), for the signed-in
 // reader's "this guide is for organizers" note (src/scripts/account.mjs).
 const audience = ((entry.data as { audience?: string[] }).audience ?? ['organizer']) as string[];
 const description = entry.data.description ?? '';
-const ogKey = slug === '' ? 'home' : slug.replace(/\//g, '--');
+// Generated API endpoint pages (src/pages/api/reference/[...slug].astro) and the self-serve
+// products' API pages (src/pages/[product]/api) share the API reference overview's card.
+const isApiEndpoint = /^(api\/reference\/[^/]+\/[^/]+|sessionboard-[a-z]+\/api(\/.*)?)$/.test(slug);
+const ogKey = slug === '' ? 'home' : isApiEndpoint ? 'api--reference--overview' : slug.replace(/\//g, '--');
 // Content-hash version param busts edge + social-scraper caches when a card changes.
 let ogVersion = '';
 try {
@@ -125,8 +133,27 @@ const jsonLd = {
 // Self-serve product scope (src/lib/help-scope.mjs): an inline script that
 // stamps <html data-sb-scope> from `?via=` or the cookie before first paint,
 // and the CSS that hides out-of-scope sidebar entries. Inert without a scope.
-const scopeHead = headScript(helpScopes, scopePaths(await getCollection('docs'), helpScopes));
-const scopeStyle = scopeCss(helpScopes);
+//
+// Documentation suites (src/lib/suites.mjs) replace a product's scope once
+// that product's suite is built: `?via=marketing` then goes to the Marketing
+// suite instead of filtering Platform articles, so the scope is dropped from
+// the config here. With no self-serve suite built, both lines are as before.
+// Deployed = every suite (unreleased ones staff-only); public = what everyone can read.
+// A product's legacy scope gives way only to a public suite, so customers keep it
+// while that suite is staff-only.
+const builtSuiteKeys = builtSuites(suitesConfig, process.env);
+const deployedSuiteKeys = deployedSuites(suitesConfig, process.env);
+const suitesOn = anySelfServeBuilt(deployedSuiteKeys);
+const activeScopes = anySelfServeBuilt(builtSuiteKeys)
+  ? { ...helpScopes, scopes: Object.fromEntries(Object.entries(helpScopes.scopes).filter(([key]) => !builtSuiteKeys.has(key))) }
+  : helpScopes;
+const suiteHead = suitesOn ? suiteHeadScript(suitesConfig, deployedSuiteKeys, builtSuiteKeys) : null;
+const scopeHead = headScript(activeScopes, scopePaths(await getCollection('docs'), activeScopes));
+const scopeStyle = scopeCss(activeScopes);
+// Legacy scopes filter Platform pages only. On a suite page a leftover
+// `sb_help_scope` cookie (say, learning) would hide this suite's own sidebar
+// and compete with its search filter, so suite pages carry no scope at all.
+const onSuitePage = suiteForPath(Astro.url.pathname, suitesConfig) !== 'platform';
 
 // Deferred marketing tags — mirrors growth-pages marketing_head_snippet().
 const marketingJs = `
@@ -181,8 +208,9 @@ const marketingJs = `
     <script set:html={marketingJs} />
   </>
 )}
-<script is:inline set:html={scopeHead} />
-<style is:inline set:html={scopeStyle} />
+{suiteHead && <script is:inline set:html={suiteHead} />}
+{!onSuitePage && <script is:inline set:html={scopeHead} />}
+{!onSuitePage && <style is:inline set:html={scopeStyle} />}
 <script>
   // Heading anchor icons (Starlight's a.sl-anchor-link) copy the section
   // hotlink to the clipboard on click (Josh, 2026-09-24). Default hash

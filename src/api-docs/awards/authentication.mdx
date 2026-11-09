@@ -1,0 +1,28 @@
+---
+title: "Awards API authentication"
+description: "API tokens, scopes and AI assistant sign-in for the Sessionboard Awards API"
+---
+
+## Scopes
+
+| Scope | What it allows |
+|-------|----------------|
+| `read:awards` | Read programs, categories, rounds, promo codes, submissions and reviews |
+| `write:awards` | Create, update and delete them |
+
+A token whose scopes do not include the one an operation needs gets `403`. Another organization's id anywhere in the path returns `404`.
+
+## API tokens
+
+An organization admin creates a token in Sessionboard under **Organization Settings → API Tokens** and ticks `read:awards` and, to make changes, `write:awards`. Copy the token when it is shown: it is displayed once. Send it in the `x-access-token` header:
+
+```bash
+curl https://public-api.sessionboard.com/v1/organization/{orgId}/awards/programs \
+  -H "x-access-token: <api-token>"
+```
+
+A token restricted to particular events cannot use the Awards operations, because they act on the whole organization.
+
+## AI assistants
+
+Claude, ChatGPT, Copilot and Gemini connect to the Sessionboard MCP server by signing in with OAuth; there is no token to copy. In your Awards workspace, open **Apps**, then **Manage AI assistants** in the **AI assistants** panel. Add the Sessionboard connector, sign in, then ask. OAuth clients can also request `read:awards` and `write:awards` directly and send the access token as `Authorization: Bearer <access-token>`.

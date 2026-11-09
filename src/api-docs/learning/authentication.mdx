@@ -1,0 +1,30 @@
+---
+title: "Learning API authentication"
+description: "Scopes and sign-in for the Sessionboard Learning API and its MCP tools"
+---
+
+## Scopes
+
+| Scope | What it allows |
+|-------|----------------|
+| `read:learning` | Read media, drafts, published courses and learners |
+| `write:learning` | Draft, edit, publish and assign courses |
+
+Both scopes are in **preview**. They are never granted by default: a client gets them only when it names them in its OAuth `scope` request. The API token form does not offer them yet.
+
+A token restricted to particular events cannot use the Learning operations, because they act on the whole organization.
+
+## AI assistants
+
+Claude, ChatGPT, Copilot and Gemini connect to the Sessionboard MCP server by signing in with OAuth; there is no token to copy. In your Learning workspace, open **Apps**, then **Manage AI assistants** in the **AI assistants** panel. Add the Sessionboard connector, sign in, then ask. The person who signs in needs access to the organization's Learning workspace.
+
+## Requests
+
+Send the OAuth access token as a bearer token:
+
+```bash
+curl https://public-api.sessionboard.com/v1/learning/library \
+  -H "Authorization: Bearer <access-token>"
+```
+
+A request without a valid token returns `401`. A token without the scope an operation needs returns `403`.

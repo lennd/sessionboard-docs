@@ -5,19 +5,43 @@
  * once from Footer.astro, because Starlight renders this component twice:
  * header and mobile menu), "Contact support", Starlight's social icons, then
  * the signed-in reader's account menu (AccountMenu.astro).
+ *
+ * On a self-serve suite's page (src/lib/suites.mjs) both actions stay inside
+ * the suite: the Platform release-notes email is not offered (self-serve
+ * notes are never emailed), "What's new" opens the suite's own page, and
+ * "Contact support" its Troubleshooting page.
  */
 import Default from '@astrojs/starlight/components/SocialIcons.astro';
 import AccountMenu from './AccountMenu.astro';
+import SuiteSearch from './SuiteSearch.astro';
+import suitesConfig from '../data/suites.json';
+import { PLATFORM, anySelfServeBuilt, deployedSuites, suiteForId } from '../lib/suites.mjs';
+
+const suite = suiteForId(Astro.locals.starlightRoute.id, suitesConfig);
+const suitePath = suite === PLATFORM ? null : suitesConfig.suites[suite as keyof typeof suitesConfig.suites].path;
+// Search stays inside the reader's suite; only when a self-serve suite is built.
+const suitesOn = anySelfServeBuilt(deployedSuites(suitesConfig, process.env));
 ---
 
-<button class="sb-updates-link" type="button" data-sb-updates-open aria-haspopup="dialog" aria-controls="sb-updates-dialog">
-  <svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path>
-    <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path>
-  </svg>
-  Get updates
-</button>
-<a class="support-link" href="/faq/who-can-i-contact-for-additional-assistance">Contact support</a>
+{suitesOn && <SuiteSearch />}
+
+{suitePath ? (
+  <>
+    <a class="sb-updates-link" href={`${suitePath}/whats-new`}>What's new</a>
+    <a class="support-link" href={`${suitePath}/troubleshooting`}>Contact support</a>
+  </>
+) : (
+  <>
+    <button class="sb-updates-link" type="button" data-sb-updates-open aria-haspopup="dialog" aria-controls="sb-updates-dialog">
+      <svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path>
+        <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path>
+      </svg>
+      Get updates
+    </button>
+    <a class="support-link" href="/faq/who-can-i-contact-for-additional-assistance">Contact support</a>
+  </>
+)}
 <Default><slot /></Default>
 <AccountMenu />
 

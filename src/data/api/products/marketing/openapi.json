@@ -1,0 +1,4491 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Sessionboard Public API",
+    "version": "1.0",
+    "description": "REST API for managing sessions, speakers, contacts, sponsors, exhibitors, and event data on the Sessionboard platform.",
+    "contact": {
+      "name": "Sessionboard Support",
+      "email": "support@sessionboard.com"
+    },
+    "termsOfService": "https://www.sessionboard.com/legal/terms-of-service"
+  },
+  "servers": [
+    {
+      "url": "https://public-api.sessionboard.com",
+      "description": "US Region"
+    },
+    {
+      "url": "https://public-api-eu.sessionboard.com",
+      "description": "EU Region"
+    }
+  ],
+  "security": [
+    {
+      "ApiKey": []
+    },
+    {
+      "BearerToken": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Marketing",
+      "description": "Sessionboard Marketing for any organization whose plan includes Marketing. Organization-level:\npaths start at `/v1/organization/{orgId}/marketing`, and the same operations are served under\n`/v1/marketing` with the organization taken from the token. Requires the preview scopes\n`read:marketing` / `write:marketing`, which a token or OAuth client gets only when they are\nnamed explicitly (not by default, and not listed in `scopes_supported`). A token restricted to\nparticular events cannot use these organization-wide operations.\n"
+    },
+    {
+      "name": "Sites",
+      "description": "Build and edit a product's Site by API or chat: the Marketing event page, a Learning Site, an Awards Site. Every edit lands in the Site's draft; nothing goes live until you publish with the person's OK, and every publish is a version you can restore. Organization-level: paths start at `/v1/organization/{orgId}/sites`, and the same operations are served under `/v1/sites` with the organization taken from the token. Reads need `read:sites` or the Site's product scope (`read:marketing`, `read:learning`, `read:awards`); writes need the matching `write:` scope. The signed-in person's own access to the Site applies too.\n"
+    }
+  ],
+  "paths": {
+    "/v1/organization/{orgId}/marketing/goals/turnout": {
+      "get": {
+        "operationId": "get-event-turnout",
+        "summary": "How an event is doing (turnout and pacing)",
+        "description": "\"How's it doing?\" for one event or webinar. Defaults to the next upcoming event; pass `eventId` for another one. Returns registrations so far, an estimate of registrations and turnout at the event date, and pace against the event's goal. The estimate comes with a range, a confidence label (`low`, `medium`, `high`) and a plain sentence saying how it was estimated. You also get the last comparable edition, registrations by day before the event (for a chart), the time of week the organization's emails get opened most, and two or three suggestions. Every number under `prediction` is an estimate. When there is not enough history, `prediction.status` is `insufficient_history` (or `too_early`) and no number is returned. With no goal set, the goal is the last comparable edition's numbers (`goal.source: last_edition`, `goal.default: true`). Cancelled registrations are not counted. Comparisons with other organizations are aggregate statistics only, never another organization's events or numbers. Requires `read:marketing`. Also at `GET /v1/marketing/goals/turnout`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "eventId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "The event or webinar. Defaults to the next upcoming one, else the latest."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "$ref": "#/components/schemas/EventTurnout"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "The event is not in your organization."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/goals/turnout/{eventId}/goal": {
+      "post": {
+        "operationId": "set-event-turnout-goal",
+        "summary": "Set an event's registration and attendance goal",
+        "description": "Sets the event's registration goal, attendance goal, or both. `null` clears one; with no goal set, the last comparable edition's numbers are used. Answers with the same body as `GET /v1/organization/{orgId}/marketing/goals/turnout`, so pace against the new goal shows at once. An event has at most one open registration goal: when it has one (made on the Goals page or with `plan_goal`), `registrationsGoal` changes that goal's number and the answer's `goal.source` is `goal`; nothing new is created. Sends and spends nothing. Requires `write:marketing`. Also at `POST /v1/marketing/goals/turnout/{eventId}/goal`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "The event or webinar."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "At least one of the two. Each key is also accepted in snake_case (`registrations_goal`, `attendance_goal`).",
+                "properties": {
+                  "registrationsGoal": {
+                    "type": "integer",
+                    "nullable": true,
+                    "minimum": 1,
+                    "maximum": 10000000,
+                    "description": "Registrations wanted by the event date. `null` clears it."
+                  },
+                  "attendanceGoal": {
+                    "type": "integer",
+                    "nullable": true,
+                    "minimum": 1,
+                    "maximum": 10000000,
+                    "description": "People wanted at the event. `null` clears it."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "$ref": "#/components/schemas/EventTurnout"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Neither goal was given, or a goal is not a whole number from 1 to 10,000,000."
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "The event is not in your organization."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/audience/forms": {
+      "get": {
+        "operationId": "list-signup-forms",
+        "summary": "List sign-up forms",
+        "description": "The organization's sign-up forms (on event pages, libraries, clips and recordings), newest first, each with `signups` (total, pending, subscribed). Archived forms are left out unless `includeArchived=true`. Requires `read:marketing`. Also at `GET /v1/marketing/audience/forms`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "eventId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "placement",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "event_page",
+                "gallery",
+                "clip",
+                "recording_gate"
+              ]
+            }
+          },
+          {
+            "name": "includeArchived",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`payload.forms`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "forms": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/SignupForm"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/audience/forms/create": {
+      "post": {
+        "operationId": "create-signup-form",
+        "summary": "Create a sign-up form",
+        "description": "A new sign-up form. Everything is optional: the heading, line and button default from the event, the organization or the recording. A recording gate (`placement: recording_gate` or `clip`) needs `targetKind` and `targetId`. Double opt-in is on unless `doubleOptIn: false`. Requires `write:marketing`. Also at `POST /v1/marketing/audience/forms/create`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignupFormInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "`payload.form`"
+          },
+          "400": {
+            "description": "A field is not valid (for example a gate without the recording it unlocks)."
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "The event or recording is not in your organization."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/audience/forms/ensure": {
+      "post": {
+        "operationId": "ensure-signup-form",
+        "summary": "Add a sign-up form (no setup)",
+        "description": "The sign-up form for an event page, a library or a recording: the one already there, or a new one with good defaults. With `eventId` and `addToPage: true`, the form is also placed on the event page **draft** (made from the Brand kit when the event has no page yet); `payload.page` has `preview_url` and `revision`. Nothing is published. Calling it again returns the same form. Requires `write:marketing`. Also at `POST /v1/marketing/audience/forms/ensure`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/SignupFormInput"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "addToPage": {
+                        "type": "boolean",
+                        "description": "Also put the form on the event page draft (needs `eventId`). Never publishes."
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "`payload.form`, `payload.created`, and with `addToPage` `payload.page` and `payload.message`"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "The event or recording is not in your organization."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/audience/forms/{formId}": {
+      "get": {
+        "operationId": "get-signup-form",
+        "summary": "Get a sign-up form",
+        "description": "One form with its sign-up counts. Requires `read:marketing`. Also at `GET /v1/marketing/audience/forms/{formId}`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "formId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`payload.form`"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "Not found in your organization."
+          }
+        }
+      },
+      "put": {
+        "operationId": "update-signup-form",
+        "summary": "Update a sign-up form",
+        "description": "Change what was sent; anything left out stays. `status: archived` stops sign-ups (the people stay). Requires `write:marketing`. Also at `PUT /v1/marketing/audience/forms/{formId}`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "formId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/SignupFormInput"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "active",
+                          "archived"
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "`payload.form`"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "Not found in your organization."
+          }
+        }
+      },
+      "delete": {
+        "operationId": "archive-signup-form",
+        "summary": "Archive a sign-up form",
+        "description": "The form stops taking sign-ups; the people it brought in stay. Requires `write:marketing`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "formId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`payload.archived: true`"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "Not found in your organization."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/audience/subscribers": {
+      "get": {
+        "operationId": "list-subscribers",
+        "summary": "List sign-ups",
+        "description": "People who signed up on the organization's own pages, newest first, with `status` (`pending` = waiting to confirm their email), `source_kind`, `list_key` and dates, plus `counts` by status for the same filters. Requires `read:marketing`; refused for a key restricted to particular events. Also at `GET /v1/marketing/audience/subscribers`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "subscribed",
+                "unsubscribed",
+                "bounced",
+                "complained"
+              ]
+            }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "form",
+                "recording_gate",
+                "gallery",
+                "webinar",
+                "attendee_import",
+                "admin"
+              ]
+            }
+          },
+          {
+            "name": "listKey",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "eventId",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Search email, name or company."
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`payload.subscribers`, `payload.total`, `payload.counts`"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/audience/subscribers/export": {
+      "get": {
+        "operationId": "export-subscribers",
+        "summary": "Export sign-ups (CSV)",
+        "description": "The same filters as the list, as CSV text in `payload.csv` (up to 5,000 rows; `payload.truncated` says when there were more). Requires `read:marketing`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`payload.csv`, `payload.total`, `payload.truncated`"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/audience/subscribers/create": {
+      "post": {
+        "operationId": "add-subscriber",
+        "summary": "Add someone to a list",
+        "description": "Add a person who agreed elsewhere. With `confirmed: true` (your word that they agreed) they are subscribed now; otherwise they get the confirmation email first. An email on your suppression list is never subscribed. Requires `write:marketing`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "firstName": {
+                    "type": "string"
+                  },
+                  "lastName": {
+                    "type": "string"
+                  },
+                  "company": {
+                    "type": "string"
+                  },
+                  "listKey": {
+                    "type": "string",
+                    "description": "Default `newsletter`."
+                  },
+                  "eventId": {
+                    "type": "integer"
+                  },
+                  "confirmed": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "`payload.outcome` (`subscribed`, `pending`, `already_subscribed`, `suppressed`, `blocked`) and `payload.subscription`"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/audience/subscribers/unsubscribe": {
+      "post": {
+        "operationId": "unsubscribe-person",
+        "summary": "Unsubscribe someone",
+        "description": "Stop emailing a person: their list (or every list when `listKey` is left out) and your suppression list, so no other send reaches them. Requires `write:marketing`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "listKey": {
+                    "type": "string"
+                  },
+                  "reason": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "`payload.lists_changed`"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/audience/summary": {
+      "get": {
+        "operationId": "count-signups",
+        "summary": "How many people signed up",
+        "description": "Sign-ups in the last `days` (default 7): `total`, `by_status`, `by_source` and `message`, one plain sentence. Requires `read:marketing`. Also at `GET /v1/marketing/audience/summary`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "days",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 365
+            }
+          },
+          {
+            "name": "listKey",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`payload.total`, `payload.by_status`, `payload.by_source`, `payload.message`"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/podcasts": {
+      "get": {
+        "operationId": "list-podcasts",
+        "summary": "List podcasts",
+        "description": "Shows with episode counts by status (draft, approved, published), the feed URL and the public page. Requires `read:marketing`; refused for a key restricted to particular events. Also at `GET /v1/marketing/podcasts`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`payload` with the result"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/podcasts/create": {
+      "post": {
+        "operationId": "create-podcast",
+        "summary": "Create a podcast",
+        "description": "A new show. Title, description, author, category and language default from the organization; artwork defaults to a cover drawn from your Brand kit. Requires `write:marketing`; refused for a key restricted to particular events. Also at `POST /v1/marketing/podcasts/create`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "description": "Show title"
+                  },
+                  "eventId": {
+                    "type": "integer",
+                    "description": "Event the show belongs to"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Show description"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "`payload` with the result"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/podcasts/suggestions": {
+      "get": {
+        "operationId": "podcast-suggestions",
+        "summary": "Podcast suggestions",
+        "description": "Events and series with recordings that would make a show. Requires `read:marketing`; refused for a key restricted to particular events. Also at `GET /v1/marketing/podcasts/suggestions`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`payload` with the result"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/podcasts/from-event": {
+      "post": {
+        "operationId": "podcast-from-event",
+        "summary": "Turn an event into a podcast",
+        "description": "The event's show (created on the first call, reused after) with a draft episode for every session that has a recording or an approved audio recap. Nothing is published. Requires `write:marketing`; refused for a key restricted to particular events. Also at `POST /v1/marketing/podcasts/from-event`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "eventId": {
+                    "type": "integer",
+                    "description": "The event or webinar (required)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "`payload` with the result"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/podcasts/stats": {
+      "get": {
+        "operationId": "podcast-stats",
+        "summary": "Podcast downloads",
+        "description": "Downloads in the last 7 days and in total, by episode. A download counts once per listener per episode in any 24 hours; known bots are not counted. Requires `read:marketing`; refused for a key restricted to particular events. Also at `GET /v1/marketing/podcasts/stats`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "showId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Only this show"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`payload` with the result"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/podcasts/{showId}": {
+      "get": {
+        "operationId": "get-podcast",
+        "summary": "Get a podcast",
+        "description": "One show with its episodes. Requires `read:marketing`; refused for a key restricted to particular events. Also at `GET /v1/marketing/podcasts/{showId}`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "showId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The show"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`payload` with the result"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "Not found in your organization."
+          }
+        }
+      },
+      "put": {
+        "operationId": "update-podcast",
+        "summary": "Update a podcast",
+        "description": "Change the show's details; anything left out stays. Requires `write:marketing`; refused for a key restricted to particular events. Also at `PUT /v1/marketing/podcasts/{showId}`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "showId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The show"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "author": {
+                    "type": "string"
+                  },
+                  "category": {
+                    "type": "string"
+                  },
+                  "language": {
+                    "type": "string"
+                  },
+                  "explicit": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "`payload` with the result"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "Not found in your organization."
+          }
+        }
+      },
+      "delete": {
+        "operationId": "archive-podcast",
+        "summary": "Archive a podcast",
+        "description": "The show stops appearing; its feed answers that it ended. Episodes are kept. Requires `write:marketing`; refused for a key restricted to particular events. Also at `DELETE /v1/marketing/podcasts/{showId}`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "showId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The show"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`payload` with the result"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "Not found in your organization."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/podcasts/{showId}/sessions": {
+      "get": {
+        "operationId": "podcast-candidates",
+        "summary": "Sessions that could be episodes",
+        "description": "The event's sessions with a recording or audio recap, marked when already in the show. Requires `read:marketing`; refused for a key restricted to particular events. Also at `GET /v1/marketing/podcasts/{showId}/sessions`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "showId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The show"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`payload` with the result"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "Not found in your organization."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/podcasts/{showId}/episodes": {
+      "post": {
+        "operationId": "add-podcast-episodes",
+        "summary": "Add episodes",
+        "description": "Draft episodes from sessions or recordings in Media. Sessions already in the show are skipped. Requires `write:marketing`; refused for a key restricted to particular events. Also at `POST /v1/marketing/podcasts/{showId}/episodes`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "showId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The show"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "sessionIds": {
+                    "type": "array",
+                    "description": "Session ids"
+                  },
+                  "recordingIds": {
+                    "type": "array",
+                    "description": "Media recording ids"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "`payload` with the result"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "Not found in your organization."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/podcasts/{showId}/episodes/status": {
+      "post": {
+        "operationId": "set-podcast-episode-status",
+        "summary": "Approve or publish episodes",
+        "description": "Move episodes to draft, approved or published. Published episodes appear on the public feed. When an assistant (an MCP connection) calls this, it answers `202` with `status: needs_approval` and a link; a person approves it in Sessionboard. Requires `write:marketing`; refused for a key restricted to particular events. Also at `POST /v1/marketing/podcasts/{showId}/episodes/status`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "showId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The show"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "episodeIds": {
+                    "type": "array",
+                    "description": "Episode ids (required)"
+                  },
+                  "status": {
+                    "type": "string",
+                    "description": "draft, approved or published (required)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "`payload` with the result"
+          },
+          "202": {
+            "description": "An assistant's call waits for a person: `payload.status: needs_approval`, `payload.url`."
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "Not found in your organization."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/podcasts/{showId}/episodes/{episodeId}": {
+      "put": {
+        "operationId": "update-podcast-episode",
+        "summary": "Update an episode",
+        "description": "Title, notes and chapters. Requires `write:marketing`; refused for a key restricted to particular events. Also at `PUT /v1/marketing/podcasts/{showId}/episodes/{episodeId}`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "showId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The show"
+          },
+          {
+            "name": "episodeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The episode"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "notes": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "`payload` with the result"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "Not found in your organization."
+          }
+        }
+      },
+      "delete": {
+        "operationId": "remove-podcast-episode",
+        "summary": "Remove an episode",
+        "description": "The episode leaves the show and the feed. Requires `write:marketing`; refused for a key restricted to particular events. Also at `DELETE /v1/marketing/podcasts/{showId}/episodes/{episodeId}`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "showId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The show"
+          },
+          {
+            "name": "episodeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The episode"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`payload` with the result"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "Not found in your organization."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/newsletter": {
+      "get": {
+        "operationId": "get-newsletter",
+        "summary": "Get the newsletter",
+        "description": "The publication (name, from name, reply-to, list, cadence) and its issues with status (draft, scheduled, sending, sent). Requires `read:marketing`; refused for a key restricted to particular events. Also at `GET /v1/marketing/newsletter`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`payload` with the result"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          }
+        }
+      },
+      "put": {
+        "operationId": "update-newsletter",
+        "summary": "Update the newsletter",
+        "description": "The publication's settings; anything left out stays. Requires `write:marketing`; refused for a key restricted to particular events. Also at `PUT /v1/marketing/newsletter`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "fromName": {
+                    "type": "string"
+                  },
+                  "replyTo": {
+                    "type": "string"
+                  },
+                  "cadence": {
+                    "type": "string",
+                    "description": "after_each_event, monthly or manual"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "`payload` with the result"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/newsletter/issues/create": {
+      "post": {
+        "operationId": "draft-newsletter-issue",
+        "summary": "Draft an issue",
+        "description": "A draft issue written from an event's recaps, clips, quotes and podcast episodes (eventId, or eventQuery with words from its name), or a blank issue. Sends nothing. Requires `write:marketing`; refused for a key restricted to particular events. Also at `POST /v1/marketing/newsletter/issues/create`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "eventId": {
+                    "type": "integer"
+                  },
+                  "eventQuery": {
+                    "type": "string"
+                  },
+                  "blank": {
+                    "type": "boolean"
+                  },
+                  "subject": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "`payload` with the result"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/newsletter/issues/{issueId}": {
+      "get": {
+        "operationId": "get-newsletter-issue",
+        "summary": "Get an issue",
+        "description": "Subject, preheader, blocks, status, schedule and recipient count. Requires `read:marketing`; refused for a key restricted to particular events. Also at `GET /v1/marketing/newsletter/issues/{issueId}`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "issueId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The issue"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`payload` with the result"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "Not found in your organization."
+          }
+        }
+      },
+      "put": {
+        "operationId": "update-newsletter-issue",
+        "summary": "Update an issue",
+        "description": "Subject, preheader and blocks of a draft. Requires `write:marketing`; refused for a key restricted to particular events. Also at `PUT /v1/marketing/newsletter/issues/{issueId}`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "issueId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The issue"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "subject": {
+                    "type": "string"
+                  },
+                  "preheader": {
+                    "type": "string"
+                  },
+                  "blocks": {
+                    "type": "array",
+                    "description": "Blocks: heading, text, clip, quote, episode, button"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "`payload` with the result"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "Not found in your organization."
+          }
+        }
+      },
+      "delete": {
+        "operationId": "delete-newsletter-issue",
+        "summary": "Delete a draft issue",
+        "description": "Only drafts can be deleted. Requires `write:marketing`; refused for a key restricted to particular events. Also at `DELETE /v1/marketing/newsletter/issues/{issueId}`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "issueId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The issue"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`payload` with the result"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "Not found in your organization."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/newsletter/issues/{issueId}/schedule": {
+      "post": {
+        "operationId": "schedule-newsletter-issue",
+        "summary": "Send or schedule an issue",
+        "description": "Sends to people subscribed to the newsletter's list, now or at sendAt (ISO time). Pending and unsubscribed people are skipped. When an assistant (an MCP connection) calls this, it answers `202` with `status: needs_approval` and a link; a person approves it in Sessionboard. Requires `write:marketing`; refused for a key restricted to particular events. Also at `POST /v1/marketing/newsletter/issues/{issueId}/schedule`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "issueId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The issue"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "sendAt": {
+                    "type": "string",
+                    "description": "ISO time; leave out to send now"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "`payload` with the result"
+          },
+          "202": {
+            "description": "An assistant's call waits for a person: `payload.status: needs_approval`, `payload.url`."
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "Not found in your organization."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/newsletter/issues/{issueId}/unschedule": {
+      "post": {
+        "operationId": "unschedule-newsletter-issue",
+        "summary": "Unschedule an issue",
+        "description": "A scheduled issue goes back to draft. Requires `write:marketing`; refused for a key restricted to particular events. Also at `POST /v1/marketing/newsletter/issues/{issueId}/unschedule`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "issueId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The issue"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`payload` with the result"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "Not found in your organization."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/newsletter/issues/{issueId}/results": {
+      "get": {
+        "operationId": "newsletter-issue-results",
+        "summary": "Issue results",
+        "description": "Delivered, opens, clicks by link, unsubscribes and bounces. Requires `read:marketing`; refused for a key restricted to particular events. Also at `GET /v1/marketing/newsletter/issues/{issueId}/results`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "issueId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The issue"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`payload` with the result"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "Not found in your organization."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/journeys": {
+      "get": {
+        "operationId": "list-journeys",
+        "summary": "List journeys",
+        "description": "The four fixed journeys (no-show to recording, attendee to recap and next event, new subscriber welcome, invited-not-registered reminder): on or off, delay, the email and how many people each would reach. eventId for an event's journeys; leave it out for the organization's welcome. Requires `read:marketing`; refused for a key restricted to particular events. Also at `GET /v1/marketing/journeys`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "eventId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "The event"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`payload` with the result"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/journeys/{journeyId}": {
+      "put": {
+        "operationId": "update-journey",
+        "summary": "Update a journey",
+        "description": "Switch a journey on or off, or change its delay or email. Each person gets a journey's email once. When an assistant (an MCP connection) calls this, it answers `202` with `status: needs_approval` and a link; a person approves it in Sessionboard. Requires `write:marketing`; refused for a key restricted to particular events. Also at `PUT /v1/marketing/journeys/{journeyId}`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "journeyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The journey"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "enabled": {
+                    "type": "boolean"
+                  },
+                  "delayHours": {
+                    "type": "integer",
+                    "description": "0 to 2160"
+                  },
+                  "subject": {
+                    "type": "string"
+                  },
+                  "body": {
+                    "type": "string"
+                  },
+                  "ctaLabel": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "`payload` with the result"
+          },
+          "202": {
+            "description": "An assistant's call waits for a person: `payload.status: needs_approval`, `payload.url`."
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "Not found in your organization."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/journeys/{journeyId}/reset": {
+      "post": {
+        "operationId": "reset-journey",
+        "summary": "Reset a journey",
+        "description": "The journey's email back to the default words. Requires `write:marketing`; refused for a key restricted to particular events. Also at `POST /v1/marketing/journeys/{journeyId}/reset`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "journeyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The journey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`payload` with the result"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "Not found in your organization."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/video/media/{mediaId}/playback": {
+      "get": {
+        "operationId": "video-playback",
+        "summary": "Recording playback",
+        "description": "A recording's playback descriptor: the stream or file to play, poster, captions and chapters. Requires `read:marketing`; refused for a key restricted to particular events. Also at `GET /v1/marketing/video/media/{mediaId}/playback`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "mediaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The recording"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`payload` with the result"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "Not found in your organization."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/video/media/{mediaId}/watchers": {
+      "get": {
+        "operationId": "video-watchers",
+        "summary": "Who watched a recording",
+        "description": "People who watched and how far, newest first. minPercent keeps only those who watched at least that much. Requires `read:marketing`; refused for a key restricted to particular events. Also at `GET /v1/marketing/video/media/{mediaId}/watchers`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "mediaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The recording"
+          },
+          {
+            "name": "minPercent",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "0 to 100"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`payload` with the result"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "Not found in your organization."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/video/items/{mediaId}": {
+      "get": {
+        "operationId": "video-options",
+        "summary": "A recording's gate, button and end card",
+        "description": "What happens around a recording on your public pages. `settings` holds what you chose (`gate` off, before or at `gate_at_s`; the button's `cta_mode` auto, custom or off and `cta_at_s`; `end_card`); `resolved` holds what viewers see today. With nothing chosen, anyone can watch, the button is \"Register for\" your next event at the end, and a \"Watch next\" card follows. Requires `read:marketing`; refused for a key restricted to particular events. Also at `GET /v1/marketing/video/items/{mediaId}`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/VideoMediaId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`payload` is a VideoOptions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "$ref": "#/components/schemas/VideoOptions"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "The recording is not in your organization."
+          }
+        }
+      },
+      "put": {
+        "operationId": "update-video-options",
+        "summary": "Change a recording's gate, button or end card",
+        "description": "Send only what changes; anything left out keeps its value. A custom button needs a label and a web link. This changes what visitors see wherever the recording plays. Requires `write:marketing`; refused for a key restricted to particular events. Also at `PUT /v1/marketing/video/items/{mediaId}`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/VideoMediaId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VideoOptionsInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "`payload` is the VideoOptions after the change"
+          },
+          "400": {
+            "description": "A time after the end of the recording, a custom button without a label or link, or a link that is not a web address."
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "The recording is not in your organization."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/video/items/{mediaId}/gate": {
+      "post": {
+        "operationId": "gate-video",
+        "summary": "Ask for an email to watch a recording",
+        "description": "Visitors enter an email before the recording plays, or at `atS` seconds after watching that far. It uses the recording's sign-up form (made on the first call, with words from the recording). Any valid email unlocks it; only people who tick the box join your list. `off: true` removes the gate. Calling it again with the same time changes nothing. Returns `form_id`, `at_s` and `share_path` (the page to share). Requires `write:marketing`; refused for a key restricted to particular events. Also at `POST /v1/marketing/video/items/{mediaId}/gate`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/VideoMediaId"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "atS": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 86400,
+                    "description": "Ask at this second; leave out to ask before it plays"
+                  },
+                  "off": {
+                    "type": "boolean",
+                    "description": "Remove the gate"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "`payload.gated`, `payload.form_id`, `payload.at_s`, `payload.share_path`"
+          },
+          "400": {
+            "description": "The time is after the end of the recording."
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "The recording is not in your organization."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/video/premieres": {
+      "get": {
+        "operationId": "list-premieres",
+        "summary": "List premieres",
+        "description": "Your premieres, newest first, with their state (upcoming, live, ended or cancelled), how many people asked for a reminder and how many questions were asked. Requires `read:marketing`; refused for a key restricted to particular events. Also at `GET /v1/marketing/video/premieres`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "eventId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d+$"
+            },
+            "description": "Only this event page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`payload.premieres`, a list of Premiere",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "premieres": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Premiere"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/video/premieres/ensure": {
+      "post": {
+        "operationId": "schedule-premiere",
+        "summary": "Schedule a premiere",
+        "description": "A recording plays at `startsAt` for everyone on the event page at the same moment, with questions and polls beside it. Visitors can ask for a reminder (emailed the day before and just before the start); afterwards it plays on demand with the recording's gate. `eventId` defaults to the recording's event. With `addToPage: true` the premiere goes on the event page **draft**; nothing is published. The same recording on the same page is one premiere: calling again with a new time moves it. Requires `write:marketing`; refused for a key restricted to particular events. Also at `POST /v1/marketing/video/premieres/ensure`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "mediaId",
+                  "startsAt"
+                ],
+                "properties": {
+                  "mediaId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "The recording"
+                  },
+                  "startsAt": {
+                    "type": "string",
+                    "description": "ISO 8601 with a timezone offset, at least a minute from now"
+                  },
+                  "eventId": {
+                    "type": "integer",
+                    "description": "The event page; defaults to the recording's event"
+                  },
+                  "title": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "description": "The recording's title by default"
+                  },
+                  "addToPage": {
+                    "type": "boolean",
+                    "description": "Also put the premiere on the event page draft. Never publishes."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "`payload.premiere` (a Premiere), `payload.created`, and with `addToPage` `payload.page` (`preview_url`, `revision`, `is_live`). `payload.warning` when the recording's length is not known yet."
+          },
+          "400": {
+            "description": "A start in the past or less than a minute away."
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "The recording or event is not in your organization."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/video/premieres/{premiereId}": {
+      "put": {
+        "operationId": "update-premiere",
+        "summary": "Move, cancel or end a premiere",
+        "description": "Move it (`startsAt`; reminders go again for the new time), cancel it (`status: cancelled`), stop taking questions (`qaOpen: false`) or end it now (`end: true`; on demand from this moment). This changes what visitors see. Requires `write:marketing`; refused for a key restricted to particular events. Also at `PUT /v1/marketing/video/premieres/{premiereId}`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/VideoPremiereId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "startsAt": {
+                    "type": "string",
+                    "description": "ISO 8601 with a timezone offset"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "scheduled",
+                      "cancelled"
+                    ]
+                  },
+                  "qaOpen": {
+                    "type": "boolean"
+                  },
+                  "title": {
+                    "type": "string",
+                    "maxLength": 255
+                  },
+                  "end": {
+                    "type": "boolean",
+                    "description": "End it now"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "`payload.premiere`, a Premiere",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "premiere": {
+                          "$ref": "#/components/schemas/Premiere"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A start in the past or an unknown status."
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "Not found in your organization."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/video/premieres/{premiereId}/room": {
+      "get": {
+        "operationId": "premiere-room",
+        "summary": "A premiere's questions and polls",
+        "description": "Every question (status visible, answered or hidden), newest first, and each poll with its votes per answer. Requires `read:marketing`; refused for a key restricted to particular events. Also at `GET /v1/marketing/video/premieres/{premiereId}/room`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/VideoPremiereId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`payload.premiere` and `payload.room` (`qa_open`, `questions`, `polls`)"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "Not found in your organization."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/video/premieres/{premiereId}/questions": {
+      "post": {
+        "operationId": "moderate-premiere-question",
+        "summary": "Hide, show or answer a premiere question",
+        "description": "Hide a question from the room, show it again, or mark it answered. Requires `write:marketing`; refused for a key restricted to particular events. Also at `POST /v1/marketing/video/premieres/{premiereId}/questions`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/VideoPremiereId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "questionId",
+                  "action"
+                ],
+                "properties": {
+                  "questionId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "hide",
+                      "show",
+                      "answered"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "`payload.question` with its new status"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "Not found in your organization."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/video/premieres/{premiereId}/polls": {
+      "post": {
+        "operationId": "manage-premiere-poll",
+        "summary": "Add or change a premiere poll",
+        "description": "`create` adds a poll with a question and 2 to 6 answers; it opens at once and viewers see it. `open`, `close` and `delete` act on `pollId`. Requires `write:marketing`; refused for a key restricted to particular events. Also at `POST /v1/marketing/video/premieres/{premiereId}/polls`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/VideoPremiereId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "action"
+                ],
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "create",
+                      "open",
+                      "close",
+                      "delete"
+                    ]
+                  },
+                  "pollId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "question": {
+                    "type": "string",
+                    "maxLength": 300
+                  },
+                  "options": {
+                    "type": "array",
+                    "maxItems": 6,
+                    "items": {
+                      "type": "string",
+                      "maxLength": 120
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "`payload.poll` with its answers and votes"
+          },
+          "400": {
+            "description": "A poll without a question or with fewer than 2 or more than 6 answers."
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "Not found in your organization."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/audience/website": {
+      "get": {
+        "operationId": "website-tag",
+        "summary": "Website tag",
+        "description": "The tag to paste on your own site, whether it has been seen and when, page views, visitors and top pages. Requires `read:marketing`; refused for a key restricted to particular events. Also at `GET /v1/marketing/audience/website`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`payload` with the result"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/audience/website/visits": {
+      "get": {
+        "operationId": "website-visits",
+        "summary": "Who visited",
+        "description": "Known people who viewed pages on your site: name, company, account, views and last page. Requires `read:marketing`; refused for a key restricted to particular events. Also at `GET /v1/marketing/audience/website/visits`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "path",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Pages whose address contains this"
+          },
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Days back, default 7, at most 90"
+          },
+          {
+            "name": "targetAccounts",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Only target accounts"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`payload` with the result"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/audience/people/{personKey}/website": {
+      "get": {
+        "operationId": "person-website",
+        "summary": "A person's website activity",
+        "description": "Pages a person viewed on your site, with topics. Requires `read:marketing`; refused for a key restricted to particular events. Also at `GET /v1/marketing/audience/people/{personKey}/website`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "personKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The person key from the People routes"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`payload` with the result"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "Not found in your organization."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/audience/people/{personKey}/consent": {
+      "get": {
+        "operationId": "person-consent",
+        "summary": "A person's consent history",
+        "description": "The person's lists with status, and their consent history newest first with one sentence each. Read only. Requires `read:marketing`; refused for a key restricted to particular events. Also at `GET /v1/marketing/audience/people/{personKey}/consent`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "personKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The person key from the People routes"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`payload` with the result"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "Not found in your organization."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/audience/sponsor-shares": {
+      "get": {
+        "operationId": "list-sponsor-shares",
+        "summary": "List sponsor links",
+        "description": "Private sponsor links with views and downloads. Requires `read:marketing`; refused for a key restricted to particular events. Also at `GET /v1/marketing/audience/sponsor-shares`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`payload` with the result"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/audience/sponsor-shares/create": {
+      "post": {
+        "operationId": "create-sponsor-share",
+        "summary": "Create a sponsor link",
+        "description": "A private link for a sponsor to the people who opted in to hear from partners. Every view and download is recorded. When an assistant (an MCP connection) calls this, it answers `202` with `status: needs_approval` and a link; a person approves it in Sessionboard. Requires `write:marketing`; refused for a key restricted to particular events. Also at `POST /v1/marketing/audience/sponsor-shares/create`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "sponsorName": {
+                    "type": "string"
+                  },
+                  "sponsorAccountId": {
+                    "type": "string"
+                  },
+                  "audienceId": {
+                    "type": "string"
+                  },
+                  "definition": {
+                    "type": "object",
+                    "description": "roles, eventId, attended"
+                  },
+                  "audienceName": {
+                    "type": "string"
+                  },
+                  "days": {
+                    "type": "integer",
+                    "description": "How long the link works"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "`payload` with the result"
+          },
+          "202": {
+            "description": "An assistant's call waits for a person: `payload.status: needs_approval`, `payload.url`."
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/audience/sponsor-shares/{shareId}/revoke": {
+      "post": {
+        "operationId": "revoke-sponsor-share",
+        "summary": "Revoke a sponsor link",
+        "description": "The link stops working at once. Requires `write:marketing`; refused for a key restricted to particular events. Also at `POST /v1/marketing/audience/sponsor-shares/{shareId}/revoke`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "shareId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The link"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`payload` with the result"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "Not found in your organization."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/sites": {
+      "get": {
+        "operationId": "list-sites",
+        "summary": "List Sites",
+        "description": "The organization's Sites in Marketing, Learning and Awards, most recently changed first (up to 200). Each carries its `revision` (send it back on your next write) and whether it has unpublished changes. Also at `GET /v1/sites`.",
+        "tags": [
+          "Sites"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SitesOrgId"
+          },
+          {
+            "name": "product",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "marketing",
+                "learning",
+                "awards"
+              ]
+            },
+            "description": "Only this product's Sites."
+          },
+          {
+            "name": "eventId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d+$"
+            },
+            "description": "Only this event's Sites (Marketing event pages)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "sites": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/SiteSummary"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/SitesForbidden"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/sites/make": {
+      "post": {
+        "operationId": "make-site",
+        "summary": "Make a Site",
+        "description": "Makes a product's first Site with no setup, from the organization's own data and Brand Kit: a Learning Site from its courses, an Awards Site with its home in the draft, or a Marketing page for an event (`eventId`). Pass `url` to rebuild an existing page: its text, menu and images come back as `source_page` for you to turn into edits. Nothing is published. Also at `POST /v1/sites/make`.",
+        "tags": [
+          "Sites"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SitesOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "product"
+                ],
+                "properties": {
+                  "product": {
+                    "type": "string",
+                    "enum": [
+                      "marketing",
+                      "learning",
+                      "awards"
+                    ]
+                  },
+                  "name": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "brief": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "description": "What the Site is for, in the person's words."
+                  },
+                  "url": {
+                    "type": "string",
+                    "format": "uri",
+                    "maxLength": 2048,
+                    "description": "An https page to rebuild."
+                  },
+                  "eventId": {
+                    "type": "string",
+                    "pattern": "^\\d+$",
+                    "description": "Marketing only; the event the page is for."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The new Site, read as in Get a Site, plus `source_page` when you sent `url`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "allOf": [
+                        {
+                          "$ref": "#/components/schemas/Site"
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "source_page": {
+                              "type": "object",
+                              "description": "The page at `url`, read for you to rebuild (title, headings, text, links, images)."
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A missing `eventId` for Marketing, or a `url` that could not be read."
+          },
+          "403": {
+            "$ref": "#/components/responses/SitesForbidden"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/sites/{siteId}": {
+      "get": {
+        "operationId": "get-site",
+        "summary": "Get a Site",
+        "description": "The Site as its draft stands: its pages with their blocks, the menu, the theme, the roles you can preview as, the block catalog (every block kind this Site takes, with its JSON Schema), what Publish would change, and the rules for editing. Also at `GET /v1/sites/{siteId}`.",
+        "tags": [
+          "Sites"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SitesOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/SiteId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "$ref": "#/components/schemas/Site"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/SitesForbidden"
+          },
+          "404": {
+            "description": "Not found — also returned for another organization's Site."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/sites/{siteId}/draft": {
+      "put": {
+        "operationId": "edit-site",
+        "summary": "Edit a Site's draft",
+        "description": "Applies up to 60 edits, in order, to the draft. Visitors see nothing until you publish. Send the `revision` you last read as `baseRevision`: if the Site changed since, the call answers `409` with `code: SITE_DRAFT_STALE` and writes nothing; read it again and retry. All edits apply or none do; a block that fails its schema answers `400` naming the block. Also at `PUT /v1/sites/{siteId}/draft`.",
+        "tags": [
+          "Sites"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SitesOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/SiteId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "baseRevision": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "description": "The `revision` from your last read (three timestamps joined by dots; send it back as is)."
+                  },
+                  "ops": {
+                    "type": "array",
+                    "maxItems": 60,
+                    "items": {
+                      "$ref": "#/components/schemas/SiteOp"
+                    }
+                  },
+                  "brandKitId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "uuid",
+                    "description": "The Brand Kit the Site follows, applied when it is published."
+                  }
+                }
+              },
+              "example": {
+                "baseRevision": "1794034466000.1793990000000.1794034466000",
+                "ops": [
+                  {
+                    "op": "theme.set",
+                    "theme": {
+                      "mode": "dark",
+                      "accent": "#E11D48"
+                    }
+                  },
+                  {
+                    "op": "site.update",
+                    "name": "Northwind Summit 2027"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved. The new `revision`, what changed, and the Site's pages and diff.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "revision": {
+                          "type": "string"
+                        },
+                        "changes": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "op": {
+                                "type": "string"
+                              },
+                              "page": {
+                                "type": "string"
+                              },
+                              "block": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            }
+                          }
+                        },
+                        "site": {
+                          "$ref": "#/components/schemas/SiteSummary"
+                        },
+                        "pages": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/SitePage"
+                          }
+                        },
+                        "diff": {
+                          "$ref": "#/components/schemas/SiteDiff"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "An edit could not apply (the message names it), or a block failed its schema (`details` per block)."
+          },
+          "403": {
+            "$ref": "#/components/responses/SitesForbidden"
+          },
+          "409": {
+            "description": "The Site changed since `baseRevision` (`code: SITE_DRAFT_STALE`)."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/sites/{siteId}/draft/discard": {
+      "post": {
+        "operationId": "discard-site-draft",
+        "summary": "Discard a Site's draft",
+        "description": "Throws away every unpublished change; the draft goes back to what is live. Confirm with the person first. Also at `POST /v1/sites/{siteId}/draft/discard`.",
+        "tags": [
+          "Sites"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SitesOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/SiteId"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "baseRevision": {
+                    "type": "string",
+                    "maxLength": 64
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Discarded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "revision": {
+                          "type": "string"
+                        },
+                        "discarded": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/SitesForbidden"
+          },
+          "409": {
+            "description": "The Site changed since `baseRevision` (`code: SITE_DRAFT_STALE`)."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/sites/{siteId}/diff": {
+      "get": {
+        "operationId": "get-site-diff",
+        "summary": "See what Publish would change",
+        "description": "The draft against what is live, in pages, blocks and settings, with one plain sentence per change in `summary` — show it to the person before they approve a publish. Also at `GET /v1/sites/{siteId}/diff`.",
+        "tags": [
+          "Sites"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SitesOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/SiteId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "allOf": [
+                        {
+                          "$ref": "#/components/schemas/SiteDiff"
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "revision": {
+                              "type": "string"
+                            },
+                            "has_unpublished_changes": {
+                              "type": "boolean"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/SitesForbidden"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/sites/{siteId}/preview": {
+      "get": {
+        "operationId": "preview-site",
+        "summary": "Preview a Site as a role on a device",
+        "description": "A short-lived link to the draft as one role sees it on one device, plus a structured description of what that role sees (pages and blocks), for clients that cannot open the link. Roles depend on the product: `visitor` and `invited` (Marketing), `visitor` and `learner` (Learning), `visitor`, `submitter`, `evaluator` and, on event portals, `speaker` (Awards). Also at `GET /v1/sites/{siteId}/preview`.",
+        "tags": [
+          "Sites"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SitesOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/SiteId"
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "One of the Site's `roles` (default `visitor`)."
+          },
+          {
+            "name": "device",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "desktop",
+                "tablet",
+                "mobile"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "`home`, a page id, slug or exact title (default `home`)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "$ref": "#/components/schemas/SitePreview"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A role this Site does not have."
+          },
+          "403": {
+            "$ref": "#/components/responses/SitesForbidden"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/sites/{siteId}/publish": {
+      "post": {
+        "operationId": "publish-site",
+        "summary": "Publish a Site",
+        "description": "The draft goes live. Only after the person has seen the diff (and a preview) and said OK: send `confirmed: true` and the `revision` of the diff they approved; an edit made after their OK answers `409`. Called by an AI assistant, it answers `202` with `status: needs_approval` and a link: a person approves it in Sessionboard, and it runs as them. Every publish is a version you can restore. Also at `POST /v1/sites/{siteId}/publish`.",
+        "tags": [
+          "Sites"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SitesOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/SiteId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "revision",
+                  "confirmed"
+                ],
+                "properties": {
+                  "revision": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "description": "The `revision` of the diff the person approved."
+                  },
+                  "confirmed": {
+                    "type": "boolean",
+                    "description": "`true` only after the person said OK."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Published.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "published": {
+                          "type": "boolean"
+                        },
+                        "version": {
+                          "type": [
+                            "integer",
+                            "null"
+                          ]
+                        },
+                        "revision": {
+                          "type": "string"
+                        },
+                        "url": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Waiting for a person: `status: needs_approval`, `approval_id` and `url` to approve it in Sessionboard."
+          },
+          "400": {
+            "description": "`confirmed` is not `true`."
+          },
+          "403": {
+            "$ref": "#/components/responses/SitesForbidden"
+          },
+          "409": {
+            "description": "The draft changed after the approved `revision` (`code: SITE_DRAFT_STALE`)."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/sites/{siteId}/versions": {
+      "get": {
+        "operationId": "list-site-versions",
+        "summary": "List a Site's versions",
+        "description": "Every publish, newest first, with a plain-language summary of what it changed. A Site's first publish also keeps the Site as it was before (`source: baseline`). Also at `GET /v1/sites/{siteId}/versions`.",
+        "tags": [
+          "Sites"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SitesOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/SiteId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "versions": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/SiteVersion"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/SitesForbidden"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/sites/{siteId}/versions/{versionId}/restore": {
+      "post": {
+        "operationId": "restore-site-version",
+        "summary": "Restore a version into the draft",
+        "description": "Copies a version into the draft so the person can look it over; nothing goes live until it is published. Also at `POST /v1/sites/{siteId}/versions/{versionId}/restore`.",
+        "tags": [
+          "Sites"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SitesOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/SiteId"
+          },
+          {
+            "$ref": "#/components/parameters/SiteVersionId"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "baseRevision": {
+                    "type": "string",
+                    "maxLength": 64
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Restored into the draft; the new `revision`, the version number and the diff against live.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "revision": {
+                          "type": "string"
+                        },
+                        "restored_version": {
+                          "type": "integer"
+                        },
+                        "diff": {
+                          "$ref": "#/components/schemas/SiteDiff"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/SitesForbidden"
+          },
+          "404": {
+            "description": "No such version on this Site."
+          },
+          "409": {
+            "description": "The Site changed since `baseRevision` (`code: SITE_DRAFT_STALE`)."
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-access-token",
+        "description": "Organization API token. Generate from Organization Settings → API Tokens."
+      },
+      "BearerToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "OAuth 2.1 access token. Obtained via the OAuth PKCE flow at `/oauth/token`."
+      }
+    },
+    "parameters": {
+      "VideoMediaId": {
+        "name": "mediaId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "description": "The recording (Media item)"
+      },
+      "VideoPremiereId": {
+        "name": "premiereId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "description": "The premiere"
+      },
+      "MarketingOrgId": {
+        "name": "orgId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string"
+        },
+        "description": "Your organization ID. Any other organization returns `404`."
+      },
+      "SitesOrgId": {
+        "name": "orgId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string"
+        },
+        "description": "Your organization ID. Any other organization returns `404`."
+      },
+      "SiteId": {
+        "name": "siteId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "description": "The Site's `id` from List Sites."
+      },
+      "SiteVersionId": {
+        "name": "versionId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "description": "The version's `id` from List a Site's versions."
+      }
+    },
+    "schemas": {
+      "SignupForm": {
+        "type": "object",
+        "description": "A sign-up form on the organization's own pages.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "event_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "placement": {
+            "type": "string",
+            "enum": [
+              "event_page",
+              "gallery",
+              "clip",
+              "recording_gate"
+            ]
+          },
+          "target_kind": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "media_item",
+              "content_item",
+              "gallery",
+              "gallery_item",
+              null
+            ]
+          },
+          "target_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "heading": {
+            "type": "string"
+          },
+          "body": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "button_text": {
+            "type": "string"
+          },
+          "fields": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "boolean"
+              },
+              "company": {
+                "type": "boolean"
+              }
+            }
+          },
+          "list_key": {
+            "type": "string"
+          },
+          "double_opt_in": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "archived"
+            ]
+          },
+          "signups": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer"
+              },
+              "pending": {
+                "type": "integer"
+              },
+              "subscribed": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "VideoOptions": {
+        "type": "object",
+        "description": "What happens around a recording on your public pages.",
+        "properties": {
+          "media_id": {
+            "type": "string"
+          },
+          "settings": {
+            "type": "object",
+            "properties": {
+              "gate": {
+                "type": "string",
+                "enum": [
+                  "off",
+                  "before",
+                  "at"
+                ]
+              },
+              "gate_at_s": {
+                "type": "integer",
+                "nullable": true
+              },
+              "gate_form_id": {
+                "type": "string",
+                "nullable": true,
+                "description": "The sign-up form visitors fill in; share it as /subscribe/{gate_form_id}"
+              },
+              "cta_mode": {
+                "type": "string",
+                "enum": [
+                  "auto",
+                  "custom",
+                  "off"
+                ],
+                "description": "auto = \"Register for\" your next event"
+              },
+              "cta_label": {
+                "type": "string",
+                "nullable": true
+              },
+              "cta_url": {
+                "type": "string",
+                "nullable": true
+              },
+              "cta_at_s": {
+                "type": "integer",
+                "nullable": true,
+                "description": "Show the button from this second; null = at the end"
+              },
+              "end_card": {
+                "type": "boolean",
+                "description": "Suggest what to watch next when it ends"
+              }
+            }
+          },
+          "resolved": {
+            "type": "object",
+            "description": "What viewers see today (the button resolves to your next event when cta_mode is auto)"
+          },
+          "is_default": {
+            "type": "boolean"
+          }
+        }
+      },
+      "VideoOptionsInput": {
+        "type": "object",
+        "properties": {
+          "gate": {
+            "type": "string",
+            "enum": [
+              "off",
+              "before",
+              "at"
+            ]
+          },
+          "gateAtS": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 86400,
+            "description": "Needed with gate at"
+          },
+          "ctaMode": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "custom",
+              "off"
+            ]
+          },
+          "ctaLabel": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "ctaUrl": {
+            "type": "string",
+            "description": "A web address (https://…)"
+          },
+          "ctaAtS": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 86400,
+            "nullable": true
+          },
+          "endCard": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Premiere": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "event_id": {
+            "type": "integer"
+          },
+          "media_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "starts_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "duration_s": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "scheduled",
+              "cancelled"
+            ]
+          },
+          "qa_open": {
+            "type": "boolean"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "upcoming",
+              "live",
+              "ended",
+              "cancelled"
+            ]
+          },
+          "position_s": {
+            "type": "number",
+            "nullable": true,
+            "description": "While live, where everyone is (seconds)"
+          },
+          "reminders": {
+            "type": "integer",
+            "description": "People who asked for a reminder (list only)"
+          },
+          "questions": {
+            "type": "integer",
+            "description": "Questions asked (list only)"
+          }
+        }
+      },
+      "SignupFormInput": {
+        "type": "object",
+        "description": "Every field is optional; defaults come from the event, the organization or the recording.",
+        "properties": {
+          "eventId": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "placement": {
+            "type": "string",
+            "enum": [
+              "event_page",
+              "gallery",
+              "clip",
+              "recording_gate"
+            ]
+          },
+          "targetKind": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "media_item",
+              "content_item",
+              "gallery",
+              "gallery_item",
+              null
+            ]
+          },
+          "targetId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "description": "A label your team sees."
+          },
+          "heading": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "buttonText": {
+            "type": "string"
+          },
+          "fields": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "boolean"
+              },
+              "company": {
+                "type": "boolean"
+              }
+            }
+          },
+          "listKey": {
+            "type": "string"
+          },
+          "doubleOptIn": {
+            "type": "boolean"
+          },
+          "consentText": {
+            "type": "string",
+            "description": "What visitors agree to; `{org}` is replaced with your organization's name."
+          },
+          "successMessage": {
+            "type": "string"
+          }
+        }
+      },
+      "EventTurnout": {
+        "type": "object",
+        "description": "How one event is doing. Every number under `prediction` is an estimate.",
+        "properties": {
+          "event": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "id": {
+                "type": "integer"
+              },
+              "name": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "description": "`webinar`, `gathering` (in-person), `lite` or `standard`."
+              },
+              "date": {
+                "type": "string",
+                "format": "date",
+                "nullable": true
+              },
+              "time_zone": {
+                "type": "string"
+              }
+            }
+          },
+          "show_card": {
+            "type": "boolean",
+            "description": "True once the event has a registration."
+          },
+          "goal": {
+            "type": "object",
+            "properties": {
+              "registrations": {
+                "type": "integer",
+                "nullable": true
+              },
+              "attendance": {
+                "type": "integer",
+                "nullable": true
+              },
+              "source": {
+                "type": "string",
+                "nullable": true,
+                "enum": [
+                  "turnout",
+                  "goal",
+                  "last_edition"
+                ],
+                "description": "`turnout` set with this API; `goal` a Goals registration goal on the event; `last_edition` the default."
+              },
+              "default": {
+                "type": "boolean",
+                "description": "True when nobody set a goal and it is the last edition's numbers."
+              }
+            }
+          },
+          "prediction": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string",
+                "enum": [
+                  "Estimate"
+                ]
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "estimated",
+                  "insufficient_history",
+                  "too_early",
+                  "final",
+                  "no_date"
+                ]
+              },
+              "current_registrations": {
+                "type": "integer"
+              },
+              "current_attended": {
+                "type": "integer"
+              },
+              "days_left": {
+                "type": "integer",
+                "nullable": true
+              },
+              "expected_registrations": {
+                "type": "integer",
+                "nullable": true,
+                "description": "Estimate at the event date. `null` unless `status` is `estimated` or `final`."
+              },
+              "expected_turnout": {
+                "type": "integer",
+                "nullable": true
+              },
+              "range": {
+                "type": "object",
+                "nullable": true,
+                "properties": {
+                  "low": {
+                    "type": "integer"
+                  },
+                  "high": {
+                    "type": "integer"
+                  }
+                }
+              },
+              "confidence": {
+                "type": "string",
+                "nullable": true,
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ]
+              },
+              "how": {
+                "type": "string",
+                "description": "How the estimate was made, in a plain sentence."
+              },
+              "source": {
+                "type": "string",
+                "nullable": true,
+                "enum": [
+                  "org_history",
+                  "benchmark"
+                ],
+                "description": "`benchmark` means aggregate statistics across organizations (never one organization's numbers)."
+              }
+            }
+          },
+          "pace": {
+            "type": "object",
+            "properties": {
+              "registrations": {
+                "type": "object",
+                "nullable": true,
+                "properties": {
+                  "goal": {
+                    "type": "integer"
+                  },
+                  "current": {
+                    "type": "integer"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "ahead",
+                      "on_track",
+                      "behind",
+                      "reached",
+                      "missed",
+                      "unknown"
+                    ]
+                  },
+                  "expected_by_today": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "projected": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "gap_at_event": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "line": {
+                    "type": "string"
+                  }
+                }
+              },
+              "attendance": {
+                "type": "object",
+                "nullable": true
+              }
+            }
+          },
+          "last_edition": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "id": {
+                "type": "integer"
+              },
+              "name": {
+                "type": "string"
+              },
+              "date": {
+                "type": "string",
+                "format": "date",
+                "nullable": true
+              },
+              "registrations": {
+                "type": "integer"
+              },
+              "attended": {
+                "type": "integer"
+              }
+            }
+          },
+          "series": {
+            "type": "array",
+            "description": "Registrations by day before the event, from the furthest day with data (at most 120) to the event day.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "days_before": {
+                  "type": "integer"
+                },
+                "date": {
+                  "type": "string",
+                  "format": "date",
+                  "nullable": true
+                },
+                "this_event": {
+                  "type": "integer",
+                  "nullable": true
+                },
+                "last_edition": {
+                  "type": "integer",
+                  "nullable": true
+                },
+                "goal_path": {
+                  "type": "integer",
+                  "nullable": true
+                },
+                "projected": {
+                  "type": "integer",
+                  "nullable": true
+                }
+              }
+            }
+          },
+          "send_time": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "suggested",
+                  "no_history"
+                ]
+              },
+              "label": {
+                "type": "string",
+                "example": "Tuesday 10am"
+              },
+              "next_at": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true
+              },
+              "line": {
+                "type": "string"
+              }
+            }
+          },
+          "suggestions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string"
+                },
+                "ask": {
+                  "type": "string",
+                  "description": "A request an assistant can act on."
+                }
+              }
+            }
+          },
+          "summary": {
+            "type": "string",
+            "description": "One plain paragraph to lead with."
+          }
+        }
+      },
+      "SiteSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "type": "string",
+            "description": "`event_page` (Marketing), `learning`, or `awards` / `event_portal` / `internal` (Awards)."
+          },
+          "product": {
+            "type": "string",
+            "enum": [
+              "marketing",
+              "learning",
+              "awards"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "event_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The live address."
+          },
+          "revision": {
+            "type": "string",
+            "description": "Send back as `baseRevision` on your next write."
+          },
+          "has_unpublished_changes": {
+            "type": "boolean"
+          },
+          "published_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "SiteBlock": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "description": "A kind from the Site's `block_catalog`."
+          },
+          "hidden": {
+            "type": "boolean"
+          },
+          "config": {
+            "type": "object",
+            "description": "The block's settings, as its schema in `block_catalog` describes."
+          }
+        }
+      },
+      "SitePage": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "`home`, or how to refer to the page in an edit."
+          },
+          "id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`null` for a page that is new in the draft."
+          },
+          "title": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "is_home": {
+            "type": "boolean"
+          },
+          "hidden": {
+            "type": "boolean"
+          },
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "public",
+              "reviewers",
+              "submitters"
+            ]
+          },
+          "is_new": {
+            "type": "boolean"
+          },
+          "blocks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SiteBlock"
+            }
+          }
+        }
+      },
+      "Site": {
+        "type": "object",
+        "properties": {
+          "site": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SiteSummary"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "draft_updated_at": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "date-time"
+                  },
+                  "brand_kit_id": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "last_write": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "description": "Who wrote the draft last (a person, Ask, or an MCP client) and when."
+                  }
+                }
+              }
+            ]
+          },
+          "pages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SitePage"
+            }
+          },
+          "nav": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "The menu; `null` follows the pages."
+          },
+          "theme": {
+            "type": "object",
+            "properties": {
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "light",
+                  "dark",
+                  "auto"
+                ]
+              },
+              "primary": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "accent": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "text": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "gradient": {
+                "type": "array",
+                "items": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "font": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "logo_url": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "follow_brand_kit": {
+                "type": "boolean"
+              }
+            }
+          },
+          "roles": {
+            "type": "array",
+            "description": "Who you can preview the Site as.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "hint": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "devices": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "has_pages": {
+            "type": "boolean",
+            "description": "`false` for a one-page Site (the Marketing event page): use page `home`."
+          },
+          "block_catalog": {
+            "type": "array",
+            "description": "Every block kind this Site takes, with a label, a JSON Schema for `config` and an example.",
+            "items": {
+              "type": "object"
+            }
+          },
+          "diff": {
+            "$ref": "#/components/schemas/SiteDiff"
+          },
+          "rules": {
+            "type": "array",
+            "description": "How to edit this Site, in plain sentences.",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "SiteOp": {
+        "type": "object",
+        "required": [
+          "op"
+        ],
+        "description": "One edit. Pages are named by `home`, a page id, a slug or the exact title. `page.add` takes `page` (`title`, optional `slug`, `blocks`, `hidden`, `visibility`) and `before`; `page.update` takes `page` and any of `title`, `slug`, `hidden`, `visibility`; `page.move` takes `page` and `before`; `page.remove` takes `page`. `block.add` takes `page`, `block` (`kind`, `config`, optional `id`, `hidden`) and `before`; `block.update` takes `page` and `block` (`id`, `config` merged into the block unless `replace: true`, `hidden`); `block.move` takes `page`, `block.id`, optional `to_page` and `before`; `block.remove` takes `page` and `block.id`. `nav.set` takes `items` (each `kind` `page`, `url` or `form`, with `label`); `nav.reset` goes back to the pages. `theme.set` takes `theme` (`primary`, `accent`, `text` as hex, `gradient` [two hex], `font`, `logoUrl`, `mode` `light` / `dark` / `auto`, `followBrandKit`). `site.update` takes `name`.",
+        "properties": {
+          "op": {
+            "type": "string",
+            "enum": [
+              "page.add",
+              "page.update",
+              "page.move",
+              "page.remove",
+              "block.add",
+              "block.update",
+              "block.move",
+              "block.remove",
+              "nav.set",
+              "nav.reset",
+              "theme.set",
+              "site.update"
+            ]
+          }
+        },
+        "additionalProperties": true
+      },
+      "SiteDiff": {
+        "type": "object",
+        "properties": {
+          "changed": {
+            "type": "boolean"
+          },
+          "pages": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "blocks": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "settings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "summary": {
+            "type": "array",
+            "description": "One plain sentence per change, for the person to read.",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "SitePreview": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string"
+          },
+          "device": {
+            "type": "string"
+          },
+          "viewport": {
+            "type": "object",
+            "properties": {
+              "width": {
+                "type": "integer"
+              },
+              "height": {
+                "type": "integer"
+              }
+            }
+          },
+          "page": {
+            "type": "object",
+            "properties": {
+              "ref": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              }
+            }
+          },
+          "preview_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Opens the draft as this role; expires at `expires_at`."
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sees": {
+            "type": "object",
+            "description": "What this role sees, for clients that cannot open the link.",
+            "properties": {
+              "pages": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              },
+              "blocks": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "SiteVersion": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "version": {
+            "type": "integer",
+            "description": "`0` is the Site before its first versioned publish."
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "publish",
+              "baseline"
+            ]
+          },
+          "summary": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "created_by": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "responses": {
+      "MarketingForbidden": {
+        "description": "- `SCOPE_REQUIRED` — the token lacks `read:marketing` (reads) or `write:marketing` (writes).\n- `ORG_WIDE_TOKEN_REQUIRED` — the token is restricted to particular events; this operation reads the whole organization.\n- `FORBIDDEN` — the organization's plan does not include Marketing, or the token's user cannot change goals (writes need an organization admin or the organization settings permission).\n"
+      },
+      "SitesForbidden": {
+        "description": "- `SCOPE_REQUIRED` — the token lacks `read:sites` (or `read:marketing`, `read:learning`, `read:awards`) for reads, or the matching `write:` scope for writes.\n- `FORBIDDEN` — the token's user cannot edit this Site.\n"
+      }
+    }
+  }
+}

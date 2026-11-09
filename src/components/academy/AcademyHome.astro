@@ -1,0 +1,507 @@
+---
+/**
+ * The Academy tab's landing page (/academy/): every learning path by product
+ * and role, the reader's progress and their certificates. See
+ * src/lib/academy.mjs for where each piece comes from.
+ *
+ * Server-rendered from the built-in catalog so the page reads complete
+ * without script; src/scripts/academy.mjs then shows only the reader's
+ * products (staff: all), fills progress and certificates from
+ * /_account/academy, and turns Start / Continue into a sign-in link into the
+ * Learning Site.
+ */
+import catalog from '../../data/academy/catalog.json';
+import { PRODUCT_LABELS, ROLE_LABELS, groupByProduct, lessonsOf, roleOf } from '../../lib/academy.mjs';
+import { productBadgeHtml } from '../../lib/product-badges.mjs';
+
+type Lesson = { key: string; title: string; minutes?: number | null; exam?: boolean; questions?: number; passPercent?: number | null; video?: boolean };
+type Item = {
+	kind: string;
+	key: string;
+	title: string;
+	summary?: string | null;
+	product: string;
+	released: boolean;
+	tags: string[];
+	validityMonths?: number | null;
+	courses?: { key: string; title: string; lessons: Lesson[] }[];
+	lessons?: Lesson[];
+};
+const items = (catalog as { items: Item[] }).items;
+const groups = groupByProduct(items) as { product: string; items: Item[] }[];
+const roles = [...new Set(items.map((i) => roleOf(i)).filter(Boolean))] as string[];
+const minutesOf = (item: Item) => lessonsOf(item).reduce((n: number, l: Lesson) => n + (l.minutes || 0), 0);
+const examOf = (item: Item) => lessonsOf(item).find((l: Lesson) => l.exam);
+const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+---
+
+<div class="sb-academy" data-sb-academy>
+	<section class="sb-academy-intro">
+		<p class="sb-academy-lede">
+			Learn each part of Sessionboard in short lessons — a video or a Help Center reading, then a quick check — and
+			finish with a final exam to earn a certificate you can add to LinkedIn. Free for everyone who uses Sessionboard.
+		</p>
+		<ol class="sb-academy-how" aria-label="How a path works">
+			<li><strong>Lessons</strong><span>5–8 minutes each</span></li>
+			<li><strong>Checks</strong><span>after every lesson</span></li>
+			<li><strong>Final exam</strong><span>80% to pass, retake after 24 h</span></li>
+			<li><strong>Certificate</strong><span>valid 2 years, verifiable</span></li>
+		</ol>
+		<p class="sb-academy-status" data-sb-academy-status role="status" aria-live="polite"></p>
+	</section>
+
+	<section class="sb-academy-certs" data-sb-academy-certs hidden aria-labelledby="sb-academy-certs-title">
+		<h2 id="sb-academy-certs-title">Your certificates</h2>
+		<ul data-sb-academy-cert-list></ul>
+	</section>
+
+	<div class="sb-academy-filters" data-sb-academy-filters>
+		<div class="sb-academy-filter" role="group" aria-label="Product" data-sb-academy-products hidden>
+			<button type="button" class="sb-chip" data-product="" aria-pressed="true">All your products</button>
+			{
+				groups.map((g) => (
+					<button type="button" class="sb-chip" data-product={g.product} aria-pressed="false">
+						<Fragment set:html={productBadgeHtml(g.product)} />
+						{PRODUCT_LABELS[g.product as keyof typeof PRODUCT_LABELS]}
+					</button>
+				))
+			}
+		</div>
+		<div class="sb-academy-filter" role="group" aria-label="Role">
+			<button type="button" class="sb-chip" data-role="" aria-pressed="true">Every role</button>
+			{
+				roles.map((r) => (
+					<button type="button" class="sb-chip" data-role={r} aria-pressed="false">
+						{ROLE_LABELS[r as keyof typeof ROLE_LABELS] ?? r}
+					</button>
+				))
+			}
+		</div>
+	</div>
+
+	{
+		groups.map((g) => (
+			<section class="sb-academy-product" data-product={g.product} aria-labelledby={`sb-academy-${g.product}`}>
+				<h2 id={`sb-academy-${g.product}`}>
+					<Fragment set:html={productBadgeHtml(g.product, { size: 'md' })} />
+					{PRODUCT_LABELS[g.product as keyof typeof PRODUCT_LABELS]}
+				</h2>
+				<ul class="sb-academy-paths">
+					{g.items.map((item) => {
+						const role = roleOf(item);
+						const exam = examOf(item);
+						const lessons = lessonsOf(item);
+						return (
+							<li
+								class="sb-academy-path"
+								id={`path-${item.key}`}
+								data-key={item.key}
+								data-role={role ?? ''}
+								data-released={item.released ? '1' : '0'}
+								data-lessons={JSON.stringify(lessons.map((l: Lesson) => l.key))}
+							>
+								<div class="sb-academy-path-head">
+									<p class="sb-academy-path-eyebrow">
+										{role ? (ROLE_LABELS[role as keyof typeof ROLE_LABELS] ?? role) : 'Everyone'}
+										{!item.released && <span class="sb-academy-soon">Coming soon</span>}
+									</p>
+									<h3>{item.title}</h3>
+									{item.summary && <p class="sb-academy-path-summary">{item.summary}</p>}
+									<p class="sb-academy-meta">
+										{plural(lessons.filter((l: Lesson) => !l.exam).length, 'lesson')} · about {minutesOf(item)} min
+										{exam && <> · final exam: {plural(exam.questions || 0, 'question')}, {exam.passPercent ?? 80}% to pass</>}
+										{item.validityMonths && <> · certificate valid {item.validityMonths} months</>}
+									</p>
+								</div>
+								<div class="sb-academy-progress" data-sb-progress hidden>
+									<div class="sb-academy-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label={`${item.title} progress`}>
+										<span style="width:0%" />
+									</div>
+									<span class="sb-academy-progress-text" data-sb-progress-text />
+								</div>
+								<details class="sb-academy-outline">
+									<summary>What you'll learn</summary>
+									{(item.courses || []).map((c) => (
+										<div class="sb-academy-course">
+											<p class="sb-academy-course-title">{c.title}</p>
+											<ol>
+												{c.lessons.map((l) => (
+													<li data-lesson={l.key}>
+														<span class="sb-academy-lesson-title">{l.title}</span>
+														<span class="sb-academy-lesson-meta">
+															{l.video ? 'Video · ' : ''}
+															{l.minutes ? `${l.minutes} min` : ''}
+														</span>
+													</li>
+												))}
+											</ol>
+										</div>
+									))}
+									{(item.lessons || []).length > 0 && (
+										<ol class="sb-academy-course sb-academy-exam">
+											{(item.lessons || []).map((l) => (
+												<li data-lesson={l.key}>
+													<span class="sb-academy-lesson-title">{l.title}</span>
+													<span class="sb-academy-lesson-meta">{l.exam ? `${l.questions || 0} questions` : l.minutes ? `${l.minutes} min` : ''}</span>
+												</li>
+											))}
+										</ol>
+									)}
+								</details>
+								<div class="sb-academy-actions">
+									<a
+										class="sb-academy-start"
+										href={item.released ? '/_account/sign-in?return=/academy' : undefined}
+										aria-disabled={item.released ? undefined : 'true'}
+										data-sb-start
+									>
+										{item.released ? 'Sign in to start' : 'Coming soon'}
+									</a>
+									<span class="sb-academy-award" data-sb-award hidden />
+								</div>
+							</li>
+						);
+					})}
+				</ul>
+			</section>
+		))
+	}
+
+	<p class="sb-academy-foot">
+		The Academy runs on Sessionboard Learning, the same LMS our customers use for their own courses and certifications.
+	</p>
+</div>
+
+<script>
+	import '../../scripts/academy.mjs';
+</script>
+
+<style is:global>
+	.sb-academy {
+		--sb-academy-gap: 1rem;
+	}
+	.sb-academy h2 {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-size: var(--sl-text-h3);
+		margin-top: 2rem;
+	}
+	.sb-academy-lede {
+		font-size: var(--sl-text-lg);
+		color: var(--sl-color-gray-2);
+		max-width: 46rem;
+	}
+	.sb-academy-how {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+		gap: 0.5rem;
+		padding: 0;
+		margin: 1.25rem 0 0;
+		list-style: none;
+		counter-reset: how;
+	}
+	.sb-academy-how li {
+		counter-increment: how;
+		display: flex;
+		flex-direction: column;
+		padding: 0.75rem 0.9rem;
+		border: 1px solid var(--sb-border);
+		border-radius: 12px;
+		background: var(--sb-bg-alt);
+		margin: 0;
+	}
+	.sb-academy-how li::before {
+		content: counter(how);
+		font-size: var(--sl-text-xs);
+		font-weight: 600;
+		color: var(--sb-primary);
+	}
+	.sb-academy-how span {
+		font-size: var(--sl-text-sm);
+		color: var(--sl-color-gray-3);
+	}
+	.sb-academy-status:empty {
+		display: none;
+	}
+	.sb-academy-status {
+		margin-top: 1rem;
+		font-size: var(--sl-text-sm);
+		color: var(--sl-color-gray-2);
+	}
+	.sb-academy-filters {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.75rem 1.5rem;
+		margin-top: 1.75rem;
+	}
+	.sb-academy-filter {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.4rem;
+	}
+	.sb-academy-filter[hidden] {
+		display: none;
+	}
+	.sb-academy .sb-chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		min-height: 2.25rem;
+		padding: 0.3rem 0.8rem;
+		border-radius: 999px;
+		border: 1px solid var(--sb-border-strong);
+		background: transparent;
+		color: var(--sl-color-white);
+		font: inherit;
+		font-size: var(--sl-text-sm);
+		cursor: pointer;
+	}
+	.sb-academy .sb-chip[aria-pressed='true'] {
+		background: var(--sb-pill-bg);
+		border-color: var(--sb-primary);
+		color: var(--sb-primary);
+		font-weight: 600;
+	}
+	:root[data-theme='dark'] .sb-academy .sb-chip[aria-pressed='true'] {
+		color: #a9c4f5;
+	}
+	.sb-academy .sb-chip:focus-visible,
+	.sb-academy-start:focus-visible {
+		outline: 2px solid var(--sl-color-accent);
+		outline-offset: 2px;
+	}
+	.sb-academy-paths {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
+		gap: var(--sb-academy-gap);
+		padding: 0;
+		margin: 0.75rem 0 0;
+		list-style: none;
+	}
+	.sb-academy-path {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+		min-width: 0;
+		margin: 0 !important;
+		padding: 1.1rem 1.2rem;
+		border: 1px solid var(--sb-border);
+		border-radius: 16px;
+		background: var(--sl-color-bg);
+		box-shadow: var(--sb-shadow);
+	}
+	.sb-academy-path[hidden] {
+		display: none;
+	}
+	.sb-academy-path.is-highlighted {
+		border-color: var(--sb-primary);
+		box-shadow: 0 0 0 3px var(--sb-pill-bg);
+	}
+	.sb-academy-path h3 {
+		margin: 0.15rem 0 0;
+		font-size: var(--sl-text-lg);
+	}
+	.sb-academy-path-eyebrow {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		margin: 0;
+		font-size: var(--sl-text-xs);
+		font-weight: 600;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		color: var(--sl-color-gray-3);
+	}
+	.sb-academy-soon {
+		padding: 0.05rem 0.5rem;
+		border-radius: 999px;
+		background: var(--sb-pill-bg);
+		color: var(--sl-color-gray-2);
+		text-transform: none;
+		letter-spacing: 0;
+	}
+	.sb-academy-path-summary {
+		margin: 0.35rem 0 0 !important;
+		color: var(--sl-color-gray-2);
+		font-size: var(--sl-text-sm);
+	}
+	.sb-academy-meta {
+		margin: 0.5rem 0 0 !important;
+		font-size: var(--sl-text-xs);
+		color: var(--sl-color-gray-3);
+	}
+	.sb-academy-progress {
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
+		margin: 0 !important;
+	}
+	.sb-academy-progress[hidden] {
+		display: none;
+	}
+	.sb-academy-bar {
+		flex: 1;
+		height: 0.4rem;
+		border-radius: 999px;
+		background: var(--sb-border);
+		overflow: hidden;
+	}
+	.sb-academy-bar span {
+		display: block;
+		height: 100%;
+		background: var(--sb-primary);
+	}
+	.sb-academy-progress-text {
+		font-size: var(--sl-text-xs);
+		color: var(--sl-color-gray-2);
+		white-space: nowrap;
+	}
+	.sb-academy-outline {
+		margin: 0 !important;
+		font-size: var(--sl-text-sm);
+	}
+	.sb-academy-outline summary {
+		cursor: pointer;
+		color: var(--sb-primary);
+		font-weight: 600;
+	}
+	:root[data-theme='dark'] .sb-academy-outline summary {
+		color: #a9c4f5;
+	}
+	.sb-academy-course {
+		margin: 0.6rem 0 0 !important;
+	}
+	.sb-academy-course-title {
+		margin: 0 !important;
+		font-weight: 600;
+	}
+	.sb-academy-outline ol {
+		margin: 0.25rem 0 0;
+		padding-left: 1.25rem;
+	}
+	.sb-academy-outline li {
+		display: flex;
+		justify-content: space-between;
+		gap: 0.75rem;
+		margin: 0.15rem 0 0;
+	}
+	.sb-academy-outline li.is-done .sb-academy-lesson-title::after {
+		content: ' ✓';
+		color: #15803d;
+	}
+	:root[data-theme='dark'] .sb-academy-outline li.is-done .sb-academy-lesson-title::after {
+		color: #86efac;
+	}
+	.sb-academy-outline li.is-next .sb-academy-lesson-title {
+		font-weight: 600;
+	}
+	.sb-academy-lesson-meta {
+		flex: none;
+		color: var(--sl-color-gray-3);
+	}
+	.sb-academy-actions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.75rem;
+		margin: auto 0 0 !important;
+	}
+	.sb-academy-start {
+		display: inline-flex;
+		align-items: center;
+		min-height: 2.5rem;
+		padding: 0.45rem 1rem;
+		border-radius: 999px;
+		/* --sb-primary, not --sb-btn: white on #3e75e2 is 4.33:1, under AA for 14px text. */
+		background: var(--sb-primary);
+		border: 1px solid var(--sb-primary);
+		color: #fff !important;
+		font-weight: 600;
+		font-size: var(--sl-text-sm);
+		text-decoration: none;
+	}
+	.sb-academy-start[aria-disabled='true'] {
+		background: transparent;
+		border-color: var(--sb-border-strong);
+		color: var(--sl-color-gray-3) !important;
+		pointer-events: none;
+	}
+	.sb-academy-award {
+		font-size: var(--sl-text-sm);
+		color: #15803d;
+		font-weight: 600;
+	}
+	:root[data-theme='dark'] .sb-academy-award {
+		color: #86efac;
+	}
+	.sb-academy-certs ul {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
+		gap: var(--sb-academy-gap);
+		padding: 0;
+		list-style: none;
+	}
+	.sb-academy-certs li {
+		margin: 0 !important;
+		padding: 1rem 1.1rem;
+		border-radius: 16px;
+		border: 1px solid var(--sb-border);
+		background: var(--sb-gradient);
+		min-width: 0;
+	}
+	.sb-academy-certs .sb-cert-name {
+		margin: 0 !important;
+		font-weight: 600;
+	}
+	.sb-academy-certs .sb-cert-meta {
+		margin: 0.25rem 0 0 !important;
+		font-size: var(--sl-text-xs);
+		color: var(--sl-color-gray-2);
+		overflow-wrap: anywhere;
+	}
+	.sb-academy-certs .sb-cert-links {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.4rem 1rem;
+		margin: 0.6rem 0 0 !important;
+		font-size: var(--sl-text-sm);
+	}
+	.sb-academy-foot {
+		margin-top: 2.5rem;
+		font-size: var(--sl-text-sm);
+		color: var(--sl-color-gray-3);
+	}
+	/* Product badges (src/lib/product-badges.mjs). The same rules land in custom.css with the
+	   docs-suites badges; scoped here so the Academy reads right before that. */
+	.sb-academy .sb-product-badge {
+		display: inline-flex;
+		flex: none;
+		align-items: center;
+		justify-content: center;
+		width: 1.25rem;
+		height: 1.25rem;
+		border-radius: 0.35rem;
+	}
+	.sb-academy .sb-product-badge[data-size='md'] {
+		width: 1.5rem;
+		height: 1.5rem;
+		border-radius: 0.4rem;
+	}
+	.sb-academy .sb-product-badge svg {
+		width: 0.85rem;
+		height: 0.85rem;
+	}
+	.sb-academy .sb-product-badge[data-size='md'] svg {
+		width: 1rem;
+		height: 1rem;
+	}
+	.sb-academy .sb-product-badge[data-product='platform'] { color: #1e62d8; background: #e8f0ff; }
+	.sb-academy .sb-product-badge[data-product='marketing'] { color: #6d4bd8; background: #ece7fb; }
+	.sb-academy .sb-product-badge[data-product='learning'] { color: #b45309; background: #fbefdf; }
+	.sb-academy .sb-product-badge[data-product='awards'] { color: #be2459; background: #fbe4ec; }
+	:root[data-theme='dark'] .sb-academy .sb-product-badge[data-product='platform'] { color: #a9c4f5; background: rgb(30 98 216 / 0.25); }
+	:root[data-theme='dark'] .sb-academy .sb-product-badge[data-product='marketing'] { color: #c9bcf7; background: rgb(109 75 216 / 0.25); }
+	:root[data-theme='dark'] .sb-academy .sb-product-badge[data-product='learning'] { color: #f5c98f; background: rgb(180 83 9 / 0.25); }
+	:root[data-theme='dark'] .sb-academy .sb-product-badge[data-product='awards'] { color: #f3a6c0; background: rgb(190 36 89 / 0.25); }
+</style>

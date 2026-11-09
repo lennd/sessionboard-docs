@@ -23,6 +23,11 @@
  *   OPTIONS /_account/session  CORS preflight
  *   GET     /_account/me       the reader (no-store); 401 when signed out
  *   GET     /_account/context?eventId=|orgId=  personalization context for one of their scopes
+ *   GET     /_account/academy  the Academy tab: our Learning Site's paths + the reader's progress
+ *                              (web-api GET /help/academy, in the reader's region)
+ *   POST    /_account/academy/sign-in {next}  from a Help Center page → {url}: a one-minute,
+ *                              single-use link that signs the reader into the Academy's Learning
+ *                              Site and lands them on `next` (web-api POST /help/academy/sign-in)
  *   POST    /_account/sign-out from a Help Center page → signed out
  *   GET     /_account/sign-in?return=/path  → 302 to the product's hand-off page
  *
@@ -38,12 +43,16 @@
  * never set them on the production Worker.
  */
 
+import { normalizeDocsGrant } from './docs-grant.mjs';
+
 export const ACCOUNT_PREFIX = '/_account/';
 export const SESSION_PATH = '/_account/session';
 export const ME_PATH = '/_account/me';
 export const CONTEXT_PATH = '/_account/context';
 export const SIGN_IN_PATH = '/_account/sign-in';
 export const SIGN_OUT_PATH = '/_account/sign-out';
+export const ACADEMY_PATH = '/_account/academy';
+export const ACADEMY_SIGN_IN_PATH = '/_account/academy/sign-in';
 
 /** `__Host-`: Secure, Path=/, no Domain — only ever this host's. */
 export const READER_COOKIE = '__Host-sb_reader';
@@ -196,6 +205,48 @@ export async function recheckStaff(request, env, site, fetchImpl = fetch) {
   return setCookie(STAFF_COOKIE, await signSession(secret, r.id), SESSION_TTL_S);
 }
 
+/** The session user id of a reader with only a staff grant (web-api lib/help-docs/docs-access.js). */
+export const DOCS_GRANT_READER_PREFIX = 'docs-grant-';
+
+/**
+ * May a staff-granted reader (no Sessionboard account) be served this page?
+ *
+ * Everyone else is unchanged: account holders read every built page, and a
+ * grant reader reads Platform guides. A grant reader's API docs and product
+ * suite pages are checked here, in the Worker, against what the API says the
+ * grant holds right now (`docs_grant.api_docs`, `docs_grant.products`): the
+ * entitlements page script sees are a convenience, not the gate.
+ *
+ * `apiProduct` is the API docs product of the path (null when it is not an
+ * API page); `suite` is the documentation suite of the path. Any doubt (no
+ * reader cookie, the API slow or failing, a different reader) answers false.
+ */
+export async function grantAllowsPath(request, env, site, { apiProduct = null, suite = 'platform' } = {}, fetchImpl = fetch) {
+  const secret = env?.STAFF_SESSION_SECRET;
+  if (!secret) return true;
+  const session = await verifySession(secret, readCookie(request, SESSION_COOKIE));
+  if (!session?.userId?.startsWith(DOCS_GRANT_READER_PREFIX)) return true;
+  if (!apiProduct && suite === 'platform') return true;
+  const reader = readReader(request, site, env);
+  if (!reader) return false;
+  let result;
+  try {
+    result = await fetchReader(reader.region, reader.token, fetchImpl, { signal: AbortSignal.timeout(STAFF_RECHECK_TIMEOUT_MS) });
+  } catch {
+    return false;
+  }
+  const r = result?.reader;
+  if (!r || r.token_scope !== 'help_reader' || sessionUserId(r.id) !== session.userId) return false;
+  const grant = normalizeDocsGrant(r.docs_grant);
+  if (!grant || new Date(grant.expires_at).getTime() <= Date.now()) return false;
+  if (apiProduct) {
+    if (r.api_docs === false || !grant.api_docs) return false;
+    if (apiProduct !== 'platform' && !grant.products.includes(apiProduct)) return false;
+  }
+  if (suite !== 'platform' && !grant.products.includes(suite)) return false;
+  return true;
+}
+
 // ── Reader cookie ────────────────────────────────────────────────────────
 
 /** `{ region, token }` from the reader cookie, or null. The region must still be configured. */
@@ -266,6 +317,14 @@ function publicReader(reader, region) {
     roles: Array.isArray(reader.roles) ? reader.roles : [],
     organizations: Array.isArray(reader.organizations) ? reader.organizations : [],
     portals: Array.isArray(reader.portals) ? reader.portals : [],
+    // Documentation suites the reader can read (web-api /help/reader/me):
+    // 'platform', 'marketing', 'learning', 'awards'. Null when the API predates it.
+    products: Array.isArray(reader.products) ? reader.products : null,
+    // The API docs (/api, /sessionboard-<product>/api): every account holder;
+    // a reader with only a staff grant when it says so. True when the API predates it.
+    api_docs: reader.api_docs !== false,
+    // Staff-granted access (src/lib/docs-grant.mjs): { products, api_docs, expires_at } or null.
+    docs_grant: normalizeDocsGrant(reader.docs_grant),
     region: region.id,
     app_origin: region.app,
   };
@@ -370,6 +429,59 @@ export async function accountResponse(request, url, env, site, fetchImpl = fetch
       return json(200, { context: (data?.payload ?? data)?.context ?? null });
     } catch {
       return json(502, { context: null, error: 'upstream' });
+    }
+  }
+
+  if (pathname === ACADEMY_PATH && request.method === 'GET') {
+    const session = readReader(request, site, env);
+    if (!session) return json(401, { signedIn: false });
+    try {
+      const res = await fetchImpl(`${session.region.api}/help/academy`, {
+        headers: { Authorization: `Bearer ${session.token}`, Accept: 'application/json' },
+      });
+      if (res.status === 401) return json(401, { signedIn: false }, { cookies: clearSessionCookies() });
+      // An API from before the Academy (404) reads as "no Academy in this region"; anything
+      // else (an outage, rate limiting) is an upstream error, so the page says it couldn't load.
+      if (res.status === 404) return json(200, { academy: { available: false }, region: session.region.id });
+      if (!res.ok) return json(502, { academy: null, error: 'upstream' });
+      const data = await res.json();
+      return json(200, { academy: data?.payload ?? data, region: session.region.id });
+    } catch {
+      return json(502, { academy: null, error: 'upstream' });
+    }
+  }
+
+  if (pathname === ACADEMY_SIGN_IN_PATH) {
+    // Same-origin page script only: another site must not mint sign-in links for the reader.
+    if (request.method !== 'POST' || request.headers.get('Origin') !== url.origin) {
+      return json(403, { url: null, error: 'origin' });
+    }
+    const session = readReader(request, site, env);
+    if (!session) return json(401, { signedIn: false });
+    let next = '/';
+    try {
+      const body = await request.json();
+      if (typeof body?.next === 'string' && body.next.length <= 200) next = body.next;
+    } catch {
+      // no body: the Academy's home
+    }
+    try {
+      const res = await fetchImpl(`${session.region.api}/help/academy/sign-in`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.token}`, Accept: 'application/json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ next }),
+      });
+      if (res.status === 401) return json(401, { signedIn: false }, { cookies: clearSessionCookies() });
+      if (!res.ok) return json(res.status === 404 ? 404 : 502, { url: null, error: 'upstream' });
+      const data = (await res.json())?.payload ?? {};
+      // Only ever send the browser to an https Site link (or a local one in dev).
+      const target = typeof data.url === 'string' ? data.url : '';
+      if (!/^https:\/\//.test(target) && !(env?.STAFF_DEV_REGIONS && /^http:\/\/localhost[:/]/.test(target))) {
+        return json(200, { url: null, available: data.available === true });
+      }
+      return json(200, { url: target, available: true });
+    } catch {
+      return json(502, { url: null, error: 'upstream' });
     }
   }
 

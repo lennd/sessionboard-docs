@@ -1,0 +1,28 @@
+---
+title: "Export a speaker list"
+description: "Write every speaker in an event to a CSV file with the speaker search endpoint."
+---
+
+Export a CSV of an event's speakers for a printed program, a badge vendor or a spreadsheet. You need an API token with `read:contacts`.
+
+## 1. Page through the speakers
+
+Call [`POST /v1/event/{eventId}/speakers`](/api/reference/speakers/search-speakers) with `page` and `pageSize` (up to 100) until `pagination.currentPage` reaches `pagination.totalPages`. To export only the speakers on some sessions, filter by `trackIds`, `tagIds`, `levelIds`, `formatIds` or `languageIds`.
+
+## 2. Write the rows
+
+```js
+const rows = [['First name', 'Last name', 'Email', 'Company', 'Title']];
+for (let page = 1, total = 1; page <= total; page++) {
+  const res = await fetch(
+    `https://public-api.sessionboard.com/v1/event/${eventId}/speakers?page=${page}&pageSize=100`,
+    { method: 'POST', headers: { 'x-access-token': token, 'Content-Type': 'application/json' }, body: '{}' },
+  );
+  const { results, pagination } = await res.json();
+  total = pagination.totalPages;
+  for (const s of results) rows.push([s.first_name, s.last_name, s.email, s.company_name, s.title]);
+}
+const csv = rows.map((r) => r.map((v) => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+```
+
+One speaker's full record, with every custom field, is [`GET /v1/event/{eventId}/speakers/{contactId}`](/api/reference/speakers/get-a-speaker).
