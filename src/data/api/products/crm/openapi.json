@@ -31,7 +31,7 @@
   "tags": [
     {
       "name": "CRM",
-      "description": "Sessionboard CRM: the people an organization works with across its events (speakers, subject-matter experts, influencers, exhibitor and sponsor contacts), as Contacts with types and tags, the spreadsheet import, reading people from a connected CRM, AMS or event platform to review before importing, the pipeline, and contracts sent for e-signature. Organization-level: paths start at `/v1/organization/{orgId}/crm`; the same operations are served under `/v1/org/{orgId}/crm` and, with the organization taken from the token, `/v1/crm`. Requires the preview scopes `read:crm` / `write:crm`, which a token or OAuth client gets only when they are named explicitly. The POSTs that only read (`import/parse`, `import/preview`, `apps/{appId}/discover`) need `read:crm`. Request bodies are camelCase; responses are snake_case. A key restricted to particular events cannot use it. Only sending, resending and voiding a contract emails anyone."
+      "description": "Sessionboard CRM: the people an organization works with across its events (speakers, subject-matter experts, influencers, exhibitor and sponsor contacts), as Contacts with types and tags, the spreadsheet import, reading people from a connected CRM, AMS or event platform to review before importing, the pipeline, contracts sent for e-signature, and People: everyone the organization knows (attendees, members, prospects), warm opportunities and hand-offs to the other Sessionboard apps. Attendees and members are People, never Contacts until added. Organization-level: paths start at `/v1/organization/{orgId}/crm`; the same operations are served under `/v1/org/{orgId}/crm` and, with the organization taken from the token, `/v1/crm`. Requires the preview scopes `read:crm` / `write:crm`, which a token or OAuth client gets only when they are named explicitly. The POSTs that only read (`import/parse`, `import/preview`, `apps/{appId}/discover`) need `read:crm`. Request bodies are camelCase; responses are snake_case. A key restricted to particular events cannot use it. Only sending, resending and voiding a contract emails anyone."
     },
     {
       "name": "CRM contacts",
@@ -56,6 +56,10 @@
     {
       "name": "CRM contracts",
       "description": "Contracts sent for signature with Sessionboard e-sign: list, read, send, resend, void, the PDF, templates and the built-in starters. Sending, resending and voiding reach the signer, so confirm them with a person first. Same scopes and paths as CRM."
+    },
+    {
+      "name": "CRM people",
+      "description": "Everyone the organization knows (Marketing's People) with the CRM view, warm opportunities, adding people to contacts (linked, never merged), and handing a selection to Marketing, Sessions, Learning or Awards. Same scopes and paths as CRM."
     }
   ],
   "paths": {
@@ -1521,6 +1525,10 @@
                   "source": {
                     "type": "string",
                     "description": "Where the rows came from: the app id after `apps/{appId}/discover`."
+                  },
+                  "as": {
+                    "$ref": "#/components/schemas/CrmLandsAs",
+                    "description": "`contacts` (default), or `people` to bring members, prospects and customers into People with a signal per row instead of creating contacts. Use the `as` a discovery returned for the kind."
                   }
                 }
               }
@@ -1914,7 +1922,7 @@
       "post": {
         "operationId": "crm-discover-app",
         "summary": "Discover people in an app",
-        "description": "Reads who the connected app holds and compares them with the organization's contacts by email: contacts from a CRM or AMS (HubSpot, Salesforce, iMIS), or the speakers of one event from an event platform (Cvent, Swoogo, Bizzabo, ON24, Goldcast; send `remoteEventId`). Attendees are never read. Writes nothing, in Sessionboard or in the app, so `read:crm` is enough. Review the rows, then send the chosen ones to `POST …/crm/import` with `source` set to the app id. Requires `read:crm`. Refused for a key restricted to particular events. Also at `POST /v1/org/{orgId}/crm/apps/{appId}/discover`, and at `POST /v1/crm/apps/{appId}/discover` with the organization taken from the token.",
+        "description": "Reads who the connected app holds and compares them with the organization's contacts by email: contacts from a CRM or AMS (HubSpot, Salesforce, iMIS), or the speakers of one event from an event platform (Cvent, Swoogo, Bizzabo, ON24, Goldcast; send `remoteEventId`), and members from iMIS. An event's attendees are counted, not returned: bring them in with `POST …/crm/apps/{appId}/attendees`. Each kind says `as` (contacts or people). Writes nothing, in Sessionboard or in the app, so `read:crm` is enough. Review the rows, then send the chosen ones to `POST …/crm/import` with `source` set to the app id. Requires `read:crm`. Refused for a key restricted to particular events. Also at `POST /v1/org/{orgId}/crm/apps/{appId}/discover`, and at `POST /v1/crm/apps/{appId}/discover` with the organization taken from the token.",
         "tags": [
           "CRM connections"
         ],
@@ -3276,6 +3284,891 @@
           }
         }
       }
+    },
+    "/v1/organization/{orgId}/crm/people": {
+      "get": {
+        "operationId": "crm-list-people",
+        "summary": "List people",
+        "description": "Everyone the organization knows, one row per email: contacts, attendees, members, prospects and customers, and the team. The same People list Sessionboard Marketing reads, with the CRM view of each. Attendees and members are people, not contacts, until `POST …/crm/people/add-to-contacts`. Reads only. Requires `read:crm`. Refused for a key restricted to particular events. Also at `GET /v1/org/{orgId}/crm/people`, and at `GET /v1/crm/people` with the organization taken from the token.",
+        "tags": [
+          "CRM people"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CrmOrgId"
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "description": "Search name, email and company."
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Only people with this role: speaker, sponsor, attendee, member, added…"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/CrmContactType"
+            },
+            "description": "Only people whose contact has this type."
+          },
+          {
+            "name": "member",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            "description": "Members (from the AMS) or not."
+          },
+          {
+            "name": "lifecycle",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "The CRM's latest lifecycle stage: customer, prospect, lead…"
+          },
+          {
+            "name": "in_pipeline",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            "description": "In the pipeline or not (through their contact)."
+          },
+          {
+            "name": "attended",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "yes",
+                "no",
+                "any"
+              ]
+            },
+            "description": "Came, or registered and did not; with `event_id`, that event."
+          },
+          {
+            "name": "event_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9]+$"
+            },
+            "description": "Only people of this event."
+          },
+          {
+            "name": "warm",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true"
+              ]
+            },
+            "description": "Warm opportunities: 5 or more distinct webinars or events attended, not in the pipeline, not a customer."
+          },
+          {
+            "name": "active",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            "description": "Active contacts in the last 365 days, or not."
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "name",
+                "-name",
+                "company",
+                "-company",
+                "events_attended",
+                "-events_attended",
+                "webinars_attended",
+                "-webinars_attended",
+                "last_signal",
+                "-last_signal"
+              ]
+            },
+            "description": "A leading `-` sorts descending."
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9]+$",
+              "default": "1"
+            },
+            "description": "Page, from 1."
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9]+$",
+              "default": "50"
+            },
+            "description": "Rows per page, up to 100."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "$ref": "#/components/schemas/CrmPersonList"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/CrmUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/CrmReadForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/CrmNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/CrmTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/crm/people/export": {
+      "get": {
+        "operationId": "crm-export-people",
+        "summary": "Export people",
+        "description": "The people, filtered like `GET …/crm/people`, as columns and rows for a spreadsheet. Reads only. Requires `read:crm`. Refused for a key restricted to particular events. Also at `GET /v1/org/{orgId}/crm/people/export`, and at `GET /v1/crm/people/export` with the organization taken from the token.",
+        "tags": [
+          "CRM people"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CrmOrgId"
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "description": "Search name, email and company."
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Only people with this role: speaker, sponsor, attendee, member, added…"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/CrmContactType"
+            },
+            "description": "Only people whose contact has this type."
+          },
+          {
+            "name": "member",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            "description": "Members (from the AMS) or not."
+          },
+          {
+            "name": "lifecycle",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "The CRM's latest lifecycle stage: customer, prospect, lead…"
+          },
+          {
+            "name": "in_pipeline",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            "description": "In the pipeline or not (through their contact)."
+          },
+          {
+            "name": "attended",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "yes",
+                "no",
+                "any"
+              ]
+            },
+            "description": "Came, or registered and did not; with `event_id`, that event."
+          },
+          {
+            "name": "event_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9]+$"
+            },
+            "description": "Only people of this event."
+          },
+          {
+            "name": "warm",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true"
+              ]
+            },
+            "description": "Warm opportunities: 5 or more distinct webinars or events attended, not in the pipeline, not a customer."
+          },
+          {
+            "name": "active",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            "description": "Active contacts in the last 365 days, or not."
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "name",
+                "-name",
+                "company",
+                "-company",
+                "events_attended",
+                "-events_attended",
+                "webinars_attended",
+                "-webinars_attended",
+                "last_signal",
+                "-last_signal"
+              ]
+            },
+            "description": "A leading `-` sorts descending."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "columns": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "label": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        },
+                        "rows": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": true
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/CrmUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/CrmReadForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/CrmNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/CrmTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/crm/people/{key}": {
+      "get": {
+        "operationId": "crm-get-person",
+        "summary": "Get a person",
+        "description": "One person: the CRM view, every signal in time order (registered, attended, watched, opened, membership and lifecycle changes) and the contact they are linked to. Reads only. Requires `read:crm`. Refused for a key restricted to particular events. Also at `GET /v1/org/{orgId}/crm/people/{key}`, and at `GET /v1/crm/people/{key}` with the organization taken from the token.",
+        "tags": [
+          "CRM people"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CrmOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/CrmPersonKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "person": {
+                          "$ref": "#/components/schemas/CrmPerson"
+                        },
+                        "timeline": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/CrmSignal"
+                          }
+                        },
+                        "contact": {
+                          "oneOf": [
+                            {
+                              "$ref": "#/components/schemas/CrmContact"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/CrmUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/CrmReadForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/CrmNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/CrmTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/crm/people/add-to-contacts": {
+      "post": {
+        "operationId": "crm-add-people-to-contacts",
+        "summary": "Add people to contacts",
+        "description": "Creates a contact for each person without one (a contact already holding the email is linked instead) and links the person to it. The two stay separate records. Emails no one. Requires `write:crm`. Refused for a key restricted to particular events. Also at `POST /v1/org/{orgId}/crm/people/add-to-contacts`, and at `POST /v1/crm/people/add-to-contacts` with the organization taken from the token.",
+        "tags": [
+          "CRM people"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CrmOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "keys"
+                ],
+                "properties": {
+                  "keys": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 200,
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Person keys from `GET …/crm/people`."
+                  },
+                  "types": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/CrmContactType"
+                    },
+                    "description": "Types for the new contacts."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "created": {
+                          "type": "integer"
+                        },
+                        "linked": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/CrmBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/CrmUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/CrmWriteForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/CrmNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/CrmTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/crm/apps/{appId}/attendees": {
+      "post": {
+        "operationId": "crm-start-attendee-sync",
+        "summary": "Bring in an event's attendees",
+        "description": "Starts the event platform's own attendee sync (Cvent, Swoogo, Bizzabo) for one of its events: attendees land in People and the attendees layer, never in contacts. Returns the job. Running it again brings the attendees up to date. Reads the platform only. Requires `write:crm`. Refused for a key restricted to particular events. Also at `POST /v1/org/{orgId}/crm/apps/{appId}/attendees`, and at `POST /v1/crm/apps/{appId}/attendees` with the organization taken from the token.",
+        "tags": [
+          "CRM connections"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CrmOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/CrmAppId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "remoteEventId"
+                ],
+                "properties": {
+                  "remoteEventId": {
+                    "type": "string",
+                    "description": "The app's event, from `GET …/crm/apps/{appId}/remote-events`."
+                  },
+                  "eventId": {
+                    "type": "integer",
+                    "description": "The Sessionboard event the attendees belong to."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "job": {
+                          "type": "object",
+                          "additionalProperties": true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/CrmBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/CrmUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/CrmWriteForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/CrmNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/CrmTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/crm/apps/{appId}/sync": {
+      "put": {
+        "operationId": "crm-set-source-sync",
+        "summary": "Keep a source in sync",
+        "description": "Brings in new people from the app every night, the way they were first brought in (`kinds`, landing `as` contacts or people); `schedule: off` stops it and keeps everyone brought in. Answers `403` with `code: sync_disabled` while keeping in sync is not turned on for the organization. Requires `write:crm`. Refused for a key restricted to particular events. Also at `PUT /v1/org/{orgId}/crm/apps/{appId}/sync`, and at `PUT /v1/crm/apps/{appId}/sync` with the organization taken from the token.",
+        "tags": [
+          "CRM connections"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CrmOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/CrmAppId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "schedule"
+                ],
+                "properties": {
+                  "kinds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Which of the app's `people_kinds`."
+                  },
+                  "as": {
+                    "$ref": "#/components/schemas/CrmLandsAs"
+                  },
+                  "defaultType": {
+                    "$ref": "#/components/schemas/CrmContactType"
+                  },
+                  "schedule": {
+                    "type": "string",
+                    "enum": [
+                      "daily",
+                      "off"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/CrmBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/CrmUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/CrmWriteForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/CrmNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/CrmTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/crm/handoffs": {
+      "get": {
+        "operationId": "crm-list-handoffs",
+        "summary": "List hand-off apps",
+        "description": "Where a selection can be handed: Sessionboard Marketing, Sessions, Learning and Awards, each with `owned` and the link that opens it (`href`) or, when the organization does not have it, its trial page (`upsell_href`). Reads only. Requires `read:crm`. Refused for a key restricted to particular events. Also at `GET /v1/org/{orgId}/crm/handoffs`, and at `GET /v1/crm/handoffs` with the organization taken from the token.",
+        "tags": [
+          "CRM people"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CrmOrgId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "apps": {
+                          "type": "object",
+                          "properties": {
+                            "marketing": {
+                              "$ref": "#/components/schemas/CrmHandoffApp"
+                            },
+                            "sessions": {
+                              "$ref": "#/components/schemas/CrmHandoffApp"
+                            },
+                            "learning": {
+                              "$ref": "#/components/schemas/CrmHandoffApp"
+                            },
+                            "awards": {
+                              "$ref": "#/components/schemas/CrmHandoffApp"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/CrmUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/CrmReadForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/CrmNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/CrmTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/crm/handoffs/tag": {
+      "post": {
+        "operationId": "crm-tag-handoff",
+        "summary": "Hand people to an app",
+        "description": "Saves a selection (person keys, contact ids, or everyone matching people filters) as a new tag named for where it came from and the date, and returns it with the link that opens the app with it (`?crm_tag=`), or the app's trial page. Emails no one. Requires `write:crm`. Refused for a key restricted to particular events. Also at `POST /v1/org/{orgId}/crm/handoffs/tag`, and at `POST /v1/crm/handoffs/tag` with the organization taken from the token.",
+        "tags": [
+          "CRM people"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CrmOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "app"
+                ],
+                "properties": {
+                  "app": {
+                    "type": "string",
+                    "enum": [
+                      "marketing",
+                      "sessions",
+                      "learning",
+                      "awards"
+                    ]
+                  },
+                  "keys": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "contactIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "filter": {
+                    "type": "object",
+                    "additionalProperties": true,
+                    "description": "People filters, as `GET …/crm/people` takes them."
+                  },
+                  "name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "description": "The tag's name; made from the selection and date otherwise."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "tag": {
+                          "$ref": "#/components/schemas/CrmTagWithCount"
+                        },
+                        "href": {
+                          "type": "string"
+                        },
+                        "owned": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/CrmBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/CrmUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/CrmWriteForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/CrmNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/CrmTooManyRequests"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -3346,6 +4239,15 @@
           "type": "string"
         },
         "description": "The contract ID."
+      },
+      "CrmPersonKey": {
+        "name": "key",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string"
+        },
+        "description": "The person key, from `GET …/crm/people`."
       }
     },
     "schemas": {
@@ -3952,11 +4854,21 @@
                   "properties": {
                     "source_kind": {
                       "type": "string"
+                    },
+                    "as": {
+                      "$ref": "#/components/schemas/CrmLandsAs"
                     }
                   }
                 }
               ]
             }
+          },
+          "as": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/CrmLandsAs"
+            },
+            "description": "Kind → where its rows land. Attendees of an event platform are only counted here; bring them in with `POST …/crm/apps/{appId}/attendees`."
           }
         }
       },
@@ -4403,6 +5315,166 @@
           "updated_at": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "CrmLandsAs": {
+        "type": "string",
+        "enum": [
+          "contacts",
+          "people"
+        ],
+        "description": "Where brought-in rows land: contacts, or people (members, prospects, customers)."
+      },
+      "CrmPerson": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "company": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "speaker, sponsor, attendee, member, added…"
+          },
+          "contact_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The linked contact; `null` when the person is not a contact."
+          },
+          "types": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CrmContactType"
+            },
+            "description": "The linked contact's types."
+          },
+          "member": {
+            "type": "boolean"
+          },
+          "lifecycle": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The CRM's latest lifecycle stage."
+          },
+          "crm_owner": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "pipeline_stage": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "events_attended": {
+            "type": "integer"
+          },
+          "events_registered": {
+            "type": "integer"
+          },
+          "webinars_attended": {
+            "type": "integer"
+          },
+          "last_signal_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "warm": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CrmPersonList": {
+        "type": "object",
+        "properties": {
+          "people": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CrmPerson"
+            }
+          },
+          "total": {
+            "type": "integer"
+          },
+          "page": {
+            "type": "integer"
+          },
+          "per_page": {
+            "type": "integer"
+          },
+          "facets": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "CrmSignal": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "description": "For example `event.registered`, `webinar.attended`, `membership.joined`, `lifecycle.changed`."
+          },
+          "label": {
+            "type": "string"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CrmHandoffApp": {
+        "type": "object",
+        "properties": {
+          "owned": {
+            "type": "boolean"
+          },
+          "href": {
+            "type": "string",
+            "description": "Opens the app (when owned)."
+          },
+          "upsell_href": {
+            "type": "string",
+            "description": "The app's trial page (when not owned)."
           }
         }
       }
