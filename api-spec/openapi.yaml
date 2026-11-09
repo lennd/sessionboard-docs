@@ -134,13 +134,14 @@ tags:
   - name: CRM
     description: >-
       Sessionboard CRM: the people an organization works with across its events (speakers, subject-matter experts,
-      influencers, exhibitor and sponsor contacts), as Contacts with types and tags, the spreadsheet import, and reading
-      people from a connected CRM, AMS or event platform to review before importing. Organization-level: paths start at
+      influencers, exhibitor and sponsor contacts), as Contacts with types and tags, the spreadsheet import, reading
+      people from a connected CRM, AMS or event platform to review before importing, the pipeline, and contracts sent
+      for e-signature. Organization-level: paths start at
       `/v1/organization/{orgId}/crm`; the same operations are served under `/v1/org/{orgId}/crm` and, with the
       organization taken from the token, `/v1/crm`. Requires the preview scopes `read:crm` / `write:crm`, which a token or
       OAuth client gets only when they are named explicitly. The POSTs that only read (`import/parse`, `import/preview`,
       `apps/{appId}/discover`) need `read:crm`. Request bodies are camelCase; responses are snake_case. A key restricted
-      to particular events cannot use it. Nothing here emails anyone.
+      to particular events cannot use it. Only sending, resending and voiding a contract emails anyone.
   - name: CRM contacts
     description: Search, read, add, change, tag and delete contacts, add notes, and export. Same scopes and paths as CRM.
   - name: CRM tags
@@ -153,6 +154,15 @@ tags:
     description: >-
       Connected CRMs, AMSs and event platforms (the same connections Marketing and Sessions use), and discovering who they
       hold, read-only, before importing. Same scopes and paths as CRM.
+  - name: CRM pipeline
+    description: >-
+      The pipeline: stages, one entry per contact, moves with a note and the history of every move. The Sessionboard
+      platform's own pipeline, so an upgrade keeps it. Same scopes and paths as CRM.
+  - name: CRM contracts
+    description: >-
+      Contracts sent for signature with Sessionboard e-sign: list, read, send, resend, void, the PDF, templates and the
+      built-in starters. Sending, resending and voiding reach the signer, so confirm them with a person first. Same scopes
+      and paths as CRM.
   - name: Learning workspace
     description: |
       The self-serve Sessionboard Learning workspace: Home, courses, learners, putting a meeting on demand, credits and results, and publishing (which waits for a person's OK, `202 needs_approval`). Organization-level: paths start at `/v1/organization/{orgId}/learning/workspace`, and the same operations are served under `/v1/learning/workspace` with the organization taken from the token. Requires the preview scopes `read:learning` / `write:learning`, named explicitly. A key restricted to particular events cannot use it.
@@ -19750,6 +19760,11 @@ paths:
           schema:
             type: string
           description: Only contacts from this source (a key from `facets.sources`).
+        - name: stage_id
+          in: query
+          schema:
+            type: string
+          description: Only contacts in this pipeline stage (an id from `GET …/crm/pipeline/stages`).
         - name: event_id
           in: query
           schema:
@@ -20040,6 +20055,11 @@ paths:
           schema:
             type: string
           description: Only contacts from this source (a key from `facets.sources`).
+        - name: stage_id
+          in: query
+          schema:
+            type: string
+          description: Only contacts in this pipeline stage (an id from `GET …/crm/pipeline/stages`).
         - name: event_id
           in: query
           schema:
@@ -20142,6 +20162,15 @@ paths:
                         type: array
                         items:
                           $ref: '#/components/schemas/CrmNote'
+                      pipeline:
+                        oneOf:
+                          - $ref: '#/components/schemas/CrmPipelineEntry'
+                          - type: 'null'
+                        description: The contact's open pipeline entry, if any.
+                      contracts:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/CrmContract'
         '401':
           $ref: '#/components/responses/CrmUnauthorized'
         '403':
@@ -20976,6 +21005,877 @@ paths:
           $ref: '#/components/responses/CrmNotFound'
         '429':
           $ref: '#/components/responses/CrmTooManyRequests'
+  /v1/organization/{orgId}/crm/pipeline/stages:
+    get:
+      operationId: crm-list-pipeline-stages
+      summary: List pipeline stages
+      description: >-
+        The organization's pipeline stages in order, with how many entries each holds. The eight default stages
+        (identified, researching, approved, contacted, interested, confirmed, declined, future_fit) are added the first
+        time they are read. Requires `read:crm`. Refused for a key restricted to particular events. Also at `GET
+        /v1/org/{orgId}/crm/pipeline/stages`, and at `GET /v1/crm/pipeline/stages` with the organization taken from the
+        token.
+      tags:
+        - CRM pipeline
+      parameters:
+        - $ref: '#/components/parameters/CrmOrgId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    properties:
+                      stages:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/CrmPipelineStage'
+        '401':
+          $ref: '#/components/responses/CrmUnauthorized'
+        '403':
+          $ref: '#/components/responses/CrmReadForbidden'
+        '404':
+          $ref: '#/components/responses/CrmNotFound'
+        '429':
+          $ref: '#/components/responses/CrmTooManyRequests'
+  /v1/organization/{orgId}/crm/pipeline:
+    get:
+      operationId: crm-list-pipeline
+      summary: List pipeline entries
+      description: >-
+        Search, filter, sort and page the pipeline. One entry per contact; `facets.stages` counts each stage for the
+        current search. Reads only. Requires `read:crm`. Refused for a key restricted to particular events. Also at `GET
+        /v1/org/{orgId}/crm/pipeline`, and at `GET /v1/crm/pipeline` with the organization taken from the token.
+      tags:
+        - CRM pipeline
+      parameters:
+        - $ref: '#/components/parameters/CrmOrgId'
+        - name: q
+          in: query
+          schema:
+            type: string
+            maxLength: 200
+          description: Search name, email and company.
+        - name: stage_id
+          in: query
+          schema:
+            type: string
+          description: Only entries in this stage (an id from `GET …/crm/pipeline/stages`).
+        - name: type
+          in: query
+          schema:
+            $ref: '#/components/schemas/CrmContactType'
+          description: Only contacts of this type.
+        - name: tag
+          in: query
+          schema:
+            type: string
+          description: Only contacts with this tag id.
+        - name: event_id
+          in: query
+          schema:
+            type: string
+            pattern: ^[0-9]+$
+          description: Only entries for this event.
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum:
+              - name
+              - '-name'
+              - company
+              - stage
+              - entered
+              - '-entered'
+              - activity
+              - '-activity'
+          description: A leading `-` sorts descending. `entered` is when the entry entered its stage; `activity` its last activity.
+        - name: page
+          in: query
+          schema:
+            type: string
+            pattern: ^[0-9]+$
+            default: '1'
+          description: Page, from 1.
+        - name: per_page
+          in: query
+          schema:
+            type: string
+            pattern: ^[0-9]+$
+            default: '50'
+          description: Rows per page, up to 100.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    $ref: '#/components/schemas/CrmPipelineEntryList'
+        '401':
+          $ref: '#/components/responses/CrmUnauthorized'
+        '403':
+          $ref: '#/components/responses/CrmReadForbidden'
+        '404':
+          $ref: '#/components/responses/CrmNotFound'
+        '429':
+          $ref: '#/components/responses/CrmTooManyRequests'
+    post:
+      operationId: crm-add-to-pipeline
+      summary: Add contacts to the pipeline
+      description: >-
+        Adds up to 200 contacts to the pipeline, in `stageId` (the first stage by default) and, if given, for one event. A
+        contact that already has an open entry is skipped and listed in `already`. Emails no one. Requires `write:crm`.
+        Refused for a key restricted to particular events. Also at `POST /v1/org/{orgId}/crm/pipeline`, and at `POST
+        /v1/crm/pipeline` with the organization taken from the token.
+      tags:
+        - CRM pipeline
+      parameters:
+        - $ref: '#/components/parameters/CrmOrgId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - contactIds
+              properties:
+                contactIds:
+                  type: array
+                  minItems: 1
+                  maxItems: 200
+                  items:
+                    type: string
+                stageId:
+                  type: string
+                  description: The stage they start in.
+                eventId:
+                  type: integer
+                  description: The event they are being considered for.
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    properties:
+                      added:
+                        type: integer
+                      already:
+                        type: array
+                        items:
+                          type: string
+                        description: Contact ids that were already in the pipeline.
+                      entries:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/CrmPipelineEntry'
+        '400':
+          $ref: '#/components/responses/CrmBadRequest'
+        '401':
+          $ref: '#/components/responses/CrmUnauthorized'
+        '403':
+          $ref: '#/components/responses/CrmWriteForbidden'
+        '404':
+          $ref: '#/components/responses/CrmNotFound'
+        '429':
+          $ref: '#/components/responses/CrmTooManyRequests'
+  /v1/organization/{orgId}/crm/pipeline/export:
+    get:
+      operationId: crm-export-pipeline
+      summary: Export the pipeline
+      description: >-
+        The pipeline, filtered like `GET …/crm/pipeline`, as columns and rows for a spreadsheet. Reads only. Requires
+        `read:crm`. Refused for a key restricted to particular events. Also at `GET /v1/org/{orgId}/crm/pipeline/export`,
+        and at `GET /v1/crm/pipeline/export` with the organization taken from the token.
+      tags:
+        - CRM pipeline
+      parameters:
+        - $ref: '#/components/parameters/CrmOrgId'
+        - name: q
+          in: query
+          schema:
+            type: string
+            maxLength: 200
+          description: Search name, email and company.
+        - name: stage_id
+          in: query
+          schema:
+            type: string
+          description: Only entries in this stage (an id from `GET …/crm/pipeline/stages`).
+        - name: type
+          in: query
+          schema:
+            $ref: '#/components/schemas/CrmContactType'
+          description: Only contacts of this type.
+        - name: tag
+          in: query
+          schema:
+            type: string
+          description: Only contacts with this tag id.
+        - name: event_id
+          in: query
+          schema:
+            type: string
+            pattern: ^[0-9]+$
+          description: Only entries for this event.
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum:
+              - name
+              - '-name'
+              - company
+              - stage
+              - entered
+              - '-entered'
+              - activity
+              - '-activity'
+          description: A leading `-` sorts descending. `entered` is when the entry entered its stage; `activity` its last activity.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    properties:
+                      columns:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            key:
+                              type: string
+                            label:
+                              type: string
+                      rows:
+                        type: array
+                        items:
+                          type: object
+                          additionalProperties: true
+        '401':
+          $ref: '#/components/responses/CrmUnauthorized'
+        '403':
+          $ref: '#/components/responses/CrmReadForbidden'
+        '404':
+          $ref: '#/components/responses/CrmNotFound'
+        '429':
+          $ref: '#/components/responses/CrmTooManyRequests'
+  /v1/organization/{orgId}/crm/pipeline/{entryId}:
+    patch:
+      operationId: crm-move-pipeline-entry
+      summary: Move a pipeline entry
+      description: >-
+        Moves the entry to another stage, with an optional note, or changes the event it is for. Every stage move is kept
+        in the entry's history. Emails no one. Requires `write:crm`. Refused for a key restricted to particular events.
+        Also at `PATCH /v1/org/{orgId}/crm/pipeline/{entryId}`, and at `PATCH /v1/crm/pipeline/{entryId}` with the
+        organization taken from the token.
+      tags:
+        - CRM pipeline
+      parameters:
+        - $ref: '#/components/parameters/CrmOrgId'
+        - $ref: '#/components/parameters/CrmEntryId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              properties:
+                stageId:
+                  type: string
+                  description: The stage to move to.
+                note:
+                  type: string
+                  maxLength: 2000
+                  description: Why; kept with the move.
+                eventId:
+                  type:
+                    - integer
+                    - 'null'
+                  description: The event the entry is for; `null` clears it.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    $ref: '#/components/schemas/CrmPipelineEntry'
+        '400':
+          $ref: '#/components/responses/CrmBadRequest'
+        '401':
+          $ref: '#/components/responses/CrmUnauthorized'
+        '403':
+          $ref: '#/components/responses/CrmWriteForbidden'
+        '404':
+          $ref: '#/components/responses/CrmNotFound'
+        '429':
+          $ref: '#/components/responses/CrmTooManyRequests'
+    delete:
+      operationId: crm-archive-pipeline-entry
+      summary: Archive a pipeline entry
+      description: >-
+        Takes the entry off the pipeline. The contact, its history and its contracts are kept. Ask the person first.
+        Requires `write:crm`. Refused for a key restricted to particular events. Also at `DELETE
+        /v1/org/{orgId}/crm/pipeline/{entryId}`, and at `DELETE /v1/crm/pipeline/{entryId}` with the organization taken
+        from the token.
+      tags:
+        - CRM pipeline
+      parameters:
+        - $ref: '#/components/parameters/CrmOrgId'
+        - $ref: '#/components/parameters/CrmEntryId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    properties:
+                      archived:
+                        type: boolean
+        '400':
+          $ref: '#/components/responses/CrmBadRequest'
+        '401':
+          $ref: '#/components/responses/CrmUnauthorized'
+        '403':
+          $ref: '#/components/responses/CrmWriteForbidden'
+        '404':
+          $ref: '#/components/responses/CrmNotFound'
+        '429':
+          $ref: '#/components/responses/CrmTooManyRequests'
+  /v1/organization/{orgId}/crm/pipeline/{entryId}/history:
+    get:
+      operationId: crm-get-pipeline-history
+      summary: Get a pipeline entry's history
+      description: >-
+        Every stage move of the entry, oldest first: from and to, who or what made it, the note and when. Reads only.
+        Requires `read:crm`. Refused for a key restricted to particular events. Also at `GET
+        /v1/org/{orgId}/crm/pipeline/{entryId}/history`, and at `GET /v1/crm/pipeline/{entryId}/history` with the
+        organization taken from the token.
+      tags:
+        - CRM pipeline
+      parameters:
+        - $ref: '#/components/parameters/CrmOrgId'
+        - $ref: '#/components/parameters/CrmEntryId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    properties:
+                      history:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/CrmPipelineHistory'
+        '401':
+          $ref: '#/components/responses/CrmUnauthorized'
+        '403':
+          $ref: '#/components/responses/CrmReadForbidden'
+        '404':
+          $ref: '#/components/responses/CrmNotFound'
+        '429':
+          $ref: '#/components/responses/CrmTooManyRequests'
+  /v1/organization/{orgId}/crm/contracts:
+    get:
+      operationId: crm-list-contracts
+      summary: List contracts
+      description: >-
+        Search, filter, sort and page the organization's contracts. `facets.statuses` counts each status for the current
+        search. Reads only. Requires `read:crm`. Refused for a key restricted to particular events. Also at `GET
+        /v1/org/{orgId}/crm/contracts`, and at `GET /v1/crm/contracts` with the organization taken from the token.
+      tags:
+        - CRM contracts
+      parameters:
+        - $ref: '#/components/parameters/CrmOrgId'
+        - name: q
+          in: query
+          schema:
+            type: string
+            maxLength: 200
+          description: Search the title and the contact.
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/CrmContractStatus'
+          description: Only contracts in this status.
+        - name: contact_id
+          in: query
+          schema:
+            type: string
+          description: Only contracts with this contact.
+        - name: sort
+          in: query
+          schema:
+            type: string
+          description: A field such as `sent_at` or `updated_at`; a leading `-` sorts descending.
+        - name: page
+          in: query
+          schema:
+            type: string
+            pattern: ^[0-9]+$
+            default: '1'
+          description: Page, from 1.
+        - name: per_page
+          in: query
+          schema:
+            type: string
+            pattern: ^[0-9]+$
+            default: '50'
+          description: Rows per page, up to 100.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    $ref: '#/components/schemas/CrmContractList'
+        '401':
+          $ref: '#/components/responses/CrmUnauthorized'
+        '403':
+          $ref: '#/components/responses/CrmReadForbidden'
+        '404':
+          $ref: '#/components/responses/CrmNotFound'
+        '429':
+          $ref: '#/components/responses/CrmTooManyRequests'
+    post:
+      operationId: crm-send-contract
+      summary: Send a contract
+      description: >-
+        Creates a contract for the contact from a published template and sends it for signature with Sessionboard e-sign:
+        the signer is emailed a link to the signing page. This reaches someone outside the organization and cannot be
+        taken back, only voided, so confirm the recipient with the person first. Sending makes the contact an active
+        contact. Requires `write:crm`. Refused for a key restricted to particular events. Also at `POST
+        /v1/org/{orgId}/crm/contracts`, and at `POST /v1/crm/contracts` with the organization taken from the token.
+      tags:
+        - CRM contracts
+      parameters:
+        - $ref: '#/components/parameters/CrmOrgId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - contactId
+                - templateId
+              properties:
+                contactId:
+                  type: string
+                  description: Who signs.
+                templateId:
+                  type: string
+                  description: A published template, from `GET …/crm/contract-templates`.
+                title:
+                  type: string
+                  maxLength: 200
+                eventId:
+                  type: integer
+                  description: 'The event the agreement is for: its branding and variables.'
+                emailSubject:
+                  type: string
+                  maxLength: 200
+                emailMessage:
+                  type: string
+                  maxLength: 5000
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    $ref: '#/components/schemas/CrmContract'
+        '400':
+          $ref: '#/components/responses/CrmBadRequest'
+        '401':
+          $ref: '#/components/responses/CrmUnauthorized'
+        '403':
+          $ref: '#/components/responses/CrmWriteForbidden'
+        '404':
+          $ref: '#/components/responses/CrmNotFound'
+        '409':
+          $ref: '#/components/responses/CrmContractConflict'
+        '429':
+          $ref: '#/components/responses/CrmTooManyRequests'
+  /v1/organization/{orgId}/crm/contracts/export:
+    get:
+      operationId: crm-export-contracts
+      summary: Export contracts
+      description: >-
+        The contracts, filtered like `GET …/crm/contracts`, as columns and rows for a spreadsheet. Reads only. Requires
+        `read:crm`. Refused for a key restricted to particular events. Also at `GET /v1/org/{orgId}/crm/contracts/export`,
+        and at `GET /v1/crm/contracts/export` with the organization taken from the token.
+      tags:
+        - CRM contracts
+      parameters:
+        - $ref: '#/components/parameters/CrmOrgId'
+        - name: q
+          in: query
+          schema:
+            type: string
+            maxLength: 200
+          description: Search the title and the contact.
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/CrmContractStatus'
+          description: Only contracts in this status.
+        - name: contact_id
+          in: query
+          schema:
+            type: string
+          description: Only contracts with this contact.
+        - name: sort
+          in: query
+          schema:
+            type: string
+          description: A field such as `sent_at` or `updated_at`; a leading `-` sorts descending.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    properties:
+                      columns:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            key:
+                              type: string
+                            label:
+                              type: string
+                      rows:
+                        type: array
+                        items:
+                          type: object
+                          additionalProperties: true
+        '401':
+          $ref: '#/components/responses/CrmUnauthorized'
+        '403':
+          $ref: '#/components/responses/CrmReadForbidden'
+        '404':
+          $ref: '#/components/responses/CrmNotFound'
+        '429':
+          $ref: '#/components/responses/CrmTooManyRequests'
+  /v1/organization/{orgId}/crm/contracts/{contractId}:
+    get:
+      operationId: crm-get-contract
+      summary: Get a contract
+      description: >-
+        One contract with each signer's role, name, email, status and signing time, and its history. Reads only. Requires
+        `read:crm`. Refused for a key restricted to particular events. Also at `GET
+        /v1/org/{orgId}/crm/contracts/{contractId}`, and at `GET /v1/crm/contracts/{contractId}` with the organization
+        taken from the token.
+      tags:
+        - CRM contracts
+      parameters:
+        - $ref: '#/components/parameters/CrmOrgId'
+        - $ref: '#/components/parameters/CrmContractId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    $ref: '#/components/schemas/CrmContractDetail'
+        '401':
+          $ref: '#/components/responses/CrmUnauthorized'
+        '403':
+          $ref: '#/components/responses/CrmReadForbidden'
+        '404':
+          $ref: '#/components/responses/CrmNotFound'
+        '429':
+          $ref: '#/components/responses/CrmTooManyRequests'
+  /v1/organization/{orgId}/crm/contracts/{contractId}/void:
+    post:
+      operationId: crm-void-contract
+      summary: Void a contract
+      description: >-
+        Withdraws a contract that is not complete (created, sent or delivered): every signing link stops working and it
+        cannot be signed or brought back. Ask the person first. Requires `write:crm`. Refused for a key restricted to
+        particular events. Also at `POST /v1/org/{orgId}/crm/contracts/{contractId}/void`, and at `POST
+        /v1/crm/contracts/{contractId}/void` with the organization taken from the token.
+      tags:
+        - CRM contracts
+      parameters:
+        - $ref: '#/components/parameters/CrmOrgId'
+        - $ref: '#/components/parameters/CrmContractId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  maxLength: 500
+                  description: Kept in the contract's history.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    $ref: '#/components/schemas/CrmContract'
+        '400':
+          $ref: '#/components/responses/CrmBadRequest'
+        '401':
+          $ref: '#/components/responses/CrmUnauthorized'
+        '403':
+          $ref: '#/components/responses/CrmWriteForbidden'
+        '404':
+          $ref: '#/components/responses/CrmNotFound'
+        '409':
+          $ref: '#/components/responses/CrmContractConflict'
+        '429':
+          $ref: '#/components/responses/CrmTooManyRequests'
+  /v1/organization/{orgId}/crm/contracts/{contractId}/resend:
+    post:
+      operationId: crm-resend-contract
+      summary: Resend a contract
+      description: >-
+        Emails the signer the contract is waiting on again, with a fresh link when the old one expired. Confirm with the
+        person first. Requires `write:crm`. Refused for a key restricted to particular events. Also at `POST
+        /v1/org/{orgId}/crm/contracts/{contractId}/resend`, and at `POST /v1/crm/contracts/{contractId}/resend` with the
+        organization taken from the token.
+      tags:
+        - CRM contracts
+      parameters:
+        - $ref: '#/components/parameters/CrmOrgId'
+        - $ref: '#/components/parameters/CrmContractId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    $ref: '#/components/schemas/CrmContract'
+        '400':
+          $ref: '#/components/responses/CrmBadRequest'
+        '401':
+          $ref: '#/components/responses/CrmUnauthorized'
+        '403':
+          $ref: '#/components/responses/CrmWriteForbidden'
+        '404':
+          $ref: '#/components/responses/CrmNotFound'
+        '409':
+          $ref: '#/components/responses/CrmContractConflict'
+        '429':
+          $ref: '#/components/responses/CrmTooManyRequests'
+  /v1/organization/{orgId}/crm/contracts/{contractId}/pdf:
+    get:
+      operationId: crm-get-contract-pdf
+      summary: Get a contract's PDF
+      description: >-
+        A short-lived link to the contract's PDF: the signed copy, with its signing certificate, once everyone has signed.
+        Reads only. Requires `read:crm`. Refused for a key restricted to particular events. Also at `GET
+        /v1/org/{orgId}/crm/contracts/{contractId}/pdf`, and at `GET /v1/crm/contracts/{contractId}/pdf` with the
+        organization taken from the token.
+      tags:
+        - CRM contracts
+      parameters:
+        - $ref: '#/components/parameters/CrmOrgId'
+        - $ref: '#/components/parameters/CrmContractId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    properties:
+                      url:
+                        type: string
+                        format: uri
+        '401':
+          $ref: '#/components/responses/CrmUnauthorized'
+        '403':
+          $ref: '#/components/responses/CrmReadForbidden'
+        '404':
+          $ref: '#/components/responses/CrmNotFound'
+        '429':
+          $ref: '#/components/responses/CrmTooManyRequests'
+  /v1/organization/{orgId}/crm/contract-templates:
+    get:
+      operationId: crm-list-contract-templates
+      summary: List contract templates
+      description: >-
+        The organization's contract templates and the built-in starters (speaker, sponsor and exhibitor agreements). Only
+        a published template can be sent. Editing a template's wording or signer roles is done in Sessionboard's template
+        editor. Reads only. Requires `read:crm`. Refused for a key restricted to particular events. Also at `GET
+        /v1/org/{orgId}/crm/contract-templates`, and at `GET /v1/crm/contract-templates` with the organization taken from
+        the token.
+      tags:
+        - CRM contracts
+      parameters:
+        - $ref: '#/components/parameters/CrmOrgId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    properties:
+                      templates:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/CrmContractTemplate'
+                      starters:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            key:
+                              $ref: '#/components/schemas/CrmContractStarterKey'
+                            name:
+                              type: string
+                            description:
+                              type: string
+        '401':
+          $ref: '#/components/responses/CrmUnauthorized'
+        '403':
+          $ref: '#/components/responses/CrmReadForbidden'
+        '404':
+          $ref: '#/components/responses/CrmNotFound'
+        '429':
+          $ref: '#/components/responses/CrmTooManyRequests'
+  /v1/organization/{orgId}/crm/contract-templates/starter:
+    post:
+      operationId: crm-add-contract-starter
+      summary: Add a starter template
+      description: >-
+        Creates a template from a built-in starter and publishes it, so it can be sent at once. Sends nothing. Requires
+        `write:crm`. Refused for a key restricted to particular events. Also at `POST
+        /v1/org/{orgId}/crm/contract-templates/starter`, and at `POST /v1/crm/contract-templates/starter` with the
+        organization taken from the token.
+      tags:
+        - CRM contracts
+      parameters:
+        - $ref: '#/components/parameters/CrmOrgId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - key
+              properties:
+                key:
+                  $ref: '#/components/schemas/CrmContractStarterKey'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    $ref: '#/components/schemas/CrmContractTemplate'
+        '400':
+          $ref: '#/components/responses/CrmBadRequest'
+        '401':
+          $ref: '#/components/responses/CrmUnauthorized'
+        '403':
+          $ref: '#/components/responses/CrmWriteForbidden'
+        '404':
+          $ref: '#/components/responses/CrmNotFound'
+        '409':
+          $ref: '#/components/responses/CrmContractConflict'
+        '429':
+          $ref: '#/components/responses/CrmTooManyRequests'
 
 components:
   securitySchemes:
@@ -21092,6 +21992,20 @@ components:
       schema:
         type: string
       description: The app ID, from `GET …/crm/apps`.
+    CrmEntryId:
+      name: entryId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: The pipeline entry ID.
+    CrmContractId:
+      name: contractId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: The contract ID.
     SessionsOrgId:
       name: orgId
       in: path
@@ -27236,6 +28150,16 @@ components:
         href:
           type: string
           description: The contact in Sessionboard CRM.
+        stage:
+          type:
+            - object
+            - 'null'
+          properties:
+            id:
+              type: string
+            label:
+              type: string
+          description: The contact's pipeline stage; `null` when not in the pipeline.
     CrmHistory:
       type: object
       properties:
@@ -27579,6 +28503,285 @@ components:
         contact:
           $ref: '#/components/schemas/CrmContact'
           description: 'With `code: exists`: the contact that has the email.'
+    CrmPipelineStage:
+      type: object
+      properties:
+        id:
+          type: string
+        key:
+          type: string
+        system_key:
+          type:
+            - string
+            - 'null'
+          description: >-
+            The default stage this is (identified, researching, approved, contacted, interested, confirmed, declined,
+            future_fit).
+        label:
+          type: string
+        position:
+          type: integer
+        category:
+          type: string
+          enum:
+            - open
+            - won
+            - lost
+            - nurture
+        count:
+          type: integer
+    CrmPipelineEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        contact:
+          type: object
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+            email:
+              type: string
+              format: email
+            company:
+              type:
+                - string
+                - 'null'
+            title:
+              type:
+                - string
+                - 'null'
+            types:
+              type: array
+              items:
+                $ref: '#/components/schemas/CrmContactType'
+        stage:
+          type: object
+          properties:
+            id:
+              type: string
+            label:
+              type: string
+            category:
+              type: string
+              enum:
+                - open
+                - won
+                - lost
+                - nurture
+        event:
+          type:
+            - object
+            - 'null'
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+        entered_stage_at:
+          type: string
+          format: date-time
+        last_activity_at:
+          type:
+            - string
+            - 'null'
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        contracts_count:
+          type: integer
+    CrmPipelineEntryList:
+      type: object
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/CrmPipelineEntry'
+        total:
+          type: integer
+        page:
+          type: integer
+        per_page:
+          type: integer
+        facets:
+          type: object
+          properties:
+            stages:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  label:
+                    type: string
+                  count:
+                    type: integer
+    CrmPipelineHistory:
+      type: object
+      properties:
+        from_stage:
+          type:
+            - string
+            - 'null'
+          description: Empty for the entry being added.
+        to_stage:
+          type: string
+        actor_type:
+          type: string
+          description: 'Who or what moved it: a person, an automation, a signed contract.'
+        note:
+          type:
+            - string
+            - 'null'
+        at:
+          type: string
+          format: date-time
+    CrmContractStatus:
+      type: string
+      enum:
+        - created
+        - sent
+        - delivered
+        - completed
+        - declined
+        - voided
+      description: '`delivered`: the signer opened the signing page. `completed`: everyone signed.'
+    CrmContractStarterKey:
+      type: string
+      enum:
+        - speaker
+        - sponsor
+        - exhibitor
+    CrmContract:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        status:
+          $ref: '#/components/schemas/CrmContractStatus'
+        source:
+          type: string
+          description: 'How it was sent: `native` is Sessionboard e-sign.'
+        contact:
+          type:
+            - object
+            - 'null'
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+            email:
+              type: string
+              format: email
+        template:
+          type:
+            - object
+            - 'null'
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+        sent_at:
+          type:
+            - string
+            - 'null'
+          format: date-time
+        signed_at:
+          type:
+            - string
+            - 'null'
+          format: date-time
+        voided_at:
+          type:
+            - string
+            - 'null'
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    CrmContractDetail:
+      allOf:
+        - $ref: '#/components/schemas/CrmContract'
+        - type: object
+          properties:
+            signers:
+              type: array
+              items:
+                type: object
+                properties:
+                  role_key:
+                    type: string
+                  name:
+                    type: string
+                  email:
+                    type: string
+                    format: email
+                  status:
+                    type: string
+                  signed_at:
+                    type:
+                      - string
+                      - 'null'
+                    format: date-time
+            history:
+              type: array
+              items:
+                type: object
+                additionalProperties: true
+    CrmContractList:
+      type: object
+      properties:
+        contracts:
+          type: array
+          items:
+            $ref: '#/components/schemas/CrmContract'
+        total:
+          type: integer
+        page:
+          type: integer
+        per_page:
+          type: integer
+        facets:
+          type: object
+          properties:
+            statuses:
+              type: array
+              items:
+                type: object
+                properties:
+                  key:
+                    $ref: '#/components/schemas/CrmContractStatus'
+                  count:
+                    type: integer
+    CrmContractTemplate:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+          enum:
+            - draft
+            - published
+            - archived
+        signer_roles:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        updated_at:
+          type: string
+          format: date-time
     SessionsWorkspaceSource:
       type: object
       description: >-
@@ -30314,7 +31517,12 @@ components:
 
         - `ORG_WIDE_TOKEN_REQUIRED`: the key is restricted to particular events.
 
-        - `code: read_only`: the CRM trial or plan has ended; everything can still be read.
+        - `code: plan_read_only` (or `read_only`): the CRM trial or plan has ended; everything can still be read.
+
+        - `code: platform_customer`: the organization works with Sessionboard on a platform contract, so its contacts
+        are in the Sessionboard platform.
+
+        - `code: FEATURE_NOT_ENABLED`: contracts are not turned on for the organization (contracts operations only).
 
         - `FORBIDDEN` with no `code`: the token's user lacks the Contacts permission the change needs (connecting and
         disconnecting apps need an organization admin).
@@ -30349,6 +31557,14 @@ components:
           description: Seconds to wait before retrying.
           schema:
             type: integer
+    CrmContractConflict:
+      description: >-
+        `CONFLICT`: the contract is not in a state that allows this (already completed, declined or voided), or, for a
+        starter, it is already one of the organization's templates (`code: exists`). Nothing was changed.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CrmError'
     SessionsWorkspaceUnauthorized:
       description: Missing, invalid or expired token.
     SessionsWorkspaceReadForbidden:
