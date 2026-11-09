@@ -1,0 +1,126 @@
+---
+title: "Write engagement back to your AMS"
+description: "Opt in to writing each member's Sessionboard engagement into two objects of Sessionboard's own in Fonteva, Nimble AMS or Protech. Member records are never edited."
+sidebar:
+  label: "Write back to your AMS"
+  order: 7
+audience: ["organizer"]
+jtbd: "see in our AMS which members spoke, reviewed and earned credit"
+---
+
+import { Note, Steps, Step } from '@compat';
+
+Write-back puts what each member did in Sessionboard into your AMS, where your membership team already works: sessions they spoke at, reviews, events and webinars they attended, courses, CE hours and awards submissions. It is off until an admin turns it on, one object at a time.
+
+Sessionboard writes only to **two objects of its own** that your admin creates in your AMS. Each record points at the member with a lookup. Sessionboard never edits a member, contact, account or membership record: not the name, the status, the member type or the dues.
+
+## Why use it
+
+Your AMS decides renewals, board reports and engagement scores, but it can't see who spoke, reviewed or earned credit at your meetings. Writing that back gives your membership team the program side of each member, next to their dues, without a monthly export.
+
+## What gets written
+
+Sessionboard writes for the members this connection brought in and linked to their AMS record.
+
+- **Engagement**: one record per member, with their totals and the date they last took part.
+- **Activity**: one record per time they took part, with its kind: `Spoke` (the session title, the event and the date), `Reviewed` (a review or an award review, and the date), `CE credit` (the credit's title and type, the date and the hours) or `Award entry` (the awards program and the date they submitted).
+
+Only records whose content changed since the last write are sent.
+
+## Create the objects first
+
+Your admin creates the objects with exactly these API names. Sessionboard checks that they exist and lists any missing field before you turn write-back on. The types are what the values need.
+
+### Fonteva and Nimble AMS (Salesforce)
+
+`Sessionboard_Engagement__c`:
+
+| Field | Type |
+| --- | --- |
+| `Sessionboard_Id__c` | Text (100), **External ID**, unique |
+| `Contact__c` (Fonteva) or `Account__c` (Nimble AMS) | Lookup to Contact (Fonteva) or Account (Nimble AMS) |
+| `Sessions_Spoken__c` | Number |
+| `Reviews__c` | Number |
+| `Events_Attended__c` | Number |
+| `Webinars_Attended__c` | Number |
+| `Courses_Completed__c` | Number |
+| `CE_Hours__c` | Number, 2 decimal places |
+| `Award_Entries__c` | Number |
+| `Last_Activity__c` | Date |
+| `Sessionboard_Url__c` | URL: the member's page in Sessionboard CRM |
+
+`Sessionboard_Activity__c`:
+
+| Field | Type |
+| --- | --- |
+| `Sessionboard_Id__c` | Text (100), **External ID**, unique |
+| `Contact__c` (Fonteva) or `Account__c` (Nimble AMS) | Lookup to Contact (Fonteva) or Account (Nimble AMS) |
+| `Kind__c` | Text (40) |
+| `Title__c` | Text (255) |
+| `Event__c` | Text (255): the event's name, not a lookup |
+| `Occurred_On__c` | Date |
+| `CE_Hours__c` | Number, 2 decimal places |
+
+Add **Create**, **Read** and **Edit** on both objects, and edit access to their fields, to the run-as user's permission set.
+
+### Protech (Dataverse)
+
+Create the tables in a solution whose publisher prefix is `sb`, with the schema names exactly as written, in lower case.
+
+`sb_engagement` (entity set `sb_engagements`):
+
+| Column | Type |
+| --- | --- |
+| `sb_sessionboardid` | Text, with an **alternate key** on it |
+| `sb_contactid` | Lookup to Contact |
+| `sb_sessionsspoken`, `sb_reviews`, `sb_eventsattended`, `sb_webinarsattended`, `sb_coursescompleted`, `sb_awardentries` | Whole number |
+| `sb_cehours` | Decimal |
+| `sb_lastactivity` | Date only |
+| `sb_sessionboardurl` | Text (URL format) |
+
+`sb_activity` (entity set `sb_activities`):
+
+| Column | Type |
+| --- | --- |
+| `sb_sessionboardid` | Text, with an **alternate key** on it |
+| `sb_contactid` | Lookup to Contact |
+| `sb_kind` | Text |
+| `sb_title` | Text |
+| `sb_event` | Text: the event's name, not a lookup |
+| `sb_occurredon` | Date only |
+| `sb_cehours` | Decimal |
+
+Give the "Sessionboard Integration" security role **Create**, **Read**, **Write** and **Append** on both tables, and **Append To** on Contact, so it can set the lookup.
+
+## Turn it on
+
+<Steps>
+<Step title="Preview">
+Preview the write-back. It works out what would be written, without sending anything to your AMS: how many records it would create and update, how many are unchanged, and the first rows exactly as they would be sent.
+</Step>
+<Step title="Switch on each object">
+An admin switches on **Engagement**, **Activity** or both. Switching on writes nothing by itself. Each change is recorded in your organization's audit log, with who made it.
+</Step>
+<Step title="Write">
+The [nightly read](/sessionboard-crm/ams/nightly-sync) writes the objects you switched on. To write straight away, an admin writes now. Only objects that are switched on are written.
+</Step>
+</Steps>
+
+Every preview and every write is recorded in the connection's run history, record by record: created, updated, unchanged or failed, with the reason for any failure.
+
+To stop, switch the object off. Records already written stay in your AMS.
+
+## Orders in Fonteva
+
+For Fonteva, the write-back also lists **Orders**: the fees Sessionboard collected, placed through Fonteva's order service. Orders are **preview only**: Sessionboard writes no orders to Fonteva, and writing now leaves them out. Nimble AMS awards fees go to Nimble AMS through its own awards connection.
+
+<Note>
+Write-back is the only part of an AMS connection that writes. Finding, mapping, the snapshot and the nightly read only read.
+</Note>
+
+## Related
+
+- [Keep members in sync nightly](/sessionboard-crm/ams/nightly-sync)
+- [Connect Fonteva](/sessionboard-crm/ams/connect-fonteva)
+- [Connect Nimble AMS](/sessionboard-crm/ams/connect-nimble-ams)
+- [Connect Protech](/sessionboard-crm/ams/connect-protech)

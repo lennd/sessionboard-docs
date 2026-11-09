@@ -1,0 +1,67 @@
+---
+title: "Connect Protech"
+description: "Give Sessionboard CRM read access to Protech on Microsoft Dynamics 365: an Entra app registration with a client secret and an application user with a security role."
+sidebar:
+  order: 3
+audience: ["organizer"]
+jtbd: "bring our Protech members into Sessionboard CRM without exporting a file"
+---
+
+import { Note, Steps, Step } from '@compat';
+
+Protech runs on Microsoft Dynamics 365, in your own Dataverse environment. Sessionboard CRM reads it through the Dataverse Web API, signed in as an application user you create. Your Microsoft admin registers an app in Microsoft Entra ID, gives it a client secret, and adds it to your environment with a security role that can read your membership and registration tables.
+
+<Note>
+Our team connects Protech with you. We're verifying each AMS connector with our first customers, so a Sessionboard specialist sets up the connection with your admin and checks the first read together. Ask your customer success manager, or email [support@sessionboard.com](mailto:support@sessionboard.com).
+</Note>
+
+## Why use it
+
+Your members are in Protech and your speakers, reviewers and attendees are in Sessionboard. Connecting the two shows which members take part and which never do, without anyone exporting a spreadsheet, and keeps the Member tag right as people join and lapse.
+
+## What Sessionboard reads
+
+Protech doesn't publish its table names, and each environment can differ. So Sessionboard reads your environment's table definitions, suggests which tables hold memberships and registrations, and you confirm them: see [Map your AMS fields](/sessionboard-crm/ams/map-fields#protech-confirm-your-tables-and-columns).
+
+| Table | What it's used for |
+| --- | --- |
+| Your membership table | One membership per row: status, member type, join and renewal dates |
+| Contact, Account | The member's name, email, job title and company |
+| Your registration table, and the event table it points at | The event registrations and check-ins Protech keeps |
+| The tables your member type and status columns point at | Their names, so member type and status read as words |
+
+Every read is a request for rows or table definitions. Sessionboard never edits a member, contact or membership. Writing Sessionboard's own engagement records back is a separate choice, off until you turn it on: see [Write engagement back to your AMS](/sessionboard-crm/ams/write-back).
+
+## Set it up in Microsoft
+
+<Steps>
+<Step title="Note your environment URL">
+In the Power Platform admin center, open **Environments**, choose your Protech environment and copy its **Environment URL**, such as `https://yourassociation.crm.dynamics.com`.
+</Step>
+<Step title="Register an app">
+In the Microsoft Entra admin center, open **App registrations** and choose **New registration**. Name it "Sessionboard", choose **Accounts in this organizational directory only** and leave the redirect URI empty. Copy the **Application (client) ID** and the **Directory (tenant) ID** from its overview.
+</Step>
+<Step title="Add a client secret">
+In the app's **Certificates & secrets**, choose **New client secret**, give it a description and an expiry, and add it. Copy the secret's **Value** straight away: Entra shows it only once. The app needs no API permissions, because the application user signs in as itself.
+</Step>
+<Step title="Create a security role">
+In the Power Platform admin center, open the environment's **Settings > Users + permissions > Security roles** and create a role, such as "Sessionboard Integration". Give it **Read** at the **Organization** level on every table in the table above.
+</Step>
+<Step title="Add the application user">
+In **Settings > Users + permissions > Application users**, choose **New app user**, add the "Sessionboard" app, pick your root business unit and assign the "Sessionboard Integration" role. Create it.
+</Step>
+</Steps>
+
+## Connect it in Sessionboard CRM
+
+Our team connects it with you on **Connections** using four values: the environment URL, the tenant ID, the client ID and the client secret. They're stored encrypted and never shown again, so don't send the secret by email. Testing the connection checks that Sessionboard can sign in and read.
+
+A client secret expires on the date you chose. Before it does, add a new secret to the app and connect again with it, or the nightly read stops.
+
+Then choose your tables and confirm the columns: see [Map your AMS fields](/sessionboard-crm/ams/map-fields#protech-confirm-your-tables-and-columns).
+
+## Related
+
+- [Map your AMS fields](/sessionboard-crm/ams/map-fields)
+- [Read the member engagement snapshot](/sessionboard-crm/ams/member-snapshot)
+- [Keep members in sync nightly](/sessionboard-crm/ams/nightly-sync)
