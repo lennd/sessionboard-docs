@@ -3,7 +3,7 @@ title: "CRM MCP tools"
 description: "The tools an AI assistant connected to the Sessionboard MCP server can use with Sessionboard CRM"
 ---
 
-These tools are served by the Sessionboard MCP server. To connect an assistant, see [CRM API authentication](/sessionboard-crm/api/authentication#ai-assistants). Tools that read need `read:crm`; tools that change something need `write:crm`. None of them emails anyone, and none connects an app: connecting takes the person's own keys, so they do it in Sessionboard CRM.
+These tools are served by the Sessionboard MCP server. To connect an assistant, see [CRM API authentication](/sessionboard-crm/api/authentication#ai-assistants). Tools that read need `read:crm`; tools that change something need `write:crm`. None connects an app: connecting takes the person's own keys, so they do it in Sessionboard CRM. Only `send_crm_contract` and `void_crm_contract` reach anyone, the signer, and they run only with `confirmed: true`, which the assistant passes after the person says yes. `archive_crm_pipeline_entry` needs `confirmed: true` too.
 
 | Tool | Hints | Description |
 |------|-------|-------------|
@@ -19,3 +19,13 @@ These tools are served by the Sessionboard MCP server. To connect an assistant, 
 | `list_crm_sources` | read | The CRMs, AMSs and event platforms people can be read from (contacts from HubSpot, Salesforce and iMIS; one event's speakers from Cvent, Swoogo, Bizzabo, ON24 and Goldcast): connected, health, what each brings |
 | `discover_crm_people` | read | Who a connected app holds, compared with your contacts; writes nothing and never reads attendees, for the person to review before importing |
 | `export_crm_contacts` | read | The filtered contact list as CSV, up to 1,000 rows (the Contacts page exports up to 25,000) |
+| `get_crm_pipeline` | read | The stages with their counts and the pipeline entries (search, filter by stage, type, tag or event, sort, page), or one entry's history |
+| `add_to_crm_pipeline` | write | Add up to 200 contacts to the pipeline in a stage and for an event; contacts already in it are skipped |
+| `move_crm_pipeline_entry` | write, destructive | Move an entry to another stage with a note, or change its event; every move is kept in its history |
+| `archive_crm_pipeline_entry` | write, destructive | Take an entry off the pipeline (the contact stays), after the person says yes |
+| `list_crm_contracts` | read | Contracts by status or contact, with the contact, template and dates |
+| `get_crm_contract` | read | One contract with its signers and history, and the PDF link |
+| `send_crm_contract` | write, destructive | Send a contract for signature from a published template, or resend one, after the person approves the template, title and recipient |
+| `void_crm_contract` | write, destructive | Void a contract that is not complete, after the person says yes |
+| `list_crm_contract_templates` | read | The templates and the built-in starters |
+| `add_crm_contract_starter` | write | Add a speaker, sponsor or exhibitor starter template, published and ready to send |

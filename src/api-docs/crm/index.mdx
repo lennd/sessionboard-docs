@@ -1,6 +1,6 @@
 ---
 title: "CRM API"
-description: "The Sessionboard CRM API: contacts with types and tags, the spreadsheet import, and finding people in a connected CRM, AMS or event platform"
+description: "The Sessionboard CRM API: contacts with types and tags, the spreadsheet import, finding people in a connected CRM, AMS or event platform, the pipeline and contracts"
 ---
 
 import { Card, CardGroup } from '@compat';
@@ -26,12 +26,20 @@ CRM is organization-level, so every operation starts at `/v1/organization/{orgId
   <Card title="Connections">
     List the CRMs, AMSs and event platforms you can read people from, connect and test them, and discover who they hold before importing: contacts from HubSpot, Salesforce and iMIS, or one event's speakers from Cvent, Swoogo, Bizzabo, ON24 and Goldcast.
   </Card>
+  <Card title="Pipeline">
+    List the stages with their counts; search, filter, sort, page and export the pipeline; add up to 200 contacts at once; move an entry to another stage with a note; read its history; archive it.
+  </Card>
+  <Card title="Contracts">
+    List, read and export contracts; send one for signature from a published template with Sessionboard e-sign; resend or void it; get its PDF; list templates and add a built-in speaker, sponsor or exhibitor starter.
+  </Card>
 </CardGroup>
 
-Discovering people in a connected app only reads: it writes nothing in Sessionboard or in the app, and never reads attendees. Review the rows it returns, then send the ones you choose to `POST …/crm/import` with `source` set to the app. Nothing in the CRM API emails anyone.
+Discovering people in a connected app only reads: it writes nothing in Sessionboard or in the app, and never reads attendees. Review the rows it returns, then send the ones you choose to `POST …/crm/import` with `source` set to the app.
 
-Request bodies are camelCase (`firstName`, `tagIds`, `updateExisting`, `remoteEventId`); responses are snake_case.
+Only sending, resending and voiding a contract emails anyone: the signer. Confirm the recipient with a person before you call them. The pipeline and contracts are the Sessionboard platform's own, so an organization that moves to the platform keeps them. Editing a template's wording or signer roles is done in Sessionboard's template editor, not through the API.
 
-Contacts are free to store. Your plan counts active contacts (people you emailed, invited, sent a contract or a form, scheduled in a session, or who registered, in the last 365 days), once per email across CRM and Marketing. When a CRM trial or plan ends, writes answer `403` with `code: read_only`, and everything can still be read.
+Request bodies are camelCase (`firstName`, `tagIds`, `updateExisting`, `remoteEventId`, `contactIds`, `stageId`, `templateId`); responses are snake_case.
+
+Contacts are free to store. Your plan counts active contacts (people you emailed, invited, sent a contract or a form, scheduled in a session, or who registered, in the last 365 days), once per email across CRM and Marketing. When a CRM trial or plan ends, writes answer `403` with `code: plan_read_only`, and everything can still be read.
 
 CRM needs the `read:crm` and `write:crm` scopes; see [Authentication](/sessionboard-crm/api/authentication). AI assistants can do the same work with the [CRM MCP tools](/sessionboard-crm/api/mcp-tools). Release notes are in the [CRM changelog](/sessionboard-crm/api/changelog).
