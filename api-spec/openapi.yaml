@@ -131,6 +131,28 @@ tags:
       `read:sessions`, writes `write:sessions`. A key restricted to particular events cannot use it. Opening the call and
       publishing the agenda wait for a person's OK (`202 needs_approval`). Sessions sends no decision emails and has no
       speaker portal.
+  - name: CRM
+    description: >-
+      Sessionboard CRM: the people an organization works with across its events (speakers, subject-matter experts,
+      influencers, exhibitor and sponsor contacts), as Contacts with types and tags, the spreadsheet import, and reading
+      people from a connected CRM, AMS or event platform to review before importing. Organization-level: paths start at
+      `/v1/organization/{orgId}/crm`; the same operations are served under `/v1/org/{orgId}/crm` and, with the
+      organization taken from the token, `/v1/crm`. Requires the preview scopes `read:crm` / `write:crm`, which a token or
+      OAuth client gets only when they are named explicitly. The POSTs that only read (`import/parse`, `import/preview`,
+      `apps/{appId}/discover`) need `read:crm`. Request bodies are camelCase; responses are snake_case. A key restricted
+      to particular events cannot use it. Nothing here emails anyone.
+  - name: CRM contacts
+    description: Search, read, add, change, tag and delete contacts, add notes, and export. Same scopes and paths as CRM.
+  - name: CRM tags
+    description: The organization's tags (static contact lists). Deleting a tag keeps its contacts. Same scopes and paths as CRM.
+  - name: CRM import
+    description: >-
+      The spreadsheet import: the sample file, reading a CSV's columns, a preview that writes nothing, then the import.
+      Same scopes and paths as CRM.
+  - name: CRM connections
+    description: >-
+      Connected CRMs, AMSs and event platforms (the same connections Marketing and Sessions use), and discovering who they
+      hold, read-only, before importing. Same scopes and paths as CRM.
   - name: Learning workspace
     description: |
       The self-serve Sessionboard Learning workspace: Home, courses, learners, putting a meeting on demand, credits and results, and publishing (which waits for a person's OK, `202 needs_approval`). Organization-level: paths start at `/v1/organization/{orgId}/learning/workspace`, and the same operations are served under `/v1/learning/workspace` with the organization taken from the token. Requires the preview scopes `read:learning` / `write:learning`, named explicitly. A key restricted to particular events cannot use it.
@@ -19662,6 +19684,1299 @@ paths:
           description: No such version on this Site.
         '409':
           description: 'The Site changed since `baseRevision` (`code: SITE_DRAFT_STALE`).'
+  /v1/organization/{orgId}/crm:
+    get:
+      operationId: crm-get-home
+      summary: Get CRM Home
+      description: >-
+        The organization, contacts by type, tags and accounts; active contacts used against the plan (a rolling 365 days);
+        the setup steps; the five most recent contacts; and what the Sessionboard platform adds. Reads only. Requires
+        `read:crm`. Refused for a key restricted to particular events. Also at `GET /v1/org/{orgId}/crm`, and at `GET
+        /v1/crm` with the organization taken from the token.
+      tags:
+        - CRM
+      parameters:
+        - $ref: '#/components/parameters/CrmOrgId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    $ref: '#/components/schemas/CrmHome'
+        '401':
+          $ref: '#/components/responses/CrmUnauthorized'
+        '403':
+          $ref: '#/components/responses/CrmReadForbidden'
+        '404':
+          $ref: '#/components/responses/CrmNotFound'
+        '429':
+          $ref: '#/components/responses/CrmTooManyRequests'
+  /v1/organization/{orgId}/crm/contacts:
+    get:
+      operationId: crm-list-contacts
+      summary: List contacts
+      description: >-
+        Search, filter, sort and page the organization's contacts. `facets` counts each type, tag and source for the
+        current search. Reads only. Requires `read:crm`. Refused for a key restricted to particular events. Also at `GET
+        /v1/org/{orgId}/crm/contacts`, and at `GET /v1/crm/contacts` with the organization taken from the token.
+      tags:
+        - CRM contacts
+      parameters:
+        - $ref: '#/components/parameters/CrmOrgId'
+        - name: q
+          in: query
+          schema:
+            type: string
+            maxLength: 200
+          description: Search name, email and company.
+        - name: type
+          in: query
+          schema:
+            $ref: '#/components/schemas/CrmContactType'
+          description: Only contacts of this type.
+        - name: tag
+          in: query
+          schema:
+            type: string
+          description: Only contacts with this tag id.
+        - name: source
+          in: query
+          schema:
+            type: string
+          description: Only contacts from this source (a key from `facets.sources`).
+        - name: event_id
+          in: query
+          schema:
+            type: string
+            pattern: ^[0-9]+$
+          description: Only contacts on this event.
+        - name: active
+          in: query
+          schema:
+            type: string
+            enum:
+              - 'true'
+              - 'false'
+          description: '`true`: active contacts only; `false`: stored only.'
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum:
+              - name
+              - '-name'
+              - company
+              - '-company'
+              - last_activity
+              - '-last_activity'
+              - events
+              - '-events'
+              - created
+              - '-created'
+          description: A leading `-` sorts descending. Default `name`.
+        - name: page
+          in: query
+          schema:
+            type: string
+            pattern: ^[0-9]+$
+            default: '1'
+          description: Page, from 1.
+        - name: per_page
+          in: query
+          schema:
+            type: string
+            pattern: ^[0-9]+$
+            default: '50'
+          description: Contacts per page, up to 100.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    $ref: '#/components/schemas/CrmContactList'
+        '401':
+          $ref: '#/components/responses/CrmUnauthorized'
+        '403':
+          $ref: '#/components/responses/CrmReadForbidden'
+        '404':
+          $ref: '#/components/responses/CrmNotFound'
+        '429':
+          $ref: '#/components/responses/CrmTooManyRequests'
+    post:
+      operationId: crm-create-contact
+      summary: Add a contact
+      description: >-
+        Adds a contact. An email already in the organization answers `409` with `code: exists` and the existing contact.
+        Emails no one. Requires `write:crm`. Refused for a key restricted to particular events. Also at `POST
+        /v1/org/{orgId}/crm/contacts`, and at `POST /v1/crm/contacts` with the organization taken from the token.
+      tags:
+        - CRM contacts
+      parameters:
+        - $ref: '#/components/parameters/CrmOrgId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - firstName
+                - email
+              properties:
+                firstName:
+                  type: string
+                  maxLength: 100
+                lastName:
+                  type: string
+                  maxLength: 100
+                email:
+                  type: string
+                  format: email
+                company:
+                  type: string
+                  maxLength: 255
+                title:
+                  type: string
+                  maxLength: 255
+                  description: Job title.
+                types:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/CrmContactType'
+                tagIds:
+                  type: array
+                  items:
+                    type: string
+                notes:
+                  type: string
+                  description: A first note.
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    $ref: '#/components/schemas/CrmContact'
+        '400':
+          $ref: '#/components/responses/CrmBadRequest'
+        '401':
+          $ref: '#/components/responses/CrmUnauthorized'
+        '403':
+          $ref: '#/components/responses/CrmWriteForbidden'
+        '404':
+          $ref: '#/components/responses/CrmNotFound'
+        '409':
+          $ref: '#/components/responses/CrmContactExists'
+        '429':
+          $ref: '#/components/responses/CrmTooManyRequests'
+    delete:
+      operationId: crm-delete-contacts
+      summary: Delete contacts
+      description: >-
+        Deletes the contacts named in `ids` from the organization's list. Ask the person first. The token's user needs the
+        Contacts delete permission. Requires `write:crm`. Refused for a key restricted to particular events. Also at
+        `DELETE /v1/org/{orgId}/crm/contacts`, and at `DELETE /v1/crm/contacts` with the organization taken from the
+        token.
+      tags:
+        - CRM contacts
+      parameters:
+        - $ref: '#/components/parameters/CrmOrgId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - ids
+              properties:
+                ids:
+                  type: array
+                  minItems: 1
+                  maxItems: 500
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    properties:
+                      deleted:
+                        type: integer
+        '400':
+          $ref: '#/components/responses/CrmBadRequest'
+        '401':
+          $ref: '#/components/responses/CrmUnauthorized'
+        '403':
+          $ref: '#/components/responses/CrmWriteForbidden'
+        '404':
+          $ref: '#/components/responses/CrmNotFound'
+        '429':
+          $ref: '#/components/responses/CrmTooManyRequests'
+  /v1/organization/{orgId}/crm/contacts/bulk:
+    post:
+      operationId: crm-bulk-update-contacts
+      summary: Change types and tags on many contacts
+      description: >-
+        Adds or removes types and tags on every contact in `ids`. Types and tags not named stay as they are. Requires
+        `write:crm`. Refused for a key restricted to particular events. Also at `POST /v1/org/{orgId}/crm/contacts/bulk`,
+        and at `POST /v1/crm/contacts/bulk` with the organization taken from the token.
+      tags:
+        - CRM contacts
+      parameters:
+        - $ref: '#/components/parameters/CrmOrgId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - ids
+              properties:
+                ids:
+                  type: array
+                  minItems: 1
+                  maxItems: 500
+                  items:
+                    type: string
+                addTypes:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/CrmContactType'
+                removeTypes:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/CrmContactType'
+                addTagIds:
+                  type: array
+                  items:
+                    type: string
+                removeTagIds:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    properties:
+                      updated:
+                        type: integer
+        '400':
+          $ref: '#/components/responses/CrmBadRequest'
+        '401':
+          $ref: '#/components/responses/CrmUnauthorized'
+        '403':
+          $ref: '#/components/responses/CrmWriteForbidden'
+        '404':
+          $ref: '#/components/responses/CrmNotFound'
+        '429':
+          $ref: '#/components/responses/CrmTooManyRequests'
+  /v1/organization/{orgId}/crm/contacts/export:
+    get:
+      operationId: crm-export-contacts
+      summary: Export contacts
+      description: >-
+        The contacts matching the same filters as the list, as columns and rows to write a spreadsheet from, up to 25,000.
+        The token's user needs the Contacts export permission. Reads only. Requires `read:crm`. Refused for a key
+        restricted to particular events. Also at `GET /v1/org/{orgId}/crm/contacts/export`, and at `GET
+        /v1/crm/contacts/export` with the organization taken from the token.
+      tags:
+        - CRM contacts
+      parameters:
+        - $ref: '#/components/parameters/CrmOrgId'
+        - name: q
+          in: query
+          schema:
+            type: string
+            maxLength: 200
+          description: Search name, email and company.
+        - name: type
+          in: query
+          schema:
+            $ref: '#/components/schemas/CrmContactType'
+          description: Only contacts of this type.
+        - name: tag
+          in: query
+          schema:
+            type: string
+          description: Only contacts with this tag id.
+        - name: source
+          in: query
+          schema:
+            type: string
+          description: Only contacts from this source (a key from `facets.sources`).
+        - name: event_id
+          in: query
+          schema:
+            type: string
+            pattern: ^[0-9]+$
+          description: Only contacts on this event.
+        - name: active
+          in: query
+          schema:
+            type: string
+            enum:
+              - 'true'
+              - 'false'
+          description: '`true`: active contacts only; `false`: stored only.'
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum:
+              - name
+              - '-name'
+              - company
+              - '-company'
+              - last_activity
+              - '-last_activity'
+              - events
+              - '-events'
+              - created
+              - '-created'
+          description: A leading `-` sorts descending. Default `name`.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    properties:
+                      columns:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            key:
+                              type: string
+                            label:
+                              type: string
+                      rows:
+                        type: array
+                        items:
+                          type: object
+                          additionalProperties: true
+        '401':
+          $ref: '#/components/responses/CrmUnauthorized'
+        '403':
+          $ref: '#/components/responses/CrmReadForbidden'
+        '404':
+          $ref: '#/components/responses/CrmNotFound'
+        '429':
+          $ref: '#/components/responses/CrmTooManyRequests'
+  /v1/organization/{orgId}/crm/contacts/{contactId}:
+    get:
+      operationId: crm-get-contact
+      summary: Get a contact
+      description: >-
+        One contact with their history across the organization's events, campaigns, contracts and forms, and the team's
+        notes. Reads only. Requires `read:crm`. Refused for a key restricted to particular events. Also at `GET
+        /v1/org/{orgId}/crm/contacts/{contactId}`, and at `GET /v1/crm/contacts/{contactId}` with the organization taken
+        from the token.
+      tags:
+        - CRM contacts
+      parameters:
+        - $ref: '#/components/parameters/CrmOrgId'
+        - $ref: '#/components/parameters/CrmContactId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    properties:
+                      contact:
+                        $ref: '#/components/schemas/CrmContact'
+                      history:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/CrmHistory'
+                      notes:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/CrmNote'
+        '401':
+          $ref: '#/components/responses/CrmUnauthorized'
+        '403':
+          $ref: '#/components/responses/CrmReadForbidden'
+        '404':
+          $ref: '#/components/responses/CrmNotFound'
+        '429':
+          $ref: '#/components/responses/CrmTooManyRequests'
+    put:
+      operationId: crm-update-contact
+      summary: Update a contact
+      description: >-
+        Changes only the fields sent. `types` and `tagIds` replace the contact's whole list. Requires `write:crm`. Refused
+        for a key restricted to particular events. Also at `PUT /v1/org/{orgId}/crm/contacts/{contactId}`, and at `PUT
+        /v1/crm/contacts/{contactId}` with the organization taken from the token.
+      tags:
+        - CRM contacts
+      parameters:
+        - $ref: '#/components/parameters/CrmOrgId'
+        - $ref: '#/components/parameters/CrmContactId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              properties:
+                firstName:
+                  type: string
+                  maxLength: 100
+                lastName:
+                  type: string
+                  maxLength: 100
+                email:
+                  type: string
+                  format: email
+                company:
+                  type: string
+                  maxLength: 255
+                title:
+                  type: string
+                  maxLength: 255
+                types:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/CrmContactType'
+                tagIds:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    $ref: '#/components/schemas/CrmContact'
+        '400':
+          $ref: '#/components/responses/CrmBadRequest'
+        '401':
+          $ref: '#/components/responses/CrmUnauthorized'
+        '403':
+          $ref: '#/components/responses/CrmWriteForbidden'
+        '404':
+          $ref: '#/components/responses/CrmNotFound'
+        '409':
+          $ref: '#/components/responses/CrmContactExists'
+        '429':
+          $ref: '#/components/responses/CrmTooManyRequests'
+  /v1/organization/{orgId}/crm/contacts/{contactId}/notes:
+    post:
+      operationId: crm-add-contact-note
+      summary: Add a note to a contact
+      description: >-
+        Adds a note to the contact, signed by the token's user. Requires `write:crm`. Refused for a key restricted to
+        particular events. Also at `POST /v1/org/{orgId}/crm/contacts/{contactId}/notes`, and at `POST
+        /v1/crm/contacts/{contactId}/notes` with the organization taken from the token.
+      tags:
+        - CRM contacts
+      parameters:
+        - $ref: '#/components/parameters/CrmOrgId'
+        - $ref: '#/components/parameters/CrmContactId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - text
+              properties:
+                text:
+                  type: string
+                  minLength: 1
+                  maxLength: 5000
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    $ref: '#/components/schemas/CrmNote'
+        '400':
+          $ref: '#/components/responses/CrmBadRequest'
+        '401':
+          $ref: '#/components/responses/CrmUnauthorized'
+        '403':
+          $ref: '#/components/responses/CrmWriteForbidden'
+        '404':
+          $ref: '#/components/responses/CrmNotFound'
+        '429':
+          $ref: '#/components/responses/CrmTooManyRequests'
+  /v1/organization/{orgId}/crm/tags:
+    get:
+      operationId: crm-list-tags
+      summary: List tags
+      description: >-
+        Every tag (the organization's static contact lists) with how many contacts have it. Reads only. Requires
+        `read:crm`. Refused for a key restricted to particular events. Also at `GET /v1/org/{orgId}/crm/tags`, and at `GET
+        /v1/crm/tags` with the organization taken from the token.
+      tags:
+        - CRM tags
+      parameters:
+        - $ref: '#/components/parameters/CrmOrgId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    properties:
+                      tags:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/CrmTagWithCount'
+        '401':
+          $ref: '#/components/responses/CrmUnauthorized'
+        '403':
+          $ref: '#/components/responses/CrmReadForbidden'
+        '404':
+          $ref: '#/components/responses/CrmNotFound'
+        '429':
+          $ref: '#/components/responses/CrmTooManyRequests'
+    post:
+      operationId: crm-create-tag
+      summary: Create a tag
+      description: >-
+        Creates a tag. Requires `write:crm`. Refused for a key restricted to particular events. Also at `POST
+        /v1/org/{orgId}/crm/tags`, and at `POST /v1/crm/tags` with the organization taken from the token.
+      tags:
+        - CRM tags
+      parameters:
+        - $ref: '#/components/parameters/CrmOrgId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    $ref: '#/components/schemas/CrmTagWithCount'
+        '400':
+          $ref: '#/components/responses/CrmBadRequest'
+        '401':
+          $ref: '#/components/responses/CrmUnauthorized'
+        '403':
+          $ref: '#/components/responses/CrmWriteForbidden'
+        '404':
+          $ref: '#/components/responses/CrmNotFound'
+        '429':
+          $ref: '#/components/responses/CrmTooManyRequests'
+  /v1/organization/{orgId}/crm/tags/{tagId}:
+    put:
+      operationId: crm-rename-tag
+      summary: Rename a tag
+      description: >-
+        Renames a tag. Every contact that has it keeps it. Requires `write:crm`. Refused for a key restricted to
+        particular events. Also at `PUT /v1/org/{orgId}/crm/tags/{tagId}`, and at `PUT /v1/crm/tags/{tagId}` with the
+        organization taken from the token.
+      tags:
+        - CRM tags
+      parameters:
+        - $ref: '#/components/parameters/CrmOrgId'
+        - $ref: '#/components/parameters/CrmTagId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    $ref: '#/components/schemas/CrmTagWithCount'
+        '400':
+          $ref: '#/components/responses/CrmBadRequest'
+        '401':
+          $ref: '#/components/responses/CrmUnauthorized'
+        '403':
+          $ref: '#/components/responses/CrmWriteForbidden'
+        '404':
+          $ref: '#/components/responses/CrmNotFound'
+        '429':
+          $ref: '#/components/responses/CrmTooManyRequests'
+    delete:
+      operationId: crm-delete-tag
+      summary: Delete a tag
+      description: >-
+        Deletes a tag. The contacts that had it are kept. Ask the person first. Requires `write:crm`. Refused for a key
+        restricted to particular events. Also at `DELETE /v1/org/{orgId}/crm/tags/{tagId}`, and at `DELETE
+        /v1/crm/tags/{tagId}` with the organization taken from the token.
+      tags:
+        - CRM tags
+      parameters:
+        - $ref: '#/components/parameters/CrmOrgId'
+        - $ref: '#/components/parameters/CrmTagId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    properties:
+                      deleted:
+                        type: boolean
+        '400':
+          $ref: '#/components/responses/CrmBadRequest'
+        '401':
+          $ref: '#/components/responses/CrmUnauthorized'
+        '403':
+          $ref: '#/components/responses/CrmWriteForbidden'
+        '404':
+          $ref: '#/components/responses/CrmNotFound'
+        '429':
+          $ref: '#/components/responses/CrmTooManyRequests'
+  /v1/organization/{orgId}/crm/import/sample:
+    get:
+      operationId: crm-get-import-sample
+      summary: Download the sample file
+      description: >-
+        A sample CSV with every column an import takes, as a file download. Reads only. Requires `read:crm`. Refused for a
+        key restricted to particular events. Also at `GET /v1/org/{orgId}/crm/import/sample`, and at `GET
+        /v1/crm/import/sample` with the organization taken from the token.
+      tags:
+        - CRM import
+      parameters:
+        - $ref: '#/components/parameters/CrmOrgId'
+      responses:
+        '200':
+          description: 'The sample file (`Content-Disposition: attachment`).'
+          content:
+            text/csv:
+              schema:
+                type: string
+        '401':
+          $ref: '#/components/responses/CrmUnauthorized'
+        '403':
+          $ref: '#/components/responses/CrmReadForbidden'
+        '404':
+          $ref: '#/components/responses/CrmNotFound'
+        '429':
+          $ref: '#/components/responses/CrmTooManyRequests'
+  /v1/organization/{orgId}/crm/import/parse:
+    post:
+      operationId: crm-parse-import
+      summary: Read a spreadsheet's columns
+      description: >-
+        Reads a CSV and returns its columns, the first five rows and the suggested column → field mapping, with the fields
+        an import takes. Writes nothing, so `read:crm` is enough. Send CSV text as `{ csv }`; file uploads are for the
+        Sessionboard CRM pages. Requires `read:crm`. Refused for a key restricted to particular events. Also at `POST
+        /v1/org/{orgId}/crm/import/parse`, and at `POST /v1/crm/import/parse` with the organization taken from the token.
+      tags:
+        - CRM import
+      parameters:
+        - $ref: '#/components/parameters/CrmOrgId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - csv
+              properties:
+                csv:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    properties:
+                      columns:
+                        type: array
+                        items:
+                          type: string
+                      sample:
+                        type: array
+                        maxItems: 5
+                        items:
+                          type: array
+                          items:
+                            type: string
+                      mapping:
+                        type: object
+                        additionalProperties:
+                          type: string
+                      fields:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            key:
+                              type: string
+                            label:
+                              type: string
+                            required:
+                              type: boolean
+        '401':
+          $ref: '#/components/responses/CrmUnauthorized'
+        '403':
+          $ref: '#/components/responses/CrmReadForbidden'
+        '404':
+          $ref: '#/components/responses/CrmNotFound'
+        '429':
+          $ref: '#/components/responses/CrmTooManyRequests'
+  /v1/organization/{orgId}/crm/import/preview:
+    post:
+      operationId: crm-preview-import
+      summary: Preview an import
+      description: >-
+        What an import would do, without doing it: how many rows are new, already contacts or invalid (with the line and
+        reason), emails repeated in the file, and up to 200 rows as they would be saved. Writes nothing, so `read:crm` is
+        enough. Requires `read:crm`. Refused for a key restricted to particular events. Also at `POST
+        /v1/org/{orgId}/crm/import/preview`, and at `POST /v1/crm/import/preview` with the organization taken from the
+        token.
+      tags:
+        - CRM import
+      parameters:
+        - $ref: '#/components/parameters/CrmOrgId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Send `rows` or `csv`.
+              properties:
+                rows:
+                  type: array
+                  maxItems: 250
+                  items:
+                    $ref: '#/components/schemas/CrmImportRowInput'
+                csv:
+                  type: string
+                  description: CSV text with a header row (up to 250 rows on `POST …/crm/import`).
+                mapping:
+                  type: object
+                  additionalProperties:
+                    type: string
+                  description: >-
+                    Column → field (`email`, `first_name`, `last_name`, `name`, `company`, `title`, `types`, `tags`), as
+                    `import/parse` suggests. Optional with `rows`.
+                types:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/CrmContactType'
+                  description: Given to every row.
+                tagIds:
+                  type: array
+                  items:
+                    type: string
+                  description: Tags given to every row.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      new:
+                        type: integer
+                      existing:
+                        type: integer
+                      invalid:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/CrmInvalidRow'
+                      duplicates_in_file:
+                        type: integer
+                      rows:
+                        type: array
+                        maxItems: 200
+                        items:
+                          $ref: '#/components/schemas/CrmImportRow'
+        '401':
+          $ref: '#/components/responses/CrmUnauthorized'
+        '403':
+          $ref: '#/components/responses/CrmReadForbidden'
+        '404':
+          $ref: '#/components/responses/CrmNotFound'
+        '429':
+          $ref: '#/components/responses/CrmTooManyRequests'
+  /v1/organization/{orgId}/crm/import:
+    post:
+      operationId: crm-import-contacts
+      summary: Import contacts
+      description: >-
+        Imports rows or a CSV, matched by email, up to 250 rows a call (send more in several calls). `updateExisting:
+        true` fills in existing contacts' details from the rows; otherwise they are left as they are. After a discovery,
+        send the chosen rows with `source` set to the app id. Emails no one. Requires `write:crm`. Refused for a key
+        restricted to particular events. Also at `POST /v1/org/{orgId}/crm/import`, and at `POST /v1/crm/import` with the
+        organization taken from the token.
+      tags:
+        - CRM import
+      parameters:
+        - $ref: '#/components/parameters/CrmOrgId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Send `rows` or `csv`.
+              properties:
+                rows:
+                  type: array
+                  maxItems: 250
+                  items:
+                    $ref: '#/components/schemas/CrmImportRowInput'
+                csv:
+                  type: string
+                  description: CSV text with a header row (up to 250 rows on `POST …/crm/import`).
+                mapping:
+                  type: object
+                  additionalProperties:
+                    type: string
+                  description: >-
+                    Column → field (`email`, `first_name`, `last_name`, `name`, `company`, `title`, `types`, `tags`), as
+                    `import/parse` suggests. Optional with `rows`.
+                types:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/CrmContactType'
+                  description: Given to every row.
+                tagIds:
+                  type: array
+                  items:
+                    type: string
+                  description: Tags given to every row.
+                updateExisting:
+                  type: boolean
+                  default: false
+                source:
+                  type: string
+                  description: 'Where the rows came from: the app id after `apps/{appId}/discover`.'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    properties:
+                      created:
+                        type: integer
+                      updated:
+                        type: integer
+                      skipped:
+                        type: integer
+                      invalid:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/CrmInvalidRow'
+        '400':
+          $ref: '#/components/responses/CrmBadRequest'
+        '401':
+          $ref: '#/components/responses/CrmUnauthorized'
+        '403':
+          $ref: '#/components/responses/CrmWriteForbidden'
+        '404':
+          $ref: '#/components/responses/CrmNotFound'
+        '429':
+          $ref: '#/components/responses/CrmTooManyRequests'
+  /v1/organization/{orgId}/crm/apps:
+    get:
+      operationId: crm-list-apps
+      summary: List connections
+      description: >-
+        The CRMs, association management systems and event platforms contacts can be read from (contacts from HubSpot,
+        Salesforce and iMIS; one event's speakers from Cvent, Swoogo, Bizzabo, ON24 and Goldcast): connected or not,
+        health, the kinds of people each brings, and whether it needs one of its events chosen first. Reads only. Requires
+        `read:crm`. Refused for a key restricted to particular events. Also at `GET /v1/org/{orgId}/crm/apps`, and at `GET
+        /v1/crm/apps` with the organization taken from the token.
+      tags:
+        - CRM connections
+      parameters:
+        - $ref: '#/components/parameters/CrmOrgId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    properties:
+                      apps:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/CrmApp'
+        '401':
+          $ref: '#/components/responses/CrmUnauthorized'
+        '403':
+          $ref: '#/components/responses/CrmReadForbidden'
+        '404':
+          $ref: '#/components/responses/CrmNotFound'
+        '429':
+          $ref: '#/components/responses/CrmTooManyRequests'
+  /v1/organization/{orgId}/crm/apps/{appId}/connect:
+    post:
+      operationId: crm-connect-app
+      summary: Connect an app
+      description: >-
+        Connects the app with the fields it asks for. This is the same connection Sessionboard Marketing and Sessions use.
+        The token's user must be an organization admin. Requires `write:crm`. Refused for a key restricted to particular
+        events. Also at `POST /v1/org/{orgId}/crm/apps/{appId}/connect`, and at `POST /v1/crm/apps/{appId}/connect` with
+        the organization taken from the token.
+      tags:
+        - CRM connections
+      parameters:
+        - $ref: '#/components/parameters/CrmOrgId'
+        - $ref: '#/components/parameters/CrmAppId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - fields
+              properties:
+                fields:
+                  type: object
+                  additionalProperties:
+                    type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    properties:
+                      connected:
+                        type: boolean
+                      health:
+                        type: string
+        '400':
+          $ref: '#/components/responses/CrmBadRequest'
+        '401':
+          $ref: '#/components/responses/CrmUnauthorized'
+        '403':
+          $ref: '#/components/responses/CrmWriteForbidden'
+        '404':
+          $ref: '#/components/responses/CrmNotFound'
+        '429':
+          $ref: '#/components/responses/CrmTooManyRequests'
+  /v1/organization/{orgId}/crm/apps/{appId}:
+    delete:
+      operationId: crm-disconnect-app
+      summary: Disconnect an app
+      description: >-
+        Disconnects the app. Contacts already imported from it are kept. The token's user must be an organization admin.
+        Ask the person first. Requires `write:crm`. Refused for a key restricted to particular events. Also at `DELETE
+        /v1/org/{orgId}/crm/apps/{appId}`, and at `DELETE /v1/crm/apps/{appId}` with the organization taken from the
+        token.
+      tags:
+        - CRM connections
+      parameters:
+        - $ref: '#/components/parameters/CrmOrgId'
+        - $ref: '#/components/parameters/CrmAppId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    properties:
+                      connected:
+                        type: boolean
+        '400':
+          $ref: '#/components/responses/CrmBadRequest'
+        '401':
+          $ref: '#/components/responses/CrmUnauthorized'
+        '403':
+          $ref: '#/components/responses/CrmWriteForbidden'
+        '404':
+          $ref: '#/components/responses/CrmNotFound'
+        '429':
+          $ref: '#/components/responses/CrmTooManyRequests'
+  /v1/organization/{orgId}/crm/apps/{appId}/test:
+    post:
+      operationId: crm-test-app
+      summary: Test a connection
+      description: >-
+        Checks that Sessionboard can read from the connected app. Requires `write:crm`. Refused for a key restricted to
+        particular events. Also at `POST /v1/org/{orgId}/crm/apps/{appId}/test`, and at `POST /v1/crm/apps/{appId}/test`
+        with the organization taken from the token.
+      tags:
+        - CRM connections
+      parameters:
+        - $ref: '#/components/parameters/CrmOrgId'
+        - $ref: '#/components/parameters/CrmAppId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    properties:
+                      ok:
+                        type: boolean
+                      reason:
+                        type: string
+        '400':
+          $ref: '#/components/responses/CrmBadRequest'
+        '401':
+          $ref: '#/components/responses/CrmUnauthorized'
+        '403':
+          $ref: '#/components/responses/CrmWriteForbidden'
+        '404':
+          $ref: '#/components/responses/CrmNotFound'
+        '429':
+          $ref: '#/components/responses/CrmTooManyRequests'
+  /v1/organization/{orgId}/crm/apps/{appId}/remote-events:
+    get:
+      operationId: crm-list-app-events
+      summary: List an event platform's events
+      description: >-
+        The connected event platform's events, to choose `remoteEventId` for a discovery. Reads only. Requires `read:crm`.
+        Refused for a key restricted to particular events. Also at `GET /v1/org/{orgId}/crm/apps/{appId}/remote-events`,
+        and at `GET /v1/crm/apps/{appId}/remote-events` with the organization taken from the token.
+      tags:
+        - CRM connections
+      parameters:
+        - $ref: '#/components/parameters/CrmOrgId'
+        - $ref: '#/components/parameters/CrmAppId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    properties:
+                      events:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                            name:
+                              type: string
+                            starts_at:
+                              type:
+                                - string
+                                - 'null'
+                              format: date-time
+        '401':
+          $ref: '#/components/responses/CrmUnauthorized'
+        '403':
+          $ref: '#/components/responses/CrmReadForbidden'
+        '404':
+          $ref: '#/components/responses/CrmNotFound'
+        '429':
+          $ref: '#/components/responses/CrmTooManyRequests'
+  /v1/organization/{orgId}/crm/apps/{appId}/discover:
+    post:
+      operationId: crm-discover-app
+      summary: Discover people in an app
+      description: >-
+        Reads who the connected app holds and compares them with the organization's contacts by email: contacts from a CRM
+        or AMS (HubSpot, Salesforce, iMIS), or the speakers of one event from an event platform (Cvent, Swoogo, Bizzabo,
+        ON24, Goldcast; send `remoteEventId`). Attendees are never read. Writes nothing, in Sessionboard or in the app, so
+        `read:crm` is enough. Review the rows, then send the chosen ones to `POST …/crm/import` with `source` set to the
+        app id. Requires `read:crm`. Refused for a key restricted to particular events. Also at `POST
+        /v1/org/{orgId}/crm/apps/{appId}/discover`, and at `POST /v1/crm/apps/{appId}/discover` with the organization
+        taken from the token.
+      tags:
+        - CRM connections
+      parameters:
+        - $ref: '#/components/parameters/CrmOrgId'
+        - $ref: '#/components/parameters/CrmAppId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                kinds:
+                  type: array
+                  items:
+                    type: string
+                  description: Which of the app's `people_kinds`; all by default.
+                remoteEventId:
+                  type: string
+                  description: The app's event, when the app has `needs_event`.
+                defaultType:
+                  $ref: '#/components/schemas/CrmContactType'
+                  description: The type found people get when the app does not say.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    $ref: '#/components/schemas/CrmDiscovery'
+        '401':
+          $ref: '#/components/responses/CrmUnauthorized'
+        '403':
+          $ref: '#/components/responses/CrmReadForbidden'
+        '404':
+          $ref: '#/components/responses/CrmNotFound'
+        '429':
+          $ref: '#/components/responses/CrmTooManyRequests'
+
 components:
   securitySchemes:
     ApiKey:
@@ -19749,6 +21064,34 @@ components:
         type: string
         format: uuid
       description: The registration ID.
+    CrmOrgId:
+      name: orgId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Your organization ID. Any other organization returns `404`.
+    CrmContactId:
+      name: contactId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: The contact ID.
+    CrmTagId:
+      name: tagId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: The tag ID.
+    CrmAppId:
+      name: appId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: The app ID, from `GET …/crm/apps`.
     SessionsOrgId:
       name: orgId
       in: path
@@ -25806,6 +27149,436 @@ components:
           type: [string, 'null']
           format: uuid
           description: The booth package (a ticket type of type `booth`) to sell this booth in; `null` removes it from every package.
+    CrmContactType:
+      type: string
+      enum:
+        - speaker
+        - sme
+        - influencer
+        - exhibitor
+        - sponsor
+      description: >-
+        Speaker, Subject-matter expert (SME), Influencer, Exhibitor contact, Sponsor contact. Stored on the contact as the
+        organization's "Contact type" field.
+    CrmTag:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+    CrmTagWithCount:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        count:
+          type: integer
+    CrmContact:
+      type: object
+      properties:
+        id:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type:
+            - string
+            - 'null'
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        company:
+          type:
+            - string
+            - 'null'
+        title:
+          type:
+            - string
+            - 'null'
+          description: Job title.
+        avatar_url:
+          type:
+            - string
+            - 'null'
+        types:
+          type: array
+          items:
+            $ref: '#/components/schemas/CrmContactType'
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/CrmTag'
+        events_count:
+          type: integer
+        sessions_count:
+          type: integer
+        last_activity_at:
+          type:
+            - string
+            - 'null'
+          format: date-time
+        active:
+          type: boolean
+          description: An active contact in the last 365 days.
+        source:
+          type:
+            - string
+            - 'null'
+          description: Where the contact came from.
+        created_at:
+          type: string
+          format: date-time
+        href:
+          type: string
+          description: The contact in Sessionboard CRM.
+    CrmHistory:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum:
+            - speaker
+            - sponsor
+            - exhibitor
+            - attendee
+            - campaign
+            - contract
+            - form
+        label:
+          type: string
+        event:
+          type:
+            - object
+            - 'null'
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+            starts_at:
+              type:
+                - string
+                - 'null'
+              format: date-time
+        session:
+          type:
+            - object
+            - 'null'
+          properties:
+            id:
+              type: string
+            title:
+              type: string
+        at:
+          type:
+            - string
+            - 'null'
+          format: date-time
+    CrmNote:
+      type: object
+      properties:
+        id:
+          type: string
+        text:
+          type: string
+        author:
+          type:
+            - string
+            - 'null'
+        created_at:
+          type: string
+          format: date-time
+    CrmContactList:
+      type: object
+      properties:
+        contacts:
+          type: array
+          items:
+            $ref: '#/components/schemas/CrmContact'
+        total:
+          type: integer
+        page:
+          type: integer
+        per_page:
+          type: integer
+        facets:
+          type: object
+          properties:
+            types:
+              type: object
+              additionalProperties:
+                type: integer
+            tags:
+              type: array
+              items:
+                $ref: '#/components/schemas/CrmTagWithCount'
+            sources:
+              type: array
+              items:
+                type: object
+                properties:
+                  key:
+                    type: string
+                  label:
+                    type: string
+                  count:
+                    type: integer
+    CrmHome:
+      type: object
+      properties:
+        org:
+          type: object
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+        counts:
+          type: object
+          properties:
+            contacts:
+              type: integer
+            by_type:
+              type: object
+              additionalProperties:
+                type: integer
+            tags:
+              type: integer
+            accounts:
+              type: integer
+        active_contacts:
+          type: object
+          properties:
+            used:
+              type: integer
+            limit:
+              type:
+                - integer
+                - 'null'
+            window_days:
+              type: integer
+              example: 365
+        setup:
+          type: object
+          properties:
+            done:
+              type: integer
+            total:
+              type: integer
+            steps:
+              type: array
+              items:
+                type: object
+                properties:
+                  key:
+                    type: string
+                  label:
+                    type: string
+                  done:
+                    type: boolean
+                  href:
+                    type: string
+        recent:
+          type: array
+          maxItems: 5
+          items:
+            $ref: '#/components/schemas/CrmContact'
+        platform:
+          type: array
+          description: What the Sessionboard platform adds.
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+              label:
+                type: string
+              detail:
+                type: string
+    CrmImportRowInput:
+      type: object
+      description: >-
+        A row in the import's field keys (the same keys a preview or discovery returns, so its rows can be sent back
+        unchanged).
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+        first_name:
+          type: string
+        last_name:
+          type: string
+        name:
+          type: string
+          description: A full name, instead of first and last.
+        company:
+          type: string
+        title:
+          type: string
+        types:
+          type: array
+          items:
+            $ref: '#/components/schemas/CrmContactType'
+        tags:
+          type: array
+          items:
+            type: string
+          description: Tag names.
+    CrmImportRow:
+      type: object
+      properties:
+        email:
+          type: string
+        first_name:
+          type:
+            - string
+            - 'null'
+        last_name:
+          type:
+            - string
+            - 'null'
+        company:
+          type:
+            - string
+            - 'null'
+        title:
+          type:
+            - string
+            - 'null'
+        types:
+          type: array
+          items:
+            $ref: '#/components/schemas/CrmContactType'
+        status:
+          type: string
+          enum:
+            - new
+            - existing
+            - invalid
+        contact_id:
+          type:
+            - string
+            - 'null'
+          description: 'With `existing`: the contact the row matches.'
+        reason:
+          type:
+            - string
+            - 'null'
+          description: 'With `invalid`: why.'
+    CrmInvalidRow:
+      type: object
+      properties:
+        line:
+          type: integer
+        reason:
+          type: string
+    CrmApp:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        kind:
+          type: string
+          enum:
+            - crm
+            - ams
+            - event
+            - other
+        connected:
+          type: boolean
+        health:
+          type:
+            - string
+            - 'null'
+        people_kinds:
+          type: array
+          items:
+            type: string
+          description: The kinds of people the app can bring in.
+        needs_event:
+          type: boolean
+          description: A discovery needs `remoteEventId`.
+        coming:
+          type: boolean
+          description: Listed, not connectable yet.
+        reason:
+          type:
+            - string
+            - 'null'
+    CrmDiscovery:
+      type: object
+      properties:
+        source:
+          type: object
+          properties:
+            app_id:
+              type: string
+            name:
+              type: string
+        found:
+          type: integer
+        by_type:
+          type: object
+          additionalProperties:
+            type: integer
+        new:
+          type: integer
+        existing:
+          type: integer
+        invalid:
+          type: integer
+        truncated:
+          type: boolean
+          description: The app held more than one discovery returns.
+        not_available:
+          type: object
+          additionalProperties:
+            type: string
+          description: Kind → why the app does not share it.
+        rows:
+          type: array
+          items:
+            allOf:
+              - $ref: '#/components/schemas/CrmImportRow'
+              - type: object
+                properties:
+                  source_kind:
+                    type: string
+    CrmError:
+      type: object
+      required:
+        - message
+      properties:
+        success:
+          type: boolean
+          const: false
+        error:
+          type: string
+          enum:
+            - VALIDATION_ERROR
+            - SCOPE_REQUIRED
+            - ORG_WIDE_TOKEN_REQUIRED
+            - FORBIDDEN
+            - NOT_FOUND
+            - CONFLICT
+            - QUOTA_EXCEEDED
+        code:
+          type: string
+          description: 'A more specific reason: `exists`, `read_only`, `platform_customer`.'
+        message:
+          type: string
+        contact:
+          $ref: '#/components/schemas/CrmContact'
+          description: 'With `code: exists`: the contact that has the email.'
     SessionsWorkspaceSource:
       type: object
       description: >-
@@ -28519,6 +30292,58 @@ components:
       description: |
         The token's request limit (100 requests per 15 minutes per bucket — see
         [Rate Limiting](/rate-limiting)). Wait `Retry-After` seconds.
+      headers:
+        Retry-After:
+          description: Seconds to wait before retrying.
+          schema:
+            type: integer
+    CrmUnauthorized:
+      description: Missing, invalid or expired token.
+    CrmReadForbidden:
+      description: |
+        - `SCOPE_REQUIRED`: the token lacks `read:crm`.
+        - `ORG_WIDE_TOKEN_REQUIRED`: the key is restricted to particular events; use a key without an event restriction.
+        - `FORBIDDEN`: the token's user cannot read the organization's contacts.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CrmError'
+    CrmWriteForbidden:
+      description: >
+        - `SCOPE_REQUIRED`: the token lacks `write:crm` (or `read:crm` for the POSTs that only read).
+
+        - `ORG_WIDE_TOKEN_REQUIRED`: the key is restricted to particular events.
+
+        - `code: read_only`: the CRM trial or plan has ended; everything can still be read.
+
+        - `FORBIDDEN` with no `code`: the token's user lacks the Contacts permission the change needs (connecting and
+        disconnecting apps need an organization admin).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CrmError'
+    CrmNotFound:
+      description: '`NOT_FOUND`: `orgId` is not the token''s organization, or the contact, tag or app is not in it.'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CrmError'
+    CrmBadRequest:
+      description: '`VALIDATION_ERROR`: the body or a path id does not match the schema.'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CrmError'
+    CrmContactExists:
+      description: '`code: exists`: the email is already a contact in the organization; `contact` is that contact. Nothing was added.'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CrmError'
+    CrmTooManyRequests:
+      description: >-
+        The token's request limit (100 requests per 15 minutes by default) or, for writes, its daily write quota. Wait
+        `Retry-After` seconds.
       headers:
         Retry-After:
           description: Seconds to wait before retrying.

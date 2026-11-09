@@ -1,0 +1,37 @@
+---
+title: "CRM API"
+description: "The Sessionboard CRM API: contacts with types and tags, the spreadsheet import, and finding people in a connected CRM, AMS or event platform"
+---
+
+import { Card, CardGroup } from '@compat';
+
+The CRM API is the programmable side of Sessionboard CRM. It has its own reference, MCP tools and release notes, apart from the other Sessionboard products.
+
+## Base path
+
+CRM is organization-level, so every operation starts at `/v1/organization/{orgId}/crm`. The same operations are served under `/v1/org/{orgId}/crm`, and under `/v1/crm` with the organization taken from the token. They run on the same regional hosts as the rest of the API: `public-api.sessionboard.com` in the US and `public-api-eu.sessionboard.com` in the EU.
+
+## What you can do
+
+<CardGroup cols={2}>
+  <Card title="Contacts">
+    Search, filter, sort and page your contacts; read one with their history and notes; add, change and delete contacts; change types and tags on many at once; export.
+  </Card>
+  <Card title="Tags">
+    List your tags with their counts, create, rename and delete them. Deleting a tag keeps its contacts.
+  </Card>
+  <Card title="Import">
+    Get the sample file, read a CSV's columns, preview an import without saving anything, then import, matched by email, 250 rows a call.
+  </Card>
+  <Card title="Connections">
+    List the CRMs, AMSs and event platforms you can read people from, connect and test them, and discover who they hold before importing: contacts from HubSpot, Salesforce and iMIS, or one event's speakers from Cvent, Swoogo, Bizzabo, ON24 and Goldcast.
+  </Card>
+</CardGroup>
+
+Discovering people in a connected app only reads: it writes nothing in Sessionboard or in the app, and never reads attendees. Review the rows it returns, then send the ones you choose to `POST …/crm/import` with `source` set to the app. Nothing in the CRM API emails anyone.
+
+Request bodies are camelCase (`firstName`, `tagIds`, `updateExisting`, `remoteEventId`); responses are snake_case.
+
+Contacts are free to store. Your plan counts active contacts (people you emailed, invited, sent a contract or a form, scheduled in a session, or who registered, in the last 365 days), once per email across CRM and Marketing. When a CRM trial or plan ends, writes answer `403` with `code: read_only`, and everything can still be read.
+
+CRM needs the `read:crm` and `write:crm` scopes; see [Authentication](/sessionboard-crm/api/authentication). AI assistants can do the same work with the [CRM MCP tools](/sessionboard-crm/api/mcp-tools). Release notes are in the [CRM changelog](/sessionboard-crm/api/changelog).
