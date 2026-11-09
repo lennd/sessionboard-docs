@@ -14889,6 +14889,119 @@ paths:
           $ref: '#/components/responses/LearningAssistantsPaused'
         '429':
           $ref: '#/components/responses/LearningTooManyRequests'
+  /v1/organization/{orgId}/learning/workspace/courses/{lessonId}/page:
+    get:
+      operationId: learning-get-course-page
+      summary: Read a course's public page
+      description: >-
+        What visitors see before they enrol. `summary` is the saved description; when there is none, `summary_draft`
+        offers one written from the course's first page, and nothing is shown publicly until someone saves it.
+        `learn` lists what you'll learn (the page titles, quizzes left out). `cover` is the first video's frame
+        (`source: video`), else the Learning Site's Brand Kit image (`source: brand`), else `null`. Requires
+        `read:learning`. Also at `GET /v1/learning/workspace/courses/{lessonId}/page`.
+      tags:
+        - Learning workspace
+      parameters:
+        - $ref: '#/components/parameters/LearningOrgId'
+        - $ref: '#/components/parameters/LearningLessonId'
+      responses:
+        '200':
+          description: The course's page.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    type: object
+                    properties:
+                      page:
+                        type: object
+                        properties:
+                          id: { type: string, format: uuid }
+                          title: { type: string }
+                          summary: { type: [string, 'null'], description: 'The saved description; null when none.' }
+                          summary_draft: { type: [string, 'null'], description: 'A suggested description when none is saved. Never public on its own.' }
+                          learn: { type: array, items: { type: string } }
+                          duration_minutes: { type: [integer, 'null'] }
+                          cover:
+                            type: [object, 'null']
+                            properties:
+                              url: { type: string, format: uri }
+                              source: { type: string, enum: [video, brand] }
+              example:
+                payload:
+                  page:
+                    id: 3f1c2a9e-0000-4000-8000-000000000001
+                    title: Sepsis recognition for nurses
+                    summary: null
+                    summary_draft: Spot sepsis early at the bedside and know who to call.
+                    learn: [Spot it early, Escalate fast]
+                    duration_minutes: 25
+                    cover: { url: 'https://content.sessionboard.com/frames/example.jpg', source: video }
+        '401':
+          $ref: '#/components/responses/LearningUnauthorized'
+        '403':
+          $ref: '#/components/responses/LearningWorkspaceForbidden'
+        '404':
+          $ref: '#/components/responses/LearningOrgNotFound'
+        '429':
+          $ref: '#/components/responses/LearningTooManyRequests'
+    put:
+      operationId: learning-set-course-description
+      summary: Set a course's description
+      description: >-
+        The description on the course's public page, up to 1,000 characters. An empty string removes it. A connected
+        assistant's change waits for a person's OK (`202 needs_approval`), because it is public copy. Requires
+        `write:learning`. Also at `PUT /v1/learning/workspace/courses/{lessonId}/page`.
+      tags:
+        - Learning workspace
+      parameters:
+        - $ref: '#/components/parameters/LearningOrgId'
+        - $ref: '#/components/parameters/LearningLessonId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [summary]
+              properties:
+                summary: { type: [string, 'null'], maxLength: 1000, description: "The description visitors read. '' or null removes it." }
+      responses:
+        '200':
+          description: The saved description.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    type: object
+                    properties:
+                      page:
+                        type: object
+                        properties:
+                          id: { type: string, format: uuid }
+                          title: { type: string }
+                          summary: { type: [string, 'null'] }
+              example:
+                payload: { page: { id: 3f1c2a9e-0000-4000-8000-000000000001, title: Sepsis recognition for nurses, summary: Spot sepsis early at the bedside and know who to call. } }
+        '202':
+          $ref: '#/components/responses/LearningNeedsApproval'
+        '400':
+          $ref: '#/components/responses/LearningBadRequest'
+        '401':
+          $ref: '#/components/responses/LearningUnauthorized'
+        '403':
+          $ref: '#/components/responses/LearningWorkspaceForbidden'
+        '404':
+          $ref: '#/components/responses/LearningOrgNotFound'
+        '429':
+          $ref: '#/components/responses/LearningTooManyRequests'
+        '423':
+          $ref: '#/components/responses/LearningAssistantsPaused'
   /v1/organization/{orgId}/learning/workspace/coupons:
     get:
       operationId: learning-list-coupons
