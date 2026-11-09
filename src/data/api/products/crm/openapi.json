@@ -2113,14 +2113,18 @@
                 "name",
                 "-name",
                 "company",
+                "-company",
                 "stage",
+                "-stage",
                 "entered",
                 "-entered",
                 "activity",
-                "-activity"
+                "-activity",
+                "created",
+                "-created"
               ]
             },
-            "description": "A leading `-` sorts descending. `entered` is when the entry entered its stage; `activity` its last activity."
+            "description": "A leading `-` sorts descending. `entered` is when the entry entered its stage; `activity` its last activity. Default `-activity`."
           },
           {
             "name": "page",
@@ -2337,14 +2341,18 @@
                 "name",
                 "-name",
                 "company",
+                "-company",
                 "stage",
+                "-stage",
                 "entered",
                 "-entered",
                 "activity",
-                "-activity"
+                "-activity",
+                "created",
+                "-created"
               ]
             },
-            "description": "A leading `-` sorts descending. `entered` is when the entry entered its stage; `activity` its last activity."
+            "description": "A leading `-` sorts descending. `entered` is when the entry entered its stage; `activity` its last activity. Default `-activity`."
           }
         ],
         "responses": {
@@ -2408,7 +2416,7 @@
       "patch": {
         "operationId": "crm-move-pipeline-entry",
         "summary": "Move a pipeline entry",
-        "description": "Moves the entry to another stage, with an optional note, or changes the event it is for. Every stage move is kept in the entry's history. Emails no one. Requires `write:crm`. Refused for a key restricted to particular events. Also at `PATCH /v1/org/{orgId}/crm/pipeline/{entryId}`, and at `PATCH /v1/crm/pipeline/{entryId}` with the organization taken from the token.",
+        "description": "Moves the entry to another stage, with an optional note (a note is kept only with a stage move), or changes the event it is for (`409` when the contact already has an open entry for that event). Every stage move is kept in the entry's history. Emails no one. Requires `write:crm`. Refused for a key restricted to particular events. Also at `PATCH /v1/org/{orgId}/crm/pipeline/{entryId}`, and at `PATCH /v1/crm/pipeline/{entryId}` with the organization taken from the token.",
         "tags": [
           "CRM pipeline"
         ],
@@ -2479,6 +2487,9 @@
           },
           "404": {
             "$ref": "#/components/responses/CrmNotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/CrmContractConflict"
           },
           "429": {
             "$ref": "#/components/responses/CrmTooManyRequests"
@@ -2641,9 +2652,23 @@
             "name": "sort",
             "in": "query",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "title",
+                "-title",
+                "contact",
+                "-contact",
+                "status",
+                "-status",
+                "sent",
+                "-sent",
+                "signed",
+                "-signed",
+                "updated",
+                "-updated"
+              ]
             },
-            "description": "A field such as `sent_at` or `updated_at`; a leading `-` sorts descending."
+            "description": "A leading `-` sorts descending. Default `-updated`."
           },
           {
             "name": "page",
@@ -2832,9 +2857,23 @@
             "name": "sort",
             "in": "query",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "title",
+                "-title",
+                "contact",
+                "-contact",
+                "status",
+                "-status",
+                "sent",
+                "-sent",
+                "signed",
+                "-signed",
+                "updated",
+                "-updated"
+              ]
             },
-            "description": "A field such as `sent_at` or `updated_at`; a leading `-` sorts descending."
+            "description": "A leading `-` sorts descending. Default `-updated`."
           }
         ],
         "responses": {
@@ -3077,7 +3116,7 @@
       "get": {
         "operationId": "crm-get-contract-pdf",
         "summary": "Get a contract's PDF",
-        "description": "A short-lived link to the contract's PDF: the signed copy, with its signing certificate, once everyone has signed. Reads only. Requires `read:crm`. Refused for a key restricted to particular events. Also at `GET /v1/org/{orgId}/crm/contracts/{contractId}/pdf`, and at `GET /v1/crm/contracts/{contractId}/pdf` with the organization taken from the token.",
+        "description": "A short-lived link (`expires_in_seconds`) to the signed PDF, with its signing certificate. Answers `404` until everyone has signed (`has_pdf` on the contract says when it is ready). Reads only. Requires `read:crm`. Refused for a key restricted to particular events. Also at `GET /v1/org/{orgId}/crm/contracts/{contractId}/pdf`, and at `GET /v1/crm/contracts/{contractId}/pdf` with the organization taken from the token.",
         "tags": [
           "CRM contracts"
         ],
@@ -3106,6 +3145,9 @@
                         "url": {
                           "type": "string",
                           "format": "uri"
+                        },
+                        "expires_in_seconds": {
+                          "type": "integer"
                         }
                       }
                     }
@@ -5082,18 +5124,45 @@
         "type": "object",
         "properties": {
           "from_stage": {
-            "type": [
-              "string",
-              "null"
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "label": {
+                    "type": "string"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
             ],
-            "description": "Empty for the entry being added."
+            "description": "`null` for the entry being added."
           },
           "to_stage": {
-            "type": "string"
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              }
+            }
           },
           "actor_type": {
             "type": "string",
             "description": "Who or what moved it: a person, an automation, a signed contract."
+          },
+          "actor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The person's name, when a person moved it."
           },
           "note": {
             "type": [
@@ -5175,6 +5244,17 @@
               }
             }
           },
+          "signer_email": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "email"
+          },
+          "has_pdf": {
+            "type": "boolean",
+            "description": "The signed PDF is ready."
+          },
           "sent_at": {
             "type": [
               "string",
@@ -5218,6 +5298,9 @@
                     "role_key": {
                       "type": "string"
                     },
+                    "role_label": {
+                      "type": "string"
+                    },
                     "name": {
                       "type": "string"
                     },
@@ -5228,7 +5311,24 @@
                     "status": {
                       "type": "string"
                     },
+                    "signing_order": {
+                      "type": "integer"
+                    },
+                    "viewed_at": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date-time"
+                    },
                     "signed_at": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date-time"
+                    },
+                    "declined_at": {
                       "type": [
                         "string",
                         "null"
@@ -5242,7 +5342,27 @@
                 "type": "array",
                 "items": {
                   "type": "object",
-                  "additionalProperties": true
+                  "properties": {
+                    "kind": {
+                      "type": "string"
+                    },
+                    "at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "actor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "reason": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  }
                 }
               }
             }
@@ -5309,7 +5429,17 @@
             "type": "array",
             "items": {
               "type": "object",
-              "additionalProperties": true
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "source": {
+                  "type": "string"
+                }
+              }
             }
           },
           "updated_at": {
@@ -5545,7 +5675,7 @@
         }
       },
       "CrmContractConflict": {
-        "description": "`CONFLICT`: the contract is not in a state that allows this (already completed, declined or voided), or, for a starter, it is already one of the organization's templates (`code: exists`). Nothing was changed.",
+        "description": "`CONFLICT`: the contract is not in a state that allows this (already completed, declined or voided), or the contact already has an open pipeline entry for that event. Nothing was changed.",
         "content": {
           "application/json": {
             "schema": {
