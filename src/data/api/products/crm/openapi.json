@@ -3197,7 +3197,7 @@
       "post": {
         "operationId": "crm-add-contract-starter",
         "summary": "Add a starter template",
-        "description": "Creates a template from a built-in starter and publishes it, so it can be sent at once. Sends nothing. Requires `write:crm`. Refused for a key restricted to particular events. Also at `POST /v1/org/{orgId}/crm/contract-templates/starter`, and at `POST /v1/crm/contract-templates/starter` with the organization taken from the token.",
+        "description": "Creates a template from a built-in starter and publishes it, so it can be sent at once. Idempotent: when the starter is already one of the organization's templates, that template is returned (published if it was a draft) with `created: false`. Sends nothing. Requires `write:crm`. Refused for a key restricted to particular events. Also at `POST /v1/org/{orgId}/crm/contract-templates/starter`, and at `POST /v1/crm/contract-templates/starter` with the organization taken from the token.",
         "tags": [
           "CRM contracts"
         ],
@@ -3236,7 +3236,23 @@
                       "type": "boolean"
                     },
                     "payload": {
-                      "$ref": "#/components/schemas/CrmContractTemplate"
+                      "allOf": [
+                        {
+                          "$ref": "#/components/schemas/CrmContractTemplate"
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "key": {
+                              "$ref": "#/components/schemas/CrmContractStarterKey"
+                            },
+                            "created": {
+                              "type": "boolean",
+                              "description": "`false` when the starter was already there."
+                            }
+                          }
+                        }
+                      ]
                     }
                   }
                 }
@@ -3254,9 +3270,6 @@
           },
           "404": {
             "$ref": "#/components/responses/CrmNotFound"
-          },
-          "409": {
-            "$ref": "#/components/responses/CrmContractConflict"
           },
           "429": {
             "$ref": "#/components/responses/CrmTooManyRequests"
