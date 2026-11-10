@@ -292,6 +292,11 @@ for (const [slug, target] of Object.entries(redirects)) {
 // so they get their own map, checked before serving assets. Add a row here any
 // time an article is retired in favour of another.
 const INTERNAL_REDIRECTS = {
+  // CRM People | Groups (2026-11-09): the three Contacts articles became People,
+  // People › Tags and Import. Keep old bookmarks and citations working.
+  '/sessionboard-crm/contacts/find-and-manage': '/sessionboard-crm/people',
+  '/sessionboard-crm/contacts/types-and-tags': '/sessionboard-crm/people/tags',
+  '/sessionboard-crm/contacts/add-and-import': '/sessionboard-crm/import',
   // Classic (v1) review plan guides retired, 2026-11-03: the docs cover the
   // current round-based review plan only. Reviewers land on the current guide.
   '/evaluations/evaluators-how-to-evaluate-sessions': '/evaluations/how-to-evaluate-sessions',
