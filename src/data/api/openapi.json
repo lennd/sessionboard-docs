@@ -130,6 +130,10 @@
       "description": "OAuth 2.1 endpoints for AI client authorization (Claude, ChatGPT). Mounted at `/oauth/` (not `/v1/`)."
     },
     {
+      "name": "Products",
+      "description": "Which Sessionboard products your organization has: Platform, Sessions, CRM,\nAwards, Learning and Marketing, each with whether it is owned and how\n(a self-serve plan, or your Platform contract). Any `read:*` scope is enough.\n"
+    },
+    {
       "name": "Log Export",
       "description": "Pull your organization's API request, security and audit logs into a SIEM\nsuch as Splunk, Microsoft Sentinel or Elastic. Requires a dedicated API token\nwith the `read:audit_logs` scope, which can call nothing else.\nSee the [Exporting logs to a SIEM](/guides/exporting-logs-to-a-siem) guide.\n"
     },
@@ -14449,6 +14453,253 @@
         }
       }
     },
+    "/v1/products": {
+      "get": {
+        "operationId": "get-products",
+        "summary": "List the products your organization owns",
+        "description": "What your organization owns, so an integration or an AI assistant can\ntell a self-serve workspace from a Platform customer and show the right\nproducts. Read-only.\n\nOne entry per product, always in this order: `platform`, `sessions`,\n`crm`, `awards`, `learning`, `marketing`.\n\n- `owned`: the organization can open the product now.\n- `via`: `self_serve` (a self-serve plan or trial), `platform` (your\n  Platform contract includes it) or `null` when not owned.\n- `days_left`: whole days left on a self-serve trial, otherwise `null`.\n\n`platform_customer` is `true` for an organization with a Platform\ncontract (including every organization created before the self-serve\nproducts). Any `read:*` scope is enough; the answer is the\norganization's, the same for every key.\n",
+        "tags": [
+          "Products"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizationProducts"
+                },
+                "examples": {
+                  "selfServe": {
+                    "summary": "A self-serve workspace (Marketing on a trial)",
+                    "value": {
+                      "apps": [
+                        {
+                          "key": "platform",
+                          "owned": false,
+                          "via": null,
+                          "days_left": null
+                        },
+                        {
+                          "key": "sessions",
+                          "owned": false,
+                          "via": null,
+                          "days_left": null
+                        },
+                        {
+                          "key": "crm",
+                          "owned": false,
+                          "via": null,
+                          "days_left": null
+                        },
+                        {
+                          "key": "awards",
+                          "owned": false,
+                          "via": null,
+                          "days_left": null
+                        },
+                        {
+                          "key": "learning",
+                          "owned": false,
+                          "via": null,
+                          "days_left": null
+                        },
+                        {
+                          "key": "marketing",
+                          "owned": true,
+                          "via": "self_serve",
+                          "days_left": 9
+                        }
+                      ],
+                      "platform_customer": false
+                    }
+                  },
+                  "platform": {
+                    "summary": "A Platform customer whose contract includes Awards",
+                    "value": {
+                      "apps": [
+                        {
+                          "key": "platform",
+                          "owned": true,
+                          "via": "platform",
+                          "days_left": null
+                        },
+                        {
+                          "key": "sessions",
+                          "owned": true,
+                          "via": "platform",
+                          "days_left": null
+                        },
+                        {
+                          "key": "crm",
+                          "owned": false,
+                          "via": null,
+                          "days_left": null
+                        },
+                        {
+                          "key": "awards",
+                          "owned": true,
+                          "via": "platform",
+                          "days_left": null
+                        },
+                        {
+                          "key": "learning",
+                          "owned": false,
+                          "via": null,
+                          "days_left": null
+                        },
+                        {
+                          "key": "marketing",
+                          "owned": false,
+                          "via": null,
+                          "days_left": null
+                        }
+                      ],
+                      "platform_customer": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "The key has no `read:*` scope (`SCOPE_REQUIRED`)"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/products": {
+      "get": {
+        "operationId": "get-organization-products",
+        "summary": "List the products an organization owns",
+        "description": "The same as `GET /v1/products`, with the organization in the path.\nAny other organization returns `404`.\n",
+        "parameters": [
+          {
+            "name": "orgId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Your organization ID."
+          }
+        ],
+        "tags": [
+          "Products"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizationProducts"
+                },
+                "examples": {
+                  "selfServe": {
+                    "summary": "A self-serve workspace (Marketing on a trial)",
+                    "value": {
+                      "apps": [
+                        {
+                          "key": "platform",
+                          "owned": false,
+                          "via": null,
+                          "days_left": null
+                        },
+                        {
+                          "key": "sessions",
+                          "owned": false,
+                          "via": null,
+                          "days_left": null
+                        },
+                        {
+                          "key": "crm",
+                          "owned": false,
+                          "via": null,
+                          "days_left": null
+                        },
+                        {
+                          "key": "awards",
+                          "owned": false,
+                          "via": null,
+                          "days_left": null
+                        },
+                        {
+                          "key": "learning",
+                          "owned": false,
+                          "via": null,
+                          "days_left": null
+                        },
+                        {
+                          "key": "marketing",
+                          "owned": true,
+                          "via": "self_serve",
+                          "days_left": 9
+                        }
+                      ],
+                      "platform_customer": false
+                    }
+                  },
+                  "platform": {
+                    "summary": "A Platform customer whose contract includes Awards",
+                    "value": {
+                      "apps": [
+                        {
+                          "key": "platform",
+                          "owned": true,
+                          "via": "platform",
+                          "days_left": null
+                        },
+                        {
+                          "key": "sessions",
+                          "owned": true,
+                          "via": "platform",
+                          "days_left": null
+                        },
+                        {
+                          "key": "crm",
+                          "owned": false,
+                          "via": null,
+                          "days_left": null
+                        },
+                        {
+                          "key": "awards",
+                          "owned": true,
+                          "via": "platform",
+                          "days_left": null
+                        },
+                        {
+                          "key": "learning",
+                          "owned": false,
+                          "via": null,
+                          "days_left": null
+                        },
+                        {
+                          "key": "marketing",
+                          "owned": false,
+                          "via": null,
+                          "days_left": null
+                        }
+                      ],
+                      "platform_customer": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "The key has no `read:*` scope (`SCOPE_REQUIRED`)"
+          }
+        }
+      }
+    },
     "/v1/logs/api-requests": {
       "get": {
         "operationId": "list-log-api-requests",
@@ -18287,6 +18538,70 @@
       }
     },
     "schemas": {
+      "OrganizationProducts": {
+        "type": "object",
+        "required": [
+          "apps",
+          "platform_customer"
+        ],
+        "properties": {
+          "apps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrganizationProduct"
+            }
+          },
+          "platform_customer": {
+            "type": "boolean",
+            "description": "The organization has a Platform contract (or predates the self-serve products)."
+          }
+        }
+      },
+      "OrganizationProduct": {
+        "type": "object",
+        "required": [
+          "key",
+          "owned",
+          "via",
+          "days_left"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "enum": [
+              "platform",
+              "sessions",
+              "crm",
+              "awards",
+              "learning",
+              "marketing"
+            ]
+          },
+          "owned": {
+            "type": "boolean",
+            "description": "The organization can open this product now."
+          },
+          "via": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "self_serve",
+              "platform",
+              null
+            ],
+            "description": "How the organization has it, or `null` when not owned."
+          },
+          "days_left": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Whole days left on a self-serve trial, otherwise `null`."
+          }
+        }
+      },
       "LearningMedia": {
         "type": "object",
         "properties": {
