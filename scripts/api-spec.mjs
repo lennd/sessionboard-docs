@@ -49,6 +49,7 @@ export const PRODUCT_PATHS = {
   marketing: [/^\/v1\/marketing(\/|$)/, /^\/v1\/organization\/\{orgId\}\/marketing(\/|$)/],
   learning: [/^\/v1\/learning(\/|$)/, /^\/v1\/organization\/\{orgId\}\/learning(\/|$)/],
   awards: [/^\/v1\/awards\/workspace(\/|$)/, /^\/v1\/organization\/\{orgId\}\/awards\/workspace(\/|$)/],
+  crm: [/^\/v1\/crm(\/|$)/, /^\/v1\/organization\/\{orgId\}\/crm(\/|$)/],
 };
 
 /** The products an operation is published under (see header). */
