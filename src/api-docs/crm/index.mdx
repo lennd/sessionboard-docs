@@ -1,0 +1,37 @@
+---
+title: "CRM API"
+description: "The Sessionboard CRM API for connected apps: Sessionboard engagement, agent suggestions, the speaker finder and draft actions"
+---
+
+import { Card, CardGroup } from '@compat';
+
+The CRM API is what Sessionboard's apps for Salesforce, HubSpot and Microsoft Dynamics call, and you can call it too. It shows a person's engagement inside your CRM, lists what Sessionboard's agents suggest, finds speakers for a topic and creates drafts in Sessionboard. Nothing here sends anything to a person: every action ends in a draft a person on your team finishes.
+
+## Base path
+
+The CRM operations are organization-level, so each one starts at `/v1/organization/{orgId}/crm`. Each also works at `/v1/crm/...`, where the organization comes from the token. They run on the same regional hosts as the rest of the API: `public-api.sessionboard.com` in the US and `public-api-eu.sessionboard.com` in the EU.
+
+## What you can do
+
+<CardGroup cols={2}>
+  <Card title="Sessionboard engagement">
+    One person's Engagement score (points for talks, events, reviews, courses, award entries, webinars and CE hours, plus recent activity; it counts taking part, not money), how it compares with your other members, what they did (talks, reviews, CE hours, award entries, events, webinars, courses), their open items and the best next step.
+  </Card>
+  <Card title="Suggestions">
+    What Sessionboard's agents suggest about people, each with a reason drawn from the person's own activity. Accept one to create its draft, or dismiss it.
+  </Card>
+  <Card title="Speaker finder">
+    The people who spoke on a topic, attended its sessions or are tagged with it, ranked, with reasons and things to weigh. Optionally keep the results as suggestions.
+  </Card>
+  <Card title="Actions">
+    Invite to speak, nominate or suggest a course: each creates a draft in Sessionboard and returns its link.
+  </Card>
+</CardGroup>
+
+## Matching a person
+
+Send the person's record id from your CRM or AMS as `ams_id` (`amsId` in a body), their email, or both. The record id is matched against the AMS members your organization imported, and the email is the fallback. When the record id comes from one connected app, add `app_id` to match only that app's connection.
+
+## Responses
+
+Responses are wrapped as `{ "success": true, "payload": { ... } }`. Request bodies use camelCase and responses use snake_case.

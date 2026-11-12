@@ -16645,6 +16645,358 @@ paths:
           $ref: '#/components/responses/MarketingForbidden'
         '404':
           description: Not found in your organization.
+  /v1/organization/{orgId}/crm/member-value:
+    get:
+      operationId: crm-member-value
+      summary: Get a person's Sessionboard engagement
+      description: >-
+        What one person did with the organization, for a card inside a CRM: the Engagement score (0 to 100; it counts taking part, not money), where
+        that score sits among the organization's members, counts of talks, reviews, CE hours, award entries, events,
+        webinars and courses, open items and the best next step. Matches the person by their CRM or AMS record id
+        (`ams_id`), then by `email`. A person Sessionboard does not know answers `matched: false` with every count 0,
+        not a 404. Reads only. Requires `read:crm`; refused for a key restricted to particular events. Also at
+        `GET /v1/crm/member-value`.
+      tags:
+        - CRM connected apps
+      parameters:
+        - name: orgId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: ams_id
+          in: query
+          required: false
+          schema: { type: string, maxLength: 64 }
+          description: The person's record id in the CRM or AMS (a Salesforce Contact or Account id, a Dataverse contactid, a HubSpot contact id).
+        - name: email
+          in: query
+          required: false
+          schema: { type: string, maxLength: 320 }
+          description: Used when `ams_id` matches no one. Send `ams_id`, `email` or both.
+        - name: app_id
+          in: query
+          required: false
+          schema: { type: string, enum: [fonteva, nimble-ams, protech, hubspot] }
+          description: Match `ams_id` only on this app's connection.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  payload:
+                    $ref: '#/components/schemas/CrmMemberValue'
+        '400':
+          description: Neither `ams_id` nor `email` was sent
+        '401':
+          description: Missing or invalid token
+        '403':
+          description: Token lacks `read:crm`, or is restricted to particular events
+  /v1/organization/{orgId}/crm/suggestions:
+    get:
+      operationId: crm-list-suggestions
+      summary: List suggestions
+      description: >-
+        What Sessionboard's agents suggest about people: invite to speak, invite to review, a renewal at risk, an
+        award nominee, credits to finish. Each has one sentence of reason built from the person's own activity. Open
+        suggestions by default; an open one past its expiry reads `expired`. Reads only. Requires `read:crm`. Also at
+        `GET /v1/crm/suggestions`.
+      tags:
+        - CRM connected apps
+      parameters:
+        - name: orgId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: kind
+          in: query
+          required: false
+          schema: { type: string, enum: [speaker, reviewer, renewal_rescue, award_nominee, ce_gap] }
+        - name: topic
+          in: query
+          required: false
+          schema: { type: string, maxLength: 255 }
+          description: Part of the topic.
+        - name: status
+          in: query
+          required: false
+          schema: { type: string, enum: [open, accepted, dismissed, expired, all], default: open }
+        - name: ams_id
+          in: query
+          required: false
+          schema: { type: string, maxLength: 64 }
+          description: Only this person's suggestions (their CRM or AMS record id).
+        - name: email
+          in: query
+          required: false
+          schema: { type: string, maxLength: 320 }
+        - name: page
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: per_page
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  payload:
+                    type: object
+                    properties:
+                      suggestions:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/CrmSuggestion'
+                      total: { type: integer }
+                      page: { type: integer }
+                      per_page: { type: integer }
+        '400':
+          description: An unknown `kind` or `status`
+        '401':
+          description: Missing or invalid token
+        '403':
+          description: Token lacks `read:crm`, or is restricted to particular events
+  /v1/organization/{orgId}/crm/suggestions/{suggestionId}/accept:
+    post:
+      operationId: crm-accept-suggestion
+      summary: Accept a suggestion
+      description: >-
+        Accepts an open suggestion and creates its draft in Sessionboard: a speaker suggestion puts the person in the
+        CRM Pipeline; the others are queued for the program's owner. Nothing is sent to the person. Returns the
+        draft's link. A suggestion that is no longer open answers 400. Requires `write:crm`. Also at
+        `POST /v1/crm/suggestions/{suggestionId}/accept`.
+      tags:
+        - CRM connected apps
+      parameters:
+        - name: orgId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: suggestionId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CrmDecisionBody'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  payload:
+                    $ref: '#/components/schemas/CrmDecision'
+        '400':
+          description: The suggestion is no longer open
+        '401':
+          description: Missing or invalid token
+        '403':
+          description: Token lacks `write:crm`
+        '404':
+          description: No such suggestion in this organization
+  /v1/organization/{orgId}/crm/suggestions/{suggestionId}/dismiss:
+    post:
+      operationId: crm-dismiss-suggestion
+      summary: Dismiss a suggestion
+      description: >-
+        Closes an open suggestion. A suggestion that is no longer open answers 400. Requires `write:crm`. Also at
+        `POST /v1/crm/suggestions/{suggestionId}/dismiss`.
+      tags:
+        - CRM connected apps
+      parameters:
+        - name: orgId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: suggestionId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CrmDecisionBody'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  payload:
+                    $ref: '#/components/schemas/CrmDecision'
+        '400':
+          description: The suggestion is no longer open
+        '401':
+          description: Missing or invalid token
+        '403':
+          description: Token lacks `write:crm`
+        '404':
+          description: No such suggestion in this organization
+  /v1/organization/{orgId}/crm/agents/speaker-finder:
+    post:
+      operationId: crm-speaker-finder
+      summary: Find speakers for a topic
+      description: >-
+        Ranks the organization's people for a topic: who spoke on it, who attended its sessions, who is tagged with
+        it. Each person comes with reasons from their own activity and warnings to weigh (a lapsed membership, an
+        early-career member type); warnings never remove anyone. Reads only, so `read:crm` is enough. Also at
+        `POST /v1/crm/agents/speaker-finder`.
+      tags:
+        - CRM connected apps
+      parameters:
+        - name: orgId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CrmSpeakerFinderBody'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  payload:
+                    $ref: '#/components/schemas/CrmSpeakerFinderResult'
+        '400':
+          description: No topic
+        '401':
+          description: Missing or invalid token
+        '403':
+          description: Token lacks `read:crm`, or is restricted to particular events
+  /v1/organization/{orgId}/crm/agents/speaker-finder/suggest:
+    post:
+      operationId: crm-speaker-finder-suggest
+      summary: Find speakers and keep them as suggestions
+      description: >-
+        Runs the speaker finder and keeps each person as an open `speaker` suggestion for the topic. Running it again
+        refreshes the open suggestion instead of adding another. Nothing is sent to anyone. Requires `write:crm`.
+        Also at `POST /v1/crm/agents/speaker-finder/suggest`.
+      tags:
+        - CRM connected apps
+      parameters:
+        - name: orgId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CrmSpeakerFinderBody'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  payload:
+                    allOf:
+                      - $ref: '#/components/schemas/CrmSpeakerFinderResult'
+                      - type: object
+                        properties:
+                          saved: { type: integer }
+                          suggestion_ids:
+                            type: array
+                            items: { type: string, format: uuid }
+        '400':
+          description: No topic
+        '401':
+          description: Missing or invalid token
+        '403':
+          description: Token lacks `write:crm`
+  /v1/organization/{orgId}/crm/actions/{action}:
+    post:
+      operationId: crm-run-action
+      summary: Create a draft from a CRM action
+      description: >-
+        The action buttons in a CRM: `invite-to-speak` puts the person in the CRM Pipeline; `nominate` and `enroll`
+        queue the person for the award program's or course's owner. Each creates a draft in Sessionboard and returns
+        its link; nothing is sent to the person. Requires `write:crm`. Also at `POST /v1/crm/actions/{action}`.
+      tags:
+        - CRM connected apps
+      parameters:
+        - name: orgId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: action
+          in: path
+          required: true
+          schema: { type: string, enum: [invite-to-speak, nominate, enroll] }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amsId: { type: string, maxLength: 64, description: The person's CRM or AMS record id. }
+                email: { type: string, maxLength: 320 }
+                topic: { type: string, maxLength: 200, description: For `invite-to-speak`. }
+                programId: { type: string, format: uuid, description: Required for `nominate`. }
+                courseId: { type: string, format: uuid, description: Required for `enroll`. }
+                eventId: { type: integer, minimum: 1 }
+                via: { type: string, enum: [salesforce, hubspot, dynamics, teams, sessionboard, api] }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  payload:
+                    type: object
+                    properties:
+                      action: { type: string }
+                      person_id: { type: string, format: uuid }
+                      draft_kind: { type: string, enum: [pipeline_entry, queued] }
+                      draft_id: { type: string, nullable: true }
+                      already: { type: boolean, description: The person already had an open Pipeline entry. }
+                      draft_url: { type: string, format: uri, nullable: true }
+        '400':
+          description: Neither `amsId` nor `email`, or a missing `programId` / `courseId`
+        '401':
+          description: Missing or invalid token
+        '403':
+          description: Token lacks `write:crm`
+        '404':
+          description: The person, program or course is not in this organization
 components:
   securitySchemes:
     ApiKey:
@@ -16949,6 +17301,158 @@ components:
 
 
   schemas:
+    CrmMemberValue:
+      type: object
+      properties:
+        matched: { type: boolean, description: false when Sessionboard does not know the person. }
+        person:
+          type: object
+          nullable: true
+          properties:
+            id: { type: string, format: uuid }
+            name: { type: string, nullable: true }
+            email: { type: string, nullable: true }
+            ams_id: { type: string, nullable: true }
+            member_type: { type: string, nullable: true }
+            membership_status: { type: string, nullable: true }
+            joined_on: { type: string, nullable: true }
+            renews_on: { type: string, nullable: true }
+        score: { type: integer, nullable: true, minimum: 0, maximum: 100 }
+        percentile: { type: integer, nullable: true, minimum: 0, maximum: 100 }
+        counts:
+          type: object
+          properties:
+            talks: { type: integer }
+            reviews: { type: integer }
+            ce_hours: { type: number }
+            awards: { type: integer }
+            events: { type: integer }
+            webinars: { type: integer }
+            courses: { type: integer }
+        last_activity_on: { type: string, format: date, nullable: true }
+        open_items:
+          type: array
+          items:
+            type: object
+            properties:
+              kind: { type: string, enum: [suggestion, award_entry_draft] }
+              title: { type: string }
+              due_on: { type: string, format: date, nullable: true }
+              url: { type: string, nullable: true }
+        suggested_next:
+          type: object
+          nullable: true
+          properties:
+            kind: { type: string }
+            title: { type: string }
+            reason: { type: string }
+            action_url: { type: string, nullable: true }
+            suggestion_id: { type: string, format: uuid }
+        profile_url: { type: string, nullable: true }
+        synced_at: { type: string, format: date-time }
+    CrmSuggestion:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        kind: { type: string, enum: [speaker, reviewer, renewal_rescue, award_nominee, ce_gap] }
+        title: { type: string }
+        topic: { type: string, nullable: true }
+        reason: { type: string, maxLength: 255 }
+        score: { type: number, nullable: true, minimum: 0, maximum: 1 }
+        status: { type: string, enum: [open, accepted, dismissed, expired] }
+        source: { type: string }
+        person:
+          type: object
+          properties:
+            id: { type: string, format: uuid }
+            name: { type: string, nullable: true }
+            email: { type: string, nullable: true }
+            ams_id: { type: string, nullable: true }
+            profile_url: { type: string, nullable: true }
+        action_url: { type: string, nullable: true }
+        draft_url: { type: string, nullable: true }
+        generated_on: { type: string, format: date-time }
+        expires_on: { type: string, format: date-time, nullable: true }
+        decided_at: { type: string, format: date-time, nullable: true }
+        decided_via: { type: string, nullable: true }
+    CrmDecisionBody:
+      type: object
+      properties:
+        via:
+          type: string
+          enum: [salesforce, hubspot, dynamics, teams, sessionboard, api]
+          description: Where the decision was made.
+        eventId: { type: integer, minimum: 1, description: For a speaker suggestion, the event its Pipeline entry is for. }
+    CrmDecision:
+      type: object
+      properties:
+        suggestion:
+          $ref: '#/components/schemas/CrmSuggestion'
+        draft_url: { type: string, nullable: true }
+        draft:
+          type: object
+          nullable: true
+          properties:
+            draft_kind: { type: string, enum: [pipeline_entry, queued] }
+            draft_id: { type: string, nullable: true }
+            draft_url: { type: string, nullable: true }
+    CrmSpeakerFinderBody:
+      type: object
+      required: [topic]
+      properties:
+        topic: { type: string, minLength: 2, maxLength: 200 }
+        filters:
+          type: object
+          properties:
+            neverSpoke: { type: boolean, description: Only people with no session at any of your events. }
+            notReviewingTrack: { type: boolean, description: Leave out people who reviewed a matching session. }
+            activeOnly: { type: boolean, description: Only current members. }
+        limit: { type: integer, minimum: 1, maximum: 50, default: 10 }
+    CrmSpeakerFinderResult:
+      type: object
+      properties:
+        topic: { type: string }
+        matched_topics:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string }
+              name: { type: string }
+        matched_sessions: { type: integer }
+        filters:
+          type: object
+          properties:
+            never_spoke: { type: boolean }
+            not_reviewing_track: { type: boolean }
+            active_only: { type: boolean }
+        members:
+          type: array
+          items:
+            type: object
+            properties:
+              person_id: { type: string, format: uuid }
+              name: { type: string, nullable: true }
+              email: { type: string, nullable: true }
+              ams_id: { type: string, nullable: true }
+              company: { type: string, nullable: true }
+              title: { type: string, nullable: true }
+              is_member: { type: boolean }
+              member_type: { type: string, nullable: true }
+              membership_status: { type: string, nullable: true }
+              has_spoken: { type: boolean }
+              score: { type: number, minimum: 0, maximum: 1, description: The best match is 1. }
+              reasons:
+                type: array
+                items: { type: string }
+              warnings:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    kind: { type: string, enum: [lapsed, early_career] }
+                    message: { type: string }
+              profile_url: { type: string, nullable: true }
     SignupForm:
       type: object
       description: A sign-up form on the organization's own pages.
