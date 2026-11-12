@@ -80,7 +80,7 @@ FIND Session
 WHERE reviews_v2.plan_name = 'CFP 2027 Review Plan'
 INCLUDE title AS "Session Title", track.name AS "Track",
   AVG(reviews_v2.total_score) AS "Cumulative Rating",
-  speakers.full_name AS "Speaker",
+  PARTICIPANTS('speaker') AS "Speakers",
   COUNT_BY_VALUE(reviews_v2.rubric_label_is_this_session_a_sales_pitch) AS "Sales pitch?",
   LIST_WITH_REVIEWER(reviews_v2.rubric_label_final_comments) AS "Final comments"
 ```
@@ -92,7 +92,7 @@ INCLUDE title AS "Session Title", track.name AS "Track",
 | `AVG`, `MIN`, `MAX`, `SUM`, `COUNT`, `COUNT_DISTINCT`, `STDDEV_POP`, `LIST` | As usual, over the session's reviews. | `AVG(reviews_v2.total_score)` → `24.5` |
 
 - Each review counts **once**, however many speakers or tags the report also lists, and **abstentions are left out**.
-- The summaries add no rows: speakers and tags can still be pivoted (`Speaker 1`, `Speaker 2`, …).
+- The summaries add no rows. A related field such as `speakers.full_name` still gives one row per speaker unless you pivot it (`Speaker 1`, `Speaker 2`, …) or list the speakers in one cell with `PARTICIPANTS('speaker')`, as above.
 - A `reviews_v2` condition in `WHERE` keeps only the sessions with a matching review and limits the reviews each summary counts.
 - `HAVING` is not available with summaries. Filter the sessions in `WHERE` instead.
 - `COUNT_BY_VALUE` and `LIST_WITH_REVIEWER` accept review answers only. They also work in `COMPUTE` with `GROUP BY`.
