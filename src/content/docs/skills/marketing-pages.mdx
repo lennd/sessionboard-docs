@@ -105,14 +105,14 @@ Make, change and publish Sessionboard event and webinar pages (registration, spe
 3. **Make the draft.** `make_event_page { event_id, brief }`. Put what they told you about the topic and audience in `brief`, in their words. Speakers, agenda, date, place and price come from the event itself — never write them into the brief or the page.
 4. **Show it.** Give them the `preview_url` and a three-line summary: headline, which blocks are on the page, anything missing (no speakers yet, no sessions on the agenda). Say it is a draft.
 5. **Edit in plain words.** For each change they ask for, `edit_event_page { event_id, instruction, revision }` with the latest `page.revision`. Report the one-line `summary`. On a 409, someone else edited the page: read it again (`get_event_page` → `site.revision`), show them, and retry.
-6. **Publish only on an explicit OK.** "Looks good, publish it", "yes, go live" — then `publish_event_page { event_id, revision, confirmed: true }` with the revision of the preview they approved. "Looks good" about one section is not an OK to publish; ask "Shall I publish it now?" Then give them the live `public_url`.
+6. **Publish only on an explicit OK.** "Looks good, publish it", "yes, go live" — then `publish_event_page { event_id, revision, confirmed: true }` with the revision of the preview they approved. "Looks good" about one section is not an OK to publish; ask "Shall I publish it now?" From a connected assistant it can answer `needs_approval`: tell them "Waiting for your OK in Sessionboard: <url>" and stop; do not publish again. Give the live `public_url` only when the call returns it or a later `get_event_page` shows the page published.
 
 ## Flow: the on-demand library
 
 1. `list_marketing_pages` — reuse an existing library rather than making a second one.
 2. `make_gallery { name, event_id? }` — the whole organization by default, one event when they say so. Report `items`; if it is 0, say there are no recordings yet and that the library fills itself as recordings arrive.
 3. **Ask it.** `ask_gallery { gallery_id, question }`. Quote the `answer` with its `[n]` sources (title and link). If `answered_by` is `search` or the answer says the library does not cover it, say so plainly; do not fill the gap from your own knowledge. `searched.not_searchable` counts gated or embargoed items it was not allowed to read — mention it when the answer is thin.
-4. Publish with `publish_gallery { gallery_id, confirmed: true }` only on an explicit OK.
+4. Publish with `publish_gallery { gallery_id, confirmed: true }` only on an explicit OK. On `needs_approval`: "Waiting for your OK in Sessionboard: <url>", and stop.
 
 ## Flow: embeds for their website
 
@@ -130,7 +130,7 @@ If `list_marketing_pages` says `custom_domain.available`, `connect_custom_domain
 **"Make the headline about AI in radiology and drop the FAQ."**
 → `edit_event_page { instruction: "make the headline about AI in radiology", revision }` → `edit_event_page { instruction: "hide the FAQ", revision: <new> }` → "Done: new headline, FAQ hidden. Preview: …"
 
-**"Ship it."** (after they saw the preview) → `publish_event_page { confirmed: true, revision }` → "Live at <public_url>."
+**"Ship it."** (after they saw the preview) → `publish_event_page { confirmed: true, revision }` → on `needs_approval`, "Waiting for your OK in Sessionboard: <url>"; once it is live, "Live at <public_url>."
 
 **"Put all our webinar recordings in one place and tell me what our speakers said about prior authorization."**
 → `make_gallery { name: "Webinar library" }` → `ask_gallery { question: "What did speakers say about prior authorization?" }` → answer with sources → "The library is a draft; publish it?"

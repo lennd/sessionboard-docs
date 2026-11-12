@@ -18,6 +18,7 @@ import helpScopes from '../data/help-scopes.json';
 import { headScript, scopeCss, scopePaths } from '../lib/help-scope.mjs';
 import suitesConfig from '../data/suites.json';
 import { anySelfServeBuilt, builtSuites, deployedSuites, suiteForPath, suiteHeadScript } from '../lib/suites.mjs';
+import { isSkillsPath } from '../lib/skills.mjs';
 
 const SITE = `https://${site.canonicalHost}`;
 const WWW = 'https://www.sessionboard.com';
@@ -154,6 +155,9 @@ const scopeStyle = scopeCss(activeScopes);
 // `sb_help_scope` cookie (say, learning) would hide this suite's own sidebar
 // and compete with its search filter, so suite pages carry no scope at all.
 const onSuitePage = suiteForPath(Astro.url.pathname, suitesConfig) !== 'platform';
+// The Skills tab has its own sidebar (src/lib/skills.mjs) with untagged links; a saved legacy
+// scope would hide them and its prev/next, so Skills pages carry no scope either.
+const unscoped = onSuitePage || isSkillsPath(Astro.url.pathname);
 
 // Deferred marketing tags — mirrors growth-pages marketing_head_snippet().
 const marketingJs = `
@@ -209,8 +213,8 @@ const marketingJs = `
   </>
 )}
 {suiteHead && <script is:inline set:html={suiteHead} />}
-{!onSuitePage && <script is:inline set:html={scopeHead} />}
-{!onSuitePage && <style is:inline set:html={scopeStyle} />}
+{!unscoped && <script is:inline set:html={scopeHead} />}
+{!unscoped && <style is:inline set:html={scopeStyle} />}
 <script>
   // Heading anchor icons (Starlight's a.sl-anchor-link) copy the section
   // hotlink to the clipboard on click (Josh, 2026-09-24). Default hash

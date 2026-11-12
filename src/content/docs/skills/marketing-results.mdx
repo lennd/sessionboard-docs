@@ -25,6 +25,10 @@ It stops and asks you in the conversation:
 
 - Before creating a share link
 
+These wait for a person to approve them in Sessionboard, even after you say yes in the chat. The assistant gives you the link and stops:
+
+- Making a share link
+
 ## What you need
 
 - Any organization member can read results; a share link needs write access.
@@ -88,7 +92,7 @@ Filters, the same on all three: `scope` (`event` default, `webinar`, `org` for e
    - `net_new`: how many registrations were new to the organization vs already in People (or registered before), by channel, and each sharer's `net_new_credited` — the growth question ("did this bring in new people?").
 3. **Explain** with `explain_results` when they ask what worked or what to do next. Use its `headline`, `worked`, `did_not`, `next_moves`; anything you add must come from its `facts` or the report. Do not repeat a claim stronger than the numbers ("tracking failed entirely"): say what the numbers show.
    - **Attended but 0 registrations** (`attendance_rate` null): registration happened somewhere Sessionboard does not see (another registration platform, or people added by hand). Say that, report attendance, and offer to connect the registration platform; do not call the event a failure.
-4. **Share or export** on request: `share_results` gives a link (ask "Make a link anyone can open? Attendees show as initials." first). For a file, the Results page in Sessionboard has Export CSV.
+4. **Share or export** on request: `share_results` gives a link (ask "Make a link anyone can open? Attendees show as initials." first). From a connected assistant it can answer `needs_approval`: that URL is for the person's approval, never for the recipient. Tell them "Waiting for your OK in Sessionboard: <url>" and stop; hand over a report link only when a call returns one. For a file, the Results page in Sessionboard has Export CSV.
 
 ## How credit works (say it when numbers look odd)
 
@@ -107,11 +111,11 @@ Filters, the same on all three: `scope` (`event` default, `webinar`, `org` for e
 **"What should we do differently next time?"** → `explain_results { scope: "webinar" }` → its `next_moves`, plus the top Content Gap from `gaps` if there is one.
 
 **"How did Acme's sponsored sessions do? I want to send them a report."**
-→ `list_report_sponsors { q: "Acme" }` → `get_results { scope: "sponsor", sponsor_id }` → views, attendance, questions, clips, posts, placement taps and leads → ask, then `share_results { scope: "sponsor", sponsor_id }`. A sponsor report is counts only, so it is safe to send to the sponsor.
+→ `list_report_sponsors { q: "Acme" }` → `get_results { scope: "sponsor", sponsor_id }` → views, attendance, questions, clips, posts, placement taps and leads → ask, then `share_results { scope: "sponsor", sponsor_id }` (on `needs_approval`, give the person the approval link and stop). A sponsor report is counts only, so it is safe to send to the sponsor.
 
 **"Did the webinar bring in new people?"** → `get_results` → `net_new.registrations` and `net_new.by_channel`.
 
-**"Send the report to my boss."** → ask first → `share_results { event_id }` → "Here is a read-only link (works 30 days, attendees as initials): <url>. You can revoke it in Results."
+**"Send the report to my boss."** → ask first → `share_results { event_id }` → on `needs_approval`, "Waiting for your OK in Sessionboard: <url>"; when it returns the link, "Here is a read-only link (works 30 days, attendees as initials): <url>. You can revoke it in Results."
 
 ## Guardrails
 
