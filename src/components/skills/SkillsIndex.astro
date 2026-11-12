@@ -1,0 +1,125 @@
+---
+/**
+ * Every skill, grouped by product, with a filter box. Data: public/skills/downloads/skills.json.
+ * Without JavaScript the full list shows; the filter only hides rows.
+ */
+import { DOWNLOADS, SKILLS_BASE, skillsByProduct, skillsManifest } from '../../lib/skills.mjs';
+
+const groups = skillsByProduct();
+const total = skillsManifest().skills.length;
+---
+
+<div class="sb-skills-index not-content">
+	<label class="sb-skills-filter">
+		<span>Filter skills</span>
+		<input type="search" placeholder="Try “agenda”, “Reviewers” or “credits”" autocomplete="off" />
+	</label>
+	<p class="sb-skills-count" role="status" aria-live="polite">{total} skills</p>
+	{
+		groups.map((g) => (
+			<section class="sb-skills-group" data-group>
+				<h2 id={`skills-${g.key}`}>{g.label}</h2>
+				<ul>
+					{g.skills.map((s) => (
+						<li data-text={`${s.title} ${s.summary} ${s.prompts.join(' ')} ${g.label}`.toLowerCase()}>
+							<a href={`${SKILLS_BASE}/${s.id}`}>{s.title}</a>
+							<span class="sb-skill-tag">{s.writes ? 'Asks before changes' : 'Reads only'}</span>
+							<p>{s.summary}</p>
+						</li>
+					))}
+				</ul>
+			</section>
+		))
+	}
+	<p class="sb-skills-all">
+		Want them all? <a href={`${DOWNLOADS}/sessionboard-skills.zip`} download>Download every skill (.zip)</a>, or see <a href={`${SKILLS_BASE}/install`}>Install skills</a> for the Claude Code plugin.
+	</p>
+</div>
+
+<script>
+	const root = document.querySelector('.sb-skills-index');
+	const input = root?.querySelector<HTMLInputElement>('input[type=search]');
+	const count = root?.querySelector('.sb-skills-count');
+	input?.addEventListener('input', () => {
+		const q = input.value.trim().toLowerCase();
+		let shown = 0;
+		root!.querySelectorAll<HTMLElement>('[data-group]').forEach((group) => {
+			let inGroup = 0;
+			group.querySelectorAll<HTMLElement>('li[data-text]').forEach((li) => {
+				const hit = !q || (li.dataset.text ?? '').includes(q);
+				li.hidden = !hit;
+				if (hit) inGroup++;
+			});
+			group.hidden = inGroup === 0;
+			shown += inGroup;
+		});
+		if (count) count.textContent = shown === 1 ? '1 skill' : `${shown} skills`;
+	});
+</script>
+
+<style>
+	.sb-skills-filter {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+		font-weight: 600;
+		font-size: var(--sl-text-sm);
+		max-width: 28rem;
+	}
+	.sb-skills-filter input {
+		min-height: 2.75rem;
+		padding: 0.5rem 0.75rem;
+		border: 1px solid var(--sl-color-gray-4);
+		border-radius: 0.5rem;
+		background: var(--sl-color-bg);
+		color: var(--sl-color-text);
+		font: inherit;
+		font-weight: 400;
+	}
+	.sb-skills-filter input:focus-visible {
+		outline: 2px solid var(--sl-color-text-accent);
+		outline-offset: 2px;
+	}
+	.sb-skills-count {
+		margin: 0.5rem 0 0;
+		font-size: var(--sl-text-sm);
+		color: var(--sl-color-gray-2);
+	}
+	.sb-skills-group h2 {
+		font-size: var(--sl-text-h4);
+		margin: 1.75rem 0 0.5rem;
+	}
+	.sb-skills-group ul {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+		display: grid;
+		gap: 0.5rem;
+	}
+	.sb-skills-group li {
+		border: 1px solid var(--sl-color-gray-5);
+		border-radius: 0.5rem;
+		padding: 0.75rem 1rem;
+	}
+	.sb-skills-group li a {
+		font-weight: 600;
+	}
+	.sb-skills-group li p {
+		margin: 0.25rem 0 0;
+		font-size: var(--sl-text-sm);
+		color: var(--sl-color-gray-2);
+	}
+	.sb-skill-tag {
+		display: inline-block;
+		margin-left: 0.5rem;
+		padding: 0 0.5rem;
+		border: 1px solid var(--sl-color-gray-4);
+		border-radius: 999px;
+		font-size: var(--sl-text-xs);
+		color: var(--sl-color-gray-2);
+		vertical-align: middle;
+	}
+	.sb-skills-all {
+		margin-top: 1.5rem;
+	}
+</style>
