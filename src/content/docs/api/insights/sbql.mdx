@@ -71,6 +71,36 @@ INCLUDE friendly_id, title,
 
 Both columns contain names, so they count as personal data: **Hide personal details** redacts them. Internal team notes are never included. On a submission in a blind Review plan, a reviewer's name reads `Reviewer`. A role restricted to part of the event sees only the participants it may see and cannot use `MESSAGES`. CSV exports never truncate a cell; XLSX caps a cell at Excel's 32,767 characters.
 
+## One Row per Session: Review Summaries
+
+Adding a review answer to a session report usually returns one row per reviewer. To keep **one row per session**, put an aggregate over the `reviews_v2` field in `INCLUDE`, next to your other columns, with no `GROUP BY`. Each aggregate then summarises that session's reviews in one cell. Works with `FIND Session` and `FIND Abstract`.
+
+```sql
+FIND Session
+WHERE reviews_v2.plan_name = 'CFP 2027 Review Plan'
+INCLUDE title AS "Session Title", track.name AS "Track",
+  AVG(reviews_v2.total_score) AS "Cumulative Rating",
+  PARTICIPANTS('speaker') AS "Speakers",
+  COUNT_BY_VALUE(reviews_v2.rubric_label_is_this_session_a_sales_pitch) AS "Sales pitch?",
+  LIST_WITH_REVIEWER(reviews_v2.rubric_label_final_comments) AS "Final comments"
+```
+
+| Function | Cell | Example output |
+| --- | --- | --- |
+| `COUNT_BY_VALUE(reviews_v2.<answer>)` | How many reviews gave each answer. The question's options come first, in order, zeros included. | `Yes: 1 / No: 3` |
+| `LIST_WITH_REVIEWER(reviews_v2.<answer>)` | Each answer once, with the reviewer's initials, ordered by initials. On a blind Review plan the initials are left out. | `[AB] Strong outline \| [CD] Too salesy` |
+| `AVG`, `MIN`, `MAX`, `SUM`, `COUNT`, `COUNT_DISTINCT`, `STDDEV_POP`, `LIST` | As usual, over the session's reviews. | `AVG(reviews_v2.total_score)` → `24.5` |
+
+- Each review counts **once**, however many speakers or tags the report also lists, and **abstentions are left out**.
+- The summaries add no rows. A related field such as `speakers.full_name` still gives one row per speaker unless you pivot it (`Speaker 1`, `Speaker 2`, …) or list the speakers in one cell with `PARTICIPANTS('speaker')`, as above.
+- A `reviews_v2` condition in `WHERE` keeps only the sessions with a matching review and limits the reviews each summary counts.
+- `HAVING` is not available with summaries. Filter the sessions in `WHERE` instead.
+- `COUNT_BY_VALUE` and `LIST_WITH_REVIEWER` accept review answers only. They also work in `COMPUTE` with `GROUP BY`.
+
+Scorecard questions are fields named after their label: `reviews_v2.rubric_label_<label>`, the label in lower case with every run of other characters replaced by `_`. The schema lists each one with its `label`, its options (`values`) and its usual summary (`reviewSummary`).
+
+**One column per reviewer instead:** include the plain answers (`reviews_v2.rubric_label_<label>`, `reviews_v2.reviewer_full_name`) and pivot them with the prefix `Reviewer`. Each review gets a block of columns (`Reviewer 1: …`, `Reviewer 2: …`); abstentions take no block.
+
 ## Schema Discovery
 
 Use the schema endpoints to discover the entities and fields available for your organization:
