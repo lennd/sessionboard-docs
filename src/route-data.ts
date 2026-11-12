@@ -17,6 +17,7 @@ import { ACADEMY_SLUG, academyOpen } from './lib/academy.mjs';
 import { prevNext } from './lib/api-docs/sidebar.mjs';
 import { apiProductAt, apiSidebarFor } from './lib/api-docs/data';
 import site from '../site.json';
+import { isSkillsPath, skillsSidebarFor } from './lib/skills.mjs';
 
 export const onRequest = defineRouteMiddleware((context) => {
   const route = context.locals.starlightRoute;
@@ -28,6 +29,15 @@ export const onRequest = defineRouteMiddleware((context) => {
   if (P) {
     (context.locals as Record<string, unknown>).sbApiProduct = P.key;
     const sidebar = apiSidebarFor(P.key, context.url.pathname);
+    route.sidebar = sidebar as typeof route.sidebar;
+    route.hasSidebar = true;
+    const { prev, next } = prevNext(sidebar);
+    route.pagination = { prev, next } as typeof route.pagination;
+  }
+
+  // The Skills tab gets its own sidebar (src/lib/skills.mjs), like the API Docs tab.
+  if (isSkillsPath(context.url.pathname)) {
+    const sidebar = skillsSidebarFor(context.url.pathname);
     route.sidebar = sidebar as typeof route.sidebar;
     route.hasSidebar = true;
     const { prev, next } = prevNext(sidebar);
