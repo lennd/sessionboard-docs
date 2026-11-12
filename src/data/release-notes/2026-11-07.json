@@ -745,6 +745,560 @@
       },
       "ideas": [],
       "media": []
+    },
+    {
+      "id": "wrapped-attendee-speaker-story-pages",
+      "title": "Wrapped: personalised year-in-review story pages for attendees and speakers",
+      "summary": "Attendees and speakers each receive a personal **Wrapped** story page — opened from their Wrapped email with no login required — that recaps their event in a scroll-snap, on-brand format. Attendees see their numbers, top topics, favourite speaker, clips and what's next; speakers see room counts, hours on stage, saves, clip views, their sessions and key quotes. The final card lets recipients share to LinkedIn, X, Facebook, email, or copy a link, and every share is counted so the organiser can track results. Organizers configure the **Wrapped** campaign in **Marketing → Campaigns**, choosing who gets one (attendees, speakers), which cards appear, sharing permissions, and the next-event links; a live per-person **preview as** panel shows exactly what each recipient will see.",
+      "article": "/marketing/advocacy",
+      "related": [
+        "/marketing/brand-kits",
+        "/marketing/clips",
+        "/marketing/what-is-sessionboard-marketing"
+      ],
+      "kind": "new",
+      "module": "Marketing",
+      "features": [
+        "marketing",
+        "marketing_advocacy",
+        "marketing_clips",
+        "marketing_brand"
+      ],
+      "availability": "limited_release",
+      "enable": {
+        "how": "support",
+        "path": "Ask your Customer Success Manager to enable Wrapped; then Marketing → Campaigns → New campaign → Wrapped"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Marketing → Campaigns → Wrapped campaign"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "speaker",
+        "participant"
+      ],
+      "use_case": "After an event closes, send every attendee and speaker a beautiful, personalised recap of their experience — their numbers, moments and clips — and let them share it on LinkedIn and other networks, turning each person into an organic promoter of your event and driving registrations for the next one.",
+      "internal": {
+        "cs_action": {
+          "kind": "must_enable",
+          "note": "The Wrapped campaign kind is behind a super-user flag on both the API (web-api#5203) and the UI. Nothing is visible to customers until both PRs reach production and the feature is enabled for the org. Do not surface to customers until web-api#5203 is live."
+        },
+        "when_to_bring_up": "After a large event wraps, especially when the customer wants post-event social amplification or is promoting a next event to the same audience.",
+        "who_should_get_it": "Customers running conferences or multi-session events with attendee and speaker data, clips, and a Brand Kit set up — particularly those already using Advocacy or Dispatch.",
+        "staff_path": "Marketing → Campaigns → New campaign → Wrapped (visible only to super-users until GA)",
+        "gotchas": "UI is merged but fully staff-gated; the API PR (web-api#5203) must also be in production before anything works for real. No end-to-end test against a live API has been run yet. LinkedIn sharing copies the post text to the clipboard rather than pre-filling LinkedIn's composer. The Enterprise 'Rewatch' card is locked on card plans. Brand Kit colours and fonts must be configured on the event for the page to match the event's look; otherwise it falls back to the demo palette.",
+        "talk_track": "Once your event is over, Wrapped sends every attendee and speaker a personal story page — their numbers, clips and highlights — that they can share on LinkedIn in one tap. Each share is tracked, so you can see who amplified your event and how many clicks came back. It's a great way to keep the conversation going and drive early registrations for next year.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "No existing guide covers the Wrapped campaign type, the /wrapped/:token story page, the /wrapped/s/:slug public shared page, or the per-person admin preview. A new guide (or a section in the Advocacy guide) should document how to create and configure a Wrapped campaign, what each card shows for attendees vs. speakers, how sharing works (including the LinkedIn clipboard behaviour), what the public shared page reveals, and how to read Wrapped results.",
+          "why_use_it": "Wrapped turns each attendee's and speaker's event data into a personal, shareable story page styled with your event's Brand Kit. It gives people a memorable way to reflect on what they experienced and makes it easy for them to share that story publicly, extending your event's reach long after the closing session. Organisers control which cards appear, what the shared public page reveals, and which next-event links are promoted, so every share works toward your goals.",
+          "at": "2026-11-07T04:12:14.481Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1510"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:limited_release"
+    },
+    {
+      "id": "scheduler-improve-mode-ui",
+      "title": "Scheduler improve mode: results banner, regenerate from scratch, topics guard, and 90-day error",
+      "summary": "When the Scheduler agent re-generates a draft that already has placed sessions, it now improves the current agenda rather than starting over. A hint under the **Generate** button reads *\"Generating again improves the current agenda. Only pinned sessions stay where they are.\"* A new **Regenerate from scratch** outline button lets organizers explicitly discard all placements, with an inline confirm step (*\"Every unpinned session can move.\"*). After an improve run, the **Explain** tab shows a results banner with before/after scores, sessions moved, re-placed, and placed counts — or a *\"No improvements found\"* message. Run warnings (pinned sessions with no time, outside the grid, misaligned, overlapping, etc.) appear in an amber block below the banner. **Avoid Parallel Topics** is automatically disabled with an explanatory message when the event has no topic taxonomy. Events spanning more than 90 days now show a clear error toast instead of a generic failure.",
+      "article": "/agents/scheduler",
+      "related": [
+        "/sessions/agenda",
+        "/sessions/program-settings"
+      ],
+      "kind": "improved",
+      "module": "Program",
+      "features": [
+        "sessions_v2"
+      ],
+      "availability": "add_on",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Sessions → Agenda → Scheduler → Draft panel (Generate / Regenerate from scratch); Sessions → Agenda → Scheduler → Explain tab (results banner)"
+      },
+      "permissions": [
+        "event.agenda.manage_drafts"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "When an organizer has already run the Scheduler and wants to refine the agenda without losing all their work, they can re-generate to incrementally improve placements — or explicitly choose to start from scratch when a full reshuffle is needed. The results banner and warnings make it clear exactly what changed and why some pinned sessions were left in place.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Depends on web-api#5204 being live in PROD-US before this UI ships. Plain Generate continues to work against older APIs; only Regenerate from scratch would fail if the API is not yet updated."
+        },
+        "when_to_bring_up": "When a customer has already run the Scheduler once and wants to refine the agenda without starting over, or when they ask why re-generating moved all their sessions.",
+        "who_should_get_it": "Customers on the Sessions 2.0 add-on who use the Scheduler agent for agenda building.",
+        "staff_path": "Sessions → Agenda → Scheduler → Draft panel",
+        "gotchas": "Do not merge or demo until web-api#5204 is live in PROD-US. The 90-day error toast and the disabled Topics rule are covered by unit tests only — not verified in a live browser against a real long event or a topics-disabled org.",
+        "talk_track": "If you re-run the Scheduler on a draft that already has sessions placed, it now improves what's there instead of wiping it. You can see exactly what moved and why in the Explain tab, and if you ever do want a full reshuffle, there's a Regenerate from scratch button with a confirm step so you don't do it by accident.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should add a section covering improve mode: what happens when Generate is clicked on a draft with existing placements, how to use Regenerate from scratch, how to read the results banner (scores, moved/re-placed/placed counts, no-improvements state), and what each pinned-session warning code means.",
+          "why_use_it": "The Scheduler agent builds and refines a draft agenda automatically, moving sessions into the best available slots based on your rules and constraints. Improve mode lets you iterate on an existing draft — tightening the schedule run by run — without discarding manual pins or accepted placements. The results banner and warning list give you full visibility into every decision the scheduler made, so you can trust the output and act on any issues before publishing.",
+          "at": "2026-11-07T04:07:26.817Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1508"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "wrapped-attendee-speaker-campaign",
+      "title": "Send personalised \"Wrapped\" recap campaigns to attendees and speakers",
+      "summary": "A new **Wrapped** campaign kind lets organizers send each attendee or speaker a personalised, branded recap page built from their real event data — minutes attended, sessions, quotes, clips, and next-event picks. Speakers get their own edition covering people in the room, co-speakers, key points, and clip performance. Each recipient can share their page to LinkedIn, X, Facebook, or email via a public link that records clicks; a **Preview** step shows who gets which edition and what their page looks like before anything sends.",
+      "article": "/marketing/advocacy",
+      "related": [
+        "/marketing/what-is-sessionboard-marketing",
+        "/marketing/clips",
+        "/marketing/quotes",
+        "/pathways/overview"
+      ],
+      "kind": "new",
+      "module": "Marketing",
+      "features": [
+        "marketing",
+        "marketing_clips",
+        "marketing_quotes",
+        "marketing_advocacy",
+        "signals",
+        "pathways"
+      ],
+      "availability": "limited_release",
+      "enable": {
+        "how": "support",
+        "path": "Ask your Customer Success Manager to enable Wrapped; then Marketing → Campaigns → New Campaign → Wrapped"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Marketing → Campaigns → Wrapped"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "speaker",
+        "participant"
+      ],
+      "use_case": "After an event closes, send every attendee and speaker a personalised recap that shows exactly what they experienced — time spent, sessions, quotes, and clips — so they leave with a memorable, shareable moment that drives word-of-mouth and re-engagement for the next event.",
+      "internal": {
+        "cs_action": {
+          "kind": "must_enable",
+          "note": "Wrapped is staff-only (INTENTS.wrapped.staff_only gate). Non-super users cannot draft or launch it. CSM must enable it per org before the campaign kind appears."
+        },
+        "when_to_bring_up": "After a large event wraps, especially when the customer has Signals check-in data, clips, and approved quotes — the more data, the richer each page.",
+        "who_should_get_it": "Customers running multi-session events with Attend check-in, Media/Clips, and Quotes active; enterprise contracts get the 'Rewatch what you missed' card, Marketing Card subscribers do not.",
+        "staff_path": "Marketing → Campaigns → New Campaign → Wrapped; preview at Marketing → Engagement → Wrapped → [campaign] → Preview",
+        "gotchas": "Pages are only generated for people with real data; anyone with withdrawn consent is excluded and never counted in anyone's rank. The 'Rewatch' card is enterprise-only (contract org, not Marketing Card subscription). Share-card rendering requires Chromium in the API image — confirm it is present in the deployment. The UI PR (web-ui-v2) must also ship before customers can interact with the feature in-browser.",
+        "talk_track": "After your event, instead of a generic thank-you email, every attendee gets a page that says 'You spent 4 hours 20 minutes learning, heard Sarah Chen speak three times, and were in the top 25% of engaged attendees' — and they can share it to LinkedIn in one click.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The article index has no guide for Wrapped campaigns; a new guide should cover creating and launching a Wrapped campaign, the attendee vs. speaker editions, what data each card requires, the Preview step, sharing mechanics (public slug, Open Graph card, click tracking), consent and privacy rules, and the enterprise-only Rewatch card.",
+          "why_use_it": "Wrapped turns each person's event data into a branded, shareable story — their sessions, minutes, quotes, and clips — delivered as a personal page. Attendees see their engagement highlights and next-event picks; speakers see their audience reach, co-speakers, and clip performance. Because every page is built from real check-in and engagement data, recipients share something true and personal, extending the event's reach organically across LinkedIn and other channels.",
+          "at": "2026-11-07T03:43:55.650Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5203"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:limited_release"
+    },
+    {
+      "id": "advocacy-public-api-results",
+      "title": "Read Advocacy results — summary, advocates and pacing — via the Public API",
+      "summary": "Three new read-only endpoints expose Advocacy campaign data to connected AI assistants and API integrations: **GET /v1/event/:eventId/advocacy/summary**, **GET /v1/event/:eventId/advocacy/advocates**, and **GET /v1/event/:eventId/advocacy/pacing**. Existing Claude and ChatGPT connections using the `read:events` scope can call them immediately without reconnecting. Attendee counts are returned, not names. Restricted API keys that limit access to specific events receive a `403 EVENT_NOT_ALLOWED` response when a `compare_event_id` falls outside their allowed list.",
+      "article": "/integrations/connect-ai-assistants",
+      "related": [
+        "/marketing/advocacy",
+        "/integrations/api-tokens",
+        "/integrations/connect-claude",
+        "/integrations/connect-chatgpt"
+      ],
+      "kind": "new",
+      "module": "Marketing",
+      "features": [
+        "marketing_advocacy"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Apps → API tokens (or connected AI assistant)"
+      },
+      "permissions": [
+        "event.marketing.advocacy_read"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who have connected Claude or ChatGPT to Sessionboard can now ask their AI assistant how an Advocacy campaign is performing — total shares, top advocates and pacing trends — without leaving the chat. Teams using the Public API directly can pull the same data into dashboards or reports.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Endpoints are default-on for any event with Advocacy. No configuration required. Restricted-key customers are protected automatically by the allowlist check."
+        },
+        "when_to_bring_up": "When a customer asks how to pull Advocacy performance data into an AI assistant or external dashboard.",
+        "who_should_get_it": "Any organizer running Advocacy campaigns who has already connected Claude, ChatGPT, or a custom API integration.",
+        "staff_path": "Apps → API tokens",
+        "gotchas": "The pacing endpoint accepts a compare_event_id parameter for cross-event comparison; API keys scoped to specific events will receive 403 EVENT_NOT_ALLOWED if the comparison event is not on their allowlist. Attendee-level PII is not exposed — only counts.",
+        "talk_track": "If you're already using Claude or ChatGPT with Sessionboard, you can now ask it how your Advocacy campaign is performing — shares, top advocates, pacing — without any reconnection or new token.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The guide should add a section listing which Advocacy data points (summary, advocates, pacing) are available through the Public API and note that the read:events scope is sufficient, including the cross-event pacing comparison parameter and its allowlist behaviour for restricted keys.",
+          "why_use_it": "Connecting an AI assistant to Sessionboard lets you query your event data in plain language instead of navigating reports manually. With Advocacy results now available through the API, you can ask about campaign reach, who your top advocates are, and how sharing is trending over time — all from Claude, ChatGPT, or any tool that holds an API token. The `read:events` scope that every existing connection already carries is all that is needed.",
+          "at": "2026-11-07T03:18:11.919Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-public-api#210"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "advocacy-public-api-mcp-tools",
+      "title": "Query Advocacy results from AI assistants and the Public API",
+      "summary": "Three read-only endpoints — **summary**, **advocates**, and **pacing** — expose Advocacy analytics through the Public API and connected AI assistants (Claude, ChatGPT, Copilot, Gemini). **Summary** returns the same KPIs, funnel, channel mix, and per-campaign rows shown on **Advocacy → Analytics**. **Advocates** lists each named speaker, company contact, or team member with their share status (`shared`, `opened`, `notified`, `not_notified`), so you can ask \"which speakers haven't shared yet?\" Attendees are counted in aggregate and never named. **Pacing** shows daily or weekly activity relative to the event start date and supports comparing against a previous edition from the same organisation.",
+      "article": "/integrations/connect-ai-assistants",
+      "related": [
+        "/marketing/advocacy",
+        "/integrations/api-tokens"
+      ],
+      "kind": "new",
+      "module": "Marketing",
+      "features": [
+        "marketing_advocacy"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Advocacy → Analytics (data also accessible via Public API and connected AI assistants)"
+      },
+      "permissions": [
+        "event.marketing.advocacy_read"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who connect an AI assistant to Sessionboard can now ask natural-language questions about Advocacy performance — such as which speakers haven't shared yet, how share volume compares to last year's event, or which channels are driving the most registrations — without leaving their AI tool or opening the platform.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Endpoints are additive and read-only; no existing behaviour changes. Customers need a Public API token and a connected AI assistant to use the new tools."
+        },
+        "when_to_bring_up": "When a customer uses or is evaluating AI assistant integrations and also runs Advocacy campaigns — especially if they ask about reporting or 'who hasn't shared yet' workflows.",
+        "who_should_get_it": "Customers actively running Advocacy campaigns who have connected Claude, ChatGPT, Copilot, or Gemini to Sessionboard.",
+        "staff_path": "Advocacy → Analytics (same data, now also via API/MCP)",
+        "gotchas": "Registrations in the API response are conversions recorded on a tracked Advocacy link (matching the dashboard count), not Marketing → Results multi-touch credit — the response notes field says so. Attendee advocates are counted in aggregate only; individual attendee names are never returned. The pacing compare_event_id must belong to the same organisation or the API returns 404.",
+        "talk_track": "If you're already using Claude or ChatGPT with Sessionboard, you can now ask it things like 'which of my speakers haven't shared yet?' or 'how does our share pacing compare to last year?' and get answers straight from your Advocacy data.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The guide should add a section listing the three Advocacy tools available to AI assistants (summary, advocates, pacing), what each returns, the attendee-privacy rule, and how to use the compare_event_id parameter for edition-over-edition pacing.",
+          "why_use_it": "Connecting an AI assistant to Sessionboard lets you query your event data in plain language across sessions, speakers, contacts, and now Advocacy results. Instead of navigating between screens to pull numbers, you ask a question and get an answer drawn directly from the same data the platform displays. Use it to spot gaps, compare editions, and share quick status updates with your team.",
+          "at": "2026-11-07T03:14:25.170Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5225"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "marketing-growth-2026-11",
+      "title": "Marketing growth: subscribers, podcasts, newsletter, journeys, pacing, Voices, video, website tag, preference center, and sponsor audience links",
+      "summary": "Sessionboard Marketing gains a broad set of growth tools: **Sign-up Forms** and recording gates collect subscribers; **Podcasts** turns event sessions into a show with episodes, covers, and a feed; **Newsletter** drafts recap issues, schedules sends, and reports results; four fixed **Event Journeys** automate follow-up; **Turnout Pacing** tracks registration and attendance against the last edition and a goal; **Voices** collects short video responses via prompt, open link, or QR code and assembles a reel; a unified **Video Player** tracks per-person watch time with gates, end cards, and premieres; a **Website Tag** captures page visits; a **Preference Center** (`/prefs/:token`) lets subscribers manage their own preferences; and **Sponsor Audience** links (`/sponsor-audience/:token`) give sponsors a view of their audience.",
+      "article": "/sessionboard-marketing/whats-new",
+      "related": [
+        "/sessionboard-marketing/get-started",
+        "/sessionboard-marketing/content/podcast",
+        "/sessionboard-marketing/content/newsletter",
+        "/sessionboard-marketing/people",
+        "/sessionboard-marketing/goals-and-ads",
+        "/sessionboard-marketing/pages/publish-an-event-page"
+      ],
+      "kind": "new",
+      "module": "Marketing",
+      "features": [
+        "marketing",
+        "marketing_voices",
+        "marketing_plan",
+        "marketing_media",
+        "marketing_posts"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "csm",
+        "path": "Ask your Customer Success Manager to enable Marketing; then Marketing → (each section)"
+      },
+      "where": {
+        "scope": "org",
+        "path": "Marketing → Subscribers, Podcasts, Newsletter, Journeys, Pacing, Voices, Video, Website Tag, Preferences, Sponsors"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "An event marketing team can now grow and nurture their audience end-to-end inside Sessionboard: collect subscribers with sign-up forms, turn session recordings into a podcast and newsletter, automate post-event journeys, track registration pacing against last year, gather authentic video testimonials with Voices, gate on-demand content behind a video player, and give sponsors a direct view of their audience — all without leaving the platform.",
+      "internal": {
+        "cs_action": {
+          "kind": "must_enable",
+          "note": "Marketing workspace must be provisioned for the org. Self-serve sign-up flags (MARKETING_SIGNUP_ENABLED) remain off; public token pages (/subscribe/:formId, /prefs/:token, /sponsor-audience/:token) are live but only respond for tokens that exist. Help links in the workspace 404 until the docs suite is released — coordinate docs release with this feature release."
+        },
+        "when_to_bring_up": "When a customer asks how to grow their audience, repurpose session content, automate post-event follow-up, or give sponsors audience data.",
+        "who_should_get_it": "Customers with the Marketing add-on who are actively promoting events and want to grow a subscriber base or repurpose content.",
+        "staff_path": "Marketing (org-level sidebar)",
+        "gotchas": "Merging deployed to DEV only at time of PR; web-api endpoints and migrations must be deployed first or new Marketing sections return 404s. Dark-mode, a11y, and i18n (de/es/fr) are included in this branch.",
+        "talk_track": "You can now collect subscribers with a sign-up form, turn your sessions into a podcast and newsletter, automate follow-up journeys, track pacing against last year's event, collect Voices video testimonials, gate on-demand video, and give sponsors their own audience link — all inside Sessionboard Marketing.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The article index has stub pages for /sessionboard-marketing/content/podcast and /sessionboard-marketing/content/newsletter but no guides yet for Sign-up Forms/Subscribers, Event Journeys, Turnout Pacing, Voices, the unified Video Player, Website Tag, Preference Center, or Sponsor Audience links — each needs its own guide or a combined growth guide covering all GROW-1 through GROW-13 capabilities.",
+          "why_use_it": "Sessionboard Marketing connects your event content to your audience growth in one place. Use it to turn every session into a podcast episode, newsletter issue, or short video, then distribute through automated journeys and measure what drives registrations. Sponsors and exhibitors get their own audience links so you can demonstrate value without exporting data.",
+          "at": "2026-11-07T09:09:00.541Z"
+        }
+      },
+      "product": "marketing",
+      "platform": true,
+      "platform_article": "/marketing/what-is-sessionboard-marketing",
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1521"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "reviewer-home-and-invited-preview",
+      "title": "Reviewers get a dedicated home page on the Site, and the builder gains a \"View as Invited guest\" preview",
+      "summary": "Signed-in reviewers now land on a **Reviewer Home** instead of the nominee home. It shows a greeting, how many reviews remain, the next round due (round, program, deadline), a **Continue reviewing** button, their assigned rounds with progress and instructions, and a **How scoring works** four-step guide. Reviewers who also submit see a **See open programs** link to switch to the nominee home. In the Site builder, organizers can now choose **View as Invited guest** to preview how an invite-only event page appears to someone who has been invited but is not signed in.",
+      "article": "/sessionboard-awards/get-started",
+      "related": [
+        "/sessionboard-awards/review/invite-and-assign-reviewers",
+        "/sessionboard-awards/programs/draft-a-program"
+      ],
+      "kind": "new",
+      "module": "Awards",
+      "features": [
+        "awards"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Awards → Site → (published Site, signed in as a reviewer) and Awards → Site → Site builder → View as → Invited guest"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "reviewer"
+      ],
+      "use_case": "Programs with a dedicated reviewer pool no longer need to configure a widget to give reviewers a useful landing page — every reviewer arrives at a page tailored to their work. Organizers can also verify exactly what an invited-but-not-signed-in guest sees on a restricted event page without leaving the builder.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "The showMyReviewsHome widget flag no longer controls the reviewer home — every reviewer now gets the new Reviewer Home regardless of that setting. Customers who relied on that widget to keep reviewers on the nominee home will see a behaviour change."
+        },
+        "when_to_bring_up": "A customer asks why reviewers are landing on a different page, or when setting up a new awards program with a reviewer panel.",
+        "who_should_get_it": "Any customer using the Awards Site with a reviewer panel.",
+        "staff_path": "Awards → Site → open the published site as a reviewer account",
+        "gotchas": "The showMyReviewsHome widget flag is now ignored for routing; it no longer switches reviewers to the nominee home. Reviewers who also submit still see a 'See open programs' link to reach the nominee home.",
+        "talk_track": "Reviewers now land on a page built for them — their pending reviews, deadlines, and a scoring guide — so they can get straight to work. You can preview exactly what they see in the builder with 'View as Reviewer'.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should document the new Reviewer Home (its sections, the Continue reviewing button, and the See open programs link for dual-role users) and the new \"View as Invited guest\" builder persona.",
+          "why_use_it": "The Sessionboard Awards Site gives reviewers, nominees, and guests a single branded destination for your awards program. Reviewers see their outstanding work and deadlines the moment they sign in, so they spend less time hunting for their assignments. Organizers can preview the site as any persona — nominee, reviewer, or invited guest — to confirm the right content appears before publishing.",
+          "at": "2026-11-07T16:06:02.060Z"
+        }
+      },
+      "product": "awards",
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-org-portal#315"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "platform": false
+    },
+    {
+      "id": "site-builder-publish-diff-false-changes",
+      "title": "Site builder publish diff no longer flags unchanged defaults as edits",
+      "summary": "The **Publish** dialog and version history in the Site builder no longer list **Accent colour changed**, **Text colour changed**, or **Events directory changed** when those settings were never touched. Previously, a site that had never set these values showed them as changed on the very first autosave because the builder's defaults were compared against empty database values.",
+      "article": "/site/site-builder",
+      "kind": "fixed",
+      "module": "CMS",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Sites → [site] → Site builder → Publish"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who open the Site builder for the first time and immediately publish will see a clean, accurate change summary — only the edits they actually made are listed, making it easier to audit what changed between versions.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer reports that their site version history shows colour or Events directory changes they never made.",
+        "who_should_get_it": "Any customer using the Site builder, especially those who recently opened a new site for the first time.",
+        "staff_path": "Sites → [site] → Site builder → Publish → review the diff list; also visible in version history summaries and via the get_site_diff MCP/Ask tool.",
+        "gotchas": "The fix also normalises hex colour comparisons case- and length-blind (#FFF = #ffffff), so previously logged 'changes' that were only case differences will also stop appearing going forward.",
+        "talk_track": "The publish diff now only shows changes you actually made — opening the builder and autosaving without touching colours or the Events directory will no longer create a noisy history entry.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that the publish diff and version history reflect only real edits, and that default values for accent colour, text colour, light/dark mode, Brand Kit follow, and the Events directory are treated as equivalent to an unset state.",
+          "why_use_it": "null",
+          "at": "2026-11-07T16:13:54.718Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5237"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "product": "platform",
+      "platform": false
     }
   ]
 }
