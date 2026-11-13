@@ -51,6 +51,8 @@ tags:
     description: Query event data using SbQL, generate queries with AI, and manage dashboards.
   - name: Ask
     description: Ask a natural-language question about one event and get a cited answer. Requires the `read:ask` scope, granted explicitly.
+  - name: Sharing
+    description: A webinar's sharing pieces, for your own tools and AI assistants — email signatures for your team, share cards, speakers' personal links and a draft kit of posts for your team. Reads need `read:events`, writes `write:marketing`. Webinars only. Sending email signatures from an AI assistant waits for a person's OK (`202 needs_approval`).
   - name: Metadata Writes
     description: Create, update, and delete session metadata (rooms, tracks, tags, formats, levels, languages, statuses). Requires the `write:metadata` scope.
   - name: Agenda Planning
@@ -5730,6 +5732,421 @@ paths:
         '429':
           $ref: '#/components/responses/RegistrationTooManyRequests'
 
+  /v1/event/{eventId}/sharing/signatures:
+    get:
+      operationId: get-sharing-email-signatures
+      summary: Get a webinar's email signatures
+      description: |
+        The email signatures your team adds before a webinar: a small banner (480×120) and a one-line invite,
+        every link going to the registration page through the teammate's own tracked link.
+
+        `banner_url` is stable: it shows the "Save your seat" banner until the webinar starts and the "Watch the
+        recording" banner after, so a signature already pasted changes by itself. `stale: true` means the
+        title, date, registration link or brand changed since the signatures were made. `team` lists each
+        teammate with their link, when they were emailed, opened and copied their signature, and the clicks and
+        registrations it brought.
+
+        Webinars only (`409` otherwise). Requires `read:events` and a user whose role on the webinar can read sharing.
+      tags:
+        - Sharing
+      parameters:
+        - $ref: '#/components/parameters/SharingEventId'
+      responses:
+        '200':
+          description: The signatures and the team.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    $ref: '#/components/schemas/SharingSignatures'
+        '401':
+          description: Missing, invalid or expired token.
+        '403':
+          $ref: '#/components/responses/SharingForbidden'
+        '404':
+          description: The event is not in the token's organization.
+        '409':
+          $ref: '#/components/responses/SharingNotAWebinar'
+    post:
+      operationId: make-sharing-email-signatures
+      summary: Make a webinar's email signatures
+      description: |
+        Makes (or remakes) the signature banners, before and after the start, from the webinar as it is now and
+        in the event's brand. Signatures already pasted pick up the new banner through their stable image URL.
+        Sends nothing. Returns the same payload as the GET. Requires `write:marketing`.
+      tags:
+        - Sharing
+      parameters:
+        - $ref: '#/components/parameters/SharingEventId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: The signatures and the team.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    $ref: '#/components/schemas/SharingSignatures'
+        '401':
+          description: Missing, invalid or expired token.
+        '403':
+          $ref: '#/components/responses/SharingForbidden'
+        '409':
+          $ref: '#/components/responses/SharingNotAWebinar'
+  /v1/event/{eventId}/sharing/signatures/team:
+    post:
+      operationId: add-sharing-signature-teammates
+      summary: Add teammates to a webinar's email signatures
+      description: |
+        Gives organization members their own tracked link for the webinar's email signatures, without emailing
+        them. Returns the GET payload. Requires `write:marketing` and a user whose role on the webinar can
+        edit sharing.
+      tags:
+        - Sharing
+      parameters:
+        - $ref: '#/components/parameters/SharingEventId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SharingUserIds'
+            example:
+              user_ids: [1042, 1077]
+      responses:
+        '200':
+          description: The signatures and the team.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    $ref: '#/components/schemas/SharingSignatures'
+        '400':
+          description: '`user_ids` missing, empty or longer than 50, or a user who is not an active member of the organization.'
+        '403':
+          $ref: '#/components/responses/SharingForbidden'
+        '409':
+          $ref: '#/components/responses/SharingNotAWebinar'
+  /v1/event/{eventId}/sharing/signatures/team/{teammateId}:
+    delete:
+      operationId: remove-sharing-signature-teammate
+      summary: Take a teammate off a webinar's email signatures
+      description: |
+        A signature they already pasted keeps linking (the tracked link stays live); their signature page
+        closes. Returns the GET payload. Requires `write:marketing`.
+      tags:
+        - Sharing
+      parameters:
+        - $ref: '#/components/parameters/SharingEventId'
+        - name: teammateId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: '`team[].id` from the GET.'
+      responses:
+        '200':
+          description: The signatures and the team.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    $ref: '#/components/schemas/SharingSignatures'
+        '403':
+          $ref: '#/components/responses/SharingForbidden'
+        '404':
+          description: No such teammate on this webinar.
+  /v1/event/{eventId}/sharing/signatures/send:
+    post:
+      operationId: send-sharing-email-signatures
+      summary: Email teammates their email signature
+      description: |
+        Puts these organization members on the team (if they are not on it) and emails each one a link to a
+        page where they copy their signature into their email client. Refused once the webinar has started.
+
+        From an AI assistant (an MCP or OAuth connection) this does not send: it answers `202` with
+        `status: needs_approval` and a link, a person approves it in Sessionboard, and it then sends as them.
+        Do not call again for the same request. Requires `write:marketing`.
+      tags:
+        - Sharing
+      parameters:
+        - $ref: '#/components/parameters/SharingEventId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SharingUserIds'
+            example:
+              user_ids: [1042]
+      responses:
+        '200':
+          description: Sent.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    properties:
+                      sent:
+                        type: integer
+                      failed:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            recipient:
+                              type: string
+                            reason:
+                              type: string
+                      state:
+                        $ref: '#/components/schemas/SharingSignatures'
+        '202':
+          description: Waiting for a person's OK in Sessionboard; nothing was sent.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    properties:
+                      status:
+                        type: string
+                        enum: [needs_approval]
+                      approval_id:
+                        type: string
+                      url:
+                        type: string
+                      message:
+                        type: string
+        '400':
+          description: '`user_ids` missing, empty or longer than 50.'
+        '403':
+          $ref: '#/components/responses/SharingForbidden'
+        '409':
+          description: Not a webinar, or the webinar has started.
+        '429':
+          description: Too many sends; wait before retrying.
+  /v1/event/{eventId}/sharing/share-cards:
+    get:
+      operationId: get-sharing-share-cards
+      summary: Get a webinar's share cards
+      description: |
+        Six on-brand images (1200×627) for the weeks before a webinar: three with the speakers' faces
+        (`spotlight`, `lineup`, `portrait`) and three without (`headline`, `calendar`, `ticket`). Each carries
+        the title, the date and time in the webinar's time zone, the speakers and the registration link as text
+        and a QR code. `cards` is empty until they are made; `in_advocacy` says whether a card is on the
+        speakers' and attendees' sharing pages. `stale: true` means the title, date, speakers, link or brand
+        changed since they were made. Requires `read:events`.
+      tags:
+        - Sharing
+      parameters:
+        - $ref: '#/components/parameters/SharingEventId'
+      responses:
+        '200':
+          description: The share cards.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    $ref: '#/components/schemas/SharingShareCards'
+        '403':
+          $ref: '#/components/responses/SharingForbidden'
+        '409':
+          $ref: '#/components/responses/SharingNotAWebinar'
+    post:
+      operationId: make-sharing-share-cards
+      summary: Make a webinar's share cards
+      description: |
+        Makes (or remakes) all six cards, or `designs`, from the webinar as it is now. Takes a few seconds.
+        Remaking updates the same cards wherever they are used and keeps which ones are on the sharing pages.
+        Returns the GET payload. Requires `write:marketing`.
+      tags:
+        - Sharing
+      parameters:
+        - $ref: '#/components/parameters/SharingEventId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                designs:
+                  type: array
+                  items:
+                    type: string
+                    enum: [spotlight, lineup, portrait, headline, calendar, ticket]
+      responses:
+        '200':
+          description: The share cards.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    $ref: '#/components/schemas/SharingShareCards'
+        '403':
+          $ref: '#/components/responses/SharingForbidden'
+        '409':
+          $ref: '#/components/responses/SharingNotAWebinar'
+  /v1/event/{eventId}/sharing/speaker-links:
+    get:
+      operationId: get-sharing-speaker-links
+      summary: Get speakers' sharing links
+      description: |
+        Each speaker's and co-presenter's personal tracked link for a webinar (≤ 200, by name), with their shares.
+        A speaker with no link yet comes back `share_url: null, pending: true`; give speakers links to fix that.
+        `campaign` and `speaker_campaign` say whether sharing is on for attendees and speakers. Sessionboard does
+        not email speakers their link. Requires `read:events` and a user whose role on the webinar can read sharing.
+      tags:
+        - Sharing
+      parameters:
+        - $ref: '#/components/parameters/SharingEventId'
+      responses:
+        '200':
+          description: The speakers and their links.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    $ref: '#/components/schemas/SharingSpeakerLinks'
+        '403':
+          $ref: '#/components/responses/SharingForbidden'
+        '409':
+          $ref: '#/components/responses/SharingNotAWebinar'
+    post:
+      operationId: give-sharing-speaker-links
+      summary: Give speakers sharing links
+      description: |
+        Turns sharing on for the webinar (attendees and speakers) if it is not, and gives every current speaker and
+        co-presenter a personal tracked link. Safe to repeat; emails no one. Returns the GET payload plus `created`
+        (sharing was just turned on). Requires `write:marketing` and a user whose role on the webinar can edit sharing.
+      tags:
+        - Sharing
+      parameters:
+        - $ref: '#/components/parameters/SharingEventId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: The speakers and their links.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    allOf:
+                      - $ref: '#/components/schemas/SharingSpeakerLinks'
+                      - type: object
+                        properties:
+                          created:
+                            type: boolean
+        '403':
+          $ref: '#/components/responses/SharingForbidden'
+        '409':
+          $ref: '#/components/responses/SharingNotAWebinar'
+  /v1/event/{eventId}/sharing/team-kit:
+    post:
+      operationId: make-sharing-team-kit
+      summary: Draft a team sharing kit
+      description: |
+        Drafts a kit your team shares: one LinkedIn post per image with its copy. Before the webinar starts it uses
+        the share cards ("Save your seat", spread over the days left); after, the recording's clips ("Watch
+        on-demand"; `clip_ids` picks them, else the first three). Returns the draft's `dispatch_id` and `url` (a
+        relative admin path) where a person picks the team and sends it. Nothing is sent; the webinar's open draft
+        is returned instead of a second one. Requires `write:marketing`.
+      tags:
+        - Sharing
+      parameters:
+        - $ref: '#/components/parameters/SharingEventId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [channel]
+              properties:
+                channel:
+                  type: string
+                  enum: [email, slack, teams, both]
+                  description: How the team will get it (`both` = chat and email). Preselects the recipients tab.
+                clip_ids:
+                  type: array
+                  maxItems: 10
+                  items:
+                    type: string
+            example:
+              channel: email
+      responses:
+        '201':
+          description: The draft.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    properties:
+                      dispatch_id:
+                        type: string
+                      url:
+                        type: string
+        '403':
+          $ref: '#/components/responses/SharingForbidden'
+        '409':
+          $ref: '#/components/responses/SharingNotAWebinar'
   /v1/event/{eventId}/ticket-types:
     get:
       operationId: list-ticket-types
@@ -24241,6 +24658,13 @@ components:
         type: integer
 
   parameters:
+    SharingEventId:
+      name: eventId
+      in: path
+      required: true
+      schema:
+        type: integer
+      description: The webinar's event id.
     TaskId:
       name: taskId
       in: path
@@ -24662,6 +25086,228 @@ components:
         format: uuid
       description: The version's `id` from List a Site's versions.
   schemas:
+    SharingSignatures:
+      type: object
+      properties:
+        generated:
+          type: boolean
+        generated_at:
+          type: string
+          format: date-time
+          nullable: true
+        stale:
+          type: boolean
+        started:
+          type: boolean
+        starts_at:
+          type: string
+          format: date-time
+          nullable: true
+        timezone:
+          type: string
+          nullable: true
+        registration_url:
+          type: string
+          nullable: true
+        width:
+          type: integer
+        height:
+          type: integer
+        banner_url:
+          type: string
+          nullable: true
+          description: Stable banner URL; "Save your seat" until the start, "Watch the recording" after.
+        banners:
+          type: object
+          properties:
+            live:
+              type: string
+              nullable: true
+            on_demand:
+              type: string
+              nullable: true
+        variants:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                enum: [banner, line, text]
+              name:
+                type: string
+              html:
+                type: string
+              text:
+                type: string
+        variants_available:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+        team:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              user_id:
+                type: integer
+              name:
+                type: string
+              email:
+                type: string
+              share_url:
+                type: string
+              emailed_at:
+                type: string
+                format: date-time
+                nullable: true
+              opened_at:
+                type: string
+                format: date-time
+                nullable: true
+              copied_at:
+                type: string
+                format: date-time
+                nullable: true
+              clicks:
+                type: integer
+              registrations:
+                type: integer
+    SharingUserIds:
+      type: object
+      required: [user_ids]
+      properties:
+        user_ids:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items:
+            type: integer
+          description: Organization members' user ids.
+    SharingShareCards:
+      type: object
+      properties:
+        cards:
+          type: array
+          items:
+            type: object
+            properties:
+              template_id:
+                type: string
+              design:
+                type: string
+                enum: [spotlight, lineup, portrait, headline, calendar, ticket]
+              name:
+                type: string
+              faces:
+                type: boolean
+              url:
+                type: string
+              width:
+                type: integer
+              height:
+                type: integer
+              in_advocacy:
+                type: boolean
+                description: On the speakers' and attendees' sharing pages.
+              generated_at:
+                type: string
+                format: date-time
+        generated:
+          type: boolean
+        generated_at:
+          type: string
+          format: date-time
+          nullable: true
+        stale:
+          type: boolean
+        started:
+          type: boolean
+        starts_at:
+          type: string
+          format: date-time
+          nullable: true
+        timezone:
+          type: string
+          nullable: true
+        speakers:
+          type: integer
+        speakers_with_photos:
+          type: integer
+        registration_url:
+          type: string
+          nullable: true
+        designs:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+              faces:
+                type: boolean
+    SharingSpeakerLinks:
+      type: object
+      properties:
+        campaign:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+            status:
+              type: string
+            live:
+              type: boolean
+            attendee_share_count:
+              type: integer
+        speaker_campaign:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+            status:
+              type: string
+            live:
+              type: boolean
+        speakers:
+          type: array
+          items:
+            type: object
+            properties:
+              contact_id:
+                type: string
+              recipient_id:
+                type: string
+                nullable: true
+              name:
+                type: string
+              email:
+                type: string
+              share_url:
+                type: string
+                nullable: true
+              shares:
+                type: integer
+              last_shared_at:
+                type: string
+                format: date-time
+                nullable: true
+              removed:
+                type: boolean
+              pending:
+                type: boolean
     TaskPerson:
       type: object
       properties:
@@ -34649,6 +35295,13 @@ components:
           type: string
           format: date-time
   responses:
+    SharingForbidden:
+      description: |
+        - `SCOPE_REQUIRED`: the token lacks `read:events` (reads) or `write:marketing` (writes).
+        - `EVENT_NOT_ALLOWED`: the event is outside the token's event allow-list.
+        - Otherwise the token's user cannot read (or edit) sharing on this webinar.
+    SharingNotAWebinar:
+      description: The event is not a webinar.
     TasksForbidden:
       description: |
         - `TASKS_PLATFORM_ONLY`: the organization uses a self-serve Sessionboard product; Tasks are part of Sessionboard Platform.
