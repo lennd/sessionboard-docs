@@ -17804,6 +17804,222 @@ paths:
           $ref: '#/components/responses/MarketingForbidden'
         '404':
           description: The event is not in your organization.
+  /v1/organization/{orgId}/marketing/results/questions:
+    get:
+      operationId: list-webinar-questions-to-follow-up
+      summary: Webinar questions to follow up
+      description: >-
+        Questions people asked in your webinars that are worth following up, and whether anyone has followed up in
+        your CRM or AMS since. Which questions count depends on your organization's kind (`org_kind`): buying and
+        evaluating questions for a company; joining, renewing, rejoining, group and credit questions for an association;
+        booth and sponsorship questions for an event organizer. Each question is classified once, when it is brought in.
+        `follow_up` is `none_seen` (no sales activity after the question), `followed_up`, or `unknown` when the connected
+        system does not report activity. Defaults to the last 30 days and every webinar. Read-only.
+        Requires `read:marketing`. Also at `GET /v1/marketing/results/questions`. A key restricted to particular
+        events must pass one of them as `eventId`.
+      tags:
+        - Marketing
+      parameters:
+        - $ref: '#/components/parameters/MarketingOrgId'
+        - $ref: '#/components/parameters/WebinarReportEventId'
+        - $ref: '#/components/parameters/WebinarReportFrom'
+        - $ref: '#/components/parameters/WebinarReportTo'
+        - name: intent
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [follow_up, all]
+            default: follow_up
+          description: '`follow_up`: only the classes worth following up for your kind of organization. `all`: every question.'
+        - name: followUp
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [none_seen, followed_up, unknown, any]
+            default: none_seen
+          description: Keep questions by their follow-up state.
+        - name: owner
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Only questions from people this owner (account owner, staff contact or sales rep) has.
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+          description: How many questions to return.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    $ref: '#/components/schemas/WebinarQuestionsReport'
+        '403':
+          $ref: '#/components/responses/MarketingForbidden'
+        '404':
+          description: The event is not in your organization.
+  /v1/organization/{orgId}/marketing/results/topic-watch-time:
+    get:
+      operationId: get-webinar-topic-watch-time
+      summary: Watch time by topic
+      description: >-
+        Which topics keep people watching longest across your webinars. Live watch time is each attendee's minutes in the
+        room divided by the webinar's scheduled length; on demand is the furthest each viewer got in the recording.
+        Medians only. A webinar with two topics counts toward each. Topics with fewer than 5 people are left out and
+        counted in `suppressed`. Defaults to the last 12 months. Read-only. Requires `read:marketing`. Also at
+        `GET /v1/marketing/results/topic-watch-time`.
+      tags:
+        - Marketing
+      parameters:
+        - $ref: '#/components/parameters/MarketingOrgId'
+        - $ref: '#/components/parameters/WebinarReportEventId'
+        - $ref: '#/components/parameters/WebinarReportFrom'
+        - $ref: '#/components/parameters/WebinarReportTo'
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [live, on_demand, people]
+            default: live
+          description: Order of `topics`.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    $ref: '#/components/schemas/WebinarTopicWatchTimeReport'
+        '403':
+          $ref: '#/components/responses/MarketingForbidden'
+        '404':
+          description: The event is not in your organization.
+  /v1/organization/{orgId}/marketing/results/outcomes:
+    get:
+      operationId: get-webinar-outcomes
+      summary: What happened after people attended
+      description: >-
+        What happened after people registered for, attended or watched your webinars, read from your connected CRM or AMS
+        (`system`). For a company: sales pipeline created and closed won on accounts that attended, and accounts that became
+        customers. For an association: people who became members, members who renewed (with the renewal rate of members who
+        did not attend, to compare) and lapsed members who came back. For an event organizer: exhibitor and sponsorship
+        contracts from companies that attended. A deal or membership counts when it starts within `window_days` (default 180)
+        after the first touch, once per account (or person). `method` says how it was counted in one sentence; it is
+        association, not credit. With no CRM or AMS connected, only `touched` is filled and `not_tracked` says what to
+        connect. Defaults to the last 12 months. Read-only. Requires `read:marketing`. Also at
+        `GET /v1/marketing/results/outcomes`.
+      tags:
+        - Marketing
+      parameters:
+        - $ref: '#/components/parameters/MarketingOrgId'
+        - $ref: '#/components/parameters/WebinarReportEventId'
+        - $ref: '#/components/parameters/WebinarReportFrom'
+        - $ref: '#/components/parameters/WebinarReportTo'
+        - name: groupBy
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [topic, webinar, account]
+            default: topic
+          description: What each row of `rows` is.
+        - name: targetAccounts
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: ['true', 'false']
+          description: '`true`: only your target accounts.'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    $ref: '#/components/schemas/WebinarOutcomesReport'
+        '403':
+          $ref: '#/components/responses/MarketingForbidden'
+        '404':
+          description: The event is not in your organization.
+  /v1/organization/{orgId}/marketing/results/outcomes/settings:
+    get:
+      operationId: get-webinar-outcomes-settings
+      summary: Outcomes window
+      description: >-
+        How many days after someone's first webinar touch a deal or membership still counts in outcomes. One setting for
+        the organization. Requires `read:marketing` and a key without an event restriction. Also at
+        `GET /v1/marketing/results/outcomes/settings`.
+      tags:
+        - Marketing
+      parameters:
+        - $ref: '#/components/parameters/MarketingOrgId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    $ref: '#/components/schemas/WebinarOutcomesSettings'
+        '403':
+          $ref: '#/components/responses/MarketingForbidden'
+    put:
+      operationId: set-webinar-outcomes-settings
+      summary: Set the outcomes window
+      description: >-
+        Sets how many days after someone's first webinar touch a deal or membership still counts (30 to 365). Changes how
+        outcomes are counted for everyone in the organization; sends nothing. Requires `write:marketing` and a key without
+        an event restriction. Also at `PUT /v1/marketing/results/outcomes/settings`.
+      tags:
+        - Marketing
+      parameters:
+        - $ref: '#/components/parameters/MarketingOrgId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [windowDays]
+              properties:
+                windowDays:
+                  type: integer
+                  minimum: 30
+                  maximum: 365
+                  description: Days after the first touch.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    $ref: '#/components/schemas/WebinarOutcomesSettings'
+        '400':
+          description: '`windowDays` is not a whole number from 30 to 365.'
+        '403':
+          $ref: '#/components/responses/MarketingForbidden'
   /v1/organization/{orgId}/marketing/audience/forms:
     get:
       operationId: list-signup-forms
@@ -23633,6 +23849,29 @@ components:
         type: string
         format: uuid
       description: The premiere
+    WebinarReportEventId:
+      name: eventId
+      in: query
+      required: false
+      schema:
+        type: integer
+      description: One webinar. Leave out for every webinar in the period.
+    WebinarReportFrom:
+      name: from
+      in: query
+      required: false
+      schema:
+        type: string
+        format: date
+      description: Start of the period, `YYYY-MM-DD`.
+    WebinarReportTo:
+      name: to
+      in: query
+      required: false
+      schema:
+        type: string
+        format: date
+      description: End of the period, `YYYY-MM-DD`, inclusive.
     MarketingOrgId:
       name: orgId
       in: path
@@ -24241,6 +24480,250 @@ components:
           description: What visitors agree to; `{org}` is replaced with your organization's name.
         successMessage:
           type: string
+    OrgKindLabels:
+      type: object
+      description: >-
+        Your organization's own words, chosen by `org_kind`. Use them for every word about people, organizations and money.
+        For example `people_known` is `Customers` for a company, `Members` for an association and `Exhibitors and sponsors`
+        for an event organizer.
+      properties:
+        kind_name: { type: string, example: Association }
+        people_known: { type: string, example: Members }
+        people_known_one: { type: string, example: Member }
+        people_other: { type: string, example: Nonmembers }
+        organizations: { type: string, example: Member organizations }
+        organization_one: { type: string, example: Member organization }
+        owner: { type: string, example: Staff contact }
+        system_of_record: { type: string, example: AMS }
+        questions_title: { type: string, example: Joining and renewal questions nobody has followed up }
+        outcomes_title: { type: string, example: Membership from people who attended }
+        created: { type: string, example: Became members }
+        closed: { type: string, example: Renewed }
+        became: { type: string, example: Lapsed members back }
+        in_the_room: { type: string, example: 'In the room: annual dues of members who attended' }
+    WebinarReportEnvelope:
+      type: object
+      description: Fields every webinar report carries.
+      properties:
+        org_kind:
+          type: string
+          nullable: true
+          enum: [corporate, association, organizer, null]
+          description: Company, association or event organizer. `null` until your organization sets it; `labels` are then neutral.
+        labels:
+          $ref: '#/components/schemas/OrgKindLabels'
+        period:
+          type: object
+          properties:
+            from: { type: string, format: date }
+            to: { type: string, format: date }
+        as_of:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the CRM or AMS was last read. `null` when nothing is connected.
+        not_tracked:
+          type: array
+          description: What this report cannot measure, one plain sentence each.
+          items:
+            type: object
+            properties:
+              key: { type: string }
+              reason: { type: string }
+        truncated:
+          type: boolean
+          description: '`true` when the list was capped; `<list>_total` then gives the full count.'
+    WebinarMoney:
+      type: object
+      nullable: true
+      properties:
+        count: { type: integer }
+        amount: { type: number, nullable: true }
+        currency: { type: string, nullable: true, example: USD }
+    WebinarQuestionsReport:
+      allOf:
+        - $ref: '#/components/schemas/WebinarReportEnvelope'
+        - type: object
+          properties:
+            totals:
+              type: object
+              properties:
+                questions: { type: integer }
+                follow_up_worthy: { type: integer }
+                without_follow_up: { type: integer }
+            questions_total: { type: integer }
+            questions:
+              type: array
+              items:
+                type: object
+                properties:
+                  signal_id: { type: string }
+                  asked_at: { type: string, format: date-time }
+                  text: { type: string }
+                  intent:
+                    type: string
+                    description: >-
+                      company: `buying`, `evaluating`; association: `joining`, `renewing`, `rejoining`, `group`, `credit`;
+                      event organizer: `booth`, `sponsorship`; and for everyone `support`, `content`, `other`.
+                  intent_reason: { type: string }
+                  person:
+                    type: object
+                    properties:
+                      person_id: { type: string }
+                      name: { type: string }
+                      email: { type: string }
+                      company: { type: string, nullable: true }
+                      title: { type: string, nullable: true }
+                      relationship:
+                        type: string
+                        nullable: true
+                        description: For example `customer`, `member`, `nonmember`, `lapsed`, `exhibitor` or `sponsor`.
+                  webinar:
+                    type: object
+                    properties:
+                      event_id: { type: integer }
+                      name: { type: string }
+                      date: { type: string, format: date }
+                  other_signals:
+                    type: array
+                    items: { type: string }
+                    example: [cta.clicked, demo_requested]
+                  owner_name: { type: string, nullable: true }
+                  follow_up:
+                    type: string
+                    enum: [none_seen, followed_up, unknown]
+                  follow_up_detail:
+                    type: string
+                    nullable: true
+                    example: Last sales activity Oct 2, before the question
+                  clip:
+                    type: object
+                    nullable: true
+                    properties:
+                      media_id: { type: string }
+                      offset_seconds: { type: integer }
+                      url: { type: string }
+    WebinarTopicWatchTimeReport:
+      allOf:
+        - $ref: '#/components/schemas/WebinarReportEnvelope'
+        - type: object
+          properties:
+            org:
+              type: object
+              properties:
+                webinars: { type: integer }
+                median_live_share: { type: number, nullable: true }
+                median_on_demand_percent: { type: number, nullable: true }
+            topics_total: { type: integer }
+            topics:
+              type: array
+              items:
+                type: object
+                properties:
+                  topic:
+                    type: object
+                    properties:
+                      id: { type: string }
+                      name: { type: string }
+                  webinars: { type: integer }
+                  people: { type: integer }
+                  live:
+                    type: object
+                    nullable: true
+                    properties:
+                      attendees: { type: integer }
+                      median_minutes: { type: number }
+                      median_share: { type: number, description: 'Share of the scheduled length, 0 to 1.' }
+                  on_demand:
+                    type: object
+                    nullable: true
+                    properties:
+                      viewers: { type: integer }
+                      median_percent: { type: number }
+                      completed_share: { type: number }
+                  vs_org:
+                    type: object
+                    properties:
+                      live_points: { type: number, nullable: true }
+                      on_demand_points: { type: number, nullable: true }
+                  top_webinars:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        event_id: { type: integer }
+                        name: { type: string }
+                        median_share: { type: number }
+            suppressed:
+              type: object
+              properties:
+                topics: { type: integer }
+                reason: { type: string }
+    WebinarOutcomesReport:
+      allOf:
+        - $ref: '#/components/schemas/WebinarReportEnvelope'
+        - type: object
+          properties:
+            system:
+              type: string
+              nullable: true
+              enum: [hubspot, salesforce, fonteva, nimble, null]
+            window_days: { type: integer, example: 180 }
+            totals:
+              type: object
+              properties:
+                touched:
+                  type: integer
+                  description: Accounts (company, event organizer) or people (association) who registered, attended or watched.
+                created:
+                  $ref: '#/components/schemas/WebinarMoney'
+                closed:
+                  $ref: '#/components/schemas/WebinarMoney'
+                became:
+                  type: object
+                  nullable: true
+                  properties:
+                    count: { type: integer }
+                renewed:
+                  type: object
+                  nullable: true
+                  description: Associations only.
+                  properties:
+                    count: { type: integer }
+                    of: { type: integer }
+                    rate: { type: number }
+                    rate_not_attended: { type: number, nullable: true }
+                in_the_room:
+                  $ref: '#/components/schemas/WebinarMoney'
+            rows_total: { type: integer }
+            rows:
+              type: array
+              description: One row per topic, webinar or account (`groupBy`), at most 25.
+              items:
+                type: object
+                properties:
+                  key: { type: string }
+                  name: { type: string }
+                  touched: { type: integer }
+                  created: { $ref: '#/components/schemas/WebinarMoney' }
+                  closed: { $ref: '#/components/schemas/WebinarMoney' }
+                  became: { type: object, nullable: true, properties: { count: { type: integer } } }
+                  renewed: { type: object, nullable: true }
+                  owner_name: { type: string, nullable: true }
+                  first_touch: { type: string, format: date, nullable: true }
+                  webinars: { type: integer, nullable: true }
+            method:
+              type: string
+              description: How it was counted, in one sentence ending "Association, not credit."
+              example: Deals created on an account within 180 days after someone there registered for or watched a webinar. Association, not credit.
+    WebinarOutcomesSettings:
+      type: object
+      properties:
+        window_days:
+          type: integer
+          minimum: 30
+          maximum: 365
+          example: 180
     EventTurnout:
       type: object
       description: How one event is doing. Every number under `prediction` is an estimate.
