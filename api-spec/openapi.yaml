@@ -74,6 +74,12 @@ tags:
       See the [Uploading session files](/guides/uploading-session-files) guide.
   - name: OAuth
     description: OAuth 2.1 endpoints for AI client authorization (Claude, ChatGPT). Mounted at `/oauth/` (not `/v1/`).
+  - name: Products
+    description: |
+      Which Sessionboard products your organization has: Platform, Sessions, CRM,
+      Awards, Learning and Marketing, each with whether it is owned and how
+      (a self-serve plan, or your Platform contract). Any `read:*` scope is enough.
+
   - name: Log Export
     description: |
       Pull your organization's API request, security and audit logs into a SIEM
@@ -10385,6 +10391,120 @@ paths:
           description: Missing write:sessions scope
         '404':
           description: File not found
+
+  # ──────────────────────────────────────────────
+  # Products
+  # ──────────────────────────────────────────────
+  /v1/products:
+    get:
+      operationId: get-products
+      summary: List the products your organization owns
+      description: |
+        What your organization owns, so an integration or an AI assistant can
+        tell a self-serve workspace from a Platform customer and show the right
+        products. Read-only.
+
+        One entry per product, always in this order: `platform`, `sessions`,
+        `crm`, `awards`, `learning`, `marketing`.
+
+        - `owned`: the organization can open the product now.
+        - `via`: `self_serve` (a self-serve plan or trial), `platform` (your
+          Platform contract includes it) or `null` when not owned.
+        - `days_left`: whole days left on a self-serve trial, otherwise `null`.
+
+        `platform_customer` is `true` for an organization with a Platform
+        contract (including every organization created before the self-serve
+        products). Any `read:*` scope is enough; the answer is the
+        organization's, the same for every key.
+      tags:
+        - Products
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationProducts'
+              examples:
+                selfServe:
+                  summary: A self-serve workspace (Marketing on a trial)
+                  value:
+                    apps:
+                      - { key: platform, owned: false, via: null, days_left: null }
+                      - { key: sessions, owned: false, via: null, days_left: null }
+                      - { key: crm, owned: false, via: null, days_left: null }
+                      - { key: awards, owned: false, via: null, days_left: null }
+                      - { key: learning, owned: false, via: null, days_left: null }
+                      - { key: marketing, owned: true, via: self_serve, days_left: 9 }
+                    platform_customer: false
+                platform:
+                  summary: A Platform customer whose contract includes Awards
+                  value:
+                    apps:
+                      - { key: platform, owned: true, via: platform, days_left: null }
+                      - { key: sessions, owned: true, via: platform, days_left: null }
+                      - { key: crm, owned: false, via: null, days_left: null }
+                      - { key: awards, owned: true, via: platform, days_left: null }
+                      - { key: learning, owned: false, via: null, days_left: null }
+                      - { key: marketing, owned: false, via: null, days_left: null }
+                    platform_customer: true
+        '401':
+          description: Unauthorized
+        '403':
+          description: The key has no `read:*` scope (`SCOPE_REQUIRED`)
+
+  /v1/organization/{orgId}/products:
+    get:
+      operationId: get-organization-products
+      summary: List the products an organization owns
+      description: |
+        The same as `GET /v1/products`, with the organization in the path.
+        Any other organization returns `404`.
+      parameters:
+        - name: orgId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Your organization ID.
+      tags:
+        - Products
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationProducts'
+              examples:
+                selfServe:
+                  summary: A self-serve workspace (Marketing on a trial)
+                  value:
+                    apps:
+                      - { key: platform, owned: false, via: null, days_left: null }
+                      - { key: sessions, owned: false, via: null, days_left: null }
+                      - { key: crm, owned: false, via: null, days_left: null }
+                      - { key: awards, owned: false, via: null, days_left: null }
+                      - { key: learning, owned: false, via: null, days_left: null }
+                      - { key: marketing, owned: true, via: self_serve, days_left: 9 }
+                    platform_customer: false
+                platform:
+                  summary: A Platform customer whose contract includes Awards
+                  value:
+                    apps:
+                      - { key: platform, owned: true, via: platform, days_left: null }
+                      - { key: sessions, owned: true, via: platform, days_left: null }
+                      - { key: crm, owned: false, via: null, days_left: null }
+                      - { key: awards, owned: true, via: platform, days_left: null }
+                      - { key: learning, owned: false, via: null, days_left: null }
+                      - { key: marketing, owned: false, via: null, days_left: null }
+                    platform_customer: true
+        '401':
+          description: Unauthorized
+        '403':
+          description: The key has no `read:*` scope (`SCOPE_REQUIRED`)
+        '404':
+          description: Another organization's `orgId` (`NOT_FOUND`)
 
   # ──────────────────────────────────────────────
   # Log Export
@@ -23887,6 +24007,34 @@ components:
         format: uuid
       description: The version's `id` from List a Site's versions.
   schemas:
+    OrganizationProducts:
+      type: object
+      required: [apps, platform_customer]
+      properties:
+        apps:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrganizationProduct'
+        platform_customer:
+          type: boolean
+          description: The organization has a Platform contract (or predates the self-serve products).
+    OrganizationProduct:
+      type: object
+      required: [key, owned, via, days_left]
+      properties:
+        key:
+          type: string
+          enum: [platform, sessions, crm, awards, learning, marketing]
+        owned:
+          type: boolean
+          description: The organization can open this product now.
+        via:
+          type: [string, 'null']
+          enum: [self_serve, platform, null]
+          description: How the organization has it, or `null` when not owned.
+        days_left:
+          type: [integer, 'null']
+          description: Whole days left on a self-serve trial, otherwise `null`.
     SignupForm:
       type: object
       description: A sign-up form on the organization's own pages.
