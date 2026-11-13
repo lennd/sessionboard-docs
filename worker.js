@@ -198,7 +198,10 @@ const API_WELCOME_PATH = '/api/welcome';
 // pages customer contracts cite, the API changelog and the 30-day breaking-changes policy.
 const API_PUBLIC_PATHS = ['/api/openapi.json', '/api/openapi.yaml', '/api/changelog', '/api/breaking-changes'];
 const PUBLIC_EXACT = new Set([WELCOME_PATH, API_WELCOME_PATH, ...API_PUBLIC_PATHS, '/favicon.png', '/favicon.svg', '/favicon.ico', RELEASE_EMAIL_STATUS_PATH]);
-const PUBLIC_PREFIXES = ['/_astro/'];
+// Skill downloads (zips, the Claude Code plugin and skills.json) carry no customer data and
+// are fetched by Claude, Claude Code and the product's Apps › Skills tab without a Help Center
+// session (src/lib/skills.mjs). The Skills pages themselves stay sign-in only.
+const PUBLIC_PREFIXES = ['/_astro/', '/skills/downloads/'];
 const isPublicPath = (pathname) => PUBLIC_EXACT.has(pathname) || PUBLIC_PREFIXES.some((p) => pathname.startsWith(p));
 
 /** A signed-out request: pages go to the landing page (and come back after sign-in); anything else is a plain 404. */

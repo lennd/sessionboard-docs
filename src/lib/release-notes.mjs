@@ -76,13 +76,13 @@ export const KINDS = ['new', 'improved', 'fixed'];
 /**
  * The product an entry belongs to (.cursor/rules/product-docs-suites.mdc).
  * `platform` is the default and every entry written before suites existed.
- * A self-serve product's entries (`marketing`, `learning`, `awards`) render
+ * A self-serve product's entries (`marketing`, `learning`, `awards`, `sessions`, `crm`) render
  * only in that product's own "What's new" (src/data/suites.json); they never
  * reach the Help Center release-notes page, the customer feed, Slack, the
  * email digest, Enablement or Community — unless the entry also sets
  * `platform: true` because the same change is built into Platform.
  */
-export const PRODUCTS = ['platform', 'marketing', 'learning', 'awards'];
+export const PRODUCTS = ['platform', 'marketing', 'learning', 'awards', 'sessions', 'crm'];
 
 /** True when an entry may go out on the Platform channels. */
 export const onPlatform = (entry) => (entry.product ?? 'platform') === 'platform' || entry.platform === true;
