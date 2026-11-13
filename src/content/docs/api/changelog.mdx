@@ -13,7 +13,15 @@ Release notes for the Sessionboard Public API and embeds. Entries are grouped by
 
 ---
 
+## Why use it
+
+The Sessionboard public API lets you read and write event data programmatically. Knowing which products an organization owns lets your integration or AI assistant tailor its behaviour — showing only the tools the org has access to and skipping calls that would return 404 or 403 for unlicensed products.
+
 ## November 2026
+
+### Coming with the next Sessionboard release — Webinar questions, topic watch time and outcomes
+
+**Added.** Three read-only reports on your webinars: `GET /v1/marketing/results/questions` (questions worth following up, and whether your CRM or AMS shows a follow-up since), `GET /v1/marketing/results/topic-watch-time` (watch time by topic) and `GET /v1/marketing/results/outcomes` (sales pipeline, memberships or contracts from people who attended, with a `method` sentence). `GET` / `PUT /v1/marketing/results/outcomes/settings` reads and sets the outcomes window (30 to 365 days, default 180). Each response names your organization's kind (`org_kind`) and its own words for people and money (`labels`). They need `read:marketing` (the settings `PUT` needs `write:marketing`), and the MCP server adds the tools `find_questions_to_follow_up`, `get_topic_watch_time` and `get_webinar_outcomes`. Not a breaking change.
 
 ### November 13 — ALL, ANY and NONE in SbQL
 
@@ -48,6 +56,10 @@ This arrives on production with the next Sessionboard release.
 
 **Added.** On `FIND Session` / `FIND Abstract`, an aggregate over a `reviews_v2` field in `INCLUDE`, with no `GROUP BY`, now summarises each session's reviews in one cell instead of returning a validation error. Two new aggregates for review answers: `COUNT_BY_VALUE` (`Yes: 2 / No: 1`) and `LIST_WITH_REVIEWER` (answers with reviewer initials). `Session.reviews_v2` can be pivoted with the prefix `Reviewer`. Additive: queries that ran before return the same data, with one fix and one order change. **Fixed:** a `GROUP BY` or `COMPUTE` over `reviews_v2` fields that also reads a list such as `speakers` or `tags` now counts each review once and keeps every speaker or tag it groups by (before, each review counted once per speaker or tag, and only the first speaker or tag was kept). **Changed (order only):** a session's tag rows, which had no defined order, now come back alphabetically, so `Tag 1`, `Tag 2`, … in a pivot are alphabetical. See [SbQL → One Row per Session](/api/insights/sbql#one-row-per-session-review-summaries).
 
+### November 7 — Sites: a product-scoped key stays in its product
+
+**Fixed — a key scoped to one product now reaches only that product's Sites, as documented.** A key with only `write:awards` (or `write:learning`, `write:marketing`) could read, edit, discard and make the Sites of the other products. It now gets `403` on another product's Site, `GET /v1/sites` lists only its product's Sites, and `POST /v1/sites/make` accepts only its product. Keys with `read:sites` / `write:sites`, and tokens created without scopes, are unchanged. Not a breaking change: no key loses a Site its scope was meant to reach.
+
 ### November 6 — Embeds: widgets grow with the page; event name is an `<h2>`
 
 **Breaking — took effect November 6, 2026, without the usual 30 days' notice.** This was an accessibility release (WCAG 2.2 AA) approved as a one-off exception to the [Breaking Changes](/api/breaking-changes) policy.
@@ -57,6 +69,10 @@ This arrives on production with the next Sessionboard release.
 - **Heading.** The event name at the top of a widget is an `<h2>` (it was an `<h1>`). Set **`heading-level`** (`1`–`6`) to match your page's heading outline; `heading-level="1"` restores the old element.
 
 A stylesheet or script that targets the widget's `h1`, or a page built around the one-screen box, needs one of these attributes. See [Embeds → Height and headings](/sessions/embeds#height-and-headings).
+
+### Coming with the next Sessionboard release — Sharing a webinar
+
+**Added — Sharing endpoints.** A webinar's sharing pieces are now on the API and in the MCP server, so your own tools and AI assistants can use them: email signatures for your team (`GET`/`POST /v1/event/{eventId}/sharing/signatures`, add or remove teammates, send), share cards (`GET`/`POST …/sharing/share-cards`), speakers' personal links (`GET`/`POST …/sharing/speaker-links`) and a draft kit of LinkedIn posts for your team (`POST …/sharing/team-kit`). Reads need `read:events`, writes `write:marketing`; the token's user needs the same sharing permissions on the webinar as in Sessionboard. Sending email signatures from an AI assistant answers `202` with `status: needs_approval` until a person approves it. See [Sharing](/api/reference/sharing/get-a-webinars-email-signatures). New MCP tools: `get_email_signatures`, `make_email_signatures`, `set_signature_team`, `send_email_signatures`, `get_share_cards`, `make_share_cards`, `get_speaker_links`, `give_speaker_links`, `make_team_kit`.
 
 ### Coming with the next Sessionboard release — OAuth: scopes a client was not registered for
 
