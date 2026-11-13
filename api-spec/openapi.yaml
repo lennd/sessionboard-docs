@@ -24118,17 +24118,23 @@ paths:
                   items: { type: string }
                   example: ['Flight Cost (Estimate)', 'Ground Transport']
                 filters:
-                  type: array
-                  description: 'Which records count. `[{ field_name, op, value }]`; a dropdown `value` is the option label. A saved view''s `{ expression, filters }` is also accepted.'
-                  items: { type: object }
+                  description: 'Which records count: a list of `{ field_name, op, value }` (a dropdown `value` is the option label, all must match), or a saved view''s `{ expression: and | or, filters }`. `null` or `[]` counts every record.'
+                  oneOf:
+                    - type: array
+                      items: { type: object }
+                    - type: object
+                      properties:
+                        expression: { type: string, enum: [and, or] }
+                        filters: { type: array, items: { type: object } }
+                    - type: 'null'
                   example: [{ field_name: 'Hosted/Non-hosted', op: is_not, value: Non-hosted }]
                 amount: { type: number, example: 45000 }
                 per_record_limit: { type: [number, 'null'], example: 8000 }
                 warn_at_pct: { type: integer, minimum: 1, maximum: 100, default: 90 }
                 unit_label: { type: string, description: 'Count budgets only, e.g. `passes`.' }
       responses:
-        '200':
-          description: Created (201), or the preview (dry run)
+        '201':
+          description: Created, or with `dry_run=true` the preview (nothing saved). Both answer 201.
           content:
             application/json:
               schema:
@@ -24334,9 +24340,15 @@ paths:
                   items: { type: string }
                   example: ['Flight Cost (Estimate)', 'Ground Transport']
                 filters:
-                  type: array
-                  description: 'Which records count. `[{ field_name, op, value }]`; a dropdown `value` is the option label. A saved view''s `{ expression, filters }` is also accepted.'
-                  items: { type: object }
+                  description: 'Which records count: a list of `{ field_name, op, value }` (a dropdown `value` is the option label, all must match), or a saved view''s `{ expression: and | or, filters }`. `null` or `[]` counts every record.'
+                  oneOf:
+                    - type: array
+                      items: { type: object }
+                    - type: object
+                      properties:
+                        expression: { type: string, enum: [and, or] }
+                        filters: { type: array, items: { type: object } }
+                    - type: 'null'
                   example: [{ field_name: 'Hosted/Non-hosted', op: is_not, value: Non-hosted }]
                 amount: { type: number, example: 45000 }
                 per_record_limit: { type: [number, 'null'], example: 8000 }
