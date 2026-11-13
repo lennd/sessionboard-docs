@@ -17814,7 +17814,7 @@ paths:
         evaluating questions for a company; joining, renewing, rejoining, group and credit questions for an association;
         booth and sponsorship questions for an event organizer. Each question is classified once, when it is brought in.
         `follow_up` is `none_seen` (no sales activity after the question), `followed_up`, or `unknown` when the connected
-        system does not report activity. Defaults to the last 30 days and every webinar. Read-only.
+        system does not report activity. A question not classified yet has `intent: null`, and `not_tracked` says so. Defaults to the last 30 days and every webinar. Read-only.
         Requires `read:marketing`. Also at `GET /v1/marketing/results/questions`. A key restricted to particular
         events must pass one of them as `eventId`.
       tags:
@@ -17987,8 +17987,8 @@ paths:
       summary: Set the outcomes window
       description: >-
         Sets how many days after someone's first webinar touch a deal or membership still counts (30 to 365). Changes how
-        outcomes are counted for everyone in the organization; sends nothing. Requires `write:marketing` and a key without
-        an event restriction. Also at `PUT /v1/marketing/results/outcomes/settings`.
+        outcomes are counted for everyone in the organization and is logged to History; sends nothing. Requires
+        `write:marketing`, a key without an event restriction, and a user who can update or manage Contacts. Also at `PUT /v1/marketing/results/outcomes/settings`.
       tags:
         - Marketing
       parameters:
@@ -24562,7 +24562,9 @@ components:
                   text: { type: string }
                   intent:
                     type: string
+                    nullable: true
                     description: >-
+                      `null` until the question is classified (`not_tracked` then has an `intent` entry).
                       company: `buying`, `evaluating`; association: `joining`, `renewing`, `rejoining`, `group`, `credit`;
                       event organizer: `booth`, `sponsorship`; and for everyone `support`, `content`, `other`.
                   intent_reason: { type: string }
@@ -24711,6 +24713,7 @@ components:
                   renewed: { type: object, nullable: true }
                   owner_name: { type: string, nullable: true }
                   first_touch: { type: string, format: date, nullable: true }
+                  date: { type: string, format: date, nullable: true, description: 'With `groupBy=webinar`: the webinar date.' }
                   webinars: { type: integer, nullable: true }
             method:
               type: string
@@ -24724,6 +24727,17 @@ components:
           minimum: 30
           maximum: 365
           example: 180
+          description: The organization's window, in days.
+        default_window_days:
+          type: integer
+          example: 180
+          description: The window when none is set.
+        min_window_days:
+          type: integer
+          example: 30
+        max_window_days:
+          type: integer
+          example: 365
     EventTurnout:
       type: object
       description: How one event is doing. Every number under `prediction` is an estimate.
