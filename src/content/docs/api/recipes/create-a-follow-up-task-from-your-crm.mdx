@@ -7,18 +7,23 @@ When a deal moves, a form comes back incomplete or a speaker emails your CRM, cr
 
 ## 1. Find the contact
 
-Look the person up by email in the event: [`GET /v1/event/{eventId}/participants?email=`](/api/reference/participants/get-a-participant-by-email) gives the contact's `id`.
+Use the Sessionboard contact `id` you stored when you synced the person from your CRM. If you don't have it:
+
+- For a speaker or anyone else on a session, [`GET /v1/event/{eventId}/participants?email=`](/api/reference/participants/get-a-participant-by-email) gives the contact. It answers `404` for a contact with no session role.
+- For anyone else, page through [Search event contacts](/api/reference/contacts/search-event-contacts) and compare emails yourself. If more than one contact has the email, don't guess: leave the task for a person, or link no record and say who it is in the description.
 
 ## 2. Don't create it twice
 
-Before creating, check for an open task on that contact with the same title. [`GET /v1/tasks`](/api/reference/tasks/list-tasks) takes `record_type=contact`, `record_id` and `q`:
+Keep the task's `id` against the CRM record once you create it (step 3), and on later events update that task (step 4) instead of creating another.
+
+If you have no stored id, list the contact's open tasks and look for an exact match yourself. `q` matches words anywhere in the title or description, so a hit is not proof that it's the same task:
 
 ```bash
-curl "https://public-api.sessionboard.com/v1/tasks?record_type=contact&record_id=9b2e4c1a-0d3f-4a5b-8c7d-6e5f4a3b2c1d&q=disclosure" \
+curl "https://public-api.sessionboard.com/v1/tasks?record_type=contact&record_id=9b2e4c1a-0d3f-4a5b-8c7d-6e5f4a3b2c1d&limit=100" \
   -H "x-access-token: $SESSIONBOARD_TOKEN"
 ```
 
-If `total` is more than `0`, update that task instead (step 4).
+Treat a task as yours only when its `title` is exactly the one you write, or its `description` carries your CRM case number. Page with `offset` while `has_more` is `true`. Update that task's `id` only; if none matches, create one.
 
 ## 3. Create the task
 
