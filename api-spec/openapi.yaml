@@ -16,6 +16,8 @@ security:
   - ApiKey: []
   - BearerToken: []
 tags:
+  - name: Budgets
+    description: Spending limits on an event, tracked against cost fields the event already holds. Reads need `read:events`; writes need `write:event_configuration`.
   - name: Events
     description: Manage events on the platform.
   - name: Sessions
@@ -24001,6 +24003,431 @@ paths:
           $ref: '#/components/responses/CrmNotFound'
         '429':
           $ref: '#/components/responses/CrmTooManyRequests'
+
+  /v1/event/{eventId}/budgets:
+    get:
+      operationId: list-budgets
+      x-hidden: true
+      summary: List budgets
+      description: |
+        Every budget on the event the token's user can see, with totals computed
+        when you ask (they reflect every value saved up to that moment), plus a
+        count by status. Requires `read:events`.
+      tags: [Budgets]
+      parameters:
+        - $ref: '#/components/parameters/EventId'
+        - name: status
+          in: query
+          required: false
+          schema: { type: string, enum: [on_track, near_limit, over_budget] }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  payload:
+                    type: object
+                    properties:
+                      budgets:
+                        type: array
+                        items:
+                          type: object
+                          description: A budget with live totals.
+                          properties:
+                            id: { type: string, format: uuid }
+                            event_id: { type: integer }
+                            name: { type: string }
+                            records:
+                              type: object
+                              properties:
+                                type: { type: string, enum: [contacts, sessions, exhibitors, sponsors] }
+                                label: { type: string }
+                                filters: { type: object, description: 'The stored filter set: `{ expression, filters: [{ fieldId, pattern, value }] }`.' }
+                                filters_text: { type: string, example: 'Hosted/Non-hosted is not Non-hosted' }
+                            fields:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  id: { type: string, format: uuid }
+                                  name: { type: string }
+                                  type: { type: string }
+                            unit:
+                              type: object
+                              description: '`{ kind: currency, code }` or `{ kind: count, label }`.'
+                              properties:
+                                kind: { type: string, enum: [currency, count] }
+                                code: { type: string, example: SAR }
+                                label: { type: string, example: passes }
+                            amount: { type: number }
+                            per_record_limit: { type: [number, 'null'] }
+                            warn_at_pct: { type: integer }
+                            totals:
+                              type: object
+                              properties:
+                                used: { type: number }
+                                remaining: { type: number, description: Negative when over budget. }
+                                pct_used: { type: number }
+                                status: { type: string, enum: [on_track, near_limit, over_budget] }
+                                records_counted: { type: integer }
+                                records_total: { type: integer }
+                                records_without_value: { type: integer }
+                                records_over_limit: { type: integer }
+                      summary:
+                        type: object
+                        properties:
+                          count: { type: integer }
+                          over_budget: { type: integer }
+                          near_limit: { type: integer }
+                          on_track: { type: integer }
+        '403':
+          description: Missing scope, or the token's user cannot read the records the budget counts (or, for writes, cannot update Program settings).
+    post:
+      operationId: create-budget
+      x-hidden: true
+      summary: Create a budget
+      description: |
+        Create a budget. With `dry_run=true` nothing is saved and the computed
+        budget comes back, so you can show the numbers before committing. Names
+        are unique per event, so retrying a create is safe (`BUDGET_NAME_TAKEN`).
+        Requires `write:event_configuration`.
+      tags: [Budgets]
+      parameters:
+        - $ref: '#/components/parameters/EventId'
+        - name: dry_run
+          in: query
+          required: false
+          schema: { type: boolean }
+          description: Compute and return the budget without saving it.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string, maxLength: 120, example: Flights }
+                record_type: { type: string, enum: [contacts, sessions, exhibitors, sponsors] }
+                fields:
+                  type: array
+                  description: Cost fields to add up, by name or id. Currency, number or calculated number; one currency (or one kind of count) per budget.
+                  items: { type: string }
+                  example: ['Flight Cost (Estimate)', 'Ground Transport']
+                filters:
+                  type: array
+                  description: 'Which records count. `[{ field_name, op, value }]`; a dropdown `value` is the option label. A saved view''s `{ expression, filters }` is also accepted.'
+                  items: { type: object }
+                  example: [{ field_name: 'Hosted/Non-hosted', op: is_not, value: Non-hosted }]
+                amount: { type: number, example: 45000 }
+                per_record_limit: { type: [number, 'null'], example: 8000 }
+                warn_at_pct: { type: integer, minimum: 1, maximum: 100, default: 90 }
+                unit_label: { type: string, description: 'Count budgets only, e.g. `passes`.' }
+      responses:
+        '200':
+          description: Created (201), or the preview (dry run)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  payload:
+                    type: object
+                    properties:
+                      dry_run: { type: boolean }
+                      budget: { type: object, description: 'The budget, shaped as in List budgets.' }
+        '400':
+          description: 'Refused, with a machine `code` (`FIELD_NOT_FOUND`, `FIELD_AMBIGUOUS` with `details.candidates`, `FIELD_NOT_SUMMABLE`, `UNIT_MISMATCH`, `BUDGET_NAME_TAKEN` with `details.budget_id`, `INVALID_FILTER`, `INVALID_AMOUNT`) and `details`.'
+        '403':
+          description: Missing scope, or the token's user cannot read the records the budget counts (or, for writes, cannot update Program settings).
+  /v1/event/{eventId}/budgets/suggestions:
+    get:
+      operationId: suggest-budgets
+      x-hidden: true
+      summary: Budget setup suggestions
+      description: |
+        Templates matched to the event's fields; per record type, the fields that
+        can be added up (with how many records hold a value and the running
+        total), cost-looking fields that cannot and why, dropdown and checkbox
+        fields usable as filters with their options, and saved views whose
+        filters can be copied. Requires `read:events`.
+      tags: [Budgets]
+      parameters:
+        - $ref: '#/components/parameters/EventId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  payload:
+                    type: object
+                    properties:
+                      templates: { type: array, items: { type: object } }
+                      record_types: { type: array, items: { type: object } }
+  /v1/event/{eventId}/budgets/impact:
+    post:
+      operationId: budget-impact
+      x-hidden: true
+      summary: Budget impact of value changes
+      description: |
+        For value changes about to be made (or just made), how each budget that
+        adds up those fields moves: used before and after, remaining, and
+        whether its status changes. Writes nothing. Requires `read:events`.
+      tags: [Budgets]
+      parameters:
+        - $ref: '#/components/parameters/EventId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [changes]
+              properties:
+                changes:
+                  type: array
+                  maxItems: 200
+                  items:
+                    type: object
+                    required: [record_id, field_id, value]
+                    properties:
+                      record_id: { type: string, format: uuid }
+                      field_id: { type: string, format: uuid }
+                      value: { type: [number, string, 'null'], description: Value to assume; null means empty. }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  payload:
+                    type: object
+                    properties:
+                      budget_impact:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            budget_id: { type: string, format: uuid }
+                            budget: { type: string }
+                            used_before: { type: number }
+                            used_after: { type: number }
+                            remaining_after: { type: number }
+                            status_before: { type: string }
+                            status_after: { type: string }
+                            status_changed: { type: boolean }
+  /v1/event/{eventId}/budgets/copy:
+    post:
+      operationId: copy-budgets
+      x-hidden: true
+      summary: Copy budgets from another event
+      description: |
+        Copy budgets from another event in the same organization, matching
+        fields and dropdown options by name. Returns what was copied and what
+        was skipped, with the reason. Requires `write:event_configuration`.
+      tags: [Budgets]
+      parameters:
+        - $ref: '#/components/parameters/EventId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [source_event_id]
+              properties:
+                source_event_id: { type: integer }
+                names: { type: array, items: { type: string } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  payload:
+                    type: object
+                    properties:
+                      copied: { type: array, items: { type: object } }
+                      skipped:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            name: { type: string }
+                            reason: { type: string }
+  /v1/event/{eventId}/budgets/{budgetId}:
+    get:
+      operationId: get-budget
+      x-hidden: true
+      summary: Get a budget
+      description: |
+        One budget with its line items (the records it counts and each one's
+        contribution, largest first), the records with no value yet and those
+        over the per-record limit. A role restricted to some records gets the
+        totals without line items. Requires `read:events`.
+      tags: [Budgets]
+      parameters:
+        - $ref: '#/components/parameters/EventId'
+        - name: budgetId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 500, default: 20 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  payload:
+                    type: object
+                    description: 'The budget as in List budgets, plus `line_items`, `line_items_total`, `records_without_value` and `records_over_limit`.'
+    patch:
+      operationId: update-budget
+      x-hidden: true
+      summary: Update a budget
+      description: Change any of the budget's settings; send only what changes. `dry_run=true` previews the new totals. Requires `write:event_configuration`.
+      tags: [Budgets]
+      parameters:
+        - $ref: '#/components/parameters/EventId'
+        - name: budgetId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: dry_run
+          in: query
+          required: false
+          schema: { type: boolean }
+          description: Compute and return the budget without saving it.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string, maxLength: 120, example: Flights }
+                record_type: { type: string, enum: [contacts, sessions, exhibitors, sponsors] }
+                fields:
+                  type: array
+                  description: Cost fields to add up, by name or id. Currency, number or calculated number; one currency (or one kind of count) per budget.
+                  items: { type: string }
+                  example: ['Flight Cost (Estimate)', 'Ground Transport']
+                filters:
+                  type: array
+                  description: 'Which records count. `[{ field_name, op, value }]`; a dropdown `value` is the option label. A saved view''s `{ expression, filters }` is also accepted.'
+                  items: { type: object }
+                  example: [{ field_name: 'Hosted/Non-hosted', op: is_not, value: Non-hosted }]
+                amount: { type: number, example: 45000 }
+                per_record_limit: { type: [number, 'null'], example: 8000 }
+                warn_at_pct: { type: integer, minimum: 1, maximum: 100, default: 90 }
+                unit_label: { type: string, description: 'Count budgets only, e.g. `passes`.' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  payload:
+                    type: object
+                    properties:
+                      dry_run: { type: boolean }
+                      budget: { type: object }
+        '400':
+          description: 'Refused, with a machine `code` (`FIELD_NOT_FOUND`, `FIELD_AMBIGUOUS` with `details.candidates`, `FIELD_NOT_SUMMABLE`, `UNIT_MISMATCH`, `BUDGET_NAME_TAKEN` with `details.budget_id`, `INVALID_FILTER`, `INVALID_AMOUNT`) and `details`.'
+    delete:
+      operationId: delete-budget
+      x-hidden: true
+      summary: Delete a budget
+      description: Removes the budget. The cost fields and their values are not touched. Requires `write:event_configuration`.
+      tags: [Budgets]
+      parameters:
+        - $ref: '#/components/parameters/EventId'
+        - name: budgetId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  payload:
+                    type: object
+                    properties:
+                      deleted: { type: boolean }
+                      id: { type: string, format: uuid }
+                      name: { type: string }
+  /v1/event/{eventId}/budgets/{budgetId}/what-if:
+    post:
+      operationId: budget-what-if
+      x-hidden: true
+      summary: Preview a budget with hypothetical values
+      description: The budget, with totals and line items computed as if the given values were set. Writes nothing. Requires `read:events`.
+      tags: [Budgets]
+      parameters:
+        - $ref: '#/components/parameters/EventId'
+        - name: budgetId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [changes]
+              properties:
+                changes:
+                  type: array
+                  maxItems: 200
+                  items:
+                    type: object
+                    required: [record_id, field_id, value]
+                    properties:
+                      record_id: { type: string, format: uuid }
+                      field_id: { type: string, format: uuid }
+                      value: { type: [number, string, 'null'], description: Value to assume; null means empty. }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  payload:
+                    type: object
+                    description: 'The budget as in Get a budget, with `what_if: true`.'
 
 components:
   securitySchemes:
