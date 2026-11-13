@@ -3,10 +3,17 @@
  * Every skill, grouped by product, with a filter box. Data: public/skills/downloads/skills.json.
  * Without JavaScript the full list shows; the filter only hides rows.
  */
-import { DOWNLOADS, SKILLS_BASE, skillsByProduct, skillsManifest } from '../../lib/skills.mjs';
+import { DOWNLOADS, SKILLS_BASE, skillsByProduct } from '../../lib/skills.mjs';
+import { isStaffOnlyHref } from '../../lib/staff-only.mjs';
+import site from '../../../site.json';
+import ProductBadge from '../ProductBadge.astro';
 
-const groups = skillsByProduct();
-const total = skillsManifest().skills.length;
+// Staff-only skills (site.json `staffOnly`) carry data-staff-only: worker.js removes them, and a
+// section left with none, from the page everyone else gets. The count is recomputed from what is
+// left in the page, so a customer never sees a number that includes them.
+const staff = (id: string) => isStaffOnlyHref(`${SKILLS_BASE}/${id}`, site);
+const groups = skillsByProduct().map((g) => ({ ...g, staffOnly: g.skills.every((s) => staff(s.id)) }));
+const total = groups.reduce((n, g) => n + g.skills.filter((s) => !staff(s.id)).length, 0);
 ---
 
 <div class="sb-skills-index not-content">
@@ -17,13 +24,19 @@ const total = skillsManifest().skills.length;
 	<p class="sb-skills-count" role="status" aria-live="polite">{total} skills</p>
 	{
 		groups.map((g) => (
-			<section class="sb-skills-group" data-group>
-				<h2 id={`skills-${g.key}`}>{g.label}</h2>
+			<section class="sb-skills-group" data-group data-staff-only={g.staffOnly ? '' : undefined}>
+				<h2 id={`skills-${g.key}`}>
+					<ProductBadge product={g.badge as 'platform'} size="md" />
+					{g.label}
+				</h2>
 				<ul>
 					{g.skills.map((s) => (
-						<li data-text={`${s.title} ${s.summary} ${s.prompts.join(' ')} ${g.label}`.toLowerCase()}>
+						<li
+							data-text={`${s.title} ${s.summary} ${s.prompts.join(' ')} ${g.label}`.toLowerCase()}
+							data-staff-only={staff(s.id) ? '' : undefined}
+							title={staff(s.id) ? 'Visible to Sessionboard staff only' : undefined}
+						>
 							<a href={`${SKILLS_BASE}/${s.id}`}>{s.title}</a>
-							<span class="sb-skill-tag">{s.writes ? 'Asks before changes' : 'Reads only'}</span>
 							<p>{s.summary}</p>
 						</li>
 					))}
@@ -40,6 +53,11 @@ const total = skillsManifest().skills.length;
 	const root = document.querySelector('.sb-skills-index');
 	const input = root?.querySelector<HTMLInputElement>('input[type=search]');
 	const count = root?.querySelector('.sb-skills-count');
+	const say = (n: number) => {
+		if (count) count.textContent = n === 1 ? '1 skill' : `${n} skills`;
+	};
+	// Staff see the staff-only skills too; count what this reader's page actually holds.
+	say(root?.querySelectorAll('li[data-text]').length ?? 0);
 	input?.addEventListener('input', () => {
 		const q = input.value.trim().toLowerCase();
 		let shown = 0;
@@ -53,7 +71,7 @@ const total = skillsManifest().skills.length;
 			group.hidden = inGroup === 0;
 			shown += inGroup;
 		});
-		if (count) count.textContent = shown === 1 ? '1 skill' : `${shown} skills`;
+		say(shown);
 	});
 </script>
 
@@ -86,6 +104,9 @@ const total = skillsManifest().skills.length;
 		color: var(--sl-color-gray-2);
 	}
 	.sb-skills-group h2 {
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
 		font-size: var(--sl-text-h4);
 		margin: 1.75rem 0 0.5rem;
 	}
@@ -109,15 +130,18 @@ const total = skillsManifest().skills.length;
 		font-size: var(--sl-text-sm);
 		color: var(--sl-color-gray-2);
 	}
-	.sb-skill-tag {
+	/* Staff see these; worker.js strips them for everyone else. Same lock as the sidebar's. */
+	[data-staff-only] > h2::after,
+	:not([data-staff-only]) li[data-staff-only] > a::after {
+		content: '';
 		display: inline-block;
-		margin-left: 0.5rem;
-		padding: 0 0.5rem;
-		border: 1px solid var(--sl-color-gray-4);
-		border-radius: 999px;
-		font-size: var(--sl-text-xs);
-		color: var(--sl-color-gray-2);
-		vertical-align: middle;
+		width: 0.8em;
+		height: 0.8em;
+		margin-inline-start: 0.4em;
+		background-color: currentColor;
+		-webkit-mask: var(--sb-lock) no-repeat center / contain;
+		mask: var(--sb-lock) no-repeat center / contain;
+		opacity: 0.65;
 	}
 	.sb-skills-all {
 		margin-top: 1.5rem;

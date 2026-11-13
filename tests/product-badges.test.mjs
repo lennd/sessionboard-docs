@@ -23,7 +23,7 @@ const over = (rgba, page) => {
 };
 
 test('one badge per product, matching sessionboard.com tones', () => {
-  assert.deepEqual(Object.keys(PRODUCT_BADGES), ['platform', 'marketing', 'learning', 'awards']);
+  assert.deepEqual(Object.keys(PRODUCT_BADGES), ['platform', 'marketing', 'learning', 'awards', 'sessions', 'crm']);
   assert.equal(PRODUCT_BADGES.platform.light.fg, '#1e62d8'); // .t-blue
   assert.equal(PRODUCT_BADGES.marketing.light.fg, '#6d4bd8'); // .t-violet
   assert.equal(PRODUCT_BADGES.learning.light.fg, '#b45309'); // .t-amber

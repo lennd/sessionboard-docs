@@ -38,6 +38,20 @@ export const PRODUCT_BADGES = {
     light: { fg: '#be2459', bg: '#fbe4ec' },
     dark: { fg: '#f3a6c0', bg: 'rgb(190 36 89 / 0.25)' },
   },
+  sessions: {
+    name: 'Sessions',
+    // the site's "mic"; green from the in-app switcher (web-ui-v2 components/apps/appIcons.ts)
+    paths: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M9 21h6"/>',
+    light: { fg: '#047857', bg: '#dcf3ea' },
+    dark: { fg: '#6ee7b7', bg: 'rgb(4 120 87 / 0.25)' },
+  },
+  crm: {
+    name: 'CRM',
+    // people; cyan from the in-app switcher (web-ui-v2 SelfServeProductIcon)
+    paths: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
+    light: { fg: '#0e7490', bg: '#dcf1f6' },
+    dark: { fg: '#8fdcec', bg: 'rgb(14 116 144 / 0.25)' },
+  },
 };
 
 /**
