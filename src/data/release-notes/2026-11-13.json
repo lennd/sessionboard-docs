@@ -85,6 +85,491 @@
         "docs_only": false,
         "pending": null
       }
+    },
+    {
+      "id": "reviewer-email-reassign",
+      "title": "Move a signed-in reviewer's role to a new email address",
+      "summary": "Admins can now change the email on a reviewer who has already signed in or scored. Typing a new address in the edit dialog opens a **Review the move** panel that shows how many rounds and saved reviews will transfer and whether the new address already has an account. **Move to new@…** confirms the transfer; the reviewer's original sign-in is unaffected. If the new address already reviews the same rounds, a conflict message explains what must be resolved first. Applies to the Review Plan 2.0 reviewers list, the interest-form evaluators tab, and the Awards **Edit Reviewer** modal.",
+      "article": "/evaluations/review-plan-reviewers#how-reviewers-sign-in",
+      "related": [
+        "/awards/managing-submissions-reviewers-rounds",
+        "/speaker-crm/interest-form-evaluation-plans#fix-a-reviewers-name-or-email"
+      ],
+      "kind": "new",
+      "module": "Program",
+      "features": [
+        "sessions_v2",
+        "awards"
+      ],
+      "permissions": [
+        "event.evaluation_plans.update"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Review Plans → [Plan] → Reviewers → Edit reviewer  |  Awards → [Program] → Reviewers → Edit Reviewer"
+      },
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "When a reviewer changes jobs or submits under the wrong email, an admin can move their reviewer role — including all round assignments and saved scores — to the correct address without touching the reviewer's sign-in credentials or other roles.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Default on; no setup required."
+        },
+        "when_to_bring_up": "A customer reports being unable to update a reviewer's email after that reviewer has signed in or submitted scores.",
+        "who_should_get_it": "Any customer running Review Plan 2.0 or Awards with reviewers who have already signed in.",
+        "staff_path": "Review Plans → [Plan] → Reviewers → click a reviewer → email field",
+        "gotchas": "If the target address already reviews the same rounds, the move is blocked until one reviewer is removed from the shared rounds. The reviewer's original sign-in account and any other roles it holds are never changed.",
+        "talk_track": "If a reviewer signed in under the wrong email, you can now move their role and all their scores to the right address — the old sign-in keeps working for everything else.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should document the email-reassign flow: the Review the move panel, what the dry-run preview shows (rounds, saved reviews, account status), the conflict state, and the fact that the reviewer's original sign-in is unchanged.",
+          "why_use_it": "Review plans accumulate scores and assignments tied to a specific email address. When that address needs to change — because a reviewer switched employers, used a personal address by mistake, or merged accounts — the reassign flow moves the reviewer role and all its history to the new address in one step, shows a preview of what will transfer, and flags any conflicts before anything is changed.",
+          "at": "2026-11-13T14:09:02.463Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1584"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "product": "platform",
+      "platform": false
+    },
+    {
+      "id": "reviewer-email-change-signed-in",
+      "title": "Change a signed-in reviewer's email by moving their role to the new address",
+      "summary": "Admins can now update the email address of a reviewer who has already signed in, saved scores, or belongs to another organisation. Instead of editing the sign-in account (which is blocked), the reviewer's role, roster entry, assignments, **saved scores**, plan enrolment, tags, categories, recommendations, alternates and Session Build data move to the account that owns the new address — creating one if none exists. A **dry run** option shows what would move and how many scores are affected before any change is written. If the target account already reviews any of the same rounds or items, the request is blocked with a clear conflict message.",
+      "article": "/evaluations/review-plan-reviewers",
+      "related": [
+        "/awards/managing-submissions-reviewers-rounds",
+        "/speaker-crm/interest-form-evaluation-plans"
+      ],
+      "kind": "improved",
+      "module": "Program",
+      "features": [
+        "sessions_v2",
+        "awards"
+      ],
+      "permissions": [
+        "event.evaluation_plans.update"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Review Plans → Reviewers → (reviewer row) → Edit email"
+      },
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "A reviewer submitted abstracts under one email and was also added as a reviewer — so they had already signed in and saved scores. The admin can now correct the reviewer's email without losing any of their scores or assignments; everything moves to the new address automatically.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Default on; no setup required. The existing resend-invite action sends the new account its invitation."
+        },
+        "when_to_bring_up": "A customer reports they cannot change a reviewer's email because the person has already signed in or saved scores.",
+        "who_should_get_it": "Any customer running Review Plan 2.0, Awards review rounds, or interest-form evaluation plans where a reviewer used the wrong email address.",
+        "staff_path": "Review Plans → Reviewers → edit a reviewer's email",
+        "gotchas": "No invite email is sent automatically to a newly created account — the admin must use the existing resend-invite action. The org contact record is not relinked to the new account. A 409 conflict is returned if the target account already reviews any of the same rounds or items, or if the address belongs to a deleted account.",
+        "talk_track": "If a reviewer signed in under the wrong email and already saved scores, you can now move their entire reviewer role — scores, assignments, recommendations and all — to the correct address in one step, with a dry-run preview before anything changes.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should document the role-move email-change flow for signed-in reviewers, including the dry-run option, what data moves, conflict conditions (409), and the need to manually resend the invite to a newly created account.",
+          "why_use_it": "Review plans let you score and rank submissions before accepting them. Reviewers sign in with a single account that spans every organisation, so their email address cannot simply be overwritten once they have used it. The role-move approach lets admins correct a reviewer's address at any time — even after scores are saved — while keeping the old account's sign-in, other events and submitter role completely intact.",
+          "at": "2026-11-13T14:09:29.334Z"
+        }
+      },
+      "product": "platform",
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5331"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "platform": false
+    },
+    {
+      "id": "advocacy-attendee-setup-share",
+      "title": "Send attendee Advocacy embed setup to your web team by email",
+      "summary": "On the **Share** tab of an attendee Advocacy campaign, use **Send to your web team** to email up to 10 addresses at once. Each recipient gets a private link to a read-only setup page showing the campaign details, embed source and any note you added — no Sessionboard seat required. Links can be revoked from the same tab, and the log shows who was sent each link and when.",
+      "article": "/marketing/advocacy-attendees#share-one-open-link",
+      "related": [
+        "/marketing/advocacy-embeds",
+        "/marketing/advocacy"
+      ],
+      "kind": "new",
+      "module": "Marketing",
+      "features": [
+        "marketing_advocacy"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Marketing → Advocacy → [Attendees campaign] → Share tab → Send to your web team"
+      },
+      "permissions": [
+        "event.marketing.advocacy_notify",
+        "event.marketing.advocacy_read"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Vendors and web teams who paste Advocacy embeds often don't have a Sessionboard login, and copying embed code into Gmail rewrites every URL. Send each person their own private setup link so they can view the embed details in a browser without needing an account or receiving broken code in email.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Default on; no flag or env var required. Deploy web-api before the matching UI PR ships or the Share tab card will 404."
+        },
+        "when_to_bring_up": "When a customer mentions sending embed code to a registration vendor, AV team or web agency who does not have a Sessionboard seat.",
+        "who_should_get_it": "Any customer running an attendee Advocacy campaign who hands off embed setup to an outside party.",
+        "staff_path": "Marketing → Advocacy → [Attendees campaign] → Share tab",
+        "gotchas": "The UI PR must ship after this API PR; if the UI ships first the Share tab card returns 404. Only Attendees campaign types support setup shares — speaker and exhibitor campaigns do not. Limit is 10 addresses per send, 20 sends per minute.",
+        "talk_track": "Instead of pasting embed code into an email where every link gets rewritten, you send your vendor a private link to a setup page. They open it in a browser, see the campaign details and embed source, and you can revoke the link any time.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The advocacy-attendees guide should add a section explaining how to use Send to your web team: how to enter addresses and an optional note, what the recipient sees on the setup page, and how to view the send log and revoke a link.",
+          "why_use_it": "Advocacy for attendees lets you put a personalised sharing card on your registration confirmation page or in your emails so every attendee can promote the event to their network. Sending the embed setup to an outside vendor or web team is a common step, and the setup share keeps that handoff clean: each recipient gets a direct link to a read-only page with everything they need, and you can revoke access at any time from the Share tab.",
+          "at": "2026-11-13T14:10:04.538Z"
+        }
+      },
+      "product": "platform",
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5259"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "platform": false
+    },
+    {
+      "id": "awards-self-serve-workspace-2",
+      "title": "Sessionboard Awards is now available as a self-serve product",
+      "summary": "A dedicated Awards workspace at `/awards/:orgId` lets organizers sign up for Sessionboard Awards directly, without going through the platform. The workspace includes **Home**, **Programs**, nominations, reviews, **Winners**, **Results**, **Apps** (AI assistants and Public API), and **Billing**. Features requiring an Enterprise plan — a second review round, entry fees and payments, SSO, and a named CSM — appear as locked **Enterprise** items that open the upgrade page.",
+      "article": "/sessionboard-awards/get-started",
+      "related": [
+        "/sessionboard-awards/plan-and-billing",
+        "/sessionboard-awards/programs/draft-a-program",
+        "/sessionboard-awards/review/invite-and-assign-reviewers",
+        "/sessionboard-awards/winners/pick-and-announce-winners"
+      ],
+      "kind": "new",
+      "module": "Awards",
+      "features": [
+        "awards"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "self_serve",
+        "path": "Get started → Early Access → Preview → Awards"
+      },
+      "where": {
+        "scope": "org",
+        "path": "Awards workspace → /awards/:orgId"
+      },
+      "permissions": [
+        "org.awards.create",
+        "org.awards.read",
+        "org.awards.update"
+      ],
+      "audience": [
+        "organizer",
+        "reviewer"
+      ],
+      "use_case": "An association or media company that runs annual awards programs can now sign up for Sessionboard Awards on their own, set up nomination programs, manage reviewers, and pick winners — all without a sales conversation. Teams that need a second review round, entry fees, or SSO can upgrade to Enterprise directly from the locked items in the workspace.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Sign-up is behind the AWARDS_SIGNUP_ENABLED flag and Stripe sandbox products (awd_* lookup keys) plus the Awards billing portal config are not yet created — Checkout must be set up before the self-serve flow is live in production. Do not promote to customers until the web-api Awards routes ship."
+        },
+        "when_to_bring_up": "When a prospect or customer asks about running an awards or recognition program independently, or when an existing Awards (platform) customer asks about a lighter self-serve option.",
+        "who_should_get_it": "Any organization that runs annual awards, recognition programs, or CFP-style competitions and wants to get started without a platform contract.",
+        "staff_path": "/awards/:orgId — Home, Programs, Reviews, Winners, Results, Apps, Billing",
+        "gotchas": "Sign-up is gated by AWARDS_SIGNUP_ENABLED env flag. Stripe products for Awards billing are not yet created, so Checkout will fail until those are provisioned. The nomination form is not yet editable (stubbed). There is no public vote or winners showcase page yet. The People page reuses Marketing's page. Platform /org and /event Awards screens are unchanged.",
+        "talk_track": "You can now sign up for Sessionboard Awards directly and run your entire program — nominations, reviews, winners — from a dedicated workspace. If you need a second review round, entry fees, or SSO, those are one upgrade away.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The get-started guide should document the self-serve sign-up flow at /signup/awards, the workspace navigation (Home, Programs, Reviews, Winners, Results, Apps, Billing), and which features are locked to Enterprise plans (second review round, entry fees/payments, SSO, named CSM).",
+          "why_use_it": "Sessionboard Awards gives you a dedicated workspace to run the full lifecycle of an awards program: build nomination forms, open submissions, assign reviewers, score entries, and announce winners. It sits alongside Marketing and Learning in the same workspace frame, so your team works in one place whether they are promoting an event, running a course, or managing an awards cycle. Enterprise plans unlock a second review round, entry fees and payments, and SSO for larger programs.",
+          "at": "2026-11-13T14:10:34.195Z"
+        }
+      },
+      "product": "awards",
+      "platform": true,
+      "platform_article": "/awards/getting-started",
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1504"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "public-api-get-products",
+      "title": "Query which Sessionboard products an org owns via the public API",
+      "summary": "Two new read-only endpoints — `GET /v1/products` and `GET /v1/organization/:orgId/products` — return the list of Sessionboard apps the organization owns, including each app's `key`, `owned` flag, how it was acquired (`via`), days remaining (`days_left`), and a `platform_customer` boolean. Any API token that carries at least one `read:*` scope can call these endpoints.",
+      "article": "/api/changelog#november-2026",
+      "related": [
+        "/api/authentication",
+        "/api/insights/mcp-server"
+      ],
+      "kind": "new",
+      "module": "Apps",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Public API → GET /v1/products"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Developers building integrations or AI assistants on top of Sessionboard can call this endpoint to discover which products an org has licensed — for example, to decide whether to surface Marketing or Awards features — without needing a separate out-of-band check.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Endpoints are default-on for any token with a read scope. No setup required."
+        },
+        "when_to_bring_up": "A customer or partner is building an integration or MCP-based AI assistant and needs to branch logic based on which Sessionboard products the org owns.",
+        "who_should_get_it": "Customers or partners with API access who are building integrations, MCP servers, or AI assistants against the Sessionboard public API.",
+        "staff_path": null,
+        "gotchas": "A token with only write scopes receives 403 SCOPE_REQUIRED. Legacy tokens with no scopes pass, consistent with existing API behaviour. The endpoint is scoped to the org from the token; passing another org's :orgId is refused.",
+        "talk_track": "If you're building an integration that needs to know whether a customer has Marketing, Awards or another add-on, the new /v1/products endpoint gives you that in one call — no heuristics needed.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The API changelog and reference should document the request/response shape for GET /v1/products and GET /v1/organization/:orgId/products, including the fields key, owned, via, days_left and platform_customer, plus the scope requirements.",
+          "why_use_it": "The Sessionboard public API lets you read and write event data programmatically. Knowing which products an organization owns lets your integration or AI assistant tailor its behaviour — showing only the tools the org has access to and skipping calls that would return 404 or 403 for unlicensed products.",
+          "at": "2026-11-13T12:49:42.475Z"
+        }
+      },
+      "product": "platform",
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-public-api#228"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "platform": false
+    },
+    {
+      "id": "hubspot-attendance-writeback",
+      "title": "Write attendee registration and check-in states back to HubSpot Marketing Events",
+      "summary": "When the **HubSpot Attendance write-back** toggle is on, Sessionboard automatically pushes each attendee's state — **Registered**, **Attended** or **Cancelled** — to a matching HubSpot Marketing Event, once per day. Only attendees synced from a third-party registration provider (Cvent, Swapcard, Swoogo, etc.) are sent; Sessionboard-native and CSV-imported registrations are excluded. The toggle is off by default and must be enabled on the HubSpot connection.",
+      "article": "/integrations/overview",
+      "related": [
+        "/apps/swapcard-integration",
+        "/integrations/cvent",
+        "/integrations/what-syncs"
+      ],
+      "kind": "new",
+      "module": "CRM",
+      "features": [
+        "signals"
+      ],
+      "availability": "on_request",
+      "enable": {
+        "how": "setting",
+        "path": "Organization Settings → Integrations → HubSpot → Write-back → Attendance (toggle on)"
+      },
+      "where": {
+        "scope": "org",
+        "path": "Organization Settings → Integrations → HubSpot → Write-back"
+      },
+      "permissions": [
+        "org.integrations.read",
+        "org.settings.update"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "An association that uses Cvent for registration and HubSpot for marketing wants every confirmed, checked-in or cancelled attendee reflected in HubSpot Marketing Events automatically, so post-event nurture sequences and engagement scoring stay accurate without a manual export.",
+      "internal": {
+        "cs_action": {
+          "kind": "must_enable",
+          "note": "The attendance toggle is off by default. An admin must turn it on in the HubSpot connection settings. The UI toggle (in the write-back panel) ships in a separate web-ui-v2 PR; confirm that PR is merged before enabling for customers."
+        },
+        "when_to_bring_up": "When a customer uses HubSpot for marketing automation and a third-party registration platform (Cvent, Swapcard, Swoogo, etc.) and wants post-event nurture or lead scoring to reflect actual attendance.",
+        "who_should_get_it": "Customers with an active HubSpot OAuth connection, Pathways processing enabled, and attendees synced via the Attendees layer from a supported registration provider.",
+        "staff_path": "Organization Settings → Integrations → HubSpot → Write-back → Attendance",
+        "gotchas": "Only attendees whose source is a third-party registration provider are sent — Sessionboard-native registrations and CSV imports are never written. The HubSpot connection must have the crm.objects.marketing_events.write scope; without it the run is refused. Suppressed contacts, withdrawn-consent records, anonymised registrations and merged duplicates are excluded. At most 10,000 attendance rows go per daily run; the rest carry over. The UI toggle is in a separate PR (web-ui-v2) — do not promise the setting is visible until that PR ships.",
+        "talk_track": "Once you turn on the attendance write-back, every confirmed, checked-in or cancelled attendee from your registration platform shows up in HubSpot Marketing Events automatically each day — no exports needed. Your nurture sequences and engagement scores stay current without any manual work.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The App Marketplace guide (or a dedicated HubSpot write-back guide) should document the Attendance write-back kind: how to enable it, which registration sources are included and excluded, the HubSpot Marketing Events API states that map to each attendee status, the daily run cadence, and the required HubSpot OAuth scope.",
+          "why_use_it": "The HubSpot write-back keeps your HubSpot Marketing Events in sync with what actually happened at your event. Confirmed registrations, check-ins and cancellations flow from your registration provider into HubSpot contacts automatically each day, so your marketing team's nurture sequences, lead scores and event-engagement reports reflect real attendance data without any manual exports or data wrangling.",
+          "at": "2026-11-13T12:14:58.189Z"
+        }
+      },
+      "product": "platform",
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5313"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "feature:signals (beta)",
+      "platform": false
+    },
+    {
+      "id": "site-offline-banner-false-positive",
+      "title": "Site sign-in page no longer shows a false \"You are offline\" banner",
+      "summary": "The **\"You are offline. Please check your internet connection.\"** banner and dimmed page on Sites no longer appear when the network is actually working. The overlay now confirms connectivity with a real HTTP probe before showing the bar, so VPN adapters, sleep/wake cycles, and browser DevTools throttle settings no longer trigger a false alarm.",
+      "kind": "fixed",
+      "module": "Portals",
+      "article": "/site/site-builder",
+      "features": [],
+      "permissions": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Sites → [your site] → sign-in page"
+      },
+      "audience": [
+        "organizer",
+        "speaker",
+        "participant"
+      ],
+      "use_case": "Attendees and speakers on VPNs or laptops that just woke from sleep were seeing a dimmed, unusable sign-in page even though the network was fine. This fix means the banner only appears when requests actually fail, so those users can sign in without confusion or a page refresh.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "A customer reports that portal or site visitors see an offline banner despite having a working internet connection.",
+        "who_should_get_it": "Any customer whose attendees or speakers use VPNs, corporate networks, or laptops that frequently sleep.",
+        "staff_path": null,
+        "gotchas": "The banner still appears correctly when the network genuinely fails — it now uses a HEAD probe to /favicon.png with a 4-second timeout to verify before showing.",
+        "talk_track": "The offline warning now double-checks with a real network request before it shows, so VPN users and anyone on a laptop that just woke up won't see a false alarm on the sign-in page.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The site-builder guide should note that the offline banner only appears when requests genuinely fail, not when the browser's network adapter reports disconnected.",
+          "why_use_it": null,
+          "at": "2026-11-13T01:21:25.643Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-org-portal#329"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "product": "platform",
+      "platform": false
     }
   ]
 }
