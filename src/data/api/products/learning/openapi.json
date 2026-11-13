@@ -2272,6 +2272,2044 @@
         }
       }
     },
+    "/v1/organization/{orgId}/learning/workspace/question-bank/import": {
+      "post": {
+        "operationId": "learning-import-questions",
+        "summary": "Import questions from GIFT, Aiken or CSV",
+        "description": "Reads a GIFT, Aiken or CSV file (sent as `text`) and lists every question found as a row, ready or with its problems. Without `commit` nothing is written. With `commit: true` the ready rows are added to the bank; rows with problems are only left out when `skipInvalid` is `true`, and the answer lists every row not imported with its reason. Up to 1 MB and 500 questions. Requires `write:learning`. Also at `POST /v1/learning/workspace/question-bank/import`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "text"
+                ],
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "maxLength": 1100000,
+                    "description": "The file's contents."
+                  },
+                  "format": {
+                    "type": "string",
+                    "enum": [
+                      "gift",
+                      "aiken",
+                      "csv"
+                    ],
+                    "description": "Leave out to detect it."
+                  },
+                  "filename": {
+                    "type": "string",
+                    "maxLength": 255
+                  },
+                  "tags": {
+                    "type": "array",
+                    "maxItems": 10,
+                    "items": {
+                      "type": "string",
+                      "maxLength": 64
+                    },
+                    "description": "Added to every question."
+                  },
+                  "commit": {
+                    "type": "boolean"
+                  },
+                  "skipRows": {
+                    "type": "array",
+                    "maxItems": 500,
+                    "items": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "description": "Preview rows to leave out."
+                  },
+                  "skipInvalid": {
+                    "type": "boolean",
+                    "description": "Import the ready rows when other rows have problems."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The preview, or what was imported.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "format": {
+                          "type": "string",
+                          "enum": [
+                            "gift",
+                            "aiken",
+                            "csv"
+                          ]
+                        },
+                        "fatal": {
+                          "type": "string",
+                          "description": "Why nothing could be read (an empty file, no Question column)."
+                        },
+                        "summary": {
+                          "type": "object",
+                          "properties": {
+                            "total": {
+                              "type": "integer"
+                            },
+                            "ready": {
+                              "type": "integer"
+                            },
+                            "with_errors": {
+                              "type": "integer"
+                            }
+                          }
+                        },
+                        "rows": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "row": {
+                                "type": "integer"
+                              },
+                              "line": {
+                                "type": "integer"
+                              },
+                              "prompt": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "type_label": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "tags": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "errors": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "warnings": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "question": {
+                                "type": "object",
+                                "nullable": true
+                              }
+                            }
+                          }
+                        },
+                        "imported": {
+                          "type": "integer"
+                        },
+                        "not_imported": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "row": {
+                                "type": "integer"
+                              },
+                              "prompt": {
+                                "type": "string"
+                              },
+                              "reason": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/packages/presign": {
+      "post": {
+        "operationId": "learning-presign-package",
+        "summary": "Get an upload URL for a course package",
+        "description": "A 15-minute upload URL for a SCORM 1.2, SCORM 2004, xAPI or cmi5 zip (up to 500 MB). `PUT` the bytes to `url` with exactly the returned `headers`, then call Add a course package with `key`. Requires `write:learning`. Also at `POST /v1/learning/workspace/packages/presign`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "filename",
+                  "sizeBytes"
+                ],
+                "properties": {
+                  "filename": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "description": "Must end in .zip."
+                  },
+                  "contentType": {
+                    "type": "string",
+                    "maxLength": 255
+                  },
+                  "sizeBytes": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "upload": {
+                          "type": "object",
+                          "properties": {
+                            "key": {
+                              "type": "string"
+                            },
+                            "url": {
+                              "type": "string"
+                            },
+                            "method": {
+                              "type": "string",
+                              "enum": [
+                                "PUT"
+                              ]
+                            },
+                            "headers": {
+                              "type": "object",
+                              "additionalProperties": {
+                                "type": "string"
+                              }
+                            },
+                            "max_bytes": {
+                              "type": "integer"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/packages": {
+      "get": {
+        "operationId": "learning-list-packages",
+        "summary": "List course packages",
+        "description": "The organization's SCORM, xAPI and cmi5 packages, newest first. Requires `read:learning`. Also at `GET /v1/learning/workspace/packages`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "description": "Words in the title."
+          },
+          {
+            "name": "archived",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "packages": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/LearningCoursePackage"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      },
+      "post": {
+        "operationId": "learning-create-package",
+        "summary": "Add a course package",
+        "description": "Registers an uploaded zip. It is unpacked and every file checked in the background (no paths outside the package, no links, no programs), and the answer is `202` with `status: processing`. Poll Get a course package until `status` is `ready` (or `failed`, with `error`). A lesson plays it with a `package` block. Requires `write:learning`. Also at `POST /v1/learning/workspace/packages`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "key"
+                ],
+                "properties": {
+                  "key": {
+                    "type": "string",
+                    "maxLength": 500,
+                    "description": "The `key` from Get an upload URL for a course package."
+                  },
+                  "title": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "description": "Leave out to use the course's own title."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Unpacking.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "package": {
+                          "$ref": "#/components/schemas/LearningCoursePackage"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/packages/{packageId}": {
+      "get": {
+        "operationId": "learning-get-package",
+        "summary": "Get a course package",
+        "description": "One package, while it unpacks and after. Requires `read:learning`. Also at `GET /v1/learning/workspace/packages/{packageId}`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "name": "packageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "package": {
+                          "$ref": "#/components/schemas/LearningCoursePackage"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/packages/{packageId}/manage": {
+      "post": {
+        "operationId": "learning-manage-package",
+        "summary": "Rename, archive, restore or retry a course package",
+        "description": "`rename` with `title`; `archive` (lessons already playing it keep playing it) and `restore`; `retry` unpacks a failed package again. Requires `write:learning`. Also at `POST /v1/learning/workspace/packages/{packageId}/manage`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "name": "packageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "action"
+                ],
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "rename",
+                      "archive",
+                      "restore",
+                      "retry"
+                    ]
+                  },
+                  "title": {
+                    "type": "string",
+                    "maxLength": 255
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "package": {
+                          "$ref": "#/components/schemas/LearningCoursePackage"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/courses/{lessonId}/price": {
+      "put": {
+        "operationId": "learning-set-course-price",
+        "summary": "Set a course's price and member price",
+        "description": "What learners pay for a course, in cents. `amountCents: 0` makes it free again; `memberAmountCents` is what members pay (0 = free for members, `null` removes the member price). A member is a learner marked Member, or anyone the organization's AMS reports as a current member. Waits for a person's OK (`202 needs_approval`). Requires `write:learning`. Also at `PUT /v1/learning/workspace/courses/{lessonId}/price`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/LearningLessonId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "amountCents"
+                ],
+                "properties": {
+                  "amountCents": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 10000000,
+                    "description": "The price in cents. 0 = free; a paid course costs at least 50."
+                  },
+                  "memberAmountCents": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 0,
+                    "maximum": 10000000,
+                    "description": "What members pay, in cents. null removes it."
+                  },
+                  "currency": {
+                    "type": "string",
+                    "enum": [
+                      "USD",
+                      "CAD",
+                      "EUR",
+                      "GBP",
+                      "AUD"
+                    ],
+                    "description": "Defaults to USD."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "$ref": "#/components/responses/LearningNeedsApproval"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "423": {
+            "$ref": "#/components/responses/LearningAssistantsPaused"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/courses/{lessonId}/completion-watch": {
+      "put": {
+        "operationId": "learning-set-completion-watch",
+        "summary": "Require watching before completion",
+        "description": "How much of each video a learner must play before its step can be marked done, 10–100. `null` turns it off, which is the default: marking a video done is then the learner's say-so. Sessionboard counts the unique seconds it saw played, so skipping ahead doesn't count. Steps marked attestation-only and videos Sessionboard can't follow (an embed, a link) are never held to it. Separate from the share to watch for credit. A connected assistant's change waits for a person's OK (`202 needs_approval`). Requires `write:learning`. Also at `PUT /v1/learning/workspace/courses/{lessonId}/completion-watch`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/LearningLessonId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "percent"
+                ],
+                "properties": {
+                  "percent": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 10,
+                    "maximum": 100,
+                    "description": "Minimum watched, 10–100 (e.g. 80). null = off (the default)."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The course with its new setting.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "course": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "title": {
+                              "type": "string"
+                            },
+                            "completion_watch_pct": {
+                              "type": [
+                                "integer",
+                                "null"
+                              ],
+                              "description": "null = off."
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "payload": {
+                    "course": {
+                      "id": "3f1c2a9e-0000-4000-8000-000000000001",
+                      "title": "AI governance essentials",
+                      "completion_watch_pct": 80
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "202": {
+            "$ref": "#/components/responses/LearningNeedsApproval"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "423": {
+            "$ref": "#/components/responses/LearningAssistantsPaused"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/courses/{lessonId}/page": {
+      "get": {
+        "operationId": "learning-get-course-page",
+        "summary": "Read a course's public page",
+        "description": "What visitors see before they enrol. `summary` is the saved description; when there is none, `summary_draft` offers one written from the course's first page, and nothing is shown publicly until someone saves it. `learn` lists what you'll learn (the page titles, quizzes left out). `cover` is the first video's frame (`source: video`), else the Learning Site's Brand Kit image (`source: brand`), else `null`. Requires `read:learning`. Also at `GET /v1/learning/workspace/courses/{lessonId}/page`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/LearningLessonId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The course's page.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "page": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "title": {
+                              "type": "string"
+                            },
+                            "summary": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "description": "The saved description; null when none."
+                            },
+                            "summary_draft": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "description": "A suggested description when none is saved. Never public on its own."
+                            },
+                            "learn": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "duration_minutes": {
+                              "type": [
+                                "integer",
+                                "null"
+                              ]
+                            },
+                            "cover": {
+                              "type": [
+                                "object",
+                                "null"
+                              ],
+                              "properties": {
+                                "url": {
+                                  "type": "string",
+                                  "format": "uri"
+                                },
+                                "source": {
+                                  "type": "string",
+                                  "enum": [
+                                    "video",
+                                    "brand"
+                                  ]
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "payload": {
+                    "page": {
+                      "id": "3f1c2a9e-0000-4000-8000-000000000001",
+                      "title": "Sepsis recognition for nurses",
+                      "summary": null,
+                      "summary_draft": "Spot sepsis early at the bedside and know who to call.",
+                      "learn": [
+                        "Spot it early",
+                        "Escalate fast"
+                      ],
+                      "duration_minutes": 25,
+                      "cover": {
+                        "url": "https://content.sessionboard.com/frames/example.jpg",
+                        "source": "video"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      },
+      "put": {
+        "operationId": "learning-set-course-description",
+        "summary": "Set a course's description",
+        "description": "The description on the course's public page, up to 1,000 characters. An empty string removes it. A connected assistant's change waits for a person's OK (`202 needs_approval`), because it is public copy. Requires `write:learning`. Also at `PUT /v1/learning/workspace/courses/{lessonId}/page`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/LearningLessonId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "summary"
+                ],
+                "properties": {
+                  "summary": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 1000,
+                    "description": "The description visitors read. '' or null removes it."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The saved description.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "page": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "title": {
+                              "type": "string"
+                            },
+                            "summary": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "payload": {
+                    "page": {
+                      "id": "3f1c2a9e-0000-4000-8000-000000000001",
+                      "title": "Sepsis recognition for nurses",
+                      "summary": "Spot sepsis early at the bedside and know who to call."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "202": {
+            "$ref": "#/components/responses/LearningNeedsApproval"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "423": {
+            "$ref": "#/components/responses/LearningAssistantsPaused"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/coupons": {
+      "get": {
+        "operationId": "learning-list-coupons",
+        "summary": "List coupons",
+        "description": "Every coupon with its code, discount, the courses it works on (empty = every course), dates, use limit, how many times it was used and its state (`live`, `scheduled`, `expired`, `used_up`, `archived`). Requires `read:learning`. Also at `GET /v1/learning/workspace/coupons`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "name": "archived",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            "description": "`true` for stopped coupons instead of live ones."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "coupons": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "code": {
+                                "type": "string"
+                              },
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "percent",
+                                  "amount"
+                                ]
+                              },
+                              "amount": {
+                                "type": "integer",
+                                "description": "Percent off, or cents off for kind amount."
+                              },
+                              "currency": {
+                                "type": "string"
+                              },
+                              "lesson_ids": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                }
+                              },
+                              "starts_at": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ],
+                                "format": "date-time"
+                              },
+                              "ends_at": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ],
+                                "format": "date-time"
+                              },
+                              "max_uses": {
+                                "type": [
+                                  "integer",
+                                  "null"
+                                ]
+                              },
+                              "used_count": {
+                                "type": "integer"
+                              },
+                              "state": {
+                                "type": "string",
+                                "enum": [
+                                  "live",
+                                  "scheduled",
+                                  "expired",
+                                  "used_up",
+                                  "archived"
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/coupons/manage": {
+      "post": {
+        "operationId": "learning-manage-coupon",
+        "summary": "Create, change, stop or restore a coupon",
+        "description": "A coupon is a code and a discount (`kind` percent or amount). It works on every course unless `lessonIds` names some; dates and a use limit are optional. Coupons come off after the member price. `archive` stops a coupon and `restore` brings it back. Waits for a person's OK (`202 needs_approval`). Requires `write:learning`. Also at `POST /v1/learning/workspace/coupons/manage`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "action"
+                ],
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "create",
+                      "update",
+                      "archive",
+                      "restore"
+                    ]
+                  },
+                  "couponId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "The coupon (update, archive, restore)."
+                  },
+                  "code": {
+                    "type": "string",
+                    "maxLength": 40,
+                    "description": "Letters and numbers; one is made up when left out on create."
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "percent",
+                      "amount"
+                    ]
+                  },
+                  "amount": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10000000,
+                    "description": "Percent off (1–100), or cents off for kind amount."
+                  },
+                  "currency": {
+                    "type": "string",
+                    "enum": [
+                      "USD",
+                      "CAD",
+                      "EUR",
+                      "GBP",
+                      "AUD"
+                    ]
+                  },
+                  "lessonIds": {
+                    "type": "array",
+                    "maxItems": 200,
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "description": "Only these courses. Empty = every course."
+                  },
+                  "startsAt": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "date-time"
+                  },
+                  "endsAt": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "date-time"
+                  },
+                  "maxUses": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 1,
+                    "maximum": 1000000
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "$ref": "#/components/responses/LearningNeedsApproval"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "423": {
+            "$ref": "#/components/responses/LearningAssistantsPaused"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/sales": {
+      "get": {
+        "operationId": "learning-list-sales",
+        "summary": "List course sales",
+        "description": "Course orders, newest first: the learner, the course, when, what they paid, the list price, member price or coupon applied, and whether they still have access (`active`, or `removed`). Totals per currency count paid orders. `selling.payments.ready` says whether card payments are on. Requires `read:learning`. Also at `GET /v1/learning/workspace/sales`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "selling": {
+                          "type": "object",
+                          "description": "Prices set, coupons live and `payments.ready`."
+                        },
+                        "totals": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "currency": {
+                                "type": "string"
+                              },
+                              "amount_cents": {
+                                "type": "integer"
+                              }
+                            }
+                          }
+                        },
+                        "orders": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "paid",
+                                  "refunded"
+                                ]
+                              },
+                              "created_at": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "refunded_at": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ],
+                                "format": "date-time"
+                              },
+                              "currency": {
+                                "type": "string"
+                              },
+                              "amount_cents": {
+                                "type": "integer"
+                              },
+                              "list_amount_cents": {
+                                "type": [
+                                  "integer",
+                                  "null"
+                                ]
+                              },
+                              "member": {
+                                "type": "boolean"
+                              },
+                              "coupon": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "discount_cents": {
+                                "type": "integer"
+                              },
+                              "course": {
+                                "type": [
+                                  "object",
+                                  "null"
+                                ],
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  "title": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "access": {
+                                "type": "string",
+                                "enum": [
+                                  "active",
+                                  "removed"
+                                ]
+                              },
+                              "learner": {
+                                "type": [
+                                  "object",
+                                  "null"
+                                ],
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "format": "uuid"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "email": {
+                                    "type": "string"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/sales/{orderId}/remove-access": {
+      "post": {
+        "operationId": "learning-remove-course-access",
+        "summary": "Remove a buyer's access",
+        "description": "Ends the learner's access to the order's course. The sale stays on record. A refund in the payment gateway keeps access until this is called. Waits for a person's OK (`202 needs_approval`). Needs the permission that manages plan and billing, or an organization admin (`403` otherwise). Requires `write:learning`. Also at `POST /v1/learning/workspace/sales/{orderId}/remove-access`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The order id (from List course sales)."
+          }
+        ],
+        "responses": {
+          "202": {
+            "$ref": "#/components/responses/LearningNeedsApproval"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "423": {
+            "$ref": "#/components/responses/LearningAssistantsPaused"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/sales/{orderId}/refund": {
+      "post": {
+        "operationId": "learning-refund-course-order",
+        "summary": "Refund a course order",
+        "description": "Refunds a paid order in full through the payment gateway that took it (Spreedly credits the original charge). The order becomes `refunded` and the learner gets a refund email. The learner keeps the course unless `removeAccess` is `true`. Refused (400) for an order that charged nothing (use Remove a buyer's access) or is already refunded, and when the gateway does not accept the refund (its reason is in `message`; nothing was refunded). Waits for a person's OK (`202 needs_approval`). Needs the permission that manages plan and billing, or an organization admin (`403` otherwise). Requires `write:learning`. Also at `POST /v1/learning/workspace/sales/{orderId}/refund`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The paid order (from List course sales)."
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "removeAccess": {
+                    "type": "boolean",
+                    "description": "true = also end the learner's access. Default false: refunds keep access."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "$ref": "#/components/responses/LearningNeedsApproval"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "423": {
+            "$ref": "#/components/responses/LearningAssistantsPaused"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/payments": {
+      "get": {
+        "operationId": "learning-get-payments",
+        "summary": "Read whether card payments are on",
+        "description": "Whether the organization's payment gateway is connected (`ready`), which one, whether it is in test mode, and the gateways it can connect (100+ are supported). Connecting a gateway takes the organization's payment keys, and turning card payments off decides where money goes, so a person does both in Sessionboard (Site › Selling); there is no API for them. Requires `read:learning`. Also at `GET /v1/learning/workspace/payments`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "ready": {
+                          "type": "boolean"
+                        },
+                        "gateway": {
+                          "type": [
+                            "object",
+                            "null"
+                          ],
+                          "description": "The connected gateway: name, test mode."
+                        },
+                        "gateways": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          },
+                          "description": "The gateways the Get paid step offers."
+                        },
+                        "supported_count": {
+                          "type": "string",
+                          "example": "100+"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/learners/{personId}/profile": {
+      "put": {
+        "operationId": "learning-update-learner-profile",
+        "summary": "Set a learner's member status and license",
+        "description": "`member` decides whether the learner gets member prices. The license (number, two-letter state, profession) is what CE Broker matches credit to. Empty strings clear a value. Waits for a person's OK (`202 needs_approval`). Requires `write:learning`. Also at `PUT /v1/learning/workspace/learners/{personId}/profile`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/LearningPersonId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "member": {
+                    "type": "boolean"
+                  },
+                  "licenseNumber": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 25
+                  },
+                  "licenseState": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 2,
+                    "example": "FL"
+                  },
+                  "licenseProfession": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 8,
+                    "example": "RN"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "$ref": "#/components/responses/LearningNeedsApproval"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "423": {
+            "$ref": "#/components/responses/LearningAssistantsPaused"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/reporting/ce-broker": {
+      "get": {
+        "operationId": "learning-get-ce-broker-report",
+        "summary": "Read CE Broker reporting",
+        "description": "Setup (provider number, default profession, course numbers, `mode` mock or live, whether it needs a real CE Broker account), the credited courses, a summary (ready, missing, reported, failed) and every earned credit on a numbered course with the learner's license and status. `direct_submit` says whether sending is on the plan (Sessionboard Enterprise). Requires `read:learning`. Also at `GET /v1/learning/workspace/reporting/ce-broker`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "setup": {
+                          "type": "object"
+                        },
+                        "courses": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          }
+                        },
+                        "summary": {
+                          "type": "object"
+                        },
+                        "rows": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          },
+                          "description": "One per earned credit; `status` ready, missing, reported or failed, with what is missing."
+                        },
+                        "direct_submit": {
+                          "type": "boolean"
+                        },
+                        "auto_report": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      },
+      "put": {
+        "operationId": "learning-set-up-ce-broker",
+        "summary": "Set up CE Broker reporting",
+        "description": "The provider number, a default profession for learners who have not given theirs, and a CE Broker course number per credited course (`null` removes one). Waits for a person's OK (`202 needs_approval`). Requires `write:learning`. Also at `PUT /v1/learning/workspace/reporting/ce-broker`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "providerNumber": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 20,
+                    "example": "50-1234"
+                  },
+                  "defaultProfession": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 8,
+                    "example": "RN"
+                  },
+                  "courseNumbers": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "maxLength": 20
+                    },
+                    "description": "Course id → CE Broker course number (20-123456)."
+                  },
+                  "uploadKey": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 200,
+                    "description": "The CE Broker upload key, for a live account. Write-only; never returned."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "$ref": "#/components/responses/LearningNeedsApproval"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "423": {
+            "$ref": "#/components/responses/LearningAssistantsPaused"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/reporting/ce-broker/export": {
+      "get": {
+        "operationId": "learning-export-ce-broker-report",
+        "summary": "Export the CE Broker roster",
+        "description": "The roster as text with its filename, on every plan. `format=xml` (default) is CE Broker's upload format with the ready rows; `format=csv` lists every row with its status. The person uploads the XML in CE Broker's provider portal. 400 when nothing is ready or the provider number is missing. Requires `read:learning`. Also at `GET /v1/learning/workspace/reporting/ce-broker/export`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "xml",
+                "csv"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "filename": {
+                          "type": "string"
+                        },
+                        "content_type": {
+                          "type": "string"
+                        },
+                        "rows": {
+                          "type": "integer"
+                        },
+                        "content": {
+                          "type": "string",
+                          "description": "The file's contents."
+                        },
+                        "where": {
+                          "type": "string",
+                          "description": "Where a person downloads the same file in Sessionboard."
+                        },
+                        "next": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/reporting/ce-broker/submit": {
+      "post": {
+        "operationId": "learning-report-to-ce-broker",
+        "summary": "Send ready credit to CE Broker",
+        "description": "`dryRun: true` counts what would be sent, on every plan. Sending is Sessionboard Enterprise (`403 enterprise_only` otherwise: export the roster instead) and waits for a person's OK (`202 needs_approval`), because it sends learners' names and license numbers to a state-board system. Until a live CE Broker account is connected it runs in practice mode: nothing leaves Sessionboard and nothing is recorded. A row is never sent twice. Requires `write:learning`. Also at `POST /v1/learning/workspace/reporting/ce-broker/submit`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "dryRun": {
+                    "type": "boolean",
+                    "description": "true = only count."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A dry run: `would_send`, `mode`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "202": {
+            "$ref": "#/components/responses/LearningNeedsApproval"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "423": {
+            "$ref": "#/components/responses/LearningAssistantsPaused"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
     "/v1/organization/{orgId}/learning/media": {
       "get": {
         "operationId": "list-learning-media",
@@ -3847,6 +5885,108 @@
               "type": "object",
               "additionalProperties": true
             }
+          }
+        }
+      },
+      "LearningCoursePackage": {
+        "type": "object",
+        "description": "A SCORM 1.2, SCORM 2004, xAPI or cmi5 course package.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "standard": {
+            "type": "string",
+            "enum": [
+              "scorm12",
+              "scorm2004",
+              "xapi",
+              "cmi5"
+            ],
+            "nullable": true
+          },
+          "standard_label": {
+            "type": "string",
+            "nullable": true,
+            "example": "SCORM 2004"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "processing",
+              "ready",
+              "failed"
+            ]
+          },
+          "error": {
+            "type": "string",
+            "nullable": true,
+            "description": "Why it couldn't be unpacked."
+          },
+          "file_count": {
+            "type": "integer",
+            "nullable": true
+          },
+          "size_bytes": {
+            "type": "integer",
+            "nullable": true
+          },
+          "version": {
+            "type": "string",
+            "nullable": true
+          },
+          "mastery_score": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "The pass mark the package sets, 0 to 1."
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "skipped": {
+            "type": "array",
+            "description": "Files in the zip that aren't served, and why.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "skipped_count": {
+            "type": "integer"
+          },
+          "preview_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The launcher, for a preview that saves nothing."
+          },
+          "archived": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },

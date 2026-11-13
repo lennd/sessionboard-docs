@@ -1,0 +1,83 @@
+---
+/**
+ * The action row on a skill's article: download the skill, open it in Claude or ChatGPT
+ * with its starter prompt, or copy that prompt. Data: public/skills/downloads/skills.json
+ * (src/lib/skills.mjs). The starter prompt works without installing the skill; the
+ * download is the full workflow.
+ */
+import { DOWNLOADS, skillsManifest } from '../../lib/skills.mjs';
+
+interface Props {
+	id: string;
+}
+const { id } = Astro.props;
+const skill = skillsManifest().skills.find((s: { id: string }) => s.id === id);
+if (!skill) throw new Error(`No skill ${id} in skills.json`);
+const q = encodeURIComponent(skill.starterPrompt);
+const claude = `https://claude.ai/new?q=${q}`;
+const chatgpt = `https://chatgpt.com/?q=${q}`;
+---
+
+<div class="sb-skill-actions not-content" data-skill={id}>
+	<a class="sb-skill-btn primary" href={`${DOWNLOADS}/${skill.download}`} download>Download skill (.zip)</a>
+	<a class="sb-skill-btn" href={claude} target="_blank" rel="noopener">Open in Claude<span class="sr-only"> (opens in a new tab)</span></a>
+	<a class="sb-skill-btn" href={chatgpt} target="_blank" rel="noopener">Open in ChatGPT<span class="sr-only"> (opens in a new tab)</span></a>
+	<button type="button" class="sb-skill-btn" data-copy={skill.starterPrompt}>Copy prompt</button>
+	<span class="sb-skill-status" role="status" aria-live="polite"></span>
+</div>
+
+<script>
+	document.querySelectorAll<HTMLButtonElement>('.sb-skill-actions [data-copy]').forEach((btn) => {
+		btn.addEventListener('click', async () => {
+			const status = btn.parentElement?.querySelector('.sb-skill-status');
+			try {
+				await navigator.clipboard.writeText(btn.dataset.copy ?? '');
+				if (status) status.textContent = 'Prompt copied';
+			} catch {
+				if (status) status.textContent = 'Copy failed: select the prompt under "Try asking" instead';
+			}
+		});
+	});
+</script>
+
+<style>
+	.sb-skill-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		align-items: center;
+		margin: 1rem 0 1.5rem;
+	}
+	.sb-skill-btn {
+		display: inline-flex;
+		align-items: center;
+		min-height: 2.75rem;
+		padding: 0.5rem 1rem;
+		border: 1px solid var(--sl-color-gray-4);
+		border-radius: 0.5rem;
+		background: var(--sl-color-bg);
+		color: var(--sl-color-text);
+		font: inherit;
+		font-size: var(--sl-text-sm);
+		font-weight: 600;
+		text-decoration: none;
+		cursor: pointer;
+	}
+	.sb-skill-btn:hover {
+		border-color: var(--sl-color-text-accent);
+	}
+	.sb-skill-btn:focus-visible {
+		outline: 2px solid var(--sl-color-text-accent);
+		outline-offset: 2px;
+	}
+	.sb-skill-btn.primary {
+		/* Starlight's own primary button pair: --sl-color-black flips to white in light mode. */
+		background: var(--sl-color-text-accent);
+		border-color: var(--sl-color-text-accent);
+		color: var(--sl-color-black);
+	}
+	.sb-skill-status {
+		font-size: var(--sl-text-sm);
+		color: var(--sl-color-gray-2);
+	}
+</style>

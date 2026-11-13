@@ -35,7 +35,7 @@ test('production builds only Platform until a suite is released', () => {
   }
   assert.deepEqual([...NONE], [PLATFORM]);
   assert.equal(anySelfServeBuilt(NONE), false);
-  assert.deepEqual([...ALL].sort(), ['awards', 'learning', 'marketing', 'platform']);
+  assert.deepEqual([...ALL].sort(), ['awards', 'crm', 'learning', 'marketing', 'platform', 'sessions']);
   assert.deepEqual([...builtSuites(config, { SB_PREVIEW_SUITES: 'learning' })].sort(), ['learning', 'platform']);
   assert.ok(builtSuites({ suites: { ...config.suites, awards: { ...config.suites.awards, released: true } } }, {}).has('awards'));
 });
