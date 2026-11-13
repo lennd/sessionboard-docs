@@ -1,0 +1,288 @@
+---
+title: "MCP Server"
+description: "Connect AI assistants to Sessionboard via Model Context Protocol"
+---
+
+import { Note, Warning, Steps, Step } from '@compat';
+
+<Note>
+  **Early Access** — The MCP server is available to organizations with AI features enabled. Reach out to your Sessionboard account manager if you'd like it turned on.
+</Note>
+
+The Sessionboard MCP (Model Context Protocol) server lets AI assistants like Claude, ChatGPT, Microsoft Copilot, and Google Gemini query and manage your event data directly. Built on the open [Model Context Protocol](https://modelcontextprotocol.io/) standard, it exposes **39 tools** covering search, reads, natural-language queries, cited answers about an event, reports and dashboards, and write operations.
+
+This page is the technical reference. If you just want to connect an assistant, the Help Center has friendlier step-by-step guides with screenshots — start at the [AI assistants overview](https://learn.sessionboard.com/integrations/connect-ai-assistants):
+
+- [Connect Claude](https://learn.sessionboard.com/integrations/connect-claude) — including Sessionboard's listing in Claude's connector directory
+- [Connect ChatGPT](https://learn.sessionboard.com/integrations/connect-chatgpt) — install the Sessionboard app from ChatGPT's plugin directory (US), or a developer-mode connector with your regional URL (EU / Middle East)
+- [Connect Microsoft Copilot](https://learn.sessionboard.com/integrations/connect-microsoft-copilot) — via a Copilot Studio agent
+- [Connect Google Gemini](https://learn.sessionboard.com/integrations/connect-google-gemini) — Gemini app, Gemini Enterprise, or the Gemini CLI
+
+Workflows built on these tools (Agent Skills, one `SKILL.md` per job, plus a Claude Code plugin) are in the [Skills](/skills) tab.
+
+## What is MCP?
+
+Model Context Protocol is an open standard that enables AI assistants to securely connect to external data sources and tools. Instead of copying data into prompts, MCP lets the AI query and update your data on demand through a structured interface.
+
+## Server URLs by region
+
+Each Sessionboard region runs its own MCP server. Use the one matching where your organization is hosted:
+
+| Region | MCP server URL |
+| --- | --- |
+| United States | `https://mcp.sessionboard.com/mcp` |
+| Europe | `https://mcp-eu.sessionboard.com/mcp` |
+| Middle East | `https://mcp-me.sessionboard.com/mcp` |
+
+The server uses the streamable HTTP transport and supports OAuth 2.0 with PKCE and dynamic client registration — most clients discover the sign-in flow automatically.
+
+## Prerequisites
+
+<Warning>
+  Two things must be true before the hosted MCP server will accept a sign-in:
+
+  1. **AI features are enabled for the organization.** Contact Sessionboard support or your account manager if they are not.
+  2. **The person signing in has the Connect AI assistants permission.** Organization administrators have it. Other roles need it granted in role settings.
+
+  Claude, ChatGPT, Copilot, Gemini, and any other remote client connect with **OAuth**. There is no MCP switch on the organization or on an API token, and pasting an API token into the assistant will not authenticate. The hosted server (`https://mcp.sessionboard.com/mcp` and the regional hosts) accepts the OAuth bearer token from that sign-in.
+
+  An API token is for scripts calling the public API with `x-access-token`. Those calls to `/v1/insights/...` need the **`read:insights`** scope (a token with an empty scope list is the legacy full-access case and can call them too). Write scopes such as `write:sessions` are separate.
+</Warning>
+
+## Setup
+
+<Steps>
+  <Step title="Connect your AI client">
+    Most assistants (Claude, ChatGPT, Copilot Studio, Gemini) connect through their own UI — follow the [Help Center guides](https://learn.sessionboard.com/integrations/connect-ai-assistants) above. For clients configured by file (Claude Code, Cursor, and similar), add:
+
+    ```json
+    {
+      "mcpServers": {
+        "sessionboard": {
+          "url": "https://mcp.sessionboard.com/mcp"
+        }
+      }
+    }
+    ```
+
+    Swap in the EU or Middle East URL from the table above if that's where your organization is hosted.
+  </Step>
+  <Step title="Sign in">
+    On first use the client walks you through Sessionboard's OAuth sign-in and organization consent automatically — no token to copy. A client that cannot complete that sign-in cannot use the hosted MCP URL. Scripts call the public API with an [API token](/api/authentication) instead.
+  </Step>
+  <Step title="Start querying">
+    Ask your AI assistant questions about your event data in natural language. The assistant uses the MCP tools to query Sessionboard and return results.
+  </Step>
+</Steps>
+
+## Available Tools (46)
+
+The MCP server exposes 46 tools in five groups. Write operations use a `manage_*` pattern — one tool per entity with an `action` parameter to pick the operation (e.g., `action: "create"`).
+
+All tools include [MCP annotations](https://modelcontextprotocol.io/docs/concepts/tools#tool-annotations) for safe AI behavior — read tools are marked `readOnlyHint: true`, every `manage_*` tool is marked `destructiveHint: true` because each can overwrite an existing record through its `update` action (even the ones with no `delete`), and all are `openWorldHint: false` because every tool is bounded to your organization's data. Clients such as Claude and ChatGPT use these hints to ask for confirmation before a write runs.
+
+### Search & Discovery (11 tools)
+
+Find events, search your data, ask questions in plain English, and explore your schema.
+
+| Tool | Description |
+| --- | --- |
+| `list_events` | List all events in the organization |
+| `find_event` | Search events by name |
+| `get_event_overview` | Event summary — session counts, speakers, tracks, status breakdown |
+| `search` | Full-text search across sessions and speakers with citation URLs |
+| `fetch` | Fetch a single search result by ID (pairs with `search`) |
+| `get_schema` | Browse your data model — entities, fields, and relationships |
+| `query_data` | Ask a question in plain English and get results (AI writes the query for you) |
+| `execute_sbql` | Run a [SbQL](/api/insights/sbql) query directly with pagination |
+| `get_suggestions` | Get suggested queries based on your data |
+| `get_widget_schema` | Widget types, configs, and grid layout rules for dashboards |
+| `ask_event` | Ask a question about one event and get a cited answer — see [Asking about an event](#asking-about-an-event). Needs `read:ask` |
+
+### Read Details (4 tools)
+
+Fetch sessions and contacts. All read-only and paginated.
+
+| Tool | Description |
+| --- | --- |
+| `list_sessions` | List sessions for an event (paginated, up to 100 per page) |
+| `get_session` | Get a single session by ID with full details |
+| `list_contacts` | List contacts for an event (paginated, up to 100 per page) |
+| `get_contact` | Get a single contact by ID with full details |
+
+### Read-Only Lists (9 tools)
+
+Read counterparts to the `manage_*` tools — safe to call without any write scopes.
+
+| Tool | Description |
+| --- | --- |
+| `list_metadata` | Rooms, tracks, tags, formats, levels, languages, statuses, and custom fields |
+| `read_agenda_drafts` | List and inspect agenda drafts |
+| `list_draft_sessions` | Session placements within a draft |
+| `read_event_rules` | Scheduling rules and constraints |
+| `read_personas` | Evaluation personas |
+| `read_event_dashboards` | Event-scoped dashboards |
+| `list_event_reports` | Event-scoped saved reports |
+| `read_org_dashboards` | Org-level dashboards (cross-event) |
+| `list_org_reports` | Org-level saved reports (cross-event) |
+
+### Create & Manage (15 tools)
+
+Each `manage_*` tool handles all operations for an entity — create, update, delete, and more — using an `action` parameter. For example, `manage_session` with `action: "create"` creates a session, while `action: "update"` updates one.
+
+| Tool | Actions | Scope | Description |
+| --- | --- | --- | --- |
+| `manage_metadata` | `list`, `create`, `update` | `write:metadata` / `write:fields` | Rooms, tracks, tags, formats, levels, languages, statuses, and custom fields |
+| `manage_session` | `create`, `update`, `restore`, `update_fields` | `write:sessions` | Session CRUD + custom field values |
+| `manage_contact` | `create`, `update`, `restore` | `write:contacts` | Contact CRUD (find-or-create by email) |
+| `manage_exhibitor` | `create`, `update`, `restore` | `write:exhibitors` | Exhibitor CRUD |
+| `manage_sponsor` | `create`, `update`, `restore` | `write:sponsors` | Sponsor CRUD |
+| `manage_agenda_draft` | `list`, `get`, `create`, `update`, `delete`, `get_changes`, `commit` | `write:events` | Agenda draft lifecycle |
+| `manage_draft_sessions` | `list`, `create`, `update`, `delete`, `bulk` | `write:events` | Session placements in drafts |
+| `manage_event_rules` | `list`, `get`, `create`, `update`, `delete` | `write:events` | Scheduling rules and constraints |
+| `manage_personas` | `list`, `get`, `create`, `update`, `delete` | `write:events` | Evaluation personas |
+| `manage_event_dashboard` | `list`, `get`, `create`, `update`, `delete` | `write:events` | Event-scoped dashboards |
+| `manage_event_widget` | `create`, `update`, `delete` | `write:events` | Event dashboard widgets |
+| `manage_event_report` | `list`, `run`, `create`, `create_from_nl`, `update`, `delete` | `write:events` | Event-scoped saved reports |
+| `manage_org_dashboard` | `list`, `get`, `create`, `update`, `delete` | `write:events` | Org-level dashboards (cross-event) |
+| `manage_org_widget` | `create`, `update`, `delete` | `write:events` | Org-level dashboard widgets |
+| `manage_org_report` | `list`, `run`, `create`, `create_from_nl`, `update`, `delete` | `write:events` | Org-level saved reports (cross-event) |
+
+### Registration (9 tools)
+
+Read-only answers about an event's registration: the funnel, conversion per form, abandoned checkouts, the waitlist, attendees, orders, payments, membership, capacity and setup. They need the `read:registrations` scope, which is in preview: tick it under **Opt-in** when you create an API token, or name it in your OAuth `scope` request. The event must have Registration turned on (Early Access); otherwise these tools say so instead of answering.
+
+| Tool | Actions | Description |
+|------|---------|-------------|
+| `read_registration_summary` | — | Registrations by status, by day, per ticket type, attendee type and form; member mix; revenue; orders per status; invoices still owed; capacity pools |
+| `find_registrations` | `search`, `get` | Find attendees by a name, email or company fragment, or filter by status, ticket type, attendee type or form; one registration in full |
+| `read_registration_orders` | `list`, `get` | Find an order by number or buyer email, or list orders by status (`awaiting_invoice`, `partially_paid` still owe); one order in full |
+| `read_registration_payments` | `list`, `get` | Payment records: card and bank payments through your payment gateway and offline money, failed attempts with their reason, refunds and the charge they refund. Never card numbers or tokens |
+| `read_registration_members` | `lookup`, `list` | Check one email the way the form does (member, lapsed or none), or list registrations with the membership recorded when they registered |
+| `read_registration_capacity` | — | Every ticket type's capacity, sold and available, plus shared capacity pools |
+| `read_registration_funnel` | — | Conversion per registration form: form views, checkouts started and completed, registrations, the rates between them, abandoned checkouts and what they held, abandonment in the last 7 and 30 days and by ticket type |
+| `read_registration_waitlist` | — | Who is waiting, as counts: per form and ticket type, the event waitlist of closed forms, open / expired / taken offers, and each form's waitlist settings |
+| `read_registration_setup` | `section` | Fee groups and their promo codes, donation funds with raised and pledged totals, workshop picking rules, the badge print queue |
+
+Try: *"How many people registered for Annual Meeting 2026 last week, and how much is still owed on invoices?"* or *"Is ada@example.org a member, and is she registered?"* or *"Which registration form converts best, and how many checkouts were abandoned this week?"*
+
+### Sharing a webinar (9 tools)
+
+A webinar's sharing pieces, the same ones as on the webinar's After tab in Sessionboard: email signatures for your team (a banner that says "Save your seat" until the start and "Watch the recording" after), share cards, speakers' personal links and a draft kit of LinkedIn posts for your team. Reads need `read:events`, changes `write:marketing`, and the connected user needs the same sharing permissions on the webinar as in Sessionboard. They call the [Sharing](/api/reference/sharing/get-a-webinars-email-signatures) endpoints. Webinars only.
+
+| Tool | Description |
+|------|-------------|
+| `get_email_signatures` | The banner, the three signature versions as your team will paste them, whether they are out of date, and the team with each teammate's link, when they were emailed, opened and copied it, clicks and registrations |
+| `make_email_signatures` | Make (or remake) the signatures from the webinar as it is now; signatures already pasted pick up the new banner |
+| `set_signature_team` | Add teammates (`add`, `user_ids`) or take one off (`remove`, `teammate_id`); emails no one |
+| `send_email_signatures` | Email each teammate a link to copy their signature. Waits for your OK (see below); refused once the webinar has started |
+| `get_share_cards` | The six share cards (three with the speakers' faces), which are on the sharing pages, and whether they are out of date |
+| `make_share_cards` | Make (or remake) all six cards, or some `designs` |
+| `get_speaker_links` | Each speaker's and co-presenter's personal tracked link and shares; `pending` until they have one |
+| `give_speaker_links` | Turn sharing on and give every speaker a link; emails no one |
+| `make_team_kit` | A draft kit of posts for your team (share cards before the start, clips after), with a link to pick the team and send it; nothing is sent |
+
+Try: *"Make email signatures for next week's webinar and add Jordan and Priya to the team"* or *"Which speakers don't have a sharing link yet?"*
+
+### Tasks (2 tools)
+
+Your team's to-dos in Sessionboard Platform: a title, an assignee, a due date with an optional time, a reminder, and the contacts, sessions, sponsors, exhibitors or groups a task is about. See the [Tasks guide](/api/guides/tasks). In an organization that uses a self-serve Sessionboard product, these tools answer "Tasks are part of Sessionboard Platform." instead.
+
+| Tool | Actions | Scope | Description |
+| --- | --- | --- | --- |
+| `list_tasks` | — | `read:tasks` | List tasks by event, assignee (`me`, an email, `none`, `any`), status, due (`overdue`, `today`, `upcoming`, `none`), due dates or linked record; or read one by id |
+| `manage_task` | `create`, `update`, `complete`, `reopen`, `delete` | `write:tasks` | Create a task (assignee by email, records by id, `due_date` `YYYY-MM-DD` plus an optional `due_time` `HH:mm` in the event's time zone, reminder), change it, complete it with a note, reopen or delete it |
+
+Try: *"What's on my plate this week?"*, *"Remind Dana to chase Dr. Okafor's disclosure by Friday"*, *"What's overdue across my events?"* or *"Mark the AV task done: forms received"*.
+
+## Asking about an event
+
+`ask_event` answers a question about one event the way an organizer would want it answered. The answer is grounded in the event's program (sessions, speakers, exhibitors, sponsors), session transcripts, the event's knowledge and pinned answers, and the Sessionboard Help Center, and it cites its sources with `[n]` markers listed under **Sources**. It calls [`POST /v1/event/{eventId}/ask`](/api/reference/ask/ask-a-question-about-an-event).
+
+| Input | Required | Description |
+| --- | --- | --- |
+| `event_id` | Yes | The event to ask about |
+| `question` | Yes | The question, in plain language (up to 500 characters) |
+| `conversation_id` | No | The `conversation_id` from a previous answer, to ask a follow-up in the same thread |
+| `lang` | No | Answer language as a language tag (e.g. `en`, `fr`, `pt-BR`) |
+
+- **Scope** — needs `read:ask`. Assistants connected before this scope existed hold only the scopes they were granted; reconnect to grant it.
+- **Read-only** — marked `readOnlyHint: true`. Ask never changes the event.
+- **Use it for synthesis** — "which sessions cover X", "what did speakers say about Y", "how do I set up Z". For exact counts and lists, `execute_sbql` and `query_data` are faster and exact.
+- **Slow** — an answer takes several seconds; the tool waits up to 90 seconds.
+- **Follow-ups** — the answer ends with a `conversation_id`. Pass it back to continue the thread.
+- **Refusals come back as tool errors** — Ask turned off for the event, AI features off, the per-user question limit (with the seconds to wait), the event's daily Ask budget used up, or a question Ask would not take.
+
+## Parameter Conventions
+
+- **Event scoping** — All event-scoped tools require `event_id` (snake_case string).
+- **Action selection** — Consolidated tools use `action` to pick the operation (e.g., `action: "create"`).
+- **Entity IDs** — snake_case: `session_id`, `contact_id`, `entity_id`, `draft_id`, `widget_id`, `query_id`.
+- **Optimistic concurrency** — Update actions require `updated_at` (ISO 8601 timestamp from the last read). Returns `409 Conflict` if the entity was modified since.
+
+## Result Size Safety
+
+All results are automatically truncated to prevent context window overflow:
+
+- **List results** — Capped at 50 items. When truncated, the response includes `truncated: true`, `total_count`, and a `hint` with guidance on pagination.
+- **Query results** — Capped at 100 rows with truncation metadata.
+- **SbQL queries** — `execute_sbql` and `query_data` default to a 50-row limit. Use the `limit` parameter for more.
+
+## Resources
+
+The MCP server also exposes two [MCP resources](https://modelcontextprotocol.io/docs/concepts/resources) that AI clients can load into context:
+
+| URI | Description |
+| --- | --- |
+| `sbql://schema` | The SbQL schema — entities, fields, relationships, and format functions |
+| `sbql://events` | List of events in the organization with metadata |
+
+## Prompt Templates
+
+Pre-built templates that structure the AI's approach to common report types:
+
+| Prompt | Description |
+| --- | --- |
+| `speaker_roster` | Generate a speaker roster with contact info and session assignments |
+| `session_schedule` | Generate a day-by-day session schedule grid |
+| `evaluation_summary` | Generate an evaluation/review score analysis |
+| `task_status` | Show outstanding tasks across speakers and exhibitors |
+
+## Actions that wait for your OK
+
+Some Marketing and Learning actions reach people outside your team, spend money or publish something public. When an AI assistant asks for one of these through MCP, Sessionboard does not run it. It records a request and answers with a link where a person on your team approves or declines it:
+
+```json
+{
+  "status": "needs_approval",
+  "approval_id": "49a31154-…",
+  "url": "https://app.sessionboard.com/marketing/<orgId>/approvals?id=49a31154-…",
+  "message": "Waiting for your OK in Sessionboard: https://…"
+}
+```
+
+- **What waits:** launching or resuming a campaign, sending invitations, content kits or email signatures, sending a "Keep everyone engaged" round or offer, publishing an event page, gallery, course or on-demand library, approving ads or raising an ad budget, starting live captions, and assigning training.
+- **What runs:** drafts, edits to drafts and reads. Credit is never set or granted by an assistant.
+- **Approving** runs the original request as the person who approved it, with their permissions. Declining records the answer and nothing happens. The assistant sees the outcome the next time it reads the record.
+- **Don't retry.** Calling the same tool again creates another request; tell the person where to approve instead.
+- Every assistant action, including the approvals, is listed under **Apps › AI assistants** in Sessionboard, with who asked and what changed. An admin can pause assistant writes for the organization; while paused, write tools return `423`.
+
+## Security
+
+- **Org isolation** — The SbQL compiler injects `org_id` into every query from the authenticated token. Prompt injection cannot access other organizations' data.
+- **Your access, not more** — The assistant reads as the person who authorized it: what their Sessionboard role allows, in that organization, through the scopes they granted. Query results are not masked; an assistant that asks for contact emails gets them. Write tools need write scopes, and only roles with **Connect AI assistants** can authorize a connection. See [privacy details in the Help Center](https://learn.sessionboard.com/integrations/connect-ai-assistants#privacy-and-pii).
+- **Scoped access** — Tokens are restricted to specific scopes and optionally to specific events.
+- **Audit logging** — Every API call is recorded with source, method, response time, and token ID. For `ask_event` the question text is redacted from the log.
+
+## Example Conversations
+
+Once connected, you can ask questions like:
+
+- "How many sessions are accepted for this year's conference?"
+- "Show me the top 10 speakers by number of sessions."
+- "What's the breakdown of sessions by track and status?"
+- "List all sessions that don't have a room assigned yet."
+- "Which sessions cover cardiac imaging, and what did the speakers say about it?"
+- "Create a new track called 'AI & Machine Learning' with color #4F46E5."
+- "Build a dashboard showing session counts by status and track."
+- "Create a draft agenda and schedule the keynote in the Main Hall at 9am."

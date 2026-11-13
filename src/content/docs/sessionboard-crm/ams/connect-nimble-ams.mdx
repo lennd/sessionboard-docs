@@ -1,0 +1,72 @@
+---
+title: "Connect Nimble AMS"
+description: "Give Sessionboard CRM read access to Nimble AMS in your Salesforce org: an External Client App with client credentials, a run-as user and a permission set."
+sidebar:
+  order: 2
+audience: ["organizer"]
+jtbd: "bring our Nimble AMS members into Sessionboard CRM without exporting a file"
+---
+
+import { Note, Steps, Step } from '@compat';
+
+Nimble AMS runs inside your own Salesforce org, so Sessionboard CRM reads it through Salesforce. Your Salesforce admin creates an app that Sessionboard signs in with, and a user that app runs as, with read access to the Nimble AMS objects. Sessionboard then reads your members, their membership type, status, start and end dates, and the event registrations Nimble AMS keeps.
+
+<Note>
+Our team connects Nimble AMS with you. We're verifying each AMS connector with our first customers, so a Sessionboard specialist sets up the connection with your admin and checks the first read together. Ask your customer success manager, or email [support@sessionboard.com](mailto:support@sessionboard.com).
+</Note>
+
+## Why use it
+
+Your members are in Nimble AMS and your speakers, reviewers and attendees are in Sessionboard. Connecting the two shows which members take part and which never do, without anyone exporting a spreadsheet, and keeps the Member tag right as people join and lapse.
+
+## What Sessionboard reads
+
+Nimble AMS members are person accounts, so their name, email and title come from the account.
+
+| Nimble AMS object | What it's used for |
+| --- | --- |
+| `NU__Membership__c` | One membership term per row: status, start and end dates |
+| `NU__MembershipType__c` | The membership type's name |
+| `Account` | The member's person account (name, email, title) and their primary affiliation |
+| `NU__Registration2__c`, `NU__Event__c` | The event registrations Nimble AMS keeps |
+
+Every read is a query. Sessionboard never edits a member, account or membership. Writing Sessionboard's own engagement records back is a separate choice, off until you turn it on: see [Write engagement back to your AMS](/sessionboard-crm/ams/write-back).
+
+## Set it up in Salesforce
+
+<Steps>
+<Step title="Note your My Domain URL">
+In Salesforce **Setup**, open **My Domain** and copy your org's URL, such as `https://yourassociation.my.salesforce.com`. The client credentials flow works only against My Domain, not `login.salesforce.com`.
+</Step>
+<Step title="Create the run-as user">
+Create a user for Sessionboard alone, with a mailbox you control. Salesforce recommends the **Salesforce Integration** user licence with the **Minimum Access - API Only Integrations** profile, plus the **Salesforce API Integration** permission set licence. If your org assigns Nimble AMS package licences per user (**Setup > Installed Packages > Manage Licenses**), assign one to this user so it can read the Nimble AMS objects.
+</Step>
+<Step title="Give it read access">
+Create a permission set, such as "Sessionboard Integration", with **API Enabled** and **Read** on every object in the table above, including read access to their fields. Assign it to the run-as user. Sessionboard reads only what this user can see.
+</Step>
+<Step title="Create the External Client App">
+In **Setup**, open **External Client App Manager** and choose **New External Client App**. Name it "Sessionboard" and leave the distribution state at **Local**. Enable OAuth, enter `https://login.salesforce.com/services/oauth2/success` as the callback URL (the flow requires one but doesn't use it), add the scope **Manage user data via APIs (api)** and check **Enable Client Credentials Flow**.
+</Step>
+<Step title="Set who it runs as">
+Open the app's **Policies**, edit **OAuth Policies** and, under **Client Credentials Flow**, set **Run As** to the user you created. Save.
+</Step>
+<Step title="Copy the key and secret">
+Open the app's **Settings** and, under **OAuth Settings**, view the **Consumer Key and Secret**. Salesforce asks for a verification code first.
+</Step>
+</Steps>
+
+If you recreate the app later, enable the client credentials flow and set **Run As** again: a new app starts without them.
+
+## Connect it in Sessionboard CRM
+
+Our team connects it with you on **Connections** using three values: the My Domain URL, the Consumer Key and the Consumer Secret. They're stored encrypted and never shown again, so don't send the secret by email. Testing the connection checks that Sessionboard can sign in and read.
+
+If Sessionboard already sends awards fees to Nimble AMS as orders, Sessionboard CRM reads members through that same connection. Add the read access above to its run-as user, so it can see memberships as well as place orders.
+
+Then confirm which fields hold each part of a membership: see [Map your AMS fields](/sessionboard-crm/ams/map-fields).
+
+## Related
+
+- [Map your AMS fields](/sessionboard-crm/ams/map-fields)
+- [Read the member engagement snapshot](/sessionboard-crm/ams/member-snapshot)
+- [Keep members in sync nightly](/sessionboard-crm/ams/nightly-sync)

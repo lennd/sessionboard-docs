@@ -1,8 +1,12 @@
 {
   "//": "Single source of truth for the host the Help Center is published on. Read by astro.config.mjs (site URL), src/components/Head.astro (canonical, og:url, JSON-LD, GA4 linker), worker.js (robots.txt, indexability, legacy-host redirects), and scripts/generate-og.py (share-image footer label). Changing hosts is this file plus `npm run og -- --force && npm run build && npx wrangler deploy` and a wrangler.toml route.",
   "canonicalHost": "learn.sessionboard.com",
+  "//academy": "The Academy tab (src/lib/academy.mjs). `open: false` keeps the tab out of the header and the \"Learn this in Academy\" cards off articles; /academy itself still builds, so staff can open it directly. Set true once our org's Learning Site is synced in prod and web-api has HELP_ACADEMY_SITE (sessionboard-tam docs/strategy/sessionboard-academy-help-center.md §6).",
+  "academy": { "open": false },
   "legacyHosts": ["help.sessionboard.com"],
   "retiredFeedbackHosts": ["feedback.sessionboard.com"],
+  "//retiredApiDocsHosts": "The retired Mintlify API docs. wrangler.toml routes them to this Worker (a zone route on the existing proxied CNAME, no DNS change) and worker.js 301s every path to its /api page (src/lib/api-docs/retired-host.mjs).",
+  "retiredApiDocsHosts": ["apidocs.sessionboard.com"],
   "//internalPrefix": "URL prefix of the staff-only enablement section (src/pages/<internalPrefix>/). Unlisted: noindex header + meta, excluded from sitemap, search, llms.txt and robots.txt, never linked from a public page (scripts/check-internal.mjs). Must match the directory name under src/pages/.",
   "internalPrefix": "enablement",
   "//staffOnly": "Sections built and deployed like any page but visible only to signed-in Sessionboard staff (super users), with a lock in the sidebar and on the page — Registration, Expo, Onsite and the Attend mobile app are not released to customers, and Enablement is the CS view of releases. `prefixes` are route-slug prefixes, `pages` single slugs. Everyone else gets a 404 and no sidebar entry, link, search hit, sitemap/llms entry or Team Lead chunk (src/lib/staff-only.mjs lists every surface). Remove a section from here to make it public.",

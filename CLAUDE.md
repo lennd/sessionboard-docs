@@ -47,6 +47,10 @@ Practicalities that cost time when rediscovered:
 - Deep links that skip fragile menu clicking: portal editor steps are routable (`/event/:eventId/portals/:portalId/configuration`, also `/criteria`, `/customize`, `/appearance`); Program Settings tabs too (`/event/:eventId/sessions/settings/agenda`). Portal ids = `Config_Sets.id`.
 - Grid columns hidden behind the Columns picker: scripted `element.click()` does not register on the Radix checkboxes — click by accessibility ref/uid, or in Playwright use `getByRole('checkbox', { name: … })`.
 
+## API docs live here
+
+The Public API docs (`/api`: OpenAPI spec `api-spec/openapi.yaml`, guides, API changelog, the 30-day breaking-changes policy) are authored in this repo only; `lennd/sessionboard-public-api-docs` (Mintlify) is retired. Edit, then `npm run api:build` and `npm run api:check`. Details: `AGENTS.md` ("API Docs tab").
+
 ## Release notes
 
 Documenting a shipped product change? Add an entry to `src/data/release-notes/YYYY-MM-DD.json` in the same commit (copy the newest file as a template; never edit `help/release-notes.mdx`, it only renders the data). Every entry answers who gets it, where it lives, how to turn it on, why a customer wants it, and what CS has to do, and lists the PRs in `shipped.prs` so the daily job can tell when it is actually in production — `npm run release:check` enforces all of it. Field-by-field rules in `AGENTS.md` (Release notes section). Docs-only edits don't get entries. Never link to `/enablement` from an article.

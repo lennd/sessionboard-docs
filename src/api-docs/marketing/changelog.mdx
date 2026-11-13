@@ -1,0 +1,83 @@
+---
+title: "Marketing changelog"
+description: "What's new in the Sessionboard Marketing API and its MCP tools"
+---
+
+import { Note } from '@compat';
+
+Release notes for the Marketing API and its MCP tools. Entries are grouped by month, newest first.
+
+## Upcoming
+
+### Marketing: webinar questions, topic watch time and outcomes
+
+**Added — webinar reporting.** `GET /v1/organization/{orgId}/marketing/results/questions` lists questions asked in your webinars that are worth following up and whether anyone has followed up in your CRM or AMS since. `GET .../results/topic-watch-time` gives live and on-demand watch time by topic (medians; topics under 5 people left out). `GET .../results/outcomes` gives what happened after people attended: sales pipeline and closed won from accounts that attended, memberships and renewals, or exhibitor and sponsor contracts, depending on your organization's kind. `GET` / `PUT .../results/outcomes/settings` reads and sets how many days after the first webinar a deal or membership still counts (30 to 365, default 180). Every response carries `org_kind` and `labels`, your organization's own words for people and money, and outcomes carry a `method` sentence. All are also served under `/v1/marketing/results/...` with the organization taken from the token, and need `read:marketing` (the settings `PUT` needs `write:marketing`). Additive; nothing existing changes. See the [Marketing API overview](/sessionboard-marketing/api).
+
+**Added — MCP tools `find_questions_to_follow_up`, `get_topic_watch_time` and `get_webinar_outcomes`.** See [Marketing MCP tools](/sessionboard-marketing/api/mcp-tools).
+
+<Note>
+These arrive with an upcoming Sessionboard release. The date will be added here when they are live.
+</Note>
+
+### Marketing: AI apps get the product scopes; actions that reach people wait for your OK
+
+**Added — scopes for the self-serve products.** `read:marketing`, `write:marketing`, `read:sites`, `write:sites`, `read:learning` and `write:learning` are now listed in `scopes_supported`, beside `read:brand_kits`, `write:brand_kits`, `read:awards` and `write:awards`. Claude, ChatGPT and Gemini connections get them when they connect, and API tokens for organizations on a Marketing, Learning, Awards or CRM plan can tick them under **Your products**. Every request still checks the organization's product and the person's role. See [Marketing API authentication](/sessionboard-marketing/api/authentication).
+
+**Changed — requests for scopes a client was not registered for.** `GET /oauth/authorize` now leaves out a known scope the client was not registered for and grants the rest, instead of refusing the whole request with `invalid_scope`. Unknown scopes are still refused. Clients registered earlier keep connecting; reconnect to pick up the new scopes.
+
+**Changed — MCP actions that send, publish or spend now wait for a person.** When an AI assistant asks to launch a campaign, send invitations or content kits, publish a page, course or library, approve ads, start captions or assign training, the response is `200` with `status: "needs_approval"`, an `approval_id` and a `url`. Nothing runs until someone on the team approves it in Sessionboard; approving runs the request as that person. Drafts, edits and reads are unchanged. See [Marketing MCP tools](/sessionboard-marketing/api/mcp-tools).
+
+<Note>
+These arrive with an upcoming Sessionboard release. The date will be added here when they are live.
+</Note>
+
+### Marketing: build and edit your event page by API or chat
+
+**Added — the Sites API.** Read your event pages, edit a page's draft (its blocks, menu and theme), see what Publish would change in plain sentences, preview it as a visitor or an invited guest on desktop, tablet or phone, publish, and restore any earlier version into the draft. `POST /v1/organization/{orgId}/sites/make` makes a page for an event from the event itself and your Brand Kit, or rebuilds a page you point it at. Every edit lands in the draft, and nothing goes live until you publish with the person's OK; an AI assistant's publish waits for a person to approve it in Sessionboard. The same operations are served under `/v1/sites/...` with the organization taken from the token. They need `read:sites` / `write:sites` or `read:marketing` / `write:marketing`. See the [Marketing API overview](/sessionboard-marketing/api).
+
+**Added — ten MCP tools for your event page,** from `list_sites` and `get_site` to `edit_site`, `publish_site` and `restore_site_version`. See [Marketing MCP tools](/sessionboard-marketing/api/mcp-tools).
+
+<Note>
+These arrive with an upcoming Sessionboard release. The date will be added here when they are live.
+</Note>
+
+
+### Marketing: how an event is doing
+
+**Added — turnout and pacing for events and webinars.** `GET /v1/organization/{orgId}/marketing/goals/turnout` returns registrations so far, an estimate of registrations and turnout at the event date (with a range, a confidence label and how it was estimated), pace against the event's goal, the last comparable event, registrations by day before the event, the best time of week to send email and two or three suggestions. `POST /v1/organization/{orgId}/marketing/goals/turnout/{eventId}/goal` sets or clears the registration and attendance goal. Both are also served under `/v1/marketing/...` with the organization taken from the token. They need the preview scopes `read:marketing` / `write:marketing`. See the [Marketing API overview](/sessionboard-marketing/api).
+
+**Added — MCP tools `get_turnout` and `set_turnout_goal`**, so an assistant can answer "how's it doing?" with the same numbers. See [Marketing MCP tools](/sessionboard-marketing/api/mcp-tools).
+
+### Marketing: sign-ups on your own pages
+
+**Added — sign-up forms.** `POST /v1/organization/{orgId}/marketing/audience/forms/ensure` adds an email sign-up to an event page, a library or a recording with nothing to fill in (the words come from the event or recording; people confirm their email before they join). With `addToPage: true` it goes on the event page draft; publishing stays yours. Forms can also be listed, created, changed and archived under `/marketing/audience/forms`.
+
+**Added — sign-ups.** `GET /v1/organization/{orgId}/marketing/audience/subscribers` lists who signed up, where and whether they confirmed, with a CSV export; `POST .../subscribers/create` adds someone who agreed elsewhere and `POST .../subscribers/unsubscribe` stops emailing someone. `GET .../audience/summary` answers "how many people signed up this week?". All are also served under `/v1/marketing/...` with the organization taken from the token, need the preview scopes `read:marketing` / `write:marketing`, and are refused for a key restricted to particular events.
+
+**Added — MCP tools `add_signup_form`, `gate_recording`, `count_signups` and `list_subscribers`.** See [Marketing MCP tools](/sessionboard-marketing/api/mcp-tools).
+
+### Marketing: video gates, buttons and premieres
+
+**Added — what happens around a recording.** `GET` / `PUT /v1/organization/{orgId}/marketing/video/items/{mediaId}` reads and changes a recording's gate, button and end card. With nothing set, anyone can watch, the button is "Register for" your next event at the end, and a "Watch next" card follows. `POST .../video/items/{mediaId}/gate` asks for an email before the recording plays or after a set time, using the recording's sign-up form.
+
+**Added — premieres.** `POST /v1/organization/{orgId}/marketing/video/premieres/ensure` plays a recording at a set time for everyone on the event page, with questions and polls beside it and reminders for visitors who ask; it goes on the page draft and publishing stays yours. Premieres are listed, moved, cancelled or ended under `.../video/premieres`, and `.../premieres/{premiereId}/room`, `/questions` and `/polls` read and manage the room. All are also served under `/v1/marketing/...` with the organization taken from the token, need the preview scopes `read:marketing` / `write:marketing`, and are refused for a key restricted to particular events.
+
+**Added — MCP tools `gate_video`, `get_video_options`, `set_video_options`, `schedule_premiere`, `list_premieres`, `update_premiere`, `get_premiere_room`, `manage_premiere_poll` and `moderate_premiere_question`.** Tools that change what visitors see are marked destructive and ask you first. See [Marketing MCP tools](/sessionboard-marketing/api/mcp-tools).
+
+### Marketing: podcasts, newsletter, journeys, video, website and sponsor links
+
+**Added — podcasts.** `/v1/organization/{orgId}/marketing/podcasts` lists, creates, changes and deletes shows; `POST .../podcasts/from-event` turns an event's recordings into a show of draft episodes; `.../podcasts/{showId}/episodes` adds draft episodes and `.../episodes/status` moves them to approved or published; `GET .../podcasts/stats` returns downloads.
+
+**Added — newsletter.** `GET` / `PUT /v1/organization/{orgId}/marketing/newsletter` reads and changes the newsletter; issues are drafted, read, changed and deleted under `.../newsletter/issues`, sent with `.../issues/{issueId}/schedule` (or held with `.../unschedule`), and `.../issues/{issueId}/results` returns deliveries, opens, clicks, unsubscribes and bounces.
+
+**Added — journeys.** `GET /v1/organization/{orgId}/marketing/journeys` lists the four follow-up journeys; `PUT .../journeys/{journeyId}` changes one or switches it on or off, and `POST .../journeys/{journeyId}/reset` puts its email back to the default.
+
+**Added — video, website tag, consent and sponsor links.** `GET .../marketing/video/media/{mediaId}/playback` and `.../watchers` return a recording's playback details and who watched it. `GET .../marketing/audience/website` and `.../website/visits` return your website tag and the known people who visited; `GET .../audience/people/{personKey}/website` and `.../consent` return one person's visits and consent history (read only). `.../audience/sponsor-shares` lists, creates and revokes private sponsor links to the people who opted in to hear from partners.
+
+Calls that publish, send, switch on emails to real people or share with a sponsor answer `202` with `status: needs_approval` and a link when an assistant makes them; a person approves the request in Sessionboard. All of these are also served under `/v1/marketing/...` with the organization taken from the token, need the preview scopes `read:marketing` / `write:marketing`, and are refused for a key restricted to particular events.
+
+**Added — 21 MCP tools** for the same areas, from `make_podcast_from_event` and `draft_newsletter_issue` to `get_watch_report` and `share_with_sponsor`. See [Marketing MCP tools](/sessionboard-marketing/api/mcp-tools).
+
+<Note>
+These arrive with an upcoming Sessionboard release. The date will be added here when they are live.
+</Note>

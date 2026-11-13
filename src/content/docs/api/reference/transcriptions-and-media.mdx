@@ -1,0 +1,145 @@
+---
+title: "Transcriptions & Media"
+description: "Unified transcription API, session recordings, and media upload endpoints."
+---
+
+import { Note, Card, CardGroup } from '@compat';
+
+For step-by-step integration flows, start with the [Media & Transcriptions](/api/guides/uploading-media-and-transcriptions) guide. To **read** composed transcripts and AI artifacts in an app, see [Consuming session content](/api/guides/consuming-session-content).
+
+## Five integration paths
+
+| Path | Best for | Sidebar group |
+| --- | --- | --- |
+| **Content packs** | One-call composed transcript + artifacts for apps | Event — Media → Transcriptions (`/content`) |
+| **Transcriptions** | Raw CRUD — fragments, summaries, insights, translations | Event — Media → Transcriptions |
+| **Session recordings** | Audio for a session's recording archive | Event — Media → Session recordings |
+| **Media upload** | Video or audio files that should be transcribed automatically | Event — Media → Media upload |
+| **Session files** | PDFs, PowerPoint, Word docs, and similar attachments | Event — Media → Session files |
+
+<Note>
+  **Session files** (slides, handouts, PDFs) support a one-call multipart upload (`POST .../files/upload`, max 50 MB) or direct-to-storage for larger files (up to 500 MB). Scopes: `read:sessions` / `write:sessions`. See [Uploading session files](/api/guides/uploading-session-files) and the [Session Files API overview](/api/reference/session-files).
+</Note>
+
+## Resource model
+
+Transcription data uses four types, all tied to a session:
+
+| Type | Description |
+| --- | --- |
+| `fragment` | Transcript text (synced by you or created when media transcription completes) |
+| `summary` | Structured summary content |
+| `insight` | Topics, entities, or key phrases |
+| `translation` | Translated text linked to a source artifact |
+
+Responses use the standard envelope:
+
+```json
+{
+  "data": {
+    "id": "uuid",
+    "type": "fragment",
+    "session_id": "uuid",
+    "transcription": "...",
+    "created_at": "...",
+    "updated_at": "..."
+  }
+}
+```
+
+List endpoints include `pagination` with `current_page`, `page_size`, `total_pages`, and `total_results`.
+
+## Session & event content
+
+Ready-to-render packs for partners and mobile apps. Not the same as session [composition](/api/reference/sessions-composition) (abstract/parent linking).
+
+<CardGroup cols={2}>
+  <Card title="Get session content" href="/api/reference/transcriptions/get-composed-content-for-a-session">
+    GET /v1/event/\{eventId\}/sessions/\{sessionId\}/content
+  </Card>
+  <Card title="List event content" href="/api/reference/transcriptions/list-composed-session-content-for-an-event">
+    GET /v1/event/\{eventId\}/content
+  </Card>
+  <Card title="Event-level artifacts" href="/api/reference/transcriptions/get-event-level-content-artifacts">
+    GET /v1/event/\{eventId\}/content/event
+  </Card>
+  <Card title="Get content item" href="/api/reference/transcriptions/get-a-single-content-item">
+    GET /v1/event/\{eventId\}/content/items/\{itemId\}
+  </Card>
+</CardGroup>
+
+Guide: [Consuming session content](/api/guides/consuming-session-content).
+
+## Transcriptions
+
+<CardGroup cols={2}>
+  <Card title="List event transcriptions" href="/api/reference/transcriptions/list-transcriptions-for-an-event">
+    GET /v1/event/\{eventId\}/transcriptions
+  </Card>
+  <Card title="List session transcriptions" href="/api/reference/transcriptions/list-transcriptions-for-a-session">
+    GET /v1/event/\{eventId\}/sessions/\{sessionId\}/transcriptions
+  </Card>
+  <Card title="Get session transcription" href="/api/reference/transcriptions/get-a-session-transcription-by-id">
+    GET /v1/event/\{eventId\}/sessions/\{sessionId\}/transcriptions/\{transcriptionId\}
+  </Card>
+  <Card title="Create transcription" href="/api/reference/transcriptions/create-a-transcription-artifact">
+    POST /v1/event/\{eventId\}/sessions/\{sessionId\}/transcriptions
+  </Card>
+</CardGroup>
+
+## Session recordings
+
+<CardGroup cols={2}>
+  <Card title="List session recordings" href="/api/reference/session-recordings/list-session-audio-recordings">
+    GET /v1/event/\{eventId\}/sessions/\{sessionId\}/recordings
+  </Card>
+  <Card title="Start recording upload" href="/api/reference/session-recordings/initiate-session-audio-upload">
+    POST /v1/event/\{eventId\}/sessions/\{sessionId\}/recordings
+  </Card>
+  <Card title="Get session recording" href="/api/reference/session-recordings/get-a-session-audio-recording">
+    GET /v1/event/\{eventId\}/sessions/\{sessionId\}/recordings/\{recordingId\}
+  </Card>
+  <Card title="Complete recording upload" href="/api/reference/session-recordings/finalize-session-audio-upload">
+    POST .../recordings/\{recordingId\}/complete
+  </Card>
+</CardGroup>
+
+## Session files
+
+Document attachments (PDF, PowerPoint, Word, images). Full playbook: [Uploading session files](/api/guides/uploading-session-files). API overview: [Session Files](/api/reference/session-files).
+
+<CardGroup cols={2}>
+  <Card title="List session files" href="/api/reference/session-files/list-files-attached-to-a-session">
+    GET /v1/event/\{eventId\}/sessions/\{sessionId\}/files
+  </Card>
+  <Card title="Simple file upload" href="/api/reference/session-files/upload-a-session-file-simple">
+    POST /v1/event/\{eventId\}/sessions/\{sessionId\}/files/upload
+  </Card>
+  <Card title="Direct-to-storage create" href="/api/reference/session-files/initiate-session-file-upload">
+    POST /v1/event/\{eventId\}/sessions/\{sessionId\}/files
+  </Card>
+  <Card title="Complete file upload" href="/api/reference/session-files/finalize-session-file-upload">
+    POST .../files/\{fileId\}/complete
+  </Card>
+  <Card title="Session files guide" href="/api/guides/uploading-session-files">
+    Replace, update metadata, delete
+  </Card>
+</CardGroup>
+
+## Media upload
+
+<CardGroup cols={2}>
+  <Card title="Start media upload" href="/api/reference/media/start-multipart-media-upload">
+    POST .../media/upload/initiate
+  </Card>
+  <Card title="Get media item status" href="/api/reference/media/get-media-item-status">
+    GET /v1/event/\{eventId\}/sessions/\{sessionId\}/media/\{mediaItemId\}
+  </Card>
+</CardGroup>
+
+## Related reference
+
+- [Media & Transcriptions guide](/api/guides/uploading-media-and-transcriptions) — step-by-step playbooks
+- [Uploading session files](/api/guides/uploading-session-files) — PDF and document attachments
+- [Session Files API overview](/api/reference/session-files)
+- [Authentication & scopes](/api/authentication)

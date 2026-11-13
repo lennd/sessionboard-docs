@@ -3,6 +3,10 @@ import { docsLoader } from '@astrojs/starlight/loaders';
 import { docsSchema } from '@astrojs/starlight/schema';
 
 import contract from './data/product-contract.json';
+import helpScopes from './data/help-scopes.json';
+import suitesConfig from './data/suites.json';
+import { deployedSuites, keepEntry } from './lib/suites.mjs';
+import type { Loader } from 'astro/loaders';
 
 /**
  * Retrieval and personalization taxonomy.
@@ -29,6 +33,14 @@ const PERMISSION_IDS = contract.permissions as [string, ...string[]];
 const AUDIENCES = ['organizer', 'reviewer', 'speaker', 'participant'] as const;
 
 /**
+ * Self-serve products with their own Help Center scope (src/data/help-scopes.json).
+ * A reader who arrives with `?via=marketing` sees only the articles tagged
+ * `products: [marketing]` in the sidebar and search until they choose
+ * "All of Sessionboard". Untagged articles are platform-only.
+ */
+const PRODUCTS = Object.keys(helpScopes.scopes) as [string, ...string[]];
+
+/**
  * The Availability box (src/components/Availability.astro) renders under the
  * title of every article that declares `features`, answering the three
  * questions CS gets asked — who gets it, where it lives, how to turn it on —
@@ -38,9 +50,38 @@ const AUDIENCES = ['organizer', 'reviewer', 'speaker', 'participant'] as const;
 const WHERE = ['org', 'event', 'both'] as const;
 const AVAILABILITY = ['everyone', 'preview', 'beta', 'add_on', 'on_request', 'limited_release', 'enterprise'] as const;
 
+/**
+ * Starlight's docs loader, minus the pages of suites that are not deployed
+ * (deployedSuites: every suite unless SB_PUBLIC_SUITES_ONLY). An unreleased
+ * suite is deployed staff-only (src/lib/staff-only.mjs): the Worker 404s it for
+ * everyone else, and search, the help index, the sitemap and llms.txt leave it
+ * out. Platform pages pass through untouched.
+ */
+const BUILT_SUITES = deployedSuites(suitesConfig, process.env);
+
+function suitesDocsLoader(): Loader {
+  const inner = docsLoader();
+  return {
+    ...inner,
+    load: (context) => {
+      const store = context.store;
+      const filtered = new Proxy(store, {
+        get(target, prop, receiver) {
+          if (prop === 'set') {
+            return (entry: { id: string }) => (keepEntry(entry.id, suitesConfig, BUILT_SUITES) ? target.set(entry as never) : false);
+          }
+          const value = Reflect.get(target, prop, receiver);
+          return typeof value === 'function' ? value.bind(target) : value;
+        },
+      });
+      return inner.load({ ...context, store: filtered });
+    },
+  };
+}
+
 export const collections = {
   docs: defineCollection({
-    loader: docsLoader(),
+    loader: suitesDocsLoader(),
     schema: docsSchema({
       extend: z.object({
         unlisted: z
@@ -59,6 +100,12 @@ export const collections = {
           .array(z.enum(AUDIENCES))
           .default(['organizer'])
           .describe('Who this article is written for. Defaults to event organizers.'),
+        products: z
+          .array(z.enum(PRODUCTS))
+          .default([])
+          .describe(
+            'Self-serve products this article applies to (src/data/help-scopes.json). Drives the scoped sidebar and search a reader gets from the product\u2019s Help button.',
+          ),
         jtbd: z
           .string()
           .optional()

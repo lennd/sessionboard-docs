@@ -1,0 +1,34 @@
+---
+title: "Learning API authentication"
+description: "Scopes and sign-in for the Sessionboard Learning API and its MCP tools"
+---
+
+## Scopes
+
+| Scope | What it allows |
+|-------|----------------|
+| `read:learning` | View Learning: courses, learners, certifications and results |
+| `write:learning` | Draft and change courses. Publishing and assigning wait for a person's OK in Sessionboard |
+| `read:sites` | View your Sites and their pages |
+| `write:sites` | Edit your Sites and their pages |
+
+**API tokens.** These scopes are offered to organizations on a Sessionboard Marketing, Learning, Awards or CRM plan. In **Organization Settings → API Tokens → Create Token**, tick them under **Your products**; they are never part of a new token's default scopes. Each request still needs the organization to have that product.
+
+**AI assistants (OAuth).** The Learning and Sites scopes are listed in `scopes_supported`, so a newly registered client gets them by default. Each request still needs the organization to have Learning and the person to have the role for it. A client registered before these scopes were added keeps working: the server grants the scopes the client was registered for and leaves out the rest, rather than refusing the request. Disconnect and reconnect the connector to pick up new scopes.
+
+A token restricted to particular events cannot use the Learning operations, because they act on the whole organization.
+
+## AI assistants
+
+Claude, ChatGPT, Copilot and Gemini connect to the Sessionboard MCP server by signing in with OAuth; there is no token to copy. In your Learning workspace, open **Apps**, then **Manage AI assistants** in the **AI assistants** panel. Add the Sessionboard connector, sign in, then ask. The person who signs in needs access to the organization's Learning workspace.
+
+## Requests
+
+Send the OAuth access token as a bearer token:
+
+```bash
+curl https://public-api.sessionboard.com/v1/learning/library \
+  -H "Authorization: Bearer <access-token>"
+```
+
+A request without a valid token returns `401`. A token without the scope an operation needs returns `403`.

@@ -1,0 +1,142 @@
+---
+title: "Authentication"
+description: "Authenticate with API tokens or OAuth 2.1"
+---
+
+import { Note, Warning, Steps, Step } from '@compat';
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+The Sessionboard Public API supports two authentication methods:
+
+1. **API Tokens** — Long-lived tokens for server-to-server integrations and scripts
+2. **OAuth 2.1** — For AI assistants (Claude, ChatGPT) and user-authorized connections
+
+<Tabs>
+  <TabItem label="API Tokens">
+
+API tokens are scoped to your organization and can be generated from the Sessionboard admin dashboard.
+
+## Generate a Token
+
+<Steps>
+  <Step title="Open Organization Settings">
+    Log in to the Sessionboard admin dashboard and navigate to **Organization Settings** from the sidebar.
+  </Step>
+  <Step title="Navigate to API Tokens">
+    Select the **API Tokens** section within your organization settings.
+  </Step>
+  <Step title="Generate a New Token">
+    Click **Generate Token**. Give the token a descriptive name and select the appropriate scopes for your use case.
+
+  </Step>
+  <Step title="Copy the Token">
+    Copy the generated token immediately. For security reasons, the full token value is only displayed once. Store it securely in your application's environment variables or secrets manager.
+  </Step>
+</Steps>
+
+## Using the Token
+
+Include the token in the `x-access-token` header on every API request.
+
+<Tabs syncKey="api-code">
+<TabItem label="cURL">
+```bash
+curl -X GET https://public-api.sessionboard.com/v1/events \
+  -H "x-access-token: YOUR_TOKEN"
+```
+
+</TabItem>
+<TabItem label="JavaScript">
+```javascript
+const response = await fetch('https://public-api.sessionboard.com/v1/events', {
+  headers: {
+    'x-access-token': 'YOUR_TOKEN'
+  }
+});
+
+const data = await response.json();
+```
+
+</TabItem>
+<TabItem label="Python">
+```python
+import requests
+
+response = requests.get(
+    'https://public-api.sessionboard.com/v1/events',
+    headers={'x-access-token': 'YOUR_TOKEN'}
+)
+
+data = response.json()
+```
+</TabItem>
+</Tabs>
+
+<Warning>
+  Keep your API tokens secure. Never commit tokens to source control, embed them in client-side code, or share them in public channels. If a token is compromised, revoke it immediately from the API Tokens settings page and generate a new one.
+</Warning>
+
+<Note>
+  A token works only while the person who created it is an active member of the organization. If they are removed from the organization or set to Inactive, every request with their tokens returns `401`; reactivating or re-adding them restores the tokens. Before someone leaves, create replacement tokens under an account that stays.
+</Note>
+
+## Token Scopes
+
+API tokens can be granted specific scopes to control access:
+
+| Scope | Type | Description |
+| --- | --- | --- |
+| `read:events` | Read | Access event data |
+| `read:sessions` | Read | Access session data and list session file attachments |
+| `read:contacts` | Read | Access speaker and contact data |
+| `read:reports` | Read | Access saved reports |
+| `read:dashboards` | Read | Access dashboards |
+| `read:insights` | Read | Access Reports, Dashboards, and SbQL query APIs. Required for MCP. |
+| `read:transcriptions` | Read | Access session transcriptions and recordings |
+| `read:media` | Read | Access uploaded media items and transcription status |
+| `read:awards` | Read | Access Awards programs, categories, rounds, promo codes, submissions, and reviews |
+| `read:registrations` | Read | Read registration forms, ticket types, registrations, orders, payment records, membership, attendees, check-ins and registration setup on events with Registration turned on. Preview scope — see below |
+| `read:expo` | Read | Read floor-map booths and sponsorship inventory on events with Expo turned on. Preview scope — see below |
+| `read:ask` | Read | Ask questions about an event in natural language and get cited answers (`POST /v1/event/{eventId}/ask`, MCP `ask_event`). Must be granted explicitly — legacy tokens with no scopes do not get it |
+| `read:tasks` | Read | List and read your team's Tasks (Sessionboard Platform). Refused on a key restricted to particular events |
+| `write:sessions` | Write | Create, update, delete, and restore sessions; upload and manage session files |
+| `write:contacts` | Write | Create, update, delete, and restore contacts |
+| `write:exhibitors` | Write | Create, update, delete, and restore exhibitors |
+| `write:sponsors` | Write | Create, update, delete, and restore sponsors |
+| `write:fields` | Write | Create, update, and delete custom fields |
+| `write:metadata` | Write | Create, update, and delete session metadata (rooms, tracks, etc.) |
+| `write:transcriptions` | Write | Create, update, and delete transcriptions and session recordings |
+| `write:media` | Write | Upload media files for automatic transcription |
+| `write:awards` | Write | Create, update, and delete Awards programs, categories, rounds, and promo codes; update and delete submissions; remove reviews |
+| `write:registrations` | Write | Create and update ticket types; place registration orders (comp, invoice, paid elsewhere, cash, check); approve, decline, or cancel registrations; check people in. Preview scope — see below |
+| `write:expo` | Write | Hold, reserve, sell, block, or release booths and assign them to exhibitors and sponsors. Preview scope — see below |
+| `write:events` | Write | Create, update, and delete agenda drafts, scheduling rules, personas, dashboards, widgets, and saved reports |
+| `write:tasks` | Write | Create, update, complete, reopen, and delete Tasks (Sessionboard Platform). Refused on a key restricted to particular events |
+
+**Preview scopes.** `read:registrations`, `write:registrations`, `read:expo` and `write:expo` are in preview. A token carries them only when they are set on it explicitly: they are not part of a new token's default scopes. In **Organization Settings → API Tokens → Create Token**, tick `read:registrations` under **Opt-in**; ask Sessionboard support to add `write:registrations`, `read:expo` or `write:expo`. The endpoints they open answer only for events with the Registration (or Expo) feature turned on, and return `403 FORBIDDEN` otherwise.
+
+Legacy tokens (empty scopes array) get all read scopes implicitly but do **not** get write access. When generating a token, select only the scopes your integration requires.
+
+Scoped read tokens must include the domain-specific read scope for each API area — for example, `read:events` alone does not grant access to transcription, media, or session file endpoints. Those require `read:transcriptions`, `read:media`, or `read:sessions` respectively.
+
+  </TabItem>
+  <TabItem label="OAuth 2.1">
+
+For AI assistants like Claude and ChatGPT, Sessionboard supports OAuth 2.1 with PKCE. This allows users to authorize AI tools to access their event data through a secure consent flow.
+
+See the full [OAuth 2.1 guide](/api/oauth) for setup instructions, token exchange, and available scopes.
+
+**Quick overview:**
+- Users authorize via a consent page at `appv2.sessionboard.com/oauth/consent`
+- Tokens are issued by `public-api.sessionboard.com/oauth/token`
+- Access tokens expire after 1 hour, refresh tokens after 7 days
+- Tokens inherit the authorizing user's permissions (dynamic — changes take effect immediately)
+
+```bash
+# Using an OAuth access token
+curl https://public-api.sessionboard.com/v1/events \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+```
+
+  </TabItem>
+</Tabs>

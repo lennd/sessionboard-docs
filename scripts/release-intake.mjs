@@ -66,6 +66,7 @@ import {
   ENABLE_HOW,
   KINDS,
   MODULES,
+  PRODUCTS,
   SCOPES,
   allEntries,
   featureFacts,
@@ -165,7 +166,7 @@ function featureIndex() {
 }
 
 function exampleEntry() {
-  const { releases } = loadReleaseNotes();
+  const { releases } = loadReleaseNotes({ all: true });
   const e = allEntries(releases).find((x) => x.date >= '2026-10-07' && x.use_case && x.internal?.when_to_bring_up);
   if (!e) return null;
   const { date, ...rest } = e;
@@ -190,6 +191,7 @@ If it is user-visible, draft ONE release entry as JSON that follows the schema e
 - Write for a customer. Plain, specific sentences. Bold the exact UI labels the PR introduces or renames. No marketing adjectives, no "we".
 - The products are named Dispatch and Advocacy — never "Amplify" in anything a human reads.
 - "article" MUST be a path from the article index you are given, optionally with "#" + one of its listed headings turned into a slug (lowercase, spaces → hyphens, punctuation removed). Choose the guide that documents the surface the PR changed. If no guide covers it, still pick the closest one and set "docs_gap" to one sentence saying what the guide should add.
+- "product": platform unless the article is in a self-serve suite (a path under /sessionboard-marketing, /sessionboard-learning or /sessionboard-awards); then that product. When a self-serve change is also built into Platform, set "platform": true and "platform_article" to the Platform guide (never under /sessionboard-*) that covers it.
 - "features" are slugs from the feature list, only when the change belongs to that feature.
 - "permissions" are exact slugs from the permission list (e.g. event.contacts.read) that a user must hold to use the change. Leave it [] unless the PR names a permission check; never write prose there.
 - "kind": new = a capability that did not exist; improved = an existing capability does more or reads better; fixed = behaviour that was wrong now works.
@@ -287,6 +289,16 @@ const ENTRY_PROPERTIES = {
   id: { type: 'string', description: 'kebab-case slug unique to this change' },
   title: { type: 'string' },
   summary: { type: 'string' },
+  product: {
+    type: 'string',
+    enum: PRODUCTS,
+    description: 'platform (default) or the self-serve product whose suite guide the article is (marketing, learning, awards)',
+  },
+  platform: { type: 'boolean', description: 'self-serve entries only: true when the same change is also built into Platform' },
+  platform_article: {
+    type: 'string',
+    description: 'only with platform: true — the Platform guide (not under /sessionboard-*) Platform channels link instead',
+  },
   article: { type: 'string', description: '/folder/guide or /folder/guide#section-slug from the article index' },
   related: { type: 'array', items: { type: 'string' } },
   kind: { type: 'string', enum: KINDS },
@@ -531,7 +543,7 @@ function git(...args) {
  * an entry on main (someone wrote or merged the entry under another id).
  */
 function collectDrafts(ref) {
-  const releases = loadReleaseNotes().releases;
+  const releases = loadReleaseNotes({ all: true }).releases;
   const onMain = new Set(allEntries(releases).map((e) => e.id));
   const named = new Set(coveredPrs(releases, config).keys());
   const canonical = (raw) => parsePrRef(raw, config)?.ref || null;
@@ -568,7 +580,7 @@ function collectDrafts(ref) {
  */
 function recoverDrafts(carriedFiles, ledgerPath) {
   const ledger = JSON.parse(readFileSync(ledgerPath, 'utf8'));
-  const named = new Set(coveredPrs(loadReleaseNotes().releases, config).keys());
+  const named = new Set(coveredPrs(loadReleaseNotes({ all: true }).releases, config).keys());
   const canonical = (raw) => parsePrRef(raw, config)?.ref || null;
   for (const f of carriedFiles.filter(existsSync)) {
     const parsed = JSON.parse(readFileSync(f, 'utf8'));
@@ -592,7 +604,7 @@ function recoverDrafts(carriedFiles, ledgerPath) {
     candidates.push(...collectDrafts(ref));
   }
   const { drafts, refs, lost } = pickRecovered(orphans, candidates, canonical);
-  const onMain = new Set(allEntries(loadReleaseNotes().releases).map((e) => e.id));
+  const onMain = new Set(allEntries(loadReleaseNotes({ all: true }).releases).map((e) => e.id));
   const { requeued, stale } = requeueLost(ledger, lost, onMain, TODAY);
   if (requeued.length && !DRY) writeFileSync(ledgerPath, `${JSON.stringify(ledger, null, 2)}\n`);
   console.error(`${orphans.length} drafted PR(s) on no branch: recovered ${drafts.length} draft(s) for ${refs.length}, re-queued ${requeued.length}, ${stale.length} stale.`);
@@ -718,7 +730,7 @@ const articles = articleIndex();
 const features = featureIndex();
 const example = exampleEntry();
 const { data: release, file: releasePath } = releaseFile(TODAY);
-const taken = new Set(allEntries(loadReleaseNotes().releases).map((e) => e.id));
+const taken = new Set(allEntries(loadReleaseNotes({ all: true }).releases).map((e) => e.id));
 let wroteEntries = false;
 
 for (const p of refs) {

@@ -1,0 +1,238 @@
+---
+title: "API Reference"
+description: "Complete reference for the Sessionboard Public API"
+---
+
+import { Note, Warning } from '@compat';
+
+This reference documents every endpoint available in the Sessionboard Public API. Endpoint pages are generated from our OpenAPI specification and include request parameters, response schemas, and example payloads.
+
+## Base URLs
+
+| Region | Base URL |
+| --- | --- |
+| US | `https://public-api.sessionboard.com` |
+| EU | `https://public-api-eu.sessionboard.com` |
+
+Use the base URL corresponding to the region where your organization's data is hosted.
+
+## Authentication
+
+All requests require an `x-access-token` header containing a valid API token. See [Authentication](/api/authentication) for details on generating and managing tokens.
+
+```bash
+curl -H "x-access-token: YOUR_TOKEN" https://public-api.sessionboard.com/v1/events
+```
+
+## Common Patterns
+
+### Pagination
+
+Search endpoints accept `page` and `pageSize` parameters and return a `pagination` object in the response. The default page size is 25 and the maximum is 100.
+
+Session responses include `is_abstract` and `composition_status` for composition-aware integrations. Subsessions inherit these fields from their parent. See [Sessions & composition](/api/reference/sessions-composition) for filters, expand options, and contact session summaries.
+
+### Filtering
+
+POST-based search endpoints accept filter criteria in the request body. Refer to each endpoint's documentation for available filter fields.
+
+#### Session categorization filters
+
+The five categorization filters — **tracks, tags, levels, formats, and languages** — are implemented on exactly four endpoints:
+
+| Endpoint | Filter style |
+| --- | --- |
+| `POST /v1/event/{eventId}/sessions` (session search) | camelCase body arrays: `filters.trackIds`, `filters.tagIds`, `filters.levelIds`, `filters.formatIds`, `filters.languageIds` |
+| `POST /v1/event/{eventId}/sessions/status` (status search) | Same camelCase body arrays — evaluated against the **top-level session**, so a subsession row matches via its parent. Unlike the other session searches, a **deleted** root session still matches, since surfacing deleted sessions is this endpoint's purpose. |
+| `POST /v1/event/{eventId}/speakers` (speaker search) | Same camelCase body arrays — matches speakers by the sessions they are assigned to. Filters are evaluated against the **top-level session**: a speaker on a subsession matches via the subsession's parent session, mirroring session search semantics. Only the session's **speakers** match — see the role note below. |
+| `GET /v1/event/{eventId}/sessions` (CRUD list) | snake_case query params: `track_id`/`track_ids`, `tag_id`/`tag_ids`, `level_id`/`level_ids`, `format_id`/`format_ids`, `language_id`/`language_ids` (plural params take comma-separated UUIDs) |
+
+Within one filter, IDs match with OR; separate filters combine with AND. Other search endpoints (contacts, sponsors, exhibitors) do **not** accept these filters.
+
+Filter values must be UUIDs. On the CRUD list endpoint, a non-UUID value returns `400` with error code `VALIDATION_ERROR` and a message naming the offending parameter (for example `track_id must be a UUID (received "nope")`).
+
+<Note>
+**Speaker search matches the speakers role only.** `POST /v1/event/{eventId}/speakers` returns the contacts attached to a session as **speakers**. Chairpersons, moderators and other participants are not returned — with or without a categorization filter.
+
+This trips up reconciliation because the session object from `POST /v1/event/{eventId}/sessions` exposes four separate participant arrays (`speakers`, `chairpersons`, `moderators`, `participants`), and only the first one feeds speaker search. To compare "speakers on track X" against "sessions on track X", collect the `speakers` array alone.
+
+Roles are per session, so the same contact can be a speaker on one session and a moderator on another. A contact can therefore appear in the unfiltered speaker list and still be absent from a filtered one, when its attachment to the matching session is a non-speaker role. That is expected, not a filtering bug.
+</Note>
+
+### Create vs Search Endpoints
+
+Some resources have two `POST` endpoints at similar paths:
+
+| Path Pattern | Purpose |
+| --- | --- |
+| `POST /v1/event/{eventId}/sessions` | **Search** sessions with filters, sorting, and pagination |
+| `POST /v1/event/{eventId}/sessions/create` | **Create** a new session |
+
+The `/create` suffix distinguishes write operations from search where both use `POST` on the same collection path (sessions, contacts, exhibitors, sponsors, custom fields, and metadata entities).
+
+**Registrations** and **check-ins** also use standard REST: `POST /v1/event/{eventId}/registrations` places an order and `POST /v1/event/{eventId}/check-ins` checks someone in — neither is a search. See [Registration and Expo](/api/guides/registration-and-expo).
+
+Session-scoped **transcriptions**, **recordings**, and **session files** use standard REST — `POST` on the collection path creates a resource; there is no conflicting search endpoint. See [Media & Transcriptions](/api/guides/uploading-media-and-transcriptions) and [Uploading session files](/api/guides/uploading-session-files) for upload flows.
+
+### Custom fields
+
+Create and update endpoints accept `custom_fields` as an object keyed by field **internal name**. Responses that include custom field values use the `CustomFieldValue` shape (`id`, `name`, `type`, `internal_name`, `value`, `created_at`) — see the **CustomFieldValue** schema in the API reference.
+
+| Type | Read (`value`) | Write (`custom_fields`) |
+| --- | --- | --- |
+| `checkbox` | `"Yes"` when checked, `"No"` when explicitly unchecked, `null` when the field was never set. Treat `null` as unchecked. | Send boolean `true` or `false`. |
+| `number`, `currency`, `percent` | Formatted string; stored zero serializes as a non-null formatted value (for example `"0"`). Empty means `null`. | Empty string (`""`) clears the value, same as `null`. `0` and `"0"` store zero. |
+| `datetime` | ISO 8601 (event custom fields on `GET /v1/events?expand=custom_fields` use event-local offset when the event timezone is set). | ISO 8601 string. |
+
+Event-level custom field definitions are listed at `GET /v1/event/{eventId}/fields`. Event record values use `GET /v1/events?expand=custom_fields`.
+
+<Warning>
+**Integration-owned fields reject writes.** Fields hydrated by a connector — `swoogo_session_id`, `cvent_session_id`, `visit_session_id` and similar — are read-only to the API, exactly as they are read-only in the Sessionboard UI. Including one in `custom_fields` (or in `values` on `PUT /v1/event/{eventId}/sessions/{sessionId}/fields`) returns `400` with error code `FIELD_READ_ONLY` and the offending field in `details.field`; no other field in the request is written either, so fix the payload and resend it whole.
+
+**Values the database cannot store return `400`, not `500`.** On create, update and bulk write endpoints, a text value longer than its column allows (for example a session title over its limit) returns `400` with error code `VALUE_TOO_LONG` and `details.max_length`; a value of the wrong shape for its column (an id that is not a UUID, a number outside the integer range) returns `400` `VALIDATION_ERROR`. Inside a bulk request the same codes appear on the failing operation's result. Fix the value and resend; these were previously reported as `500 INTERNAL_ERROR`.
+
+Integration-owned definitions are still returned by `GET /v1/event/{eventId}/fields` and their values are still readable — only writes are refused.
+</Warning>
+
+### Groups: sponsors and exhibitors
+
+Sponsors and exhibitors are the same underlying **account** record wearing a role on an event, not two separate record types. One account can hold both roles on the same event, in which case it is returned by both searches and readable on both `GET` endpoints, under the same `id`.
+
+Two consequences worth designing for:
+
+- To add a second role to a group you already created, call the other role's `/create` endpoint with `account_id` set to the existing account. Sending a `name` instead creates a second, unrelated account.
+- A `GET` for a role the record does not hold is a `404`, even though the record exists — as is a `GET` for a contact id on a group endpoint. Look the record up on the endpoint for the role it actually holds.
+
+### Sorting
+
+POST-based search endpoints accept a `sort` object in the request body to control result ordering. Each sortable field is a **nested object key** carrying a `sort` direction (`asc` / `desc`) and an optional integer `order` for multi-key priority — there is no flat `{"order": "createdAt", "sort": "asc"}` form:
+
+```json
+POST /v1/event/{eventId}/sessions
+{
+  "sort": {
+    "startsAt": { "sort": "asc" }
+  }
+}
+```
+
+All search endpoints support `createdAt` and `updatedAt` keys. Session search additionally supports `startsAt` — sessions with a null `starts_at` always sort last, regardless of direction. Session status search (`POST /v1/event/{eventId}/sessions/status`) additionally supports `deletedAt`.
+
+### Expanding Records
+
+Some endpoints support an `expand` query parameter (or request-body field) to include additional data in the response.
+
+| Expand value | Endpoints | Description |
+| --- | --- | --- |
+| `translated_fields` | most read endpoints | Returns translated versions of text fields when your event has translations enabled. |
+| `subsession_details` | session search + get | Returns full parent-shape parity (`status`, `custom_status`, `custom_fields`, `chairpersons`, `moderators`, `sponsors`, `exhibitors`, `tags`, `language`, `track`, `level`, `room`, `is_public`, `external_url`, `client_session_id`, `ceu_credits`, `capacity`, `source`) on every subsession inside `parent.subsessions[]`. Nested `language`, `track`, `level`, and `room` objects include the same fields as on parent sessions (see the `Session` schema). Without this expand the array contains the minimal subsession shape (`id`, `friendly_id`, `title`, `description`, `starts_at`, `ends_at`, `speakers`, `participants`, `format`, `content`, timestamps, parent friendly-id keys). Heavy joins are gated behind the flag for query performance. |
+
+### Nested session metadata
+
+Session responses embed assigned metadata as nested objects:
+
+| Field | Populated fields | Notes |
+| --- | --- | --- |
+| `language` | `id`, `event_id`, `name`, `order`, `created_at`, `updated_at` | |
+| `track` | `id`, `event_id`, `name`, `color`, `order`, `created_at`, `updated_at` | |
+| `level` | `id`, `name`, `order`, `created_at`, `updated_at` | No `event_id` on nested objects |
+| `format` | `id`, `name` only | |
+| `room` | `id`, `name`, `order`, `capacity`, `created_at`, `updated_at` | Only when `location` is `room` |
+
+Unassigned metadata is returned as an empty object `{}` on `POST /v1/event/{eventId}/sessions` (search). CRUD proxy endpoints (`GET` list, create, update, restore) return `null` instead.
+
+### Subsessions
+
+Sessions can have subsessions (child sessions linked to a parent). Subsessions are returned both:
+
+- **Nested**, inside `parent.subsessions[]` on every session response. The default shape is minimal — pass `expand=subsession_details` to receive full parity with the parent session.
+- **Top-level**, by calling `GET /v1/event/{eventId}/sessions/{sessionId}` with the subsession's UUID directly. The endpoint always returns the full session shape (including `chairpersons`, `moderators`, `custom_fields`, etc.) plus `parent_session_friendly_id` and `parent_session_friendly_id_raw` keys identifying the parent. The `expand=subsession_details` flag has no effect at the top level.
+
+This means callers can iterate `parent.subsessions[]`, take each subsession id, and call the GET endpoint to retrieve the same shape they would for a parent session — useful for integration patterns that need to walk the session tree.
+
+### Session participants (Sessions 2.0)
+
+Session responses include **both** legacy role arrays and a flat `participants` array:
+
+| Field | Source | When to use |
+| --- | --- | --- |
+| `speakers`, `chairpersons`, `moderators` | Legacy junction tables | Existing integrations that expect these arrays |
+| `participants` | `Session_Participants` + `Session_Roles` | New integrations; events with custom program roles (Author, Panelist, etc.) |
+
+Each participant object uses the `SessionSpeaker` contact profile shape plus `participant_role` (`slug`, `name`, `name_plural`, `core_role`). Use `participant_role.name` (or `slug`) as the display/program role — for example **Author** or **Panelist**. `core_role` is only the legacy junction mapping (`speaker`, `chairperson`, `moderator`) and is not the role label.
+
+Contact profile fields on embedded participants — `photo_url`, `company_name`, `title`, `address_country`, and other standard contact fields — are included in the event's default language **without** expand. Use `expand=translated_fields` for other locales.
+
+Legacy `speakers` / `chairpersons` / `moderators` entries also include `participant_role` when the event has Sessions 2.0 roles configured.
+
+### Organization-Scoped vs Convenience Routes
+
+Dashboards, widgets, and saved reports support three route patterns:
+
+| Pattern | Example | Notes |
+| --- | --- | --- |
+| Event-scoped | `/v1/event/{eventId}/dashboards` | Scoped to a single event |
+| Org-scoped | `/v1/organization/{orgId}/dashboards` | Cross-event, explicit org ID |
+| Convenience | `/v1/dashboards` | Cross-event, org resolved from token |
+
+The convenience routes are recommended for org-level operations — they're simpler and don't require you to know the org ID. The org-scoped routes (`/v1/organization/{orgId}/...`) are equivalent but require the org ID in the URL.
+
+## Images
+
+Images larger than 2 MB (headshots, logos and other uploaded images) are delivered resized from their URLs, for example `photo_url`: scaled to fit within 2400 × 2400 pixels, and a PNG may be delivered as WebP to clients that send `Accept: image/webp`. The uploaded file is stored unchanged. To get full-resolution originals, use the bulk download tools in Sessionboard, such as **Download Headshots** (Contacts, **More** menu), which always export the original files.
+
+## Media & Transcriptions
+
+Sessionboard exposes three related but distinct media workflows. Pick the path that matches what you have:
+
+| Workflow | When to use | Scopes |
+| --- | --- | --- |
+| **Transcriptions** | You already have transcript text, summaries, topics, or translations to sync | `read:transcriptions`, `write:transcriptions` |
+| **Session recordings** | You have an audio file for a session's recording archive | `read:transcriptions`, `write:transcriptions` |
+| **Media upload** | You have a video or audio file and want Sessionboard to transcribe it automatically | `read:media`, `write:media` |
+
+Start with the [Media & Transcriptions guide](/api/guides/uploading-media-and-transcriptions) for playbooks and examples, or the [API overview](/api/reference/transcriptions-and-media) for resource shapes. Endpoint pages are grouped under **Event — Media** in the sidebar.
+
+## Error Codes
+
+| Status Code | Description |
+| --- | --- |
+| `200` | Success. The response body contains the requested data. |
+| `400` | Bad Request. The request body or parameters are invalid, including a body that is not valid JSON or a URL path that is not valid percent-encoding. Check the error message for details. |
+| `401` | Unauthorized. The `x-access-token` header is missing, the token is invalid, or the organization the token belongs to has been archived (`Organization is archived`). |
+| `403` | Forbidden. The token does not have the required scope for this endpoint, or the target event has been archived (`EVENT_ARCHIVED`). Archived events are also omitted from `GET /v1/events`. |
+| `404` | Not Found. The requested resource does not exist. |
+| `409` | Conflict. The resource was modified since you last fetched it. Re-fetch the resource to get the current `updated_at` value and retry your update. |
+| `429` | Too Many Requests. You are being rate limited. Retry after a short delay with exponential backoff. |
+| `500` | Internal Server Error. An unexpected error occurred. Contact support if the issue persists. |
+| `503` | Service Unavailable. The API is briefly unable to serve the request, for example during a database failover. Wait for the number of seconds in the `Retry-After` header, then retry. |
+
+### Error codes on `400`
+
+Write endpoints return a machine-readable `error` code alongside the human-readable `message`, so integrations can branch without parsing prose:
+
+| Code | Meaning |
+| --- | --- |
+| `VALIDATION_ERROR` | The body or a query parameter is malformed — a missing required key, an empty `values` array, a non-UUID filter value. The message names the parameter. |
+| `UNKNOWN_FIELD` | A custom field internal name in the request does not exist on this event. Check `GET /v1/event/{eventId}/fields`. |
+| `TYPE_MISMATCH` | The value sent does not fit the field's type (for example text in a `number` field, a value that is not one of a `dropdown` field's options, or a URL field value that is not an `http(s)` URL the field accepts). |
+| `FIELD_READ_ONLY` | The field is owned by an integration and cannot be written through the API. See [Custom fields](#custom-fields). |
+
+`details.field` carries the offending field's internal name on all three field errors.
+
+On the sessions, exhibitors and sponsors bulk endpoints, a `TYPE_MISMATCH` for a value that is not one of a `dropdown` field's options also carries `valid_options` on the result's `error` object — an array with one entry per option the field accepts. The message quotes each option, because an option label can contain a comma; branch on the array, not on the message text:
+
+```json
+{
+  "index": 0,
+  "action": "create",
+  "status": "error",
+  "error": {
+    "code": "TYPE_MISMATCH",
+    "message": "Field 'product_type' value 'Banana' is not a valid option. Valid options: [\"1\", \"Banana, Chocolate\", \"Blue, Green, Violet\", \"10\"]",
+    "valid_options": ["1", "Banana, Chocolate", "Blue, Green, Violet", "10"]
+  }
+}
+```
+
+`valid_options` is absent on every other error, including a `TYPE_MISMATCH` on a non-dropdown field. Contacts bulk returns `error` as a plain string, so it never carries `valid_options`; the quoted options are in that string.

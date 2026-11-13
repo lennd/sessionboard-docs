@@ -20,6 +20,9 @@
  * innerHTML.
  */
 import { hydrateMarkers } from '../lib/marker-hydration.mjs';
+import suitesConfig from '../data/suites.json';
+import { PLATFORM, SUITE_COOKIE, landingTarget } from '../lib/suites.mjs';
+import { docsGrantLine } from '../lib/docs-grant.mjs';
 
 const HINT = 'sb_signed_in=1';
 /** Set by the product on .sessionboard.com while someone is signed in: `sb_app=<region id>`. Names a region, nothing else. */
@@ -45,6 +48,7 @@ const VIA_LABELS = {
   event_portal: 'the event portal',
   org_portal: 'the reviewer portal',
   ready_room: 'Ready Room',
+  docs_grant: 'an email link from Sessionboard',
 };
 /** The article audience each role reads (frontmatter `audience`). */
 const AUDIENCE_BY_ROLE = { organizer: 'organizer', speaker: 'participant', reviewer: 'reviewer', ready_room: 'organizer' };
@@ -219,6 +223,9 @@ function buildPanel(reader, ctx, onChoose) {
     reader.email ? el('p', { class: 'sb-acct-muted', text: reader.email }) : null,
     el('p', { class: 'sb-acct-muted', text: `Signed in from ${VIA_LABELS[reader.signed_in_via] ?? 'Sessionboard'}` }),
   ];
+  // Staff-granted documentation access (src/lib/docs-grant.mjs).
+  const grantLine = docsGrantLine(reader.docs_grant, document.documentElement.lang || undefined);
+  if (grantLine) nodes.push(el('p', { class: 'sb-acct-muted', 'data-sb-docs-grant': '', text: grantLine }));
   const roles = [...reader.roles, ...(reader.staff ? ['staff'] : [])];
   if (roles.length) {
     nodes.push(
@@ -390,6 +397,45 @@ function audienceNote(reader) {
 
 // ── Boot ───────────────────────────────────────────────────────────────
 
+/**
+ * Documentation suites (src/lib/suites.mjs), only when a self-serve suite is
+ * deployed (the head script then sets window.sbSuites). Reveals the switcher's
+ * entries for the suites this reader holds and can read, and the switcher
+ * itself once that is two or more; on the site root, sends a reader who holds
+ * exactly one self-serve product and no Platform org to that product's suite.
+ * Staff (super users) get every suite, unreleased ones included (staff-only
+ * until they ship, src/lib/staff-only.mjs); nobody else is shown or sent to an
+ * unreleased suite, whatever their token holds.
+ */
+function applySuites(reader) {
+  const state = window.sbSuites;
+  if (!state || !reader) return;
+  const staff = reader.staff === true;
+  // Readable: Platform and the public suites; for staff, every deployed suite.
+  const readable = new Set([PLATFORM, ...Object.keys(state.suites).filter((k) => staff || !state.suites[k].staff)]);
+  const products = staff ? [...readable] : Array.isArray(reader.products) ? reader.products.filter((p) => readable.has(p)) : null;
+  // Only what the reader holds: the page being read never adds a product (the
+  // switcher's own markup marks the current suite as active).
+  const held = new Set(products ?? [PLATFORM]);
+  const nav = document.querySelector('.sb-suite-switch');
+  if (nav) {
+    const links = [...nav.querySelectorAll('a[data-suite]')];
+    let shown = 0;
+    for (const a of links) {
+      a.hidden = !held.has(a.dataset.suite);
+      if (!a.hidden) shown += 1;
+    }
+    nav.hidden = shown < 2;
+  }
+  const built = readable;
+  const remembered = document.cookie.split('; ').some((c) => c.startsWith(`${SUITE_COOKIE}=`) && c.length > SUITE_COOKIE.length + 1);
+  if (remembered) return;
+  // An explicit ?via= (kept by the head script before any script strips it) wins
+  // over the token: /?via=platform stays on Platform for a one-product reader.
+  const target = landingTarget({ path: location.pathname, via: state.via ?? null, products }, suitesConfig, built);
+  if (target) location.replace(target);
+}
+
 async function boot() {
   wireToggles();
   let reader = await loadReader();
@@ -412,6 +458,7 @@ async function boot() {
 
   renderMenus(reader, ctx, choose);
   if (!reader) return;
+  applySuites(reader);
   showForYou(reader);
   audienceNote(reader);
   if (ctx) applyContext(reader, ctx);

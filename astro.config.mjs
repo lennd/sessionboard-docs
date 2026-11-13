@@ -8,6 +8,9 @@ import sidebar from './src/sidebar.json' with { type: 'json' };
 import site from './site.json' with { type: 'json' };
 import rehypeAppLinks from './plugins/rehype-app-links.mjs';
 import { isStaffOnlyHref, staffOnlyGlobs } from './src/lib/staff-only.mjs';
+import suitesConfig from './src/data/suites.json' with { type: 'json' };
+import { suiteStaticFiles } from './src/lib/suites-build.mjs';
+import { ACADEMY_SLUG, academyOpen } from './src/lib/academy.mjs';
 
 // The staff-only enablement section (src/pages/<internalPrefix>/) is unlisted.
 // Starlight adds @astrojs/sitemap itself unless one is configured here, so
@@ -15,7 +18,11 @@ import { isStaffOnlyHref, staffOnlyGlobs } from './src/lib/staff-only.mjs';
 const INTERNAL = `https://${site.canonicalHost}/${site.internalPrefix}`;
 // Pages with `unlisted: true` in frontmatter (src/content.config.ts) — reached
 // only from a link we email, so kept out of the sitemap as well as noindexed.
-const UNLISTED = new Set([`https://${site.canonicalHost}/help/release-notes/email`]);
+const UNLISTED = new Set([
+  `https://${site.canonicalHost}/help/release-notes/email`,
+  // The Academy until it opens (site.json `academy.open`, src/lib/academy.mjs).
+  ...(academyOpen(site) ? [] : [`https://${site.canonicalHost}/${ACADEMY_SLUG}`]),
+]);
 
 export default defineConfig({
   site: `https://${site.canonicalHost}`,
@@ -29,6 +36,9 @@ export default defineConfig({
     rehypePlugins: [rehypeAppLinks],
   },
   integrations: [
+    // Suites left out of an SB_PUBLIC_SUITES_ONLY build leave no static files behind.
+    // Otherwise unreleased suites are deployed staff-only (src/lib/staff-only.mjs).
+    suiteStaticFiles(suitesConfig),
     // Staff-only sections (site.json `staffOnly`, src/lib/staff-only.mjs) stay out too.
     sitemap({
       filter: (page) =>
@@ -46,9 +56,11 @@ export default defineConfig({
         alt: 'Sessionboard',
       },
       favicon: '/favicon.png',
-      customCss: ['./src/styles/custom.css'],
+      customCss: ['./src/styles/custom.css', './src/styles/api.css'],
       components: {
         Head: './src/components/Head.astro',
+        // Adds the Help Center | API Docs tabs; the API tab's sidebar is set in src/route-data.ts.
+        Header: './src/components/Header.astro',
         Sidebar: './src/components/Sidebar.astro',
         PageTitle: './src/components/PageTitle.astro',
         Footer: './src/components/Footer.astro',
@@ -59,9 +71,26 @@ export default defineConfig({
       // Keeps staff-only pages out of the Pagefind index.
       routeMiddleware: './src/route-data.ts',
       plugins: [
-        starlightLlmsTxt({ exclude: staffOnlyGlobs(site) }),
+        starlightLlmsTxt({ exclude: [...staffOnlyGlobs(site), ...(academyOpen(site) ? [] : [ACADEMY_SLUG])] }),
         // /_account/sign-in (the 404 page's sign-in link) is a Worker route, not a page.
-        starlightLinksValidator({ errorOnRelativeLinks: false, exclude: ['/_account/**'] }),
+        // API endpoint pages and the spec files are generated (src/pages/api, public/api), which
+        // the validator cannot see; scripts/api-spec.mjs and tests/api-docs.test.mjs check them.
+        starlightLinksValidator({
+          errorOnRelativeLinks: false,
+          exclude: [
+            '/_account/**',
+            '/api/reference/*/*',
+            '/api/reference/*/*#*',
+            '/api/openapi.yaml',
+            '/api/openapi.json',
+            '/api/llms.txt',
+            // Self-serve products' API sections (src/pages/[product]/api) exist only in builds
+            // that include the product; tests/api-docs.test.mjs checks their links instead.
+            '/sessionboard-*/api',
+            '/sessionboard-*/api/**',
+            '/sessionboard-*/api#*',
+          ],
+        }),
       ],
       pagination: true,
       lastUpdated: false,

@@ -1,0 +1,149 @@
+---
+title: "Registration and Expo"
+description: "Sync registrations and orders, place orders from another system, check people in from a scanner, and manage booth inventory."
+---
+
+import { Note } from '@compat';
+
+Registration inside Sessionboard sells tickets through registration forms and keeps one registration per person, attached to an order. Expo puts the event's booths on a floor map and sells booth and sponsorship packages. The API reads both, and writes the parts an outside system needs: orders taken elsewhere, approval decisions, door check-ins and booth holds.
+
+Every endpoint is per event, under `/v1/event/{eventId}/…`.
+
+<Note>
+  Registration and Expo are Early Access. An event without Registration turned on answers `403 FORBIDDEN` on the Registration endpoints, and an event without Expo answers `403 FORBIDDEN` on the Expo endpoints — even with the right scopes.
+</Note>
+
+## 1. Get a token with the right scopes
+
+| Scope | Lets the token |
+| --- | --- |
+| `read:registrations` | Read forms, ticket types, registrations, orders, payments, membership, attendees, check-ins, the registration summary, capacity pools, fee groups, donation funds, workshop rules and badge print jobs |
+| `write:registrations` | Create and update ticket types, place orders, approve / decline / cancel registrations, check people in |
+| `read:expo` | Read booths and sponsorship packages |
+| `write:expo` | Update booths |
+
+These four scopes are in **preview**. A token carries them only when they are set on it explicitly — they are not part of a new token's default scopes. In **Organization Settings → API Tokens → Create Token**, tick `read:registrations` under **Opt-in**; ask Sessionboard support to add `write:registrations`, `read:expo` or `write:expo`. An OAuth client gets them only by naming them in its `scope` request; they are not listed in `scopes_supported`.
+
+A write scope does not include the matching read scope, so an integration that reads back what it writes needs both. Legacy tokens with no scopes can read but not write. See [Authentication](/api/authentication) and [OAuth](/api/oauth).
+
+## 2. Sync registrations
+
+[List registrations](/api/reference/registration/list-registrations) returns one row per person in every status, with ticket type, form, order, answers, badge and approval state. Page through it with `page` and `page_size` (up to 200).
+
+For an incremental sync, send the latest `updated_at` you received (or the time you started the previous run) as `updated_since`:
+
+```bash
+curl "https://public-api.sessionboard.com/v1/event/7001/registrations?updated_since=2026-10-26T14:00:00Z&page_size=200" \
+  -H "x-access-token: $SESSIONBOARD_TOKEN"
+```
+
+Filters: `status` (comma-separated; an unknown value is a `400`), `form_id`, `ticket_type_id`, `registrant_type_id`, `account_id` and `email`.
+
+- For a door list or badge printer, [List attendees](/api/reference/registration/list-attendees) returns only `confirmed` and `checked_in` people in a short shape, sorted by name, with `updated_at` on each row.
+- For money, [List orders](/api/reference/registration/list-orders) returns each order's lines, totals, payments and invoice. Amounts are integers in cents.
+
+### Look someone up
+
+- `q` on [List registrations](/api/reference/registration/list-registrations) finds attendees by a fragment of their name, email or company (`?q=ada%20love`).
+- [List orders](/api/reference/registration/list-orders) takes `number` (the order number on receipts) and `email` (the buyer). `status=awaiting_invoice,partially_paid` lists orders that still owe money.
+
+### Report on the funnel
+
+[Get the registration summary](/api/reference/registration/get-the-registration-summary) returns the numbers on the Registration Overview page in one call: registrations by status and per day, per ticket type (sold, capacity, revenue), per attendee type and form, the member mix, revenue collected and refunded, orders per status, invoices still owed (count, overdue, balance) and shared capacity pools.
+
+[Get the registration funnel](/api/reference/registration/get-the-registration-funnel) splits the funnel per registration form: form views, checkouts started and completed, registrations, the rates between them, and abandoned checkouts with what they held. [Get the registration waitlist](/api/reference/registration/get-the-registration-waitlist) counts who is waiting per form and ticket type and how offers stand.
+
+### Read payments
+
+[List payments](/api/reference/registration/list-payments) returns every payment record of the event's orders: charges and refunds through your organization's payment gateway (Sessionboard connects to it through Spreedly) and money recorded offline (check, cash, paid elsewhere). Each record has its type, status, amount, method type, the gateway type and, when the gateway reported them, the card brand and last four digits. It never carries a card number, a payment token or a gateway credential.
+
+- A failed card attempt is its own record with `status: failed` and a `failure` code, so `status=failed` is the failed-transaction log.
+- A refund names the charge it refunds in `parent_payment_id`.
+- Sync it like registrations, with `updated_since`.
+
+### Check membership
+
+Member pricing decides an attendee's price and attendee type from your organization's member records.
+
+- [Look up a member](/api/reference/registration/look-up-a-member) checks one email the way the registration form does: `member`, `lapsed` or `none`, the member-status value that decided it and the attendee type that applies, plus that person's registrations. It writes nothing.
+- [List membership of registrations](/api/reference/registration/list-membership-of-registrations) returns what the check answered when each person registered. Filter with `membership=member,lapsed,none`.
+
+### Read the pricing and workshop setup
+
+- [List capacity pools](/api/reference/registration/list-capacity-pools): ticket types that share one capacity, with sold, left and percent full.
+- [List fee groups](/api/reference/registration/list-fee-groups): fee groups, their ticket types and the promo codes limited to each.
+- [List donation funds](/api/reference/registration/list-donation-funds): donation ticket types, their funds and what each fund has raised and has pledged.
+- [Get workshop rules](/api/reference/registration/get-workshop-rules): how attendees pick workshops (required picks per slot, overlaps, visibility, self-service changes).
+- [List badge print jobs](/api/reference/registration/list-badge-print-jobs): print stations and the badge print queue.
+
+These are read-only; change them in Sessionboard under Registration.
+
+## 3. Place orders taken somewhere else
+
+[Create a registration](/api/reference/registration/create-a-registration) places one order for one or more people through a registration form. Pick the form with [List registration forms](/api/reference/registration/list-registration-forms) and the ticket types it sells (`ticket_type_ids`).
+
+```bash
+curl -X POST "https://public-api.sessionboard.com/v1/event/7001/registrations" \
+  -H "x-access-token: $SESSIONBOARD_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "form_id": "6c1f2d9e-3b4a-4f5e-8a7b-1c2d3e4f5a6b",
+    "payment": "paid_externally",
+    "idempotency_key": "crm-order-58213",
+    "attendees": [
+      {
+        "email": "priya.raman@example.org",
+        "first_name": "Priya",
+        "last_name": "Raman",
+        "ticket_type_id": "0b9d6a3c-2e1f-4a5b-9c8d-7e6f5a4b3c2d"
+      }
+    ]
+  }'
+```
+
+- `payment` is `comp`, `invoice`, `paid_externally`, `cash` or `check`. No card is charged.
+- Always send an `idempotency_key` (1–128 characters). If your request times out, send it again with the same key: you get the original order back with `200` instead of a second order.
+- One order takes up to 100 people.
+- Capacity, per-order limits, required questions and one-registration-per-email all apply. A refusal is `409 CONFLICT` with `details.reason` (`duplicate`, `sold_out`, …).
+- Registrations come back `confirmed`, or `pending_approval` when the event's approval rules hold them.
+
+To approve, decline or cancel later, use [Update a registration](/api/reference/registration/update-a-registration) with `action`.
+
+## 4. Check people in from a scanner
+
+[Check someone in](/api/reference/registration/check-someone-in) takes a `registration_id`, an `email` or a scanned `badge_code` — the `sb-checkin:…` QR from the confirmation email, or a printed or in-app badge.
+
+```bash
+curl -X POST "https://public-api.sessionboard.com/v1/event/7001/check-ins" \
+  -H "x-access-token: $SESSIONBOARD_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "badge_code": "sb-checkin:5d4c3b2a-1f0e-4d9c-8b7a-6f5e4d3c2b1a", "checked_in_at": "2026-11-10T13:02:55Z" }'
+```
+
+- It is safe to retry: a second scan answers `200` with `already_checked_in: true`.
+- A canceled, declined or transferred registration is refused with `409 CONFLICT` (`details.reason: wrong_status`, with the status in `details.status`).
+- Send `checked_in_at` when uploading scans made offline.
+
+To mirror check-ins made in Sessionboard's own door app, poll [List check-ins](/api/reference/registration/list-check-ins) with `since`, which filters on the check-in time (`checked_in_at`). Key each check-in by its registration `id`.
+
+## 5. Manage booths and sponsorships
+
+[List booths](/api/reference/expo/list-booths) returns every booth on the event's floor maps with its status (`available`, `hold`, `reserved`, `sold`, `blocked`), price, package and the exhibitor or sponsor holding it. Filter with `floor_map_id` and `status`.
+
+[Update a booth](/api/reference/expo/update-a-booth) holds, reserves, sells, blocks or releases a booth, assigns it to an exhibitor or sponsor of the event (`account_id`), sets its own price (`list_price_cents`) or moves it to another booth package (`product_id`). A hold with `hold_until` lapses back to `available` on its own.
+
+[List sponsorships](/api/reference/expo/list-sponsorships) returns the active sponsorship packages with how many are sold and left (`include_archived=true` adds archived ones).
+
+## Errors
+
+Errors use `{ error, message, details }`. The ones to handle:
+
+| Status | `error` | Meaning |
+| --- | --- | --- |
+| `400` | `VALIDATION_ERROR` | A malformed ID or body field; the message names it |
+| `403` | `SCOPE_REQUIRED` | The token lacks the scope |
+| `403` | `FORBIDDEN` | Registration or Expo is off for the event |
+| `404` | `NOT_FOUND` | No such record on this event |
+| `409` | `CONFLICT` | The order, status change or check-in is refused; see `details.reason` |
+| `422` | `VALIDATION_ERROR` | The promo code is not valid for the order |
+| `429` | — | Rate limited; wait `Retry-After` seconds. See [Rate Limiting](/api/rate-limiting) |

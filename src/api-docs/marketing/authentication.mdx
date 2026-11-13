@@ -1,0 +1,36 @@
+---
+title: "Marketing API authentication"
+description: "Scopes, API tokens and AI assistant sign-in for the Sessionboard Marketing API"
+---
+
+## Scopes
+
+| Scope | What it allows |
+|-------|----------------|
+| `read:marketing` | View Marketing: events and webinars, campaigns, people, content, pages and results |
+| `write:marketing` | Draft and change Marketing events, campaigns, pages and content. Anything that reaches people waits for a person's OK in Sessionboard |
+| `read:sites` | View your Sites and their pages |
+| `write:sites` | Edit your Sites and their pages |
+| `read:brand_kits` | View Brand kits: colors, fonts, logos and voice |
+| `write:brand_kits` | Fill in and change Brand kits |
+
+**API tokens.** These scopes are offered to organizations on a Sessionboard Marketing, Learning, Awards or CRM plan. In **Organization Settings → API Tokens → Create Token**, tick them under **Your products**; they are never part of a new token's default scopes. Each request still needs the organization to have that product.
+
+**AI assistants (OAuth).** The Marketing, Sites, Learning and Brand kit scopes are listed in `scopes_supported`, so a newly registered client gets them by default. Each request still needs the organization to have that product and the person to have the role for it. A client registered before these scopes were added keeps working: the server grants the scopes the client was registered for and leaves out the rest, rather than refusing the request. Disconnect and reconnect the connector to pick up new scopes.
+
+A token restricted to particular events cannot use the Marketing operations, because they act on the whole organization.
+
+## Requests
+
+Send an API token in the `x-access-token` header, or an OAuth access token as a bearer token:
+
+```bash
+curl https://public-api.sessionboard.com/v1/marketing/audience/summary \
+  -H "x-access-token: <api-token>"
+```
+
+A request without a valid token returns `401`. A token without the scope an operation needs returns `403`.
+
+## AI assistants
+
+Claude, ChatGPT, Copilot and Gemini connect to the Sessionboard MCP server by signing in with OAuth; there is no token to copy. In your Marketing workspace, open **Apps**, then **AI assistants**. Add the Sessionboard connector, sign in, then ask.

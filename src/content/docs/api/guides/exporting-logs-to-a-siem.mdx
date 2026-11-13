@@ -1,0 +1,163 @@
+---
+title: "Exporting logs to a SIEM"
+description: "Pull your organization's API request, security and audit logs into Splunk, Microsoft Sentinel or Elastic."
+---
+
+import { Note, Warning } from '@compat';
+
+Sessionboard keeps three logs for your organization. Your SIEM pulls them on a schedule with a dedicated API token, one stream at a time, using a cursor so that no event is missed or fetched twice.
+
+| Stream | What it holds | Kept for |
+| --- | --- | --- |
+| [`/v1/logs/api-requests`](/api/reference/log-export/list-api-request-logs) | Every request made with your organization's API tokens to this API, the MCP server and Insights — including requests rejected at authentication | 365 days |
+| [`/v1/logs/security-events`](/api/reference/log-export/list-security-events) | Sign-ins, failed sign-ins, two-factor and passkey events, password resets, sign-outs | No limit |
+| [`/v1/logs/audit-trail`](/api/reference/log-export/list-audit-trail) | Every recorded change to your data: who changed which record, which property, and the new value | No limit |
+
+<Note>
+  Security events cover your organization's current, active members — a deactivated member's sign-ins stop appearing. Activity by Sessionboard staff — for example a support engineer signing in to help you — is not part of this export.
+</Note>
+
+## 1. Create a log export token
+
+An administrator who can manage users creates the token in **Organization Settings → API Tokens → Create Token** and checks **Audit log export** (`read:audit_logs`).
+
+A log export token is separate from your integration tokens:
+
+- It holds `read:audit_logs` and nothing else, so it can read logs but cannot read or change events, sessions or contacts. Any other endpoint answers `403` with `"reason": "log_export_only"` in the body, so a collector can tell a misrouted call from a missing scope.
+- It always covers the whole organization. Event restrictions don't apply to it.
+- It must be an API token sent as `x-access-token`. OAuth (Bearer) tokens are refused.
+
+Store the token in your SIEM's secret store. Use the host for your region: `https://public-api.sessionboard.com` (US) or `https://public-api-eu.sessionboard.com` (EU).
+
+## 2. Pull a page
+
+```bash
+curl -s "https://public-api-eu.sessionboard.com/v1/logs/audit-trail?since=2026-10-01T00:00:00Z&limit=500" \
+  -H "x-access-token: $SESSIONBOARD_LOG_TOKEN"
+```
+
+```json
+{
+  "data": [
+    {
+      "id": "8d0c6b0e-5a43-4c41-9a1e-2f3c0f6d7b21",
+      "stream": "audit",
+      "occurred_at": "2026-10-01T08:14:03.512Z",
+      "ingested_at": "2026-10-01T08:14:03.519874Z",
+      "action": "session.update",
+      "outcome": "success",
+      "reason": null,
+      "actor": { "type": "user", "id": "4821", "name": "Ada Lovelace", "token_hint": null, "user_email": "ada@example.com" },
+      "src_ip": "203.0.113.7",
+      "user_agent": null,
+      "status": null,
+      "duration_ms": null,
+      "target": { "type": "session", "id": "0f9b…" },
+      "details": { "event_id": 6815, "property": "title", "value": "Opening keynote" }
+    }
+  ],
+  "next_cursor": "eyJ2IjoxLCJzIjoiYXVkaXQiLC4uLn0",
+  "has_more": true
+}
+```
+
+Every stream returns events in this same shape, so one field mapping in your SIEM covers all three. The `stream` field tells them apart: `api_request` from `/v1/logs/api-requests`, `security_event` from `/v1/logs/security-events`, and `audit` from `/v1/logs/audit-trail`.
+
+## 3. Keep pulling with the cursor
+
+The first call starts at `since` (24 hours ago if you leave it out). After that, send back the `next_cursor` you got and nothing else changes:
+
+1. Call with `cursor=<next_cursor>` and the **same filters** as before. A cursor remembers its filters; changing them returns `400 CURSOR_FILTER_MISMATCH`.
+2. Save `next_cursor` only after your SIEM has stored the page.
+3. If `has_more` is `true`, call again straight away. If it is `false`, you're caught up — wait for your next poll.
+
+An empty page returns the cursor you sent, so a caught-up poller simply keeps it.
+
+Events become visible about a minute after they happen. Pages are ordered by when Sessionboard recorded each event, not when it happened, so an event that is recorded late still lands after your cursor instead of being skipped. Use `id` to de-duplicate if you ever replay a page.
+
+| Response | What to do |
+| --- | --- |
+| `400 INVALID_CURSOR` | The cursor is damaged, or was issued for another stream or another organization's token. Restart from `since`. |
+| `400 SINCE_BEFORE_RETENTION` | `since` is older than the stream keeps (365 days for API requests). Use a later time. |
+| `410 CURSOR_EXPIRED` | Your saved position is now older than retention. Restart from `since`. |
+| `429` | 60 requests per minute per token. Wait for `Retry-After`. |
+
+## Filters
+
+| Stream | Parameter | Effect |
+| --- | --- | --- |
+| all | `limit` | Events per page, 1–1000 (default 500) |
+| `api-requests`, `security-events` | `outcome=success` or `failure` | Only successful or only failed events |
+| `api-requests` | `source=public-api`, `mcp` or `insights` | Only one surface |
+| `api-requests` | `include=request_body` | Add logged request bodies to `details.request_body` |
+| `audit-trail` | `subject_type=session,contact` | Only these record types |
+| `audit-trail` | `include_values=false` | Omit changed values, for SIEMs that must not hold personal data |
+
+Failed authentication shows up in `api-requests` with `outcome: "failure"` when the credential can be tied to your organization. The `reason` is one of `revoked_token`, `expired_token`, `org_archived`, `member_inactive`, `owner_inactive`, `ai_disabled`, `log_export_only`, `cross_org_event` or `event_not_allowed`. A request with no key (`missing_token`) or with a key that was never valid (`invalid_token`) can't be tied to an organization, so it never appears in your export. A key you revoked does.
+
+## Splunk
+
+Run a scripted input per stream. The script keeps its cursor in a file next to it and prints one JSON event per line.
+
+```python title="sessionboard_logs.py"
+#!/usr/bin/env python3
+import json, os, sys, time, urllib.error, urllib.parse, urllib.request
+
+HOST = os.environ.get("SESSIONBOARD_HOST", "https://public-api-eu.sessionboard.com")
+TOKEN = os.environ["SESSIONBOARD_LOG_TOKEN"]
+STREAM = sys.argv[1]  # api-requests | security-events | audit-trail
+STATE = os.path.join(os.path.dirname(__file__), f".cursor-{STREAM}")
+
+cursor = open(STATE).read().strip() if os.path.exists(STATE) else None
+while True:
+    params = {"limit": 1000, **({"cursor": cursor} if cursor else {})}
+    req = urllib.request.Request(
+        f"{HOST}/v1/logs/{STREAM}?{urllib.parse.urlencode(params)}",
+        headers={"x-access-token": TOKEN},
+    )
+    try:
+        page = json.load(urllib.request.urlopen(req, timeout=60))
+    except urllib.error.HTTPError as e:
+        if e.code == 429:
+            time.sleep(int(e.headers.get("Retry-After", "60")))
+            continue
+        raise
+    for event in page["data"]:
+        print(json.dumps(event))
+    sys.stdout.flush()
+    cursor = page["next_cursor"]
+    with open(STATE, "w") as f:
+        f.write(cursor)
+    if not page["has_more"]:
+        break
+```
+
+```ini title="inputs.conf"
+[script://$SPLUNK_HOME/etc/apps/sessionboard/bin/sessionboard_logs.py audit-trail]
+interval = 300
+sourcetype = sessionboard:log
+index = sessionboard
+```
+
+```ini title="props.conf"
+[sessionboard:log]
+KV_MODE = json
+TIME_PREFIX = "occurred_at":\s*"
+MAX_TIMESTAMP_LOOKAHEAD = 32
+TZ = UTC
+SHOULD_LINEMERGE = false
+```
+
+Add one `[script://…]` stanza per stream you want. Timestamps are ISO 8601 in UTC; security events carry microseconds, the other streams milliseconds, and Splunk's automatic ISO 8601 recognition reads both.
+
+## Microsoft Sentinel
+
+Run the same cursor loop as the Splunk script on a timer — an Azure Function every five minutes works well — and send each page to a custom table through the [Logs Ingestion API](https://learn.microsoft.com/azure/azure-monitor/logs/logs-ingestion-api-overview). Keep `next_cursor` in durable storage (a blob or table entity) and map `occurred_at` to `TimeGenerated` in the data collection rule.
+
+<Warning>
+  Sentinel's codeless REST poller queries fixed time windows and doesn't carry a cursor from one poll to the next. Because events become visible about a minute after they happen, a window that ends at "now" misses the events of its last minute. Use the cursor loop instead.
+</Warning>
+
+## Elastic
+
+Use the Elastic Agent **Custom API** (CEL) input, polling every few minutes. Keep `next_cursor` in the input's cursor state, emit each item of `data` as an event, and set `want_more` to `has_more`. Map `occurred_at` to `@timestamp`.

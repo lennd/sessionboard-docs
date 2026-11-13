@@ -13,8 +13,14 @@ import redirects from './redirects-map.json';
 import trainingRedirects from './training-redirects.json';
 import site from './site.json';
 import { isProductUpdatesPath, productUpdatesResponse } from './src/lib/product-updates-proxy.mjs';
-import { isStaffOnlyHref, isStaffOnlyPath } from './src/lib/staff-only.mjs';
-import { ACCOUNT_PREFIX, accountResponse, isSignedInRequest, isStaffRequest, recheckStaff } from './src/lib/account-session.mjs';
+import { isStaffOnlyHref, isStaffOnlyPath, setPreviewSuites } from './src/lib/staff-only.mjs';
+import { apiProductForPath } from './src/lib/api-docs/products.mjs';
+import apiProducts from './src/data/api/products.json';
+import mintlifyRedirects from './src/data/api/mintlify-redirects.json';
+import { retiredApiDocsTarget } from './src/lib/api-docs/retired-host.mjs';
+import { ACCOUNT_PREFIX, accountResponse, grantAllowsPath, isSignedInRequest, isStaffRequest, recheckStaff } from './src/lib/account-session.mjs';
+import { suiteForPath } from './src/lib/suites.mjs';
+import suitesConfig from './src/data/suites.json';
 import { STATUS_PATH as RELEASE_EMAIL_STATUS_PATH } from './src/lib/product-updates-proxy.mjs';
 
 // `/en/migrated/knowledge-base/…` is a live path prefix left over from an
@@ -32,6 +38,9 @@ const LEGACY_HOSTS = new Set(site.legacyHosts);
 // The retired Canny portal. Its ideas, roadmap and changelog have no page-level
 // equivalent here, so every path lands on the release notes.
 const RETIRED_FEEDBACK_HOSTS = new Set(site.retiredFeedbackHosts);
+// The retired Mintlify API docs (lennd/sessionboard-public-api-docs). Each page it served
+// 301s to the same page under /api (src/lib/api-docs/retired-host.mjs).
+const RETIRED_API_DOCS_HOSTS = new Set(site.retiredApiDocsHosts ?? []);
 
 // ── Crawler policy ──────────────────────────────────────────────────────
 // The Help Center is a growth surface: we want to rank in search and be cited
@@ -181,8 +190,18 @@ async function internalResponse(request, url, env) {
 // product says they are signed in, or offers Sign in. Only what the landing
 // page and the release-notes email links need stays public.
 const WELCOME_PATH = '/welcome';
-const PUBLIC_EXACT = new Set([WELCOME_PATH, '/favicon.png', '/favicon.svg', '/favicon.ico', RELEASE_EMAIL_STATUS_PATH]);
-const PUBLIC_PREFIXES = ['/_astro/'];
+// The API docs (Platform /api and each product's /…/api) have their own public page:
+// what the API is and how to get access (src/pages/api/welcome.astro).
+const API_WELCOME_PATH = '/api/welcome';
+// What apidocs.sessionboard.com published to anyone stays public after its 301s land here:
+// the spec files (code generators and AI clients fetch them unauthenticated) and the two
+// pages customer contracts cite, the API changelog and the 30-day breaking-changes policy.
+const API_PUBLIC_PATHS = ['/api/openapi.json', '/api/openapi.yaml', '/api/changelog', '/api/breaking-changes'];
+const PUBLIC_EXACT = new Set([WELCOME_PATH, API_WELCOME_PATH, ...API_PUBLIC_PATHS, '/favicon.png', '/favicon.svg', '/favicon.ico', RELEASE_EMAIL_STATUS_PATH]);
+// Skill downloads (zips, the Claude Code plugin and skills.json) carry no customer data and
+// are fetched by Claude, Claude Code and the product's Apps › Skills tab without a Help Center
+// session (src/lib/skills.mjs). The Skills pages themselves stay sign-in only.
+const PUBLIC_PREFIXES = ['/_astro/', '/skills/downloads/'];
 const isPublicPath = (pathname) => PUBLIC_EXACT.has(pathname) || PUBLIC_PREFIXES.some((p) => pathname.startsWith(p));
 
 /** A signed-out request: pages go to the landing page (and come back after sign-in); anything else is a plain 404. */
@@ -193,7 +212,8 @@ function signInRequired(request, url) {
   const headers = { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow', Vary: 'Cookie' };
   if (!looksLikePage) return new Response('Not found\n', { status: 404, headers: { ...headers, 'Content-Type': 'text/plain; charset=utf-8' } });
   const back = `${url.pathname}${url.search}`;
-  const target = back === '/' ? WELCOME_PATH : `${WELCOME_PATH}?return=${encodeURIComponent(back)}`;
+  const landing = apiProductForPath(url.pathname, apiProducts) ? API_WELCOME_PATH : WELCOME_PATH;
+  const target = back === '/' ? WELCOME_PATH : `${landing}?return=${encodeURIComponent(back)}`;
   return new Response(null, { status: 302, headers: { ...headers, Location: target } });
 }
 
@@ -275,6 +295,11 @@ for (const [slug, target] of Object.entries(redirects)) {
 // so they get their own map, checked before serving assets. Add a row here any
 // time an article is retired in favour of another.
 const INTERNAL_REDIRECTS = {
+  // CRM People | Groups (2026-11-09): the three Contacts articles became People,
+  // People › Tags and Import. Keep old bookmarks and citations working.
+  '/sessionboard-crm/contacts/find-and-manage': '/sessionboard-crm/people',
+  '/sessionboard-crm/contacts/types-and-tags': '/sessionboard-crm/people/tags',
+  '/sessionboard-crm/contacts/add-and-import': '/sessionboard-crm/import',
   // Classic (v1) review plan guides retired, 2026-11-03: the docs cover the
   // current round-based review plan only. Reviewers land on the current guide.
   '/evaluations/evaluators-how-to-evaluate-sessions': '/evaluations/how-to-evaluate-sessions',
@@ -439,9 +464,15 @@ function textResponse(body) {
 
 export default {
   async fetch(request, env) {
+    // A local preview (wrangler dev with SB_PREVIEW_SUITES) treats the suites it names as
+    // public, matching its build; production has no such var (src/lib/staff-only.mjs).
+    setPreviewSuites(env?.SB_PREVIEW_SUITES);
     const url = new URL(request.url);
     if (RETIRED_FEEDBACK_HOSTS.has(url.hostname)) {
       return Response.redirect(`https://${PROD_HOST}${CHANGELOG_PATH}`, 301);
+    }
+    if (RETIRED_API_DOCS_HOSTS.has(url.hostname)) {
+      return Response.redirect(`https://${PROD_HOST}${retiredApiDocsTarget(url.pathname, mintlifyRedirects.redirects)}`, 301);
     }
     const isLegacyHost = LEGACY_HOSTS.has(url.hostname);
     const isProd = url.hostname === PROD_HOST || isLegacyHost;
@@ -539,6 +570,10 @@ export default {
     const publicPath = isPublicPath(url.pathname);
     const signedIn = publicPath ? false : await isSignedInRequest(request, env);
     if (!publicPath && !signedIn) return signInRequired(request, url);
+    // A reader with only a staff grant reads the API docs and product suites the grant names (checked here, not in page script).
+    if (signedIn && !(await grantAllowsPath(request, env, site, { apiProduct: apiProductForPath(url.pathname, apiProducts), suite: suiteForPath(url.pathname, suitesConfig) }))) {
+      return notFoundPage(url, env);
+    }
 
     // HubSpot KB sitemap path → Starlight sitemap
     if (url.pathname === '/sitemap.xml') {

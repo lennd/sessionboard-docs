@@ -1,0 +1,111 @@
+---
+title: "Introduction"
+description: "Get started with the Sessionboard Public API"
+---
+
+import { Note, Warning, Card, CardGroup } from '@compat';
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+The Sessionboard Public API provides access to your event data including sessions, speakers, contacts, sponsors, and exhibitors. Use it to build integrations, sync data to external platforms, or power custom experiences for your events.
+
+## Base URL
+
+Sessionboard operates in two regions. Use the base URL corresponding to where your organization's data is hosted.
+
+<Tabs>
+  <TabItem label="US Region">
+    ```text
+    https://public-api.sessionboard.com
+    ```
+  </TabItem>
+  <TabItem label="EU Region">
+    ```text
+    https://public-api-eu.sessionboard.com
+    ```
+  </TabItem>
+</Tabs>
+
+## Quick Links
+
+<CardGroup cols={2}>
+  <Card title="Authentication" href="/api/authentication">
+    Learn how to authenticate requests using API tokens.
+  </Card>
+  <Card title="Webhooks" href="/api/webhooks">
+    Receive real-time notifications when data changes.
+  </Card>
+  <Card title="Build an Integration" href="/api/integrations">
+    Explore methods for syncing Sessionboard data to your platform.
+  </Card>
+  <Card title="API Reference" href="/api/reference/overview">
+    Browse the full endpoint reference with request and response schemas.
+  </Card>
+  <Card title="Media & Transcriptions" href="/api/guides/uploading-media-and-transcriptions">
+    Sync transcript text, upload media files, or add session audio recordings.
+  </Card>
+  <Card title="Session Files" href="/api/guides/uploading-session-files">
+    Attach PDFs and documents — simple upload (≤50 MB) or direct-to-storage (≤500 MB).
+  </Card>
+  <Card title="Changelog" href="/api/changelog">
+    See what's new — endpoints, scopes, and response shape updates.
+  </Card>
+</CardGroup>
+
+## Pagination
+
+All search endpoints return paginated results. The response body includes a `pagination` object alongside the `results` array.
+
+```json
+{
+  "data": [],
+  "pagination": {
+    "currentPage": 1,
+    "pageSize": 25,
+    "totalPages": 10,
+    "totalResults": 250
+  }
+}
+```
+
+<Note>
+  Some legacy search endpoints return a `results` key instead of `data`. Check each endpoint's response schema for the exact shape.
+</Note>
+
+Use the `page` and `pageSize` query parameters (or body parameters on POST search endpoints) to navigate through results. The default page size is 25 and the maximum is 100.
+
+## Rate Limiting
+
+The API enforces rate limits to ensure fair usage — see [Rate Limiting](/api/rate-limiting) for details. Build your integration to handle `429 Too Many Requests` responses with exponential backoff.
+
+## Caching
+
+To ensure fast response times, session search results are cached for **2 minutes**:
+
+- `POST /v1/event/{eventId}/sessions` — session search
+
+If you update data in Sessionboard and immediately run a search, you may see stale search results until the cache expires.
+
+`GET /v1/event/{eventId}/sessions/{sessionId}` (individual session retrieval) is **not** cached. It always returns the current record, so the `updated_at` value it returns is always safe to use in a follow-up `PUT` — see the [409 Conflict guidance](/api/reference/overview#error-codes).
+
+Webhook notifications are delivered in real time and are not subject to caching.
+
+### Fetching the OpenAPI spec
+
+<Warning>
+  **Do not revalidate the spec files by `ETag`.** This documentation site serves
+  [`/api-reference/openapi.json`](/api/openapi.json)
+  and [`/api-reference/openapi.yaml`](/api/openapi.yaml)
+  with the **same** `ETag` and the same `Last-Modified`, even though the two
+  responses have different media types and different bodies. A conditional
+  `GET` for one that carries the other's validator returns `304 Not Modified`,
+  so a cache or a code-generation pipeline can satisfy a request for the JSON
+  with YAML bytes.
+
+  If you regenerate a client in CI, fetch each URL **unconditionally** — send
+  no `If-None-Match` and no `If-Modified-Since` — and key your own cache on the
+  response body, not on the validator. An unconditional `GET` always returns
+  the correct body with the correct `Content-Type`.
+</Warning>
+
+The two files are generated from one source and always describe the same API,
+so pick whichever format your toolchain prefers.

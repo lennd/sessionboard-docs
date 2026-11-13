@@ -3,21 +3,162 @@
  * Override of Starlight's Sidebar: identical, except it renders our
  * SidebarSublist copy (which tags group <li>s with data-group for the
  * separators in custom.css), under the signed-in reader's "For you" guides
- * (ForYou.astro, hidden until src/scripts/account.mjs reveals it).
+ * (ForYou.astro, hidden until src/scripts/account.mjs reveals it), and under
+ * the self-serve scope bar (src/lib/help-scope.mjs), which only shows while a
+ * reader is in a product scope.
+ *
+ * Documentation suites (src/lib/suites.mjs): a page inside a self-serve suite
+ * (/sessionboard-marketing/…) renders that suite's own sidebar
+ * (src/data/suites/<key>.sidebar.json) and title instead of Platform's. When
+ * any self-serve suite is built, every page also carries the suite switcher,
+ * hidden until src/scripts/account.mjs finds the reader holds two or more
+ * suites. With no self-serve suite built, the output is what it always was.
  */
 import MobileMenuFooter from 'virtual:starlight/components/MobileMenuFooter';
 import SidebarPersister from '@astrojs/starlight/components/SidebarPersister.astro';
 import SidebarSublist from './SidebarSublist.astro';
 import ForYou from './ForYou.astro';
+import ProductBadge from './ProductBadge.astro';
+import helpScopes from '../data/help-scopes.json';
+import suitesConfig from '../data/suites.json';
+import { getCollection } from 'astro:content';
+import { PLATFORM, anySelfServeBuilt, deployedSuites, resolveSidebar, suiteForId } from '../lib/suites.mjs';
 
-const { sidebar } = Astro.locals.starlightRoute;
+const { sidebar, id } = Astro.locals.starlightRoute;
+// Every deployed suite; src/scripts/account.mjs shows a reader only the ones they may read
+// (staff: all of them, unreleased suites included).
+const built = deployedSuites(suitesConfig, process.env);
+const suitesOn = anySelfServeBuilt(built);
+const suite = suiteForId(id, suitesConfig);
+const suiteConf = suite === PLATFORM ? null : suitesConfig.suites[suite as keyof typeof suitesConfig.suites];
+
+let suiteSidebar = null;
+// A product's API pages (/sessionboard-<key>/api/…, the API Docs build) set
+// Astro.locals.sbApiProduct and bring their own sidebar through route data;
+// the suite title and switcher stay, the suite's article sidebar does not.
+const apiPage = Boolean((Astro.locals as { sbApiProduct?: string }).sbApiProduct);
+if (suiteConf && 'sidebar' in suiteConf && !apiPage) {
+	const files = import.meta.glob<{ default: unknown[] }>('../data/suites/*.sidebar.json', { eager: true });
+	const file = files[`../data/suites/${suiteConf.sidebar}.sidebar.json`];
+	if (!file) throw new Error(`Suite "${suite}" has no sidebar file src/data/suites/${suiteConf.sidebar}.sidebar.json`);
+	const items = file.default;
+	const entries = (await getCollection('docs')).filter((e) => suiteForId(e.id, suitesConfig) === suite);
+	suiteSidebar = resolveSidebar(items, { entries, currentPath: Astro.url.pathname });
+}
+const switcher = suitesOn ? Object.keys(suitesConfig.suites).filter((k) => built.has(k)) : [];
 ---
 
+{
+	switcher.length > 0 && (
+		<nav class="sb-suite-switch" aria-label="Help for" data-current={suite} hidden>
+			<span class="sb-suite-switch-label">Help for</span>
+			{switcher.map((key) => {
+				const conf = suitesConfig.suites[key as keyof typeof suitesConfig.suites];
+				return (
+					<a href={key === PLATFORM ? '/?via=platform' : `${conf.home}?via=${key}`} data-suite={key} aria-current={key === suite ? 'page' : undefined} hidden>
+						<ProductBadge product={key as 'platform'} />
+						{conf.label}
+					</a>
+				);
+			})}
+		</nav>
+	)
+}
+
+{
+	suiteConf && (
+		<a class="sb-suite-title" href={suiteConf.home}>
+			<ProductBadge product={suite as 'marketing'} size="md" />
+			{suiteConf.product}
+		</a>
+	)
+}
+
+{
+	!suiteConf && Object.entries(helpScopes.scopes).map(([key, scope]) => (
+		<div class="sb-scope-bar" data-for={key}>
+			<a class="sb-scope-bar-title" href={scope.home}>
+				<ProductBadge product={key as 'marketing'} />
+				Help for {scope.label}
+			</a>
+			<a class="sb-scope-bar-all" href="?via=all">
+				All of Sessionboard
+			</a>
+		</div>
+	))
+}
+
 <SidebarPersister>
-	<ForYou />
-	<SidebarSublist sublist={sidebar} />
+	{!suiteConf && <ForYou />}
+	{suiteSidebar ? <SidebarSublist sublist={suiteSidebar} /> : <SidebarSublist sublist={sidebar} />}
 </SidebarPersister>
 
 <div class="md:sl-hidden">
 	<MobileMenuFooter />
 </div>
+
+<script>
+	import { normalizePath } from '../lib/help-scope.mjs';
+
+	/**
+	 * Search under a product scope: Pagefind indexes the whole site, so hide the
+	 * results the scope does not tag, keep loading pages until some show, and
+	 * say so above the list with a way out to the whole Help Center.
+	 */
+	type Scope = { label: string; home: string; paths: string[] };
+	const state = (window as unknown as { sbHelpScope?: { scope: string | null; scopes: Record<string, Scope> } }).sbHelpScope;
+	const root = document.getElementById('starlight__search');
+	const scope = state?.scope ? state.scopes[state.scope] : null;
+
+	if (root && scope) {
+		const allowed = new Set(scope.paths);
+		const note = document.createElement('p');
+		note.className = 'sb-scope-search-note';
+		let loads = 0;
+		let lastTerm = '';
+		let queued = false;
+
+		const apply = () => {
+			queued = false;
+			const term = root.querySelector<HTMLInputElement>('.pagefind-ui__search-input')?.value.trim() ?? '';
+			if (term !== lastTerm) {
+				lastTerm = term;
+				loads = 0;
+			}
+			const results = [...root.querySelectorAll<HTMLLIElement>('li.pagefind-ui__result')];
+			let shown = 0;
+			for (const li of results) {
+				const href = li.querySelector<HTMLAnchorElement>('a.pagefind-ui__result-link')?.href;
+				const keep = Boolean(href) && allowed.has(normalizePath(href));
+				li.hidden = !keep;
+				if (keep) shown += 1;
+			}
+			const more = root.querySelector<HTMLButtonElement>('button.pagefind-ui__button');
+			if (more && shown < 5 && loads < 20) {
+				loads += 1;
+				more.click();
+			}
+			const drawer = root.querySelector('.pagefind-ui__drawer');
+			if (!term || !drawer) {
+				note.remove();
+				return;
+			}
+			const text = shown || more ? `Showing ${scope.label} guides only.` : `No ${scope.label} guides match.`;
+			if (note.dataset.text !== text) {
+				note.dataset.text = text;
+				note.textContent = `${text} `;
+				const all = document.createElement('a');
+				all.href = '?via=all';
+				all.textContent = 'Search all of Sessionboard';
+				note.append(all);
+			}
+			if (drawer.firstChild !== note) drawer.prepend(note);
+		};
+
+		new MutationObserver(() => {
+			if (queued) return;
+			queued = true;
+			requestAnimationFrame(apply);
+		}).observe(root, { childList: true, subtree: true, attributes: true, attributeFilter: ['href'] });
+	}
+</script>

@@ -1,0 +1,43 @@
+---
+title: "CRM MCP tools"
+description: "The tools an AI assistant connected to the Sessionboard MCP server can use with Sessionboard CRM"
+---
+
+These tools are served by the Sessionboard MCP server. To connect an assistant, see [CRM API authentication](/sessionboard-crm/api/authentication#ai-assistants). Tools that read need `read:crm`; tools that change something need `write:crm`. None connects an app: connecting takes the person's own keys, so they do it in Sessionboard CRM. Only `send_crm_contract` and `void_crm_contract` reach anyone, the signer, and they run only with `confirmed: true`, which the assistant passes after the person says yes. `archive_crm_pipeline_entry` needs `confirmed: true` too.
+
+| Tool | Hints | Description |
+|------|-------|-------------|
+| `get_crm_home` | read | Contacts by type, tags, active contacts against the plan, the setup steps and the most recent contacts |
+| `find_crm_contacts` | read | Search, filter (type, tag, source, event, active), sort and page contacts, with counts per type, tag and source |
+| `get_crm_contact` | read | One contact with their history and the team's notes |
+| `list_crm_tags` | read | Every tag with how many contacts have it |
+| `manage_crm_tag` | write, destructive | Create, rename or delete a tag (its contacts are kept) |
+| `import_crm_people` | write, destructive | Preview an import of people or companies row by row, then import the rows the person agreed to, 250 at a time: people matched by email (with tags and a company), companies by name (with tags) |
+| `list_crm_sources` | read | The CRMs, AMSs and event platforms people can be read from (contacts from HubSpot, Salesforce and iMIS; one event's speakers from Cvent, Swoogo, Bizzabo, ON24 and Goldcast): connected, health, what each brings |
+| `discover_crm_people` | read | Who a connected app holds, compared with your contacts, with where each kind lands (contacts or people); writes nothing, and only counts an event's attendees, for the person to review before importing |
+| `export_crm_contacts` | read | The filtered contact list as CSV, up to 1,000 rows (the Contacts page exports up to 25,000) |
+| `get_crm_pipeline` | read | The stages with their counts and the pipeline entries (search, filter by stage, type, tag or event, sort, page), or one entry's history |
+| `add_to_crm_pipeline` | write | Add up to 200 contacts to the pipeline in a stage and for an event; contacts already in it are skipped |
+| `move_crm_pipeline_entry` | write, destructive | Move an entry to another stage with a note, or change its event; every move is kept in its history |
+| `archive_crm_pipeline_entry` | write, destructive | Take an entry off the pipeline (the contact stays), after the person says yes |
+| `list_crm_contracts` | read | Contracts by status or contact, with the contact, template and dates |
+| `get_crm_contract` | read | One contract with its signers and history, and the PDF link |
+| `send_crm_contract` | write, destructive | Send a contract for signature from a published template, or resend one, after the person approves the template, title and recipient |
+| `void_crm_contract` | write, destructive | Void a contract that is not complete, after the person says yes |
+| `list_crm_contract_templates` | read | The templates and the built-in starters |
+| `add_crm_contract_starter` | write | Add a speaker, sponsor or exhibitor starter template, published and ready to send |
+| `find_crm_people` | read | Everyone the organization knows, with tags, companies, pipeline stage and attendance; tag chips (`roles`, any or `all_roles`), `company_id`, `warm`, `attended`, `member`, `in_pipeline` |
+| `find_warm_opportunities` | read | People who came to 5 or more webinars or events, aren't in the pipeline and aren't customers |
+| `get_crm_person` | read | One person with their signals and the contact they're linked to |
+| `add_people_to_crm_contacts` | write | Make contacts of up to 200 people (an existing contact with the email is linked instead) |
+| `start_crm_attendee_sync` | write, destructive | Bring an event platform's attendees for one event into People, after the person agrees to the count; or keep a source in sync |
+| `hand_off_crm_people` | write | Hand a selection to Marketing, Sessions, Learning or Awards as a list, with the link that opens the app or its trial page |
+| `manage_crm_person` | write, destructive | Add a person or change their name, title, tags or companies |
+| `tag_crm_people` | write, destructive | Add or remove tags on up to 500 people at once |
+| `delete_crm_people` | write, destructive | Delete people (their contacts, contracts and pipeline entries stay), after the person says yes |
+| `find_crm_companies` | read | Companies by tag chips (sponsor, exhibitor), or one company with its people, contracts and pipeline |
+| `manage_crm_company` | write, destructive | Add a company or change its name, website or tags |
+| `link_crm_company_people` | write, destructive | Link people to a company (by key, or someone new by email), or unlink one |
+| `delete_crm_companies` | write, destructive | Delete companies (their people stay), after the person says yes |
+
+`manage_crm_contact`, `delete_crm_contacts` and `tag_crm_contacts` were replaced by `manage_crm_person`, `delete_crm_people` and `tag_crm_people`, and `import_crm_contacts` by `import_crm_people`.

@@ -1,0 +1,95 @@
+---
+title: "Marketing MCP tools"
+description: "The tools an AI assistant connected to the Sessionboard MCP server can use with Sessionboard Marketing"
+---
+
+These tools are served by the Sessionboard MCP server. To connect an assistant, see [Marketing API authentication](/sessionboard-marketing/api/authentication#ai-assistants).
+
+## How an event is doing, and sign-ups
+
+Turnout and pacing for an event or webinar, for organizations whose plan includes Sessionboard Marketing. These tools need the `read:marketing` / `write:marketing` scopes, which are in preview: tick them under **Opt-in** when you create an API token, or name them in your OAuth `scope` request. Like the rest of Marketing, they read the whole organization, so a token restricted to particular events cannot use them.
+
+| Tool | Hints | Description |
+|------|-------|-------------|
+| `get_turnout` | read | How an event is doing (default: the next upcoming one). Returns registrations so far; an estimate of registrations and turnout at the event date, with a range, a confidence label and a sentence on how it was estimated; pace against the goal; the last comparable event; registrations by day before the event; the time of week your emails get opened most; and two or three suggestions. With too little history it returns no estimate and says so |
+| `set_turnout_goal` | write · destructive | Set or clear the event's registration and attendance goal. With no goal set, the last comparable event's numbers are used |
+| `add_signup_form` | write | Add an email sign-up to an event page draft with nothing to fill in (the words come from the event; people confirm their email before they join). Publishing the page stays yours. Calling it again returns the same form |
+| `gate_recording` | write | Ask for an email before a recording or clip plays. Anyone with a valid email watches; only people who tick the box join your list |
+| `count_signups` | read | How many people signed up in the last days (default 7), by status and by where they signed up |
+| `list_subscribers` | read | Who signed up, newest first: status, where, which list; filters by status, source, list, event, name or email, date |
+
+Every predicted number is an estimate, and the assistant is told to say so. Cancelled registrations are not counted. When your own history is too thin, the estimate can draw on aggregate statistics across Sessionboard organizations, never on another organization's events or numbers.
+
+Try: *"How's the Austin field lab doing?"* or *"Will we hit 300 registrations for the spring webinar?"* or *"Make the goal for the summit 600 registrations and 450 attending."*
+
+## Webinar questions, topics and outcomes
+
+Three read-only tools that answer from your webinars, your people and your connected CRM or AMS together, so one call answers the question. They need `read:marketing`. Each takes `event_id` (one webinar; leave it out for every webinar in the period) and `from` / `to`. A token restricted to particular events must name one of them.
+
+Each answer comes in your organization's own words: it carries your organization's kind (company, association or event organizer) and `labels`, and the assistant is told to use them. An association hears about members and dues, a company about customers and sales pipeline, an event organizer about exhibitors, sponsors and contracts.
+
+| Tool | Hints | Description |
+|------|-------|-------------|
+| `find_questions_to_follow_up` | read | Questions asked in your webinars that are worth following up (buying questions for a company; joining, renewal, group and credit questions for an association; booth and sponsorship questions for an event organizer), with who asked, why it counts, the owner, the moment in the recording, and whether anyone has followed up in your CRM or AMS since. Defaults to the last 30 days and to questions with no follow-up seen |
+| `get_topic_watch_time` | read | Which topics keep people watching longest: median share of the webinar watched live, median percent watched on demand, and how each topic compares with your organization's median. Topics with fewer than 5 people are left out |
+| `get_webinar_outcomes` | read | What happened after people attended, from your CRM or AMS: sales pipeline and closed won from accounts that attended, people who became members or renewed (with the renewal rate of members who did not attend), or exhibitor and sponsor contracts. By topic, webinar or account. Every answer includes a one-line method, and the assistant quotes it: this is association, not credit |
+
+A deal or membership counts when it starts within 180 days after someone's first webinar; an admin can change the window from 30 to 365 days. Without a CRM or AMS connected, the outcomes show only how many attended, and say what to connect.
+
+Try: *"Who asked buying questions at last month's webinars and hasn't heard from us?"*, *"Which topics keep people watching longest?"*, *"Do members who come to our webinars renew more?"* or *"Did companies that attended sign exhibitor contracts?"*
+
+## Podcasts, newsletter, journeys, video, website, consent and sponsor links
+
+The same scopes and the same organization-wide rule apply. Tools that publish, send, switch on emails to real people or share data with a sponsor never run straight from an assistant: Sessionboard answers `needs_approval` with a link, and a person approves the request in Sessionboard Marketing (**Waiting for your OK**). The assistant is told to pass the link on and not to call again. Drafts are made at once, and nothing in a draft reaches anyone until a person publishes or sends it.
+
+| Tool | Hints | Description |
+|------|-------|-------------|
+| `list_podcasts` | read | The organization's shows: title, event or series, episode counts by status (draft, approved, published), the feed URL and the public page |
+| `get_podcast` | read | One show with its episodes: title, status, source session, whether the audio is ready, duration |
+| `get_podcast_stats` | read | Downloads in the last 7 days and in total, by episode, for one show or all. A download counts once per listener per episode in any 24 hours; bots are not counted |
+| `make_podcast_from_event` | write | Turn an event into a podcast: the event's show (made on the first call, reused after) with a draft episode for every session that has a recording or an approved audio recap. Nothing is published |
+| `add_podcast_episodes` | write | Add draft episodes from sessions or from recordings in Media. Sessions already in the show are skipped |
+| `set_podcast_episode_status` | write · destructive | Move episodes to draft, approved or published. Publishing puts them on the public feed, so an assistant's request waits for a person's OK |
+| `get_newsletter` | read | The newsletter: name, from name, reply-to, list, cadence (after each event, monthly or manual), sending state and its issues with their status |
+| `draft_newsletter_issue` | write | A draft issue written from an event's recaps, clips, quotes and podcast episodes, or an empty one. Sends nothing |
+| `get_newsletter_issue` | read | One issue: subject, preheader, blocks, status, scheduled time and how many people it would reach |
+| `schedule_newsletter_issue` | write · destructive | Send an issue to everyone subscribed to the list, now or at a set time. Waits for a person's OK |
+| `get_newsletter_results` | read | A sent issue's results: delivered, opens, clicks by link, unsubscribes, bounces |
+| `list_journeys` | read | The four journeys (no-show → recording, attendee → recap and next event, new subscriber → welcome, invited but not registered → reminder): on or off, delay, the email and how many people each would reach |
+| `update_journey` | write · destructive | Change a journey's delay or email, or switch it on or off. Switching on starts emails to real people, so an assistant's request waits for a person's OK |
+| `get_video_playback` | read | A recording's playback details: the stream or file, poster, captions and chapters |
+| `get_watch_report` | read | Who watched a recording and how far (percent and minutes), newest first; can keep only people who watched at least a given share |
+| `gate_video` | write | Ask for an email to watch a recording, before it plays or after a set time (for example five minutes in). Any valid email unlocks it; only people who tick the box join your list. Returns the page to share |
+| `get_video_options` | read | A recording's gate, button and end card, and what viewers see today (by default "Register for" your next event at the end, then a "Watch next" card) |
+| `set_video_options` | write · destructive | Change the button (your next event, your own label and link, or none; at the end or from a set time) or turn off the end card. Changes what visitors see, so the assistant asks you first |
+| `schedule_premiere` | write | Play a recording at a set time for everyone on the event page, with questions and polls beside it and a Remind me button; on demand afterwards. It goes on the page draft; publishing stays yours. Calling it again moves the time |
+| `list_premieres` | read | Premieres with their state (upcoming, live, ended, cancelled), reminders asked for and questions |
+| `update_premiere` | write · destructive | Move, cancel or end a premiere, or stop taking questions. The assistant asks you first |
+| `get_premiere_room` | read | A premiere's questions (visible, answered, hidden) and each poll's votes |
+| `manage_premiere_poll` | write · destructive | Add a poll (it opens at once), or open, close or delete one. The assistant asks you first |
+| `moderate_premiere_question` | write · destructive | Hide a question, show it again, or mark it answered. The assistant asks you first |
+| `get_website_tag` | read | The tag for your own website: the snippet to paste, whether it has been seen and when, page views and visitors in the last days, top pages |
+| `who_visited` | read | People you already know who viewed pages on your site: name, company, account, views, last page. Narrow by a word in the page address, by days (up to 90) or to target accounts |
+| `get_person_consent` | read | A person's lists (newsletter, partners and others) with their status, and their consent history newest first, one sentence per entry |
+| `list_sponsor_shares` | read | Private sponsor links: sponsor, audience, created, expires, active, views and downloads |
+| `share_with_sponsor` | write · destructive | A private link for a sponsor to the people who opted in to hear from partners, and only them. Waits for a person's OK |
+| `revoke_sponsor_share` | write · destructive | Stop a sponsor link working at once. Views and downloads so far stay listed |
+
+Try: *"Turn the summit into a podcast"*, *"Draft this month's newsletter from the summit"*, *"Who watched the keynote?"* or *"Who from our target accounts looked at the pricing page this week?"*
+
+## Your event page
+
+Edits land in the event page's draft; nothing goes live until `publish_site`, which an assistant calls only after the person has seen the changes and said OK. Reading needs `read:sites` or `read:marketing`; changing needs `write:sites` or `write:marketing`.
+
+| Tool | Hints | Description |
+|------|-------|-------------|
+| `list_sites` | read | Your Sites, with whether each has unpublished changes |
+| `get_site` | read | The event page as its draft stands: blocks, menu, theme, the block kinds it takes and the rules for editing |
+| `make_site` | write | Make a page for an event from the event itself and your Brand Kit, or rebuild a page from its address |
+| `edit_site` | write | Edit the event page's draft: add, change, move, hide or remove its blocks; set the menu and the theme |
+| `get_site_diff` | read | What publishing would change, one plain sentence per change |
+| `preview_site` | read | A link to the draft as one role on one device, and what that role sees |
+| `publish_site` | write · destructive | Publish the draft once the person has said OK |
+| `list_site_versions` | read | Every published version, newest first |
+| `restore_site_version` | write · destructive | Copy an earlier version into the draft to review and publish |
+| `discard_site_draft` | write · destructive | Throw away the unpublished changes |
