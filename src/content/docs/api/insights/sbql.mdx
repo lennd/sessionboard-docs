@@ -93,7 +93,10 @@ This returns one row per person who is on at least one subsession and whose ever
 
 - The record stays one row, however many related rows it has, so `DISTINCT` is not needed.
 - Fields inside the parentheses belong to the relationship: `status` and `sessions.status` mean the same thing there. Custom fields work too: `ANY speakers (["Speaker Type"] = 'Keynote')`.
-- Inside the parentheses you can use `AND`, `OR`, `NOT` and every comparison operator. You cannot use fields of another relationship, put one `ALL`, `ANY` or `NONE` inside another, or use review answers that are calculated after the query runs (`reviews_v2.is_complete`, scorecard questions).
+- `ALL`, `ANY` and `NONE` work in `WHERE` only, not in a `CASE WHEN`.
+- Inside the parentheses you can use `AND`, `OR`, `NOT` and every comparison operator. You cannot use fields of another relationship or put one `ALL`, `ANY` or `NONE` inside another.
+- Fields calculated after the query runs (review answers such as `reviews_v2.is_complete`, scorecard questions, Interest Form, Awards and reviewer fields) cannot be used inside the parentheses, or anywhere else in the same `WHERE`.
+- Task relationships (`speaker_tasks`, `moderator_tasks` and the others) are not available, because whether a task applies to a session is decided after the query.
 - On events with subsessions, speakers usually also sit on the parent session. Name the level with `is_subsession` inside the parentheses, as above.
 - A role restricted to part of the event cannot use `ALL`, `ANY` or `NONE`; the request returns `403`.
 
