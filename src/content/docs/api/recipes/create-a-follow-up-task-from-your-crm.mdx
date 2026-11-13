@@ -14,7 +14,7 @@ Use the Sessionboard contact `id` you stored when you synced the person from you
 
 ## 2. Don't create it twice
 
-Keep the task's `id` against the CRM record once you create it (step 3), and on later events update that task (step 4) instead of creating another.
+Keep the task's `data.id` against the CRM record once you create it (step 3), and on later events update that task (step 4) instead of creating another.
 
 If you have no stored id, list the contact's open tasks and look for an exact match yourself. `q` matches words anywhere in the title or description, so a hit is not proof that it's the same task:
 
@@ -23,7 +23,7 @@ curl "https://public-api.sessionboard.com/v1/tasks?record_type=contact&record_id
   -H "x-access-token: $SESSIONBOARD_TOKEN"
 ```
 
-Treat a task as yours only when its `title` is exactly the one you write, or its `description` carries your CRM case number. Page with `offset` while `has_more` is `true`. Update that task's `id` only; if none matches, create one.
+Treat a task as yours only when its `title` is exactly the one you write, or its `description` carries your CRM case number. Page with `offset` while `pagination.has_more` is `true`. Update that task's `id` only; if none matches, create one.
 
 ## 3. Create the task
 
@@ -45,7 +45,7 @@ curl -X POST "https://public-api.sessionboard.com/v1/tasks" \
   }'
 ```
 
-The response is `{ "task": { … } }`. Store `task.id` against the CRM record so later changes find it. Dana is told about the task, and reminded at 09:00 on the 20th.
+The response is `201` with `{ "data": { … } }`. Store `data.id` against the CRM record so later changes find it. Dana is told about the task, and reminded at 09:00 on the 20th.
 
 ## 4. Keep it in step
 
@@ -53,4 +53,4 @@ The response is `{ "task": { … } }`. Store `task.id` against the CRM record so
 - The owner changed: `PATCH` with `{ "assignee_email": "priya@example.org" }`.
 - It was resolved in your CRM: [`POST /v1/tasks/{taskId}/complete`](/api/reference/tasks/complete-a-task) with `{ "completion_note": "Signed form received" }`.
 
-A `403` with `TASKS_PLATFORM_ONLY` means the organization uses a self-serve Sessionboard product, which has no Tasks. A `400` names the field to fix, such as an assignee who is not on the event.
+A `403` with `TASKS_PLATFORM_ONLY` means the organization uses a self-serve Sessionboard product, which has no Tasks. A `400` names the field to fix, such as an assignee who is not on the event; `USER_REQUIRED` means the key belongs to no user, so create one as a member of the organization.

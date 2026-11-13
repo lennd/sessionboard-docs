@@ -10411,14 +10411,19 @@ paths:
       description: |
         Your organization's tasks, open ones first by due date. Filters combine.
 
-        - `assignee`: `me` (the API key's user; a key with no user gets `400`),
-          a user id, an email, `none` (unassigned) or `any` (everyone).
+        - `assignee`: `me` (the API key's user), a user id, the email of a
+          member of your organization, `none` (unassigned) or `any` (everyone).
         - `due`: `overdue`, `today`, `upcoming` or `none` (no due date),
           judged in each task's time zone. `due_from` / `due_to` bound the due
           date (`YYYY-MM-DD`, inclusive).
         - `record_type` + `record_id`: tasks linked to that record.
 
-        Needs `read:tasks`. Tasks are part of Sessionboard Platform.
+        `counts` gives open, today, overdue, upcoming, no-date, milestone and
+        completed totals for the same filters, ignoring `status` and `due`.
+
+        Tasks are read as the API key's user: a key that belongs to no user
+        gets `400 USER_REQUIRED`. Needs `read:tasks`. Tasks are part of
+        Sessionboard Platform.
       tags:
         - Tasks
       parameters:
@@ -10444,6 +10449,18 @@ paths:
           schema:
             type: string
             enum: [overdue, today, upcoming, none]
+          description: With no `status`, only open tasks.
+        - name: kind
+          in: query
+          schema:
+            type: string
+            enum: [task, milestone]
+            default: task
+        - name: priority
+          in: query
+          schema:
+            type: string
+            enum: [low, normal, high, urgent]
         - name: due_from
           in: query
           schema:
@@ -10471,6 +10488,23 @@ paths:
           schema:
             type: string
           description: Words in the title or description.
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [due, title, assignee, priority, event, created, records]
+            default: due
+        - name: dir
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+        - name: tz
+          in: query
+          schema:
+            type: string
+          description: IANA time zone that decides "today" for `due` and `counts`. Defaults to the key's user's time zone.
+          example: America/Chicago
         - name: limit
           in: query
           schema:
@@ -10495,7 +10529,7 @@ paths:
                 overdue:
                   summary: My overdue tasks
                   value:
-                    tasks:
+                    data:
                       - id: 7d1c2b8e-4f0a-4c3e-9b1d-2a6f8e0c41a1
                         org_id: 3f6a1c2e-8d7b-4e90-a1b2-c3d4e5f60718
                         event_id: 7001
@@ -10512,11 +10546,17 @@ paths:
                           - { type: contact, id: 9b2e4c1a-0d3f-4a5b-8c7d-6e5f4a3b2c1d, label: Dr. Ada Okafor, restricted: false }
                         due_at: '2026-11-13T23:00:00.000Z'
                         has_due_time: true
+                        due_date: '2026-11-13'
+                        due_time: '17:00'
+                        timezone: America/Chicago
+                        record_type: contact
+                        record_id: 9b2e4c1a-0d3f-4a5b-8c7d-6e5f4a3b2c1d
+                        parent_id: null
                         start_at: null
                         reminder: 9am
                         reminder_at: '2026-11-13T15:00:00.000Z'
                         milestone: null
-                        source: custom
+                        source: api
                         source_note_id: null
                         completion_note: null
                         completed_at: null
@@ -10526,10 +10566,10 @@ paths:
                         can_delete: false
                         created_at: '2026-11-09T16:12:44.000Z'
                         updated_at: '2026-11-09T16:12:44.000Z'
-                    total: 1
-                    has_more: false
+                    pagination: { total_results: 1, limit: 25, offset: 0, has_more: false }
+                    counts: { open: 4, today: 0, overdue: 1, upcoming: 2, none: 1, milestones: 0, completed: 7 }
         '400':
-          description: '`assignee=me` with a key that has no user, or an invalid filter.'
+          description: An invalid filter (`VALIDATION_ERROR`), or a key that belongs to no user (`USER_REQUIRED`).
           content:
             application/json:
               schema:
@@ -10546,7 +10586,8 @@ paths:
         belongs to the whole organization.
 
         - **Assignee**: `assignee_email` or `assignee_id`; they must be a member
-          of the organization, or a user on the task's event.
+          of the organization, or a user on the task's event. The task's
+          creator is the API key's user.
         - **Dates**: `due_date` (`YYYY-MM-DD`) and an optional `due_time`
           (`HH:mm`, 24-hour) in the event's time zone. For an organization task
           it is the assignee's time zone, else `America/New_York`. Without a
@@ -10554,8 +10595,10 @@ paths:
         - **Records**: the records the task is about, each `{ type, id }`; the
           first is the primary. Every record must be in your organization,
           and in the task's event when the task has one.
+        - **Reminder**: with a due date and no `reminder`, the assignee is
+          reminded at 09:00 on the due date (`9am`). Send `none` to skip it.
 
-        Needs `write:tasks`.
+        Unknown fields are a `400`. `source` is `api`. Needs `write:tasks`.
       tags:
         - Tasks
       requestBody:
@@ -10577,14 +10620,14 @@ paths:
                   reminder: 9am
                   priority: high
       responses:
-        '200':
+        '201':
           description: Created
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/TaskEnvelope'
         '400':
-          description: A missing title, a bad date or time, an unknown reminder, an assignee who cannot be assigned, or a record outside your organization or the event.
+          description: A missing title, a bad date or time, an unknown reminder or field, an assignee who cannot be assigned, a record outside your organization or the event (`VALIDATION_ERROR`), or a key that belongs to no user (`USER_REQUIRED`).
           content:
             application/json:
               schema:
@@ -10615,7 +10658,7 @@ paths:
         '403':
           $ref: '#/components/responses/TasksForbidden'
         '404':
-          description: No such task in your organization.
+          description: No such task, or the key's user cannot read it (`NOT_FOUND`).
     patch:
       operationId: update-task
       summary: Update a task
@@ -10663,7 +10706,7 @@ paths:
         '403':
           $ref: '#/components/responses/TasksForbidden'
         '404':
-          description: No such task in your organization.
+          description: No such task, or the key's user cannot read it (`NOT_FOUND`).
     delete:
       operationId: delete-task
       summary: Delete a task
@@ -10678,16 +10721,21 @@ paths:
               schema:
                 type: object
                 properties:
-                  success:
-                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      deleted:
+                        type: boolean
               example:
-                success: true
+                data: { id: 7d1c2b8e-4f0a-4c3e-9b1d-2a6f8e0c41a1, deleted: true }
         '401':
           description: Unauthorized
         '403':
           $ref: '#/components/responses/TasksForbidden'
         '404':
-          description: No such task in your organization.
+          description: No such task, or the key's user cannot read it (`NOT_FOUND`).
 
   /v1/tasks/{taskId}/complete:
     parameters:
@@ -10725,7 +10773,7 @@ paths:
         '403':
           $ref: '#/components/responses/TasksForbidden'
         '404':
-          description: No such task in your organization.
+          description: No such task, or the key's user cannot read it (`NOT_FOUND`).
 
   /v1/tasks/{taskId}/reopen:
     parameters:
@@ -10750,7 +10798,7 @@ paths:
         '403':
           $ref: '#/components/responses/TasksForbidden'
         '404':
-          description: No such task in your organization.
+          description: No such task, or the key's user cannot read it (`NOT_FOUND`).
 
   # ──────────────────────────────────────────────
   # Products
@@ -24467,6 +24515,24 @@ components:
         has_due_time:
           type: boolean
           description: '`false` when only a date was set (due at 23:59 that day in the time zone).'
+        due_date:
+          type: [string, 'null']
+          format: date
+          description: The due date in `timezone`.
+        due_time:
+          type: [string, 'null']
+          description: The due time (`HH:mm`) in `timezone`; `null` when `has_due_time` is `false`.
+        timezone:
+          type: string
+          description: The IANA time zone of `due_date` and `due_time` — the event's, or for an organization task the assignee's (else `America/New_York`).
+        record_type:
+          type: [string, 'null']
+          description: The primary record's type (the same as `records[0].type`).
+        record_id:
+          type: [string, 'null']
+          description: The primary record's id.
+        parent_id:
+          type: [string, 'null']
         start_at:
           type: [string, 'null']
           format: date-time
@@ -24489,7 +24555,7 @@ components:
               format: date-time
         source:
           type: [string, 'null']
-          description: Where the task came from, such as `custom`, `note` or `milestone`.
+          description: Where the task came from, such as `api`, `custom`, `note` or `milestone`.
         source_note_id:
           type: [string, 'null']
           description: The note this task follows up, when it was created from one.
@@ -24518,19 +24584,44 @@ components:
     TaskEnvelope:
       type: object
       properties:
-        task:
+        data:
           $ref: '#/components/schemas/Task'
     TaskList:
       type: object
       properties:
-        tasks:
+        data:
           type: array
           items:
             $ref: '#/components/schemas/Task'
-        total:
-          type: integer
-        has_more:
-          type: boolean
+        pagination:
+          type: object
+          properties:
+            total_results:
+              type: integer
+            limit:
+              type: integer
+            offset:
+              type: integer
+            has_more:
+              type: boolean
+        counts:
+          type: object
+          description: Totals for the same filters, ignoring `status`, `due` and `kind`.
+          properties:
+            open:
+              type: integer
+            today:
+              type: integer
+            overdue:
+              type: integer
+            upcoming:
+              type: integer
+            none:
+              type: integer
+            milestones:
+              type: integer
+            completed:
+              type: integer
     TaskCreate:
       type: object
       required: [title]
@@ -24564,8 +24655,9 @@ components:
         reminder:
           type: string
           enum: [none, due, 9am, 1h, 1d, 1w]
-          default: none
           description: |
+            Default: `9am` when the task has a due date, otherwise `none`.
+
             `due` at the due time, `9am` at 09:00 on the due date, `1h` an hour
             before, `1d` / `1w` at 09:00 one day or one week before.
         priority:
@@ -24604,10 +24696,9 @@ components:
     TaskApiError:
       type: object
       properties:
-        code:
-          type: string
         error:
           type: string
+          description: '`VALIDATION_ERROR`, `USER_REQUIRED`, `FORBIDDEN`, `NOT_FOUND`, `TASKS_PLATFORM_ONLY`, `SCOPE_REQUIRED`, `ORG_WIDE_TOKEN_REQUIRED` or `INTERNAL_ERROR`.'
         message:
           type: string
     OrganizationProducts:
@@ -34066,7 +34157,7 @@ components:
         - `TASKS_PLATFORM_ONLY`: the organization uses a self-serve Sessionboard product; Tasks are part of Sessionboard Platform.
         - `SCOPE_REQUIRED`: the key lacks `read:tasks` (reads) or `write:tasks` (writes). Legacy keys with no scopes can read but not write.
         - `ORG_WIDE_TOKEN_REQUIRED`: the key is restricted to particular events; Tasks need a key without an event restriction.
-        - `FORBIDDEN`: the key's user cannot change this task (only the assignee, the creator, a follower or an admin can; only the creator or an admin can delete).
+        - `FORBIDDEN`: the key's user can read this task but not change it (only the assignee, the creator, a follower or an admin can; only the creator or an admin can delete), or cannot use Tasks (reviewers and portal users).
       content:
         application/json:
           schema:
@@ -34075,7 +34166,7 @@ components:
             platform_only:
               summary: A self-serve organization
               value:
-                code: TASKS_PLATFORM_ONLY
+                error: TASKS_PLATFORM_ONLY
                 message: Tasks are part of Sessionboard Platform.
             scope_required:
               summary: The key lacks write:tasks
