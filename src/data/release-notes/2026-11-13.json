@@ -773,6 +773,281 @@
         "docs_only": false,
         "pending": null
       }
+    },
+    {
+      "id": "integration-sync-live-progress",
+      "title": "Watch integration syncs in real time with a live progress log",
+      "summary": "While an event integration sync is running, a live log now streams step-by-step progress in **History → Integrations → Running**. Each phase — connecting to the vendor, reading sessions, syncing each entity type, retries, and the final outcome — appears as it happens, with counts of records created, updated, unchanged, and failed. Supported vendors: Swapcard, ExpoPlatform, Stova, Grip, Bizzabo, Gleanin, Cvent, Swoogo, and ASP. Speaker-only syncs and organization-level syncs don't show live lines yet, so an empty log for one of those jobs doesn't mean it failed.",
+      "article": "/integrations/integration-readiness#reading-the-sync-history",
+      "related": [
+        "/apps/swapcard-integration",
+        "/apps/expoplatform-integration",
+        "/apps/stova-integration",
+        "/apps/grip-integration",
+        "/apps/bizzabo-integration",
+        "/apps/gleanin-integration",
+        "/integrations/cvent",
+        "/apps/swoogo-integration",
+        "/apps/asp-integration",
+        "/communications/email-sms-history"
+      ],
+      "kind": "new",
+      "module": "Apps",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "History → Integrations → Running"
+      },
+      "permissions": [
+        "event.history.read",
+        "event.integrations.sync"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers running a sync against a large vendor no longer have to wait until it finishes to know whether it is working. They can open the Running tab and watch each phase complete in real time, spot a rate-limit retry or a failed entity immediately, and decide whether to let the sync continue or investigate before it ends.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Requires IS_ELASTICSEARCH_ENABLED on the environment. Confirm it is active before pointing customers to the Running tab. Only event syncs are covered in this release; speaker-only and org-level jobs do not emit lines yet."
+        },
+        "when_to_bring_up": "When a customer asks why a sync is taking a long time, reports unexpected sync results, or wants more visibility into what a vendor integration is doing.",
+        "who_should_get_it": "Any customer using Swapcard, ExpoPlatform, Stova, Grip, Bizzabo, Gleanin, Cvent, Swoogo, or ASP event syncs.",
+        "staff_path": "History → Integrations → Running",
+        "gotchas": "Speaker-only syncs (Swoogo, Cvent, Expo, Swapcard), org-level syncs, and inbound wrappers do not emit live lines yet. Mapper warnings stay in the system log only. Each vendor needs a manual sync to confirm its lines appear correctly — not yet validated against real vendors.",
+        "talk_track": "You can now watch your integration sync progress in real time — each phase, retry, and entity count appears as it happens, so you know immediately if the vendor is rate-limiting or if records are failing.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should add a section describing the Running tab and how to read the live log lines, including what each phase label means, how retry messages appear, and what the terminal outcome statuses (completed, with warnings, with errors, failed) indicate.",
+          "why_use_it": "Integration syncs can take several minutes and touch thousands of records across speakers, sessions, rooms, and tracks. The live progress log lets you follow each phase as it runs — connecting, reading, syncing each entity type, handling retries — so you always know where a sync stands and what it produced. When something goes wrong, the log tells you whether the vendor is rate-limiting requests, returning errors, or failing on specific records, giving you the context to act without waiting for the sync to finish.",
+          "at": "2026-11-13T16:22:41.378Z"
+        }
+      },
+      "product": "platform",
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5327"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "platform": false
+    },
+    {
+      "id": "side-panel-dropdowns-close-on-outside-click",
+      "title": "Contact, group and account profile dropdowns now close when you click outside them",
+      "summary": "In the **Contact Profile**, **Group Profile** and **Account Profile** side panels, opening a dropdown or multi-select attribute field and then clicking elsewhere in the panel now closes the list. Previously, lists stayed open and stacked on top of each other when a second field was opened, covering the fields below.",
+      "article": "/contacts/contact-profile",
+      "related": [
+        "/speaker-crm/overview",
+        "/speaker-crm/creating-crm-fields"
+      ],
+      "kind": "fixed",
+      "module": "CRM",
+      "features": [],
+      "permissions": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Speakers → All Speakers → [contact] → Attributes; CRM → Contacts → [contact] → Attributes; CRM → Groups → [group] → Attributes; CRM → Accounts → [account] → Attributes"
+      },
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers editing attribute fields on a speaker, group or account profile can now open one dropdown, pick a value, and move to the next field without lists piling up and obscuring the panel.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Automatic fix; no action needed."
+        },
+        "when_to_bring_up": "A customer reports that dropdown or multi-select attribute fields in a speaker, group or account side panel stay open or stack on top of each other.",
+        "who_should_get_it": "All customers using attribute fields on contact, group or account profiles.",
+        "staff_path": "Speakers → All Speakers → any contact → Attributes; org CRM → Contacts / Groups / Accounts → any record → Attributes",
+        "gotchas": "The fix removes a stopPropagation guard from three panels. Session profile dropdowns were already working correctly and are unaffected.",
+        "talk_track": "Editing attributes in a contact or account profile is now much smoother — open a field, pick a value, and the list closes cleanly so you can move to the next one.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The contact profile guide should note that clicking outside an open attribute dropdown or multi-select closes it, and that only one list is open at a time.",
+          "why_use_it": null,
+          "at": "2026-11-13T16:39:00.378Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1591"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "product": "platform",
+      "platform": false
+    },
+    {
+      "id": "contact-merge-portal-resync",
+      "title": "Contact merges now re-sync portal assignments for the surviving contact",
+      "summary": "When two contacts are merged, the surviving contact's portal membership is now automatically re-evaluated across every event they belong to — including events inherited from the removed duplicates. Previously, a merge with no carried field values skipped the portal sync, leaving the survivor on the wrong portal (for example, landing on the Default People Portal instead of a Submission Portal).",
+      "kind": "fixed",
+      "module": "Portals",
+      "article": "/contacts/merge-duplicates",
+      "related": [
+        "/portals/creating-custom-portals",
+        "/portals/portals-101"
+      ],
+      "availability": "everyone",
+      "features": [],
+      "permissions": [],
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Contacts → Duplicates → Merge"
+      },
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "An organizer who merges a submitter with a duplicate contact can trust that the survivor lands on the correct filtered portal (such as a Submission Portal) immediately after the merge, without needing to manually trigger a resync or edit the contact record.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Fix is automatic for all new merges. For the one known affected contact in event 6153, run Portals → ⋮ → Resync Portal Assignments, or make any edit to the contact to queue a sync."
+        },
+        "when_to_bring_up": "A customer reports that a merged contact is on the wrong portal or is missing from a filtered portal (e.g. Submission Portal) after a merge.",
+        "who_should_get_it": "Any customer who uses filtered portals (e.g. is-submitter portals) and regularly merges duplicate contacts.",
+        "staff_path": "Portals → ⋮ → Resync Portal Assignments (POST /event/{id}/portals/resync) for any event where a pre-fix merge left a survivor on the wrong portal.",
+        "gotchas": "The fix applies only to merges performed after this deploy. Pre-existing stale memberships from past merges are not automatically corrected — a manual resync or contact edit is needed per event. US had 1 confirmed wrong-portal case; broader stale counts (929 contact-event pairs US, 323 EU) are mostly likely still correct since their filters may not depend on what the merge moved.",
+        "talk_track": "After a contact merge, the survivor is now automatically placed on the right portal based on their updated data — no manual resync needed.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The merge guide should note that portal assignments are automatically re-synced for the surviving contact after a merge, including for events inherited from removed duplicates.",
+          "why_use_it": null,
+          "at": "2026-11-13T16:54:43.349Z"
+        }
+      },
+      "product": "platform",
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5347"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "platform": false
+    },
+    {
+      "id": "integration-sync-running-tab",
+      "title": "Watch an integration sync in real time from History → Integrations",
+      "summary": "A new **Running** sub-tab in **History → Integrations** shows every sync still in progress and recently finished syncs that have logs. Opening a running sync shows its full lifecycle (**Queued → Provisioning → Running → Finalizing**), a record count, a job/sync ID card, and a live log console with level filters, search, auto-scroll, copy and download. After starting a manual sync, the toast now includes a **View progress** link that opens the running view in a new tab; the completion toast links to **View results**. The tab and toast links are currently visible to staff only; for all other users the tab appears with a lock icon and a \"Coming soon\" tooltip.",
+      "article": "/communications/email-sms-history#integrations",
+      "related": [
+        "/integrations/integration-readiness",
+        "/apps/gleanin-integration",
+        "/integrations/cvent"
+      ],
+      "kind": "new",
+      "module": "Settings",
+      "features": [],
+      "availability": "limited_release",
+      "enable": {
+        "how": "support",
+        "path": "Ask your Customer Success Manager to enable access; then History → Integrations → Running"
+      },
+      "where": {
+        "scope": "event",
+        "path": "History → Integrations → Running"
+      },
+      "permissions": [
+        "event.history.read",
+        "event.integrations.sync"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "When a large session or contacts sync is running, an organizer can open the Running tab to watch records process in real time and read the log — no more waiting until the sync finishes to find out whether something went wrong.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "The Running tab and toast links are behind the super-user flag. Non-staff users see a locked tab with a 'Coming soon' tooltip. The API side (lennd/sessionboard-web-api#5327) must be deployed first. Coordinate deploy order before enabling for any customer."
+        },
+        "when_to_bring_up": "When a customer asks why a sync is taking a long time, or when they want more visibility into what an integration is doing during a sync.",
+        "who_should_get_it": "Customers who run frequent or large integration syncs (sessions, contacts, Gleanin) and want real-time feedback.",
+        "staff_path": "History → Integrations → Running (super-user flag required)",
+        "gotchas": "The API endpoints must be live before the UI is enabled for any user. Non-staff users land on Sync History if they follow a ?job= or ?sync= link.",
+        "talk_track": "You can now watch a sync as it runs — see each lifecycle stage, how many records have been processed, and a live log you can filter, search, copy or download. When you kick off a manual sync, the toast gives you a direct link to that job's progress view.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The /communications/email-sms-history guide should add a section documenting the Running sub-tab, the sync lifecycle stages, the log console controls (filters, search, auto-scroll, copy, download), and the toast links that appear after a manual sync.",
+          "why_use_it": "The Integrations history lets you see every sync that has run for an event, including its outcome, the records it touched, and a full log of what happened. Use it to confirm a sync completed cleanly, diagnose a mapping problem, or share a log with your integration partner when troubleshooting. The Running view extends this to syncs still in progress, so you can catch issues as they happen rather than after the fact.",
+          "at": "2026-11-13T17:48:38.066Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1585"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:limited_release",
+      "product": "platform",
+      "platform": false
     }
   ]
 }
