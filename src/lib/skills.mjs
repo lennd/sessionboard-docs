@@ -17,17 +17,20 @@ import manifest from '../../public/skills/downloads/skills.json' with { type: 'j
 export const SKILLS_BASE = '/skills';
 export const DOWNLOADS = `${SKILLS_BASE}/downloads`;
 
-/** Product groups, in sidebar order. Keys match `product` in the manifest. */
+/**
+ * Product groups, in sidebar order. Keys match `product` in the manifest; `badge` is the
+ * product mark (src/lib/product-badges.mjs) shown before the group's name.
+ */
 export const SKILL_PRODUCTS = [
-  { key: 'program', label: 'Program and speakers' },
-  { key: 'awards', label: 'Awards' },
-  { key: 'learning', label: 'Learning' },
-  { key: 'crm', label: 'CRM' },
-  { key: 'registration', label: 'Registration' },
-  { key: 'insights', label: 'Reports and insights' },
-  { key: 'marketing', label: 'Marketing' },
-  { key: 'sites', label: 'Sites' },
-  { key: 'attend', label: 'For attendees' },
+  { key: 'program', label: 'Program and speakers', badge: 'sessions' },
+  { key: 'awards', label: 'Awards', badge: 'awards' },
+  { key: 'learning', label: 'Learning', badge: 'learning' },
+  { key: 'crm', label: 'CRM', badge: 'crm' },
+  { key: 'registration', label: 'Registration', badge: 'platform' },
+  { key: 'insights', label: 'Reports and insights', badge: 'platform' },
+  { key: 'marketing', label: 'Marketing', badge: 'marketing' },
+  { key: 'sites', label: 'Sites', badge: 'platform' },
+  { key: 'attend', label: 'For attendees', badge: 'platform' },
 ];
 
 export const GUIDES = [
@@ -58,7 +61,7 @@ export function skillsSidebarFor(pathname) {
   const guides = GUIDES.map((g) => link(g.label, g.slug ? `${SKILLS_BASE}/${g.slug}` : SKILLS_BASE));
   const groups = skillsByProduct().map((g) => {
     const entries = g.skills.map((s) => link(s.title, `${SKILLS_BASE}/${s.id}`));
-    return { type: 'group', label: g.label, entries, collapsed: false, badge: undefined };
+    return { type: 'group', label: g.label, entries, collapsed: false, badge: undefined, sbProduct: g.badge };
   });
   return [{ type: 'group', label: 'Get started', entries: guides, collapsed: false, badge: undefined }, ...groups];
 }

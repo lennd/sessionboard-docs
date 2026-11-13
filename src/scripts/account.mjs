@@ -398,6 +398,28 @@ function audienceNote(reader) {
 // ── Boot ───────────────────────────────────────────────────────────────
 
 /**
+ * The "Help for ▾" dropdown is a <details>: it opens and closes without script. This adds
+ * what a disclosure menu should also do: Escape closes it and returns focus to the button,
+ * and a click or focus outside closes it.
+ */
+function wireSuiteSwitch(nav) {
+  if (nav.dataset.wired) return;
+  nav.dataset.wired = '1';
+  const summary = nav.querySelector('summary');
+  nav.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && nav.open) {
+      nav.open = false;
+      summary?.focus();
+    }
+  });
+  const closeIfOutside = (e) => {
+    if (nav.open && !nav.contains(e.target)) nav.open = false;
+  };
+  document.addEventListener('click', closeIfOutside);
+  document.addEventListener('focusin', closeIfOutside);
+}
+
+/**
  * Documentation suites (src/lib/suites.mjs), only when a self-serve suite is
  * deployed (the head script then sets window.sbSuites). Reveals the switcher's
  * entries for the suites this reader holds and can read, and the switcher
@@ -419,13 +441,16 @@ function applySuites(reader) {
   const held = new Set(products ?? [PLATFORM]);
   const nav = document.querySelector('.sb-suite-switch');
   if (nav) {
-    const links = [...nav.querySelectorAll('a[data-suite]')];
+    const items = [...nav.querySelectorAll('li[data-suite]')];
     let shown = 0;
-    for (const a of links) {
-      a.hidden = !held.has(a.dataset.suite);
-      if (!a.hidden) shown += 1;
+    for (const li of items) {
+      li.hidden = !held.has(li.dataset.suite);
+      if (!li.hidden) shown += 1;
     }
     nav.hidden = shown < 2;
+    // The dropdown names the current product, so the suite title under it would repeat it.
+    document.documentElement.toggleAttribute('data-sb-switch', !nav.hidden);
+    wireSuiteSwitch(nav);
   }
   const built = readable;
   const remembered = document.cookie.split('; ').some((c) => c.startsWith(`${SUITE_COOKIE}=`) && c.length > SUITE_COOKIE.length + 1);
