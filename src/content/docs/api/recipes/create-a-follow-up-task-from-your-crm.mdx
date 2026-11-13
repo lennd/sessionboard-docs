@@ -1,0 +1,51 @@
+---
+title: "Create a follow-up task from your CRM"
+description: "When something happens in your CRM, give someone on your team a Sessionboard task about the right contact, due on the right day."
+---
+
+When a deal moves, a form comes back incomplete or a speaker emails your CRM, create a task in Sessionboard so the right person follows up on the right contact. You need a key with `read:contacts`, `read:tasks` and `write:tasks`, without an event restriction: see [API keys](/api/authentication). Tasks are part of Sessionboard Platform.
+
+## 1. Find the contact
+
+Look the person up by email in the event: [`GET /v1/event/{eventId}/participants?email=`](/api/reference/participants/get-a-participant-by-email) gives the contact's `id`.
+
+## 2. Don't create it twice
+
+Before creating, check for an open task on that contact with the same title. [`GET /v1/tasks`](/api/reference/tasks/list-tasks) takes `record_type=contact`, `record_id` and `q`:
+
+```bash
+curl "https://public-api.sessionboard.com/v1/tasks?record_type=contact&record_id=9b2e4c1a-0d3f-4a5b-8c7d-6e5f4a3b2c1d&q=disclosure" \
+  -H "x-access-token: $SESSIONBOARD_TOKEN"
+```
+
+If `total` is more than `0`, update that task instead (step 4).
+
+## 3. Create the task
+
+[`POST /v1/tasks`](/api/reference/tasks/create-a-task) with the event, the contact, the owner's email from your CRM, and a due date in the event's time zone:
+
+```bash
+curl -X POST "https://public-api.sessionboard.com/v1/tasks" \
+  -H "x-access-token: $SESSIONBOARD_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "event_id": 7001,
+    "title": "Chase Dr. Okafor'\''s disclosure",
+    "description": "Disclosure form came back unsigned (CRM case 58213).",
+    "records": [{ "type": "contact", "id": "9b2e4c1a-0d3f-4a5b-8c7d-6e5f4a3b2c1d" }],
+    "assignee_email": "dana@example.org",
+    "due_date": "2026-11-20",
+    "reminder": "9am",
+    "priority": "high"
+  }'
+```
+
+The response is `{ "task": { … } }`. Store `task.id` against the CRM record so later changes find it. Dana is told about the task, and reminded at 09:00 on the 20th.
+
+## 4. Keep it in step
+
+- The date moved in your CRM: [`PATCH /v1/tasks/{taskId}`](/api/reference/tasks/update-a-task) with `{ "due_date": "2026-11-23" }`.
+- The owner changed: `PATCH` with `{ "assignee_email": "priya@example.org" }`.
+- It was resolved in your CRM: [`POST /v1/tasks/{taskId}/complete`](/api/reference/tasks/complete-a-task) with `{ "completion_note": "Signed form received" }`.
+
+A `403` with `TASKS_PLATFORM_ONLY` means the organization uses a self-serve Sessionboard product, which has no Tasks. A `400` names the field to fix, such as an assignee who is not on the event.

@@ -1,0 +1,94 @@
+---
+title: "Tasks"
+description: "Read and write your team's tasks: link them to records, assign by email, set due dates and reminders, and complete them with a note."
+---
+
+import { Note } from '@compat';
+
+Tasks are your team's to-dos in Sessionboard Platform. Each one has a title, an assignee, a due date with an optional time, an optional reminder, a priority, and the records it is about: contacts, sessions (a submission is a session), sponsors, exhibitors and groups. A task belongs to one event, or to the whole organization when it has no event. People see their tasks under **My tasks**, on the record's Tasks card, and in their daily digest.
+
+Tasks are not Portal tasks, which are the to-dos a speaker or other participant sees in the portal. The API does not change Portal tasks.
+
+<Note>
+  Tasks are part of Sessionboard Platform. An organization that uses a self-serve Sessionboard product gets `403` with `TASKS_PLATFORM_ONLY` and the message "Tasks are part of Sessionboard Platform."
+</Note>
+
+## 1. Get a key with the right scopes
+
+| Scope | Lets the key |
+| --- | --- |
+| `read:tasks` | [List tasks](/api/reference/tasks/list-tasks) and [get a task](/api/reference/tasks/get-a-task) |
+| `write:tasks` | [Create](/api/reference/tasks/create-a-task), [update](/api/reference/tasks/update-a-task), [complete](/api/reference/tasks/complete-a-task), [reopen](/api/reference/tasks/reopen-a-task) and [delete](/api/reference/tasks/delete-a-task) tasks |
+
+A write scope does not include the read scope. Tasks span every event, so a key restricted to particular events is refused with `403 ORG_WIDE_TOKEN_REQUIRED`. A task is written as the key's user: that person is the creator, and the same rules apply as in Sessionboard. The assignee, the creator, a follower or an admin can change a task; only the creator or an admin can delete one. See [API keys](/api/authentication).
+
+## 2. List tasks
+
+```bash
+curl "https://public-api.sessionboard.com/v1/tasks?assignee=me&due=overdue" \
+  -H "x-access-token: $SESSIONBOARD_TOKEN"
+```
+
+| Filter | Values |
+| --- | --- |
+| `event_id` | One event's tasks |
+| `assignee` | `me` (the key's user), a user id, an email, `none` (unassigned) or `any` (everyone) |
+| `status` | `open` (the default) or `completed` |
+| `due` | `overdue`, `today`, `upcoming` or `none` (no due date) |
+| `due_from`, `due_to` | Due dates, `YYYY-MM-DD`, inclusive |
+| `record_type`, `record_id` | Tasks linked to one record |
+| `q` | Words in the title or description |
+| `limit`, `offset` | Up to 100 a page; `has_more` says whether there are more |
+
+`assignee=me` needs a key that belongs to a user. A key without one gets `400`.
+
+## 3. Link records
+
+Send `records` as a list of `{ type, id }`. The first record is the primary one. Every record must be in your organization, and in the task's event when the task has an event.
+
+| `type` | `id` |
+| --- | --- |
+| `contact` | The contact's id |
+| `session` | The session's id (submissions too) |
+| `sponsor`, `exhibitor` | The sponsor's or exhibitor's id |
+| `group` | The group's id |
+
+A task comes back with each record's `label` (the contact's name, the session's title, the sponsor's, exhibitor's or group's name). When the key's user cannot read a record, it comes back with `restricted: true` and `label: null`.
+
+## 4. Assign by email
+
+Send `assignee_email` (or `assignee_id`). The assignee must be a member of your organization, or a user on the task's event; anyone else is a `400`. The assignee is told when a task is assigned to them, and again when someone else changes its due date, reassigns it or renames it. Send `assignee_email: null` to unassign.
+
+## 5. Dates and reminders
+
+Send the date as `due_date` (`YYYY-MM-DD`) and, if it matters, the time as `due_time` (`HH:mm`, 24-hour). Both are in the event's time zone; an organization task uses the assignee's time zone, else `America/New_York`. Without a time, the task is due at the end of that day and `has_due_time` is `false`. The response gives `due_at` as a UTC timestamp.
+
+`reminder` sends the assignee a reminder:
+
+| `reminder` | When |
+| --- | --- |
+| `none` | No reminder (the default) |
+| `due` | At the due time |
+| `9am` | 09:00 on the due date |
+| `1h` | One hour before the due time |
+| `1d` | 09:00 the day before |
+| `1w` | 09:00 a week before |
+
+`reminder_at` is when it goes out. Changing the due date, the reminder or the assignee moves it. An overdue task tells its assignee (and its creator) once.
+
+## 6. Complete and reopen
+
+[Complete a task](/api/reference/tasks/complete-a-task) with an optional `completion_note`, a short reply such as "Forms received". Pending reminders are cancelled and the creator and followers are told. [Reopen a task](/api/reference/tasks/reopen-a-task) to put it back; its reminder comes back if the time is still ahead.
+
+```bash
+curl -X POST "https://public-api.sessionboard.com/v1/tasks/7d1c2b8e-4f0a-4c3e-9b1d-2a6f8e0c41a1/complete" \
+  -H "x-access-token: $SESSIONBOARD_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "completion_note": "Forms received" }'
+```
+
+## From an AI assistant
+
+The [MCP server](/api/insights/mcp-server) has two tools on these endpoints: `list_tasks` and `manage_task`. Try: *"What's on my plate this week?"*, *"Remind Dana to chase Dr. Okafor's disclosure by Friday"*, *"What's overdue across my events?"* or *"Mark the AV task done: forms received"*.
+
+To create tasks from another system, see [Create a follow-up task from your CRM](/api/recipes/create-a-follow-up-task-from-your-crm).
