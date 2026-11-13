@@ -71,6 +71,32 @@ INCLUDE friendly_id, title,
 
 Both columns contain names, so they count as personal data: **Hide personal details** redacts them. Internal team notes are never included. On a submission in a blind Review plan, a reviewer's name reads `Reviewer`. A role restricted to part of the event sees only the participants it may see and cannot use `MESSAGES`. CSV exports never truncate a cell; XLSX caps a cell at Excel's 32,767 characters.
 
+## All, Any or None of a Record's Related Rows: ALL, ANY, NONE
+
+A condition on a related field, such as `sessions_as_speaker.status = 'declined'`, checks **one related row at a time**. It returns a row per matching session and keeps a speaker who also has an accepted session. To ask about all of a record's related rows at once, wrap the condition in `ALL`, `ANY` or `NONE` and the relationship's name:
+
+```sql
+FIND Contact
+INCLUDE first_name, last_name, email
+WHERE ANY sessions (is_subsession = true)
+  AND ALL sessions (is_subsession = false OR status = 'declined')
+ORDER BY last_name ASC
+```
+
+This returns one row per person who is on at least one subsession and whose every subsession is declined, which is the audience for a decline email. `sessions` covers every role. Someone declined as a speaker but accepted as a moderator on another subsession is left out. Use `sessions_as_speaker` to look at speaker seats only.
+
+| Form | Keeps the record when |
+| --- | --- |
+| `ANY <relationship> (<condition>)` | at least one related row matches |
+| `NONE <relationship> (<condition>)` | no related row matches |
+| `ALL <relationship> (<condition>)` | every related row matches, including when there are none. Pair it with `ANY` to require at least one. |
+
+- The record stays one row, however many related rows it has, so `DISTINCT` is not needed.
+- Fields inside the parentheses belong to the relationship: `status` and `sessions.status` mean the same thing there. Custom fields work too: `ANY speakers (["Speaker Type"] = 'Keynote')`.
+- Inside the parentheses you can use `AND`, `OR`, `NOT` and every comparison operator. You cannot use fields of another relationship, put one `ALL`, `ANY` or `NONE` inside another, or use review answers that are calculated after the query runs (`reviews_v2.is_complete`, scorecard questions).
+- On events with subsessions, speakers usually also sit on the parent session. Name the level with `is_subsession` inside the parentheses, as above.
+- A role restricted to part of the event cannot use `ALL`, `ANY` or `NONE`; the request returns `403`.
+
 ## One Row per Session: Review Summaries
 
 Adding a review answer to a session report usually returns one row per reviewer. To keep **one row per session**, put an aggregate over the `reviews_v2` field in `INCLUDE`, next to your other columns, with no `GROUP BY`. Each aggregate then summarises that session's reviews in one cell. Works with `FIND Session` and `FIND Abstract`.
