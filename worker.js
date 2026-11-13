@@ -36,8 +36,9 @@ const FALLBACK = '/faq/who-can-i-contact-for-additional-assistance';
 const PROD_HOST = site.canonicalHost;
 const LEGACY_HOSTS = new Set(site.legacyHosts);
 // The retired feedback portal (Canny, gone since 2026-11). Ideas and the roadmap
-// now live in the in-app Community, which needs a sign-in in the customer's own
-// region, so every path lands on the public release notes instead.
+// now live in the in-app Community, whose sign-in depends on the customer's own
+// region (US/EU), so every path lands on the Help Center release notes (which
+// also need a Help Center sign-in) instead.
 const RETIRED_FEEDBACK_HOSTS = new Set(site.retiredFeedbackHosts);
 // The retired Mintlify API docs (lennd/sessionboard-public-api-docs). Each page it served
 // 301s to the same page under /api (src/lib/api-docs/retired-host.mjs).
