@@ -16,6 +16,8 @@ security:
   - ApiKey: []
   - BearerToken: []
 tags:
+  - name: Budgets
+    description: Spending limits on an event, tracked against cost fields the event already holds. Reads need `read:events`; writes need `write:event_configuration`.
   - name: Events
     description: Manage events on the platform.
   - name: Sessions
@@ -24635,6 +24637,443 @@ paths:
         '429':
           $ref: '#/components/responses/CrmTooManyRequests'
 
+  /v1/event/{eventId}/budgets:
+    get:
+      operationId: list-budgets
+      x-hidden: true
+      summary: List budgets
+      description: |
+        Every budget on the event the token's user can see, with totals computed
+        when you ask (they reflect every value saved up to that moment), plus a
+        count by status. Requires `read:events`.
+      tags: [Budgets]
+      parameters:
+        - $ref: '#/components/parameters/EventId'
+        - name: status
+          in: query
+          required: false
+          schema: { type: string, enum: [on_track, near_limit, over_budget] }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  payload:
+                    type: object
+                    properties:
+                      budgets:
+                        type: array
+                        items:
+                          type: object
+                          description: A budget with live totals.
+                          properties:
+                            id: { type: string, format: uuid }
+                            event_id: { type: integer }
+                            name: { type: string }
+                            records:
+                              type: object
+                              properties:
+                                type: { type: string, enum: [contacts, sessions, exhibitors, sponsors] }
+                                label: { type: string }
+                                filters: { type: object, description: 'The stored filter set: `{ expression, filters: [{ fieldId, pattern, value }] }`.' }
+                                filters_text: { type: string, example: 'Hosted/Non-hosted is not Non-hosted' }
+                            fields:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  id: { type: string, format: uuid }
+                                  name: { type: string }
+                                  type: { type: string }
+                            unit:
+                              type: object
+                              description: '`{ kind: currency, code }` or `{ kind: count, label }`.'
+                              properties:
+                                kind: { type: string, enum: [currency, count] }
+                                code: { type: string, example: SAR }
+                                label: { type: string, example: passes }
+                            amount: { type: number }
+                            per_record_limit: { type: [number, 'null'] }
+                            warn_at_pct: { type: integer }
+                            totals:
+                              type: object
+                              properties:
+                                used: { type: number }
+                                remaining: { type: number, description: Negative when over budget. }
+                                pct_used: { type: number }
+                                status: { type: string, enum: [on_track, near_limit, over_budget] }
+                                records_counted: { type: integer }
+                                records_total: { type: integer }
+                                records_without_value: { type: integer }
+                                records_over_limit: { type: integer }
+                      summary:
+                        type: object
+                        properties:
+                          count: { type: integer }
+                          over_budget: { type: integer }
+                          near_limit: { type: integer }
+                          on_track: { type: integer }
+        '403':
+          description: Missing scope, or the token's user cannot read the records the budget counts (or, for writes, cannot update Program settings).
+    post:
+      operationId: create-budget
+      x-hidden: true
+      summary: Create a budget
+      description: |
+        Create a budget. With `dry_run=true` nothing is saved and the computed
+        budget comes back, so you can show the numbers before committing. Names
+        are unique per event, so retrying a create is safe (`BUDGET_NAME_TAKEN`).
+        Requires `write:event_configuration`.
+      tags: [Budgets]
+      parameters:
+        - $ref: '#/components/parameters/EventId'
+        - name: dry_run
+          in: query
+          required: false
+          schema: { type: boolean }
+          description: Compute and return the budget without saving it.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string, maxLength: 120, example: Flights }
+                record_type: { type: string, enum: [contacts, sessions, exhibitors, sponsors] }
+                fields:
+                  type: array
+                  description: Cost fields to add up, by name or id. Currency, number or calculated number; one currency (or one kind of count) per budget.
+                  items: { type: string }
+                  example: ['Flight Cost (Estimate)', 'Ground Transport']
+                filters:
+                  description: 'Which records count: a list of `{ field_name, op, value }` (a dropdown `value` is the option label, all must match), or a saved view''s `{ expression: and | or, filters }`. `null` or `[]` counts every record.'
+                  oneOf:
+                    - type: array
+                      items: { type: object }
+                    - type: object
+                      properties:
+                        expression: { type: string, enum: [and, or] }
+                        filters: { type: array, items: { type: object } }
+                    - type: 'null'
+                  example: [{ field_name: 'Hosted/Non-hosted', op: is_not, value: Non-hosted }]
+                amount: { type: number, example: 45000 }
+                per_record_limit: { type: [number, 'null'], example: 8000 }
+                warn_at_pct: { type: integer, minimum: 1, maximum: 100, default: 90 }
+                unit_label: { type: string, description: 'Count budgets only, e.g. `passes`.' }
+      responses:
+        '201':
+          description: Created, or with `dry_run=true` the preview (nothing saved). Both answer 201.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  payload:
+                    type: object
+                    properties:
+                      dry_run: { type: boolean }
+                      budget: { type: object, description: 'The budget, shaped as in List budgets.' }
+        '400':
+          description: 'Refused, with a machine `code` (`FIELD_NOT_FOUND`, `FIELD_AMBIGUOUS` with `details.candidates`, `FIELD_NOT_SUMMABLE`, `UNIT_MISMATCH`, `BUDGET_NAME_TAKEN` with `details.budget_id`, `INVALID_FILTER`, `INVALID_AMOUNT`) and `details`.'
+        '403':
+          description: Missing scope, or the token's user cannot read the records the budget counts (or, for writes, cannot update Program settings).
+  /v1/event/{eventId}/budgets/suggestions:
+    get:
+      operationId: suggest-budgets
+      x-hidden: true
+      summary: Budget setup suggestions
+      description: |
+        Templates matched to the event's fields; per record type, the fields that
+        can be added up (with how many records hold a value and the running
+        total), cost-looking fields that cannot and why, dropdown and checkbox
+        fields usable as filters with their options, and saved views whose
+        filters can be copied. Requires `read:events`.
+      tags: [Budgets]
+      parameters:
+        - $ref: '#/components/parameters/EventId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  payload:
+                    type: object
+                    properties:
+                      templates: { type: array, items: { type: object } }
+                      record_types: { type: array, items: { type: object } }
+  /v1/event/{eventId}/budgets/impact:
+    post:
+      operationId: budget-impact
+      x-hidden: true
+      summary: Budget impact of value changes
+      description: |
+        For value changes about to be made (or just made), how each budget that
+        adds up those fields moves: used before and after, remaining, and
+        whether its status changes. Writes nothing. Requires `read:events`.
+      tags: [Budgets]
+      parameters:
+        - $ref: '#/components/parameters/EventId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [changes]
+              properties:
+                changes:
+                  type: array
+                  maxItems: 200
+                  items:
+                    type: object
+                    required: [record_id, field_id, value]
+                    properties:
+                      record_id: { type: string, format: uuid }
+                      field_id: { type: string, format: uuid }
+                      value: { type: [number, string, 'null'], description: Value to assume; null means empty. }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  payload:
+                    type: object
+                    properties:
+                      budget_impact:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            budget_id: { type: string, format: uuid }
+                            budget: { type: string }
+                            used_before: { type: number }
+                            used_after: { type: number }
+                            remaining_after: { type: number }
+                            status_before: { type: string }
+                            status_after: { type: string }
+                            status_changed: { type: boolean }
+  /v1/event/{eventId}/budgets/copy:
+    post:
+      operationId: copy-budgets
+      x-hidden: true
+      summary: Copy budgets from another event
+      description: |
+        Copy budgets from another event in the same organization, matching
+        fields and dropdown options by name. Returns what was copied and what
+        was skipped, with the reason. Requires `write:event_configuration`.
+      tags: [Budgets]
+      parameters:
+        - $ref: '#/components/parameters/EventId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [source_event_id]
+              properties:
+                source_event_id: { type: integer }
+                names: { type: array, items: { type: string } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  payload:
+                    type: object
+                    properties:
+                      copied: { type: array, items: { type: object } }
+                      skipped:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            name: { type: string }
+                            reason: { type: string }
+  /v1/event/{eventId}/budgets/{budgetId}:
+    get:
+      operationId: get-budget
+      x-hidden: true
+      summary: Get a budget
+      description: |
+        One budget with its line items (the records it counts and each one's
+        contribution, largest first), the records with no value yet and those
+        over the per-record limit. A role restricted to some records gets the
+        totals without line items. Requires `read:events`.
+      tags: [Budgets]
+      parameters:
+        - $ref: '#/components/parameters/EventId'
+        - name: budgetId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 500, default: 20 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  payload:
+                    type: object
+                    description: 'The budget as in List budgets, plus `line_items`, `line_items_total`, `records_without_value` and `records_over_limit`.'
+    patch:
+      operationId: update-budget
+      x-hidden: true
+      summary: Update a budget
+      description: Change any of the budget's settings; send only what changes. `dry_run=true` previews the new totals. Requires `write:event_configuration`.
+      tags: [Budgets]
+      parameters:
+        - $ref: '#/components/parameters/EventId'
+        - name: budgetId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: dry_run
+          in: query
+          required: false
+          schema: { type: boolean }
+          description: Compute and return the budget without saving it.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string, maxLength: 120, example: Flights }
+                record_type: { type: string, enum: [contacts, sessions, exhibitors, sponsors] }
+                fields:
+                  type: array
+                  description: Cost fields to add up, by name or id. Currency, number or calculated number; one currency (or one kind of count) per budget.
+                  items: { type: string }
+                  example: ['Flight Cost (Estimate)', 'Ground Transport']
+                filters:
+                  description: 'Which records count: a list of `{ field_name, op, value }` (a dropdown `value` is the option label, all must match), or a saved view''s `{ expression: and | or, filters }`. `null` or `[]` counts every record.'
+                  oneOf:
+                    - type: array
+                      items: { type: object }
+                    - type: object
+                      properties:
+                        expression: { type: string, enum: [and, or] }
+                        filters: { type: array, items: { type: object } }
+                    - type: 'null'
+                  example: [{ field_name: 'Hosted/Non-hosted', op: is_not, value: Non-hosted }]
+                amount: { type: number, example: 45000 }
+                per_record_limit: { type: [number, 'null'], example: 8000 }
+                warn_at_pct: { type: integer, minimum: 1, maximum: 100, default: 90 }
+                unit_label: { type: string, description: 'Count budgets only, e.g. `passes`.' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  payload:
+                    type: object
+                    properties:
+                      dry_run: { type: boolean }
+                      budget: { type: object }
+        '400':
+          description: 'Refused, with a machine `code` (`FIELD_NOT_FOUND`, `FIELD_AMBIGUOUS` with `details.candidates`, `FIELD_NOT_SUMMABLE`, `UNIT_MISMATCH`, `BUDGET_NAME_TAKEN` with `details.budget_id`, `INVALID_FILTER`, `INVALID_AMOUNT`) and `details`.'
+    delete:
+      operationId: delete-budget
+      x-hidden: true
+      summary: Delete a budget
+      description: Removes the budget. The cost fields and their values are not touched. Requires `write:event_configuration`.
+      tags: [Budgets]
+      parameters:
+        - $ref: '#/components/parameters/EventId'
+        - name: budgetId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  payload:
+                    type: object
+                    properties:
+                      deleted: { type: boolean }
+                      id: { type: string, format: uuid }
+                      name: { type: string }
+  /v1/event/{eventId}/budgets/{budgetId}/what-if:
+    post:
+      operationId: budget-what-if
+      x-hidden: true
+      summary: Preview a budget with hypothetical values
+      description: The budget, with totals and line items computed as if the given values were set. Writes nothing. Requires `read:events`.
+      tags: [Budgets]
+      parameters:
+        - $ref: '#/components/parameters/EventId'
+        - name: budgetId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [changes]
+              properties:
+                changes:
+                  type: array
+                  maxItems: 200
+                  items:
+                    type: object
+                    required: [record_id, field_id, value]
+                    properties:
+                      record_id: { type: string, format: uuid }
+                      field_id: { type: string, format: uuid }
+                      value: { type: [number, string, 'null'], description: Value to assume; null means empty. }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  payload:
+                    type: object
+                    description: 'The budget as in Get a budget, with `what_if: true`.'
+
 components:
   securitySchemes:
     ApiKey:
@@ -25092,40 +25531,33 @@ components:
         generated:
           type: boolean
         generated_at:
-          type: string
+          type: [string, 'null']
           format: date-time
-          nullable: true
         stale:
           type: boolean
         started:
           type: boolean
         starts_at:
-          type: string
+          type: [string, 'null']
           format: date-time
-          nullable: true
         timezone:
-          type: string
-          nullable: true
+          type: [string, 'null']
         registration_url:
-          type: string
-          nullable: true
+          type: [string, 'null']
         width:
           type: integer
         height:
           type: integer
         banner_url:
-          type: string
-          nullable: true
+          type: [string, 'null']
           description: Stable banner URL; "Save your seat" until the start, "Watch the recording" after.
         banners:
           type: object
           properties:
             live:
-              type: string
-              nullable: true
+              type: [string, 'null']
             on_demand:
-              type: string
-              nullable: true
+              type: [string, 'null']
         variants:
           type: array
           items:
@@ -25166,17 +25598,14 @@ components:
               share_url:
                 type: string
               emailed_at:
-                type: string
+                type: [string, 'null']
                 format: date-time
-                nullable: true
               opened_at:
-                type: string
+                type: [string, 'null']
                 format: date-time
-                nullable: true
               copied_at:
-                type: string
+                type: [string, 'null']
                 format: date-time
-                nullable: true
               clicks:
                 type: integer
               registrations:
@@ -25224,27 +25653,23 @@ components:
         generated:
           type: boolean
         generated_at:
-          type: string
+          type: [string, 'null']
           format: date-time
-          nullable: true
         stale:
           type: boolean
         started:
           type: boolean
         starts_at:
-          type: string
+          type: [string, 'null']
           format: date-time
-          nullable: true
         timezone:
-          type: string
-          nullable: true
+          type: [string, 'null']
         speakers:
           type: integer
         speakers_with_photos:
           type: integer
         registration_url:
-          type: string
-          nullable: true
+          type: [string, 'null']
         designs:
           type: array
           items:
@@ -25260,8 +25685,7 @@ components:
       type: object
       properties:
         campaign:
-          type: object
-          nullable: true
+          type: [object, 'null']
           properties:
             id:
               type: string
@@ -25272,8 +25696,7 @@ components:
             attendee_share_count:
               type: integer
         speaker_campaign:
-          type: object
-          nullable: true
+          type: [object, 'null']
           properties:
             id:
               type: string
@@ -25289,21 +25712,18 @@ components:
               contact_id:
                 type: string
               recipient_id:
-                type: string
-                nullable: true
+                type: [string, 'null']
               name:
                 type: string
               email:
                 type: string
               share_url:
-                type: string
-                nullable: true
+                type: [string, 'null']
               shares:
                 type: integer
               last_shared_at:
-                type: string
+                type: [string, 'null']
                 format: date-time
-                nullable: true
               removed:
                 type: boolean
               pending:
@@ -25846,8 +26266,7 @@ components:
       description: Fields every webinar report carries.
       properties:
         org_kind:
-          type: string
-          nullable: true
+          type: [string, 'null']
           enum: [corporate, association, organizer, null]
           description: Company, association or event organizer. `null` until your organization sets it; `labels` are then neutral.
         labels:
@@ -25858,9 +26277,8 @@ components:
             from: { type: string, format: date }
             to: { type: string, format: date }
         as_of:
-          type: string
+          type: [string, 'null']
           format: date-time
-          nullable: true
           description: When the CRM or AMS was last read. `null` when nothing is connected.
         not_tracked:
           type: array
@@ -25874,12 +26292,11 @@ components:
           type: boolean
           description: '`true` when the list was capped; `<list>_total` then gives the full count.'
     WebinarMoney:
-      type: object
-      nullable: true
+      type: [object, 'null']
       properties:
         count: { type: integer }
-        amount: { type: number, nullable: true }
-        currency: { type: string, nullable: true, example: USD }
+        amount: { type: [number, 'null'] }
+        currency: { type: [string, 'null'], example: USD }
     WebinarQuestionsReport:
       allOf:
         - $ref: '#/components/schemas/WebinarReportEnvelope'
@@ -25901,8 +26318,7 @@ components:
                   asked_at: { type: string, format: date-time }
                   text: { type: string }
                   intent:
-                    type: string
-                    nullable: true
+                    type: [string, 'null']
                     description: >-
                       `null` until the question is classified (`not_tracked` then has an `intent` entry).
                       company: `buying`, `evaluating`; association: `joining`, `renewing`, `rejoining`, `group`, `credit`;
@@ -25914,11 +26330,10 @@ components:
                       person_id: { type: string }
                       name: { type: string }
                       email: { type: string }
-                      company: { type: string, nullable: true }
-                      title: { type: string, nullable: true }
+                      company: { type: [string, 'null'] }
+                      title: { type: [string, 'null'] }
                       relationship:
-                        type: string
-                        nullable: true
+                        type: [string, 'null']
                         description: For example `customer`, `member`, `nonmember`, `lapsed`, `exhibitor` or `sponsor`.
                   webinar:
                     type: object
@@ -25930,17 +26345,15 @@ components:
                     type: array
                     items: { type: string }
                     example: [cta.clicked, demo_requested]
-                  owner_name: { type: string, nullable: true }
+                  owner_name: { type: [string, 'null'] }
                   follow_up:
                     type: string
                     enum: [none_seen, followed_up, unknown]
                   follow_up_detail:
-                    type: string
-                    nullable: true
+                    type: [string, 'null']
                     example: Last sales activity Oct 2, before the question
                   clip:
-                    type: object
-                    nullable: true
+                    type: [object, 'null']
                     properties:
                       media_id: { type: string }
                       offset_seconds: { type: integer }
@@ -25954,8 +26367,8 @@ components:
               type: object
               properties:
                 webinars: { type: integer }
-                median_live_share: { type: number, nullable: true }
-                median_on_demand_percent: { type: number, nullable: true }
+                median_live_share: { type: [number, 'null'] }
+                median_on_demand_percent: { type: [number, 'null'] }
             topics_total: { type: integer }
             topics:
               type: array
@@ -25970,15 +26383,13 @@ components:
                   webinars: { type: integer }
                   people: { type: integer }
                   live:
-                    type: object
-                    nullable: true
+                    type: [object, 'null']
                     properties:
                       attendees: { type: integer }
                       median_minutes: { type: number }
                       median_share: { type: number, description: 'Share of the scheduled length, 0 to 1.' }
                   on_demand:
-                    type: object
-                    nullable: true
+                    type: [object, 'null']
                     properties:
                       viewers: { type: integer }
                       median_percent: { type: number }
@@ -25986,8 +26397,8 @@ components:
                   vs_org:
                     type: object
                     properties:
-                      live_points: { type: number, nullable: true }
-                      on_demand_points: { type: number, nullable: true }
+                      live_points: { type: [number, 'null'] }
+                      on_demand_points: { type: [number, 'null'] }
                   top_webinars:
                     type: array
                     items:
@@ -26007,8 +26418,7 @@ components:
         - type: object
           properties:
             system:
-              type: string
-              nullable: true
+              type: [string, 'null']
               enum: [hubspot, salesforce, fonteva, nimble, null]
             window_days: { type: integer, example: 180 }
             totals:
@@ -26022,19 +26432,17 @@ components:
                 closed:
                   $ref: '#/components/schemas/WebinarMoney'
                 became:
-                  type: object
-                  nullable: true
+                  type: [object, 'null']
                   properties:
                     count: { type: integer }
                 renewed:
-                  type: object
-                  nullable: true
+                  type: [object, 'null']
                   description: Associations only.
                   properties:
                     count: { type: integer }
                     of: { type: integer }
                     rate: { type: number }
-                    rate_not_attended: { type: number, nullable: true }
+                    rate_not_attended: { type: [number, 'null'] }
                 in_the_room:
                   $ref: '#/components/schemas/WebinarMoney'
             rows_total: { type: integer }
@@ -26049,12 +26457,12 @@ components:
                   touched: { type: integer }
                   created: { $ref: '#/components/schemas/WebinarMoney' }
                   closed: { $ref: '#/components/schemas/WebinarMoney' }
-                  became: { type: object, nullable: true, properties: { count: { type: integer } } }
-                  renewed: { type: object, nullable: true }
-                  owner_name: { type: string, nullable: true }
-                  first_touch: { type: string, format: date, nullable: true }
-                  date: { type: string, format: date, nullable: true, description: 'With `groupBy=webinar`: the webinar date.' }
-                  webinars: { type: integer, nullable: true }
+                  became: { type: [object, 'null'], properties: { count: { type: integer } } }
+                  renewed: { type: [object, 'null'] }
+                  owner_name: { type: [string, 'null'] }
+                  first_touch: { type: [string, 'null'], format: date }
+                  date: { type: [string, 'null'], format: date, description: 'With `groupBy=webinar`: the webinar date.' }
+                  webinars: { type: [integer, 'null'] }
             method:
               type: string
               description: How it was counted, in one sentence ending "Association, not credit."
