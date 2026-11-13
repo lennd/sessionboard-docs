@@ -133,6 +133,16 @@ A breaking change gets its `changelog.mdx` entry, marked **Breaking** with the d
 
 URLs mirror Mintlify's under `/api`: `/introduction` is `/api`, `/authentication` is `/api/authentication`, `/api-reference/<tag>/<summary>` is `/api/reference/<tag>/<summary>`. `src/data/api/mintlify-redirects.json` maps every URL Mintlify served here; it is frozen (it never grows) and its targets are tested. `apidocs.sessionboard.com` is routed to this Worker (a zone route in `wrangler.toml`, the hostname's DNS record untouched) and `worker.js` 301s every path through it (`src/lib/api-docs/retired-host.mjs`; anything unknown lands on `/api`). `sessionboard.mintlify.app` is Mintlify's domain and cannot be redirected. Public while the rest of `/api` is sign-in only: `/api/openapi.{json,yaml}`, `/api/changelog` and `/api/breaking-changes` (`API_PUBLIC_PATHS` in `worker.js`), because Mintlify published them to anyone. API pages are not in `src/sidebar.json` and are Platform-suite only (`.cursor/rules/product-docs-suites.mdc`). Try it sends requests from the reader's browser straight to `public-api*.sessionboard.com` with the token they paste; never store that token or proxy it through the Worker.
 
+## Skills tab (`/skills`): workflow skills for AI assistants
+
+The header's **Skills** tab sits beside API Docs. It explains skills (`skills/index.mdx`), how to install them (`install.mdx`), what Sessionboard enforces (`permissions.mdx`, Platform-suite wording: state only what the code does), and has **one generated article per skill**. The skills live in `lennd/sessionboard-mcp-server` (`skills/<name>/SKILL.md` + `skills/catalog.json`, tested against the tools the server registers). To change one:
+
+1. Edit it there, then `npm run skills:package -- --out ../sessionboard-docs/public/skills/downloads` (zips, the Claude Code plugins, `skills.json`).
+2. Here: `npm run skills:pages` (writes `src/content/docs/skills/<id>.mdx`, deletes pages whose skill is gone). Never hand-edit those pages; CI runs `npm run skills:check`.
+3. `npm run breadcrumbs`, build, deploy as usual.
+
+`src/lib/skills.mjs` builds the tab's own sidebar (swapped in by `src/route-data.ts`, like the API tab; `src/sidebar.json` never lists skills). `worker.js` serves `/skills/downloads/*` to anyone (no customer data; Claude, Claude Code and the product's Apps › Skills tab fetch them signed out); the pages stay sign-in only.
+
 ## Academy tab (`/academy`): our own Learning Site, surfaced here
 
 The Academy is Sessionboard's own Learning Site (our LMS, dogfooded) in our own org, filled from `sessionboard-tam/academy` (content as code). This repo holds **no lessons**:

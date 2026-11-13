@@ -49,11 +49,14 @@ const helpHref = onApi && onApi.help !== '/' && helpIds.has(onApi.help.replace(/
 // The build renders /academy as academy.html, so normalise before matching.
 const academyPath = path.replace(/\.html$/, '').replace(/\/$/, '');
 const onAcademy = academyPath === '/academy' || academyPath.startsWith('/academy/');
+// The Skills tab (src/lib/skills.mjs): workflow skills for Claude, ChatGPT and other assistants.
+const onSkills = academyPath === '/skills' || academyPath.startsWith('/skills/');
 const tabs = [
-	{ label: 'Help Center', short: 'Help', href: helpHref, current: !onApi && !onAcademy },
+	{ label: 'Help Center', short: 'Help', href: helpHref, current: !onApi && !onAcademy && !onSkills },
 	// ?via=all clears a self-serve help scope (src/lib/help-scope.mjs), which would otherwise hide
 	// the API sidebar's untagged links.
 	{ label: 'API Docs', short: 'API', href: `${suiteProduct.base}?via=all`, current: Boolean(onApi) },
+	{ label: 'Skills', short: 'Skills', href: '/skills', current: onSkills },
 	// Shown once the Academy is open (site.json `academy.open`), and always on /academy itself.
 	...(academyOpen(site) || onAcademy
 		? [{ label: 'Academy', short: 'Academy', href: '/academy', current: onAcademy }]
