@@ -35,8 +35,9 @@ const FALLBACK = '/faq/who-can-i-contact-for-additional-assistance';
 // host in a single hop — so the cutover needs DNS only, no code change.
 const PROD_HOST = site.canonicalHost;
 const LEGACY_HOSTS = new Set(site.legacyHosts);
-// The retired Canny portal. Its ideas, roadmap and changelog have no page-level
-// equivalent here, so every path lands on the release notes.
+// The retired feedback portal (Canny, gone since 2026-11). Ideas and the roadmap
+// now live in the in-app Community, which needs a sign-in in the customer's own
+// region, so every path lands on the public release notes instead.
 const RETIRED_FEEDBACK_HOSTS = new Set(site.retiredFeedbackHosts);
 // The retired Mintlify API docs (lennd/sessionboard-public-api-docs). Each page it served
 // 301s to the same page under /api (src/lib/api-docs/retired-host.mjs).
@@ -409,7 +410,7 @@ const MARKETING_HOST = 'www.sessionboard.com';
 const BLOG_PREFIX = /^\/blog(?:\/|$)/;
 
 // Release notes live at /help/release-notes (restored in-site 2026-09-12 after
-// a period on Canny; the page links Canny for older history). Everything that
+// a period on the retired feedback portal). Everything that
 // used to be under /release-notes goes there instead of rotting or 404ing —
 // including the 18 legacy HubSpot slugs whose redirect targets were the old
 // sixteen monthly pages.
