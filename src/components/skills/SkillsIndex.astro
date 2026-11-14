@@ -3,7 +3,7 @@
  * Every skill, grouped by product, with a filter box. Data: public/skills/downloads/skills.json.
  * Without JavaScript the full list shows; the filter only hides rows.
  */
-import { DOWNLOADS, SKILLS_BASE, skillsByProduct } from '../../lib/skills.mjs';
+import { DOWNLOADS, SKILLS_BASE, productsForGroup, skillsByProduct } from '../../lib/skills.mjs';
 import { isStaffOnlyHref } from '../../lib/staff-only.mjs';
 import site from '../../../site.json';
 import ProductBadge from '../ProductBadge.astro';
@@ -24,7 +24,7 @@ const total = groups.reduce((n, g) => n + g.skills.filter((s) => !staff(s.id)).l
 	<p class="sb-skills-count" role="status" aria-live="polite">{total} skills</p>
 	{
 		groups.map((g) => (
-			<section class="sb-skills-group" data-group data-staff-only={g.staffOnly ? '' : undefined}>
+			<section class="sb-skills-group" data-group data-skills-for={productsForGroup(g.key).join(' ')} data-staff-only={g.staffOnly ? '' : undefined}>
 				<h2 id={`skills-${g.key}`}>
 					<ProductBadge product={g.badge as 'platform'} size="md" />
 					{g.label}
@@ -57,7 +57,9 @@ const total = groups.reduce((n, g) => n + g.skills.filter((s) => !staff(s.id)).l
 		if (count) count.textContent = n === 1 ? '1 skill' : `${n} skills`;
 	};
 	// Staff see the staff-only skills too; count what this reader's page actually holds.
-	say(root?.querySelectorAll('li[data-text]').length ?? 0);
+	// A product view ("Skills for ▾", <html data-sb-skills>) hides other products' sections with CSS.
+	const inView = (el: Element) => getComputedStyle(el.closest('[data-group]')!).display !== 'none';
+	say([...(root?.querySelectorAll('li[data-text]') ?? [])].filter(inView).length);
 	input?.addEventListener('input', () => {
 		const q = input.value.trim().toLowerCase();
 		let shown = 0;
@@ -69,7 +71,7 @@ const total = groups.reduce((n, g) => n + g.skills.filter((s) => !staff(s.id)).l
 				if (hit) inGroup++;
 			});
 			group.hidden = inGroup === 0;
-			shown += inGroup;
+			if (inView(group)) shown += inGroup;
 		});
 		say(shown);
 	});

@@ -448,6 +448,14 @@ function applySuites(reader) {
       if (!li.hidden) shown += 1;
     }
     nav.hidden = shown < 2;
+    // "Skills for ▾" names the view the head script chose, not a page's product.
+    if (nav.hasAttribute('data-dynamic')) {
+      const view = document.documentElement.getAttribute('data-sb-skills');
+      for (const a of nav.querySelectorAll('li[data-suite] a')) {
+        if (a.closest('li').dataset.suite === view) a.setAttribute('aria-current', 'true');
+        else a.removeAttribute('aria-current');
+      }
+    }
     // The dropdown names the current product, so the suite title under it would repeat it.
     document.documentElement.toggleAttribute('data-sb-switch', !nav.hidden);
     wireSuiteSwitch(nav);

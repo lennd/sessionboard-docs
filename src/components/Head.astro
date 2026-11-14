@@ -17,8 +17,8 @@ import { getCollection } from 'astro:content';
 import helpScopes from '../data/help-scopes.json';
 import { headScript, scopeCss, scopePaths } from '../lib/help-scope.mjs';
 import suitesConfig from '../data/suites.json';
-import { anySelfServeBuilt, builtSuites, deployedSuites, suiteForPath, suiteHeadScript } from '../lib/suites.mjs';
-import { isSkillsPath } from '../lib/skills.mjs';
+import { SUITE_COOKIE, anySelfServeBuilt, builtSuites, deployedSuites, suiteForPath, suiteHeadScript } from '../lib/suites.mjs';
+import { isSkillsPath, skillsCss, skillsHeadScript } from '../lib/skills.mjs';
 
 const SITE = `https://${site.canonicalHost}`;
 const WWW = 'https://www.sessionboard.com';
@@ -215,6 +215,9 @@ const marketingJs = `
 {suiteHead && <script is:inline set:html={suiteHead} />}
 {!unscoped && <script is:inline set:html={scopeHead} />}
 {!unscoped && <style is:inline set:html={scopeStyle} />}
+{/* Skills tab: "Skills for ▾" product view (src/lib/skills.mjs), set before first paint. */}
+{isSkillsPath(Astro.url.pathname) && <script is:inline set:html={skillsHeadScript(SUITE_COOKIE)} />}
+{isSkillsPath(Astro.url.pathname) && <style is:inline set:html={skillsCss()} />}
 <script>
   // Heading anchor icons (Starlight's a.sl-anchor-link) copy the section
   // hotlink to the clipboard on click (Josh, 2026-09-24). Default hash

@@ -4,14 +4,9 @@
  * "Academy" (lessons, exams and certifications — src/lib/academy.mjs) and
  * "API Docs" (the API docs of the product you are in: Platform's /api, or a self-serve
  * product's /sessionboard-<key>/api when that product is built). Markup and layout are
- * Starlight's own Header.astro; only the tab bar and the API product switcher are new.
- * Each tab's sidebar is chosen in src/route-data.ts.
- *
- * The switcher ("API for: Platform ▾") appears on API pages only, and only when the
- * signed-in reader holds two or more products whose API docs are in this build: their
- * products come from /_account/me `products` (web-api /help/reader/me), Platform when
- * the API does not say. Preview builds (SB_PREVIEW_SUITES) also take ?as=platform,marketing
- * so the local preview can show any combination without the Worker.
+ * Starlight's own Header.astro; only the tab bar is new. Each tab's sidebar is chosen in
+ * src/route-data.ts, and each tab's product dropdown ("Help for", "API for", "Skills for")
+ * sits at the top of that sidebar (ProductSwitch.astro).
  */
 import config from 'virtual:starlight/user-config';
 import { getCollection } from 'astro:content';
@@ -21,11 +16,10 @@ import Search from 'virtual:starlight/components/Search';
 import SiteTitle from 'virtual:starlight/components/SiteTitle';
 import SocialIcons from 'virtual:starlight/components/SocialIcons';
 import ThemeSelect from 'virtual:starlight/components/ThemeSelect';
-import { apiProductAt, builtProducts, registry } from '../lib/api-docs/data';
-import { PLATFORM, builtApiProducts } from '../lib/api-docs/products.mjs';
+import { apiProductAt, builtProducts } from '../lib/api-docs/data';
+import { PLATFORM } from '../lib/api-docs/products.mjs';
 import site from '../../site.json';
 import { academyOpen } from '../lib/academy.mjs';
-import ProductBadge from './ProductBadge.astro';
 
 const shouldRenderSearch =
 	config.pagefind || config.components.Search !== '@astrojs/starlight/components/Search.astro';
@@ -62,11 +56,6 @@ const tabs = [
 		? [{ label: 'Academy', short: 'Academy', href: '/academy', current: onAcademy }]
 		: []),
 ];
-// ?as= simulation is for local preview builds only; in production staff see every product.
-const preview = Boolean(String(process.env.SB_PREVIEW_SUITES ?? '').trim()) && products.some((P) => !(registry.products as Record<string, { released?: boolean }>)[P.key]?.released);
-const switchable = onApi && products.length > 1;
-// Products everyone can read; the rest are staff-only until they ship (src/lib/staff-only.mjs).
-const publicProducts = builtApiProducts(registry, process.env);
 ---
 
 <div class="header">
@@ -82,27 +71,6 @@ const publicProducts = builtApiProducts(registry, process.env);
 				))
 			}
 		</nav>
-		{
-			switchable && (
-				<details class="sb-api-switch print:hidden" data-current={onApi!.key} data-preview={preview ? '1' : undefined} hidden>
-					<summary aria-label={`API docs for ${onApi!.label}. Switch product`}>
-						<span class="sb-api-switch-for">API for</span>
-						<ProductBadge product={onApi!.key as 'platform'} />
-						{onApi!.label}
-					</summary>
-					<ul>
-						{products.map((P) => (
-							<li data-product={P.key} data-public={publicProducts.has(P.key) ? '1' : undefined} hidden>
-								<a href={`${P.base}?via=all`} aria-current={P.key === onApi!.key ? 'page' : undefined}>
-									<ProductBadge product={P.key as 'platform'} />
-									{P.label}
-								</a>
-							</li>
-						))}
-					</ul>
-				</details>
-			)
-		}
 	</div>
 	<div class="sl-flex print:hidden">
 		{shouldRenderSearch && <Search />}
@@ -116,49 +84,6 @@ const publicProducts = builtApiProducts(registry, process.env);
 	</div>
 </div>
 
-<script>
-	// Show only the products the reader holds (Platform when the API does not say) and can read:
-	// staff (super users) every product, unreleased ones included; everyone else the released
-	// ones. The switcher shows when that is two or more. Preview builds accept ?as=a,b to
-	// simulate a token.
-	const sw = document.querySelector<HTMLDetailsElement>('.sb-api-switch');
-	if (sw) {
-		const KEY = 'sb-api-preview-products';
-		const fromQuery = sw.dataset.preview ? new URLSearchParams(location.search).get('as') : null;
-		if (fromQuery !== null) {
-			try {
-				sessionStorage.setItem(KEY, fromQuery);
-			} catch {}
-		}
-		let simulated: string | null = null;
-		try {
-			simulated = sw.dataset.preview ? sessionStorage.getItem(KEY) : null;
-		} catch {}
-		const apply = (held: string[], staff = false) => {
-			const items = [...sw.querySelectorAll<HTMLElement>('li[data-product]')];
-			let shown = 0;
-			for (const li of items) {
-				// data-public already includes products a preview build names (SB_PREVIEW_SUITES).
-				const readable = staff || li.dataset.public === '1';
-				const on = (staff || (readable && held.includes(li.dataset.product!))) || li.dataset.product === sw.dataset.current;
-				li.hidden = !on;
-				if (on) shown++;
-			}
-			sw.hidden = shown < 2;
-		};
-		if (simulated) apply(simulated.split(',').map((s) => s.trim()).filter(Boolean));
-		else
-			fetch('/_account/me', { credentials: 'same-origin', headers: { Accept: 'application/json' } })
-				.then((r) => (r.ok ? r.json() : null))
-				.then((body) =>
-					apply(Array.isArray(body?.reader?.products) ? body.reader.products : ['platform'], body?.reader?.staff === true),
-				)
-				.catch(() => apply(['platform']));
-		document.addEventListener('click', (e) => {
-			if (sw.open && !sw.contains(e.target as Node)) sw.open = false;
-		});
-	}
-</script>
 
 <style>
 	@layer starlight.core {
@@ -259,68 +184,6 @@ const publicProducts = builtApiProducts(registry, process.env);
 	.sb-tab-short {
 		display: none;
 	}
-	.sb-api-switch {
-		position: relative;
-		flex-shrink: 0;
-		font-size: var(--sl-text-sm);
-	}
-	.sb-api-switch > summary {
-		list-style: none;
-		cursor: pointer;
-		display: inline-flex;
-		align-items: center;
-		gap: 0.35rem;
-		padding: 0.25rem 0.6rem;
-		border: 1px solid var(--sl-color-gray-5);
-		border-radius: 999px;
-		font-weight: 600;
-		color: var(--sl-color-white);
-		white-space: nowrap;
-	}
-	.sb-api-switch > summary::-webkit-details-marker {
-		display: none;
-	}
-	.sb-api-switch > summary::after {
-		content: '▾';
-		font-size: 0.75em;
-		color: var(--sl-color-gray-3);
-	}
-	.sb-api-switch-for {
-		font-weight: 400;
-		color: var(--sl-color-gray-3);
-	}
-	.sb-api-switch ul {
-		position: absolute;
-		z-index: 30;
-		top: calc(100% + 0.4rem);
-		/* Opens leftward from the pill so it stays inside the title area, which clips sideways. */
-		inset-inline-end: 0;
-		min-width: 11rem;
-		margin: 0;
-		padding: 0.3rem;
-		list-style: none;
-		background: var(--sl-color-bg);
-		border: 1px solid var(--sl-color-gray-5);
-		border-radius: 0.5rem;
-		box-shadow: var(--sl-shadow-md);
-	}
-	.sb-api-switch li a {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		padding: 0.35rem 0.6rem;
-		border-radius: 0.35rem;
-		color: var(--sl-color-gray-2);
-		text-decoration: none;
-	}
-	.sb-api-switch li a:hover {
-		background: var(--sl-color-gray-6);
-		color: var(--sl-color-white);
-	}
-	.sb-api-switch li a[aria-current='page'] {
-		color: var(--sl-color-text-accent);
-		font-weight: 600;
-	}
 	@media (max-width: 50rem) {
 		.sb-top-tabs a {
 			padding: 0.25rem 0.4rem;
@@ -334,8 +197,5 @@ const publicProducts = builtApiProducts(registry, process.env);
 		.title-wrapper {
 			gap: 0.5rem;
 		}
-		.sb-api-switch-for {
-			display: none;
 		}
-	}
 </style>

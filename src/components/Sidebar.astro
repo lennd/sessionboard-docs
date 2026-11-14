@@ -22,8 +22,9 @@ import ProductBadge from './ProductBadge.astro';
 import helpScopes from '../data/help-scopes.json';
 import suitesConfig from '../data/suites.json';
 import { getCollection } from 'astro:content';
-import { isSkillsPath } from '../lib/skills.mjs';
-import { apiProductAt } from '../lib/api-docs/data';
+import { SKILLS_BASE, isSkillsPath, skillsFor } from '../lib/skills.mjs';
+import { apiProductAt, builtProducts } from '../lib/api-docs/data';
+import ProductSwitch from './ProductSwitch.astro';
 import { PLATFORM, anySelfServeBuilt, deployedSuites, resolveSidebar, suiteForId } from '../lib/suites.mjs';
 
 const { sidebar, id } = Astro.locals.starlightRoute;
@@ -48,43 +49,43 @@ if (suiteConf && 'sidebar' in suiteConf && !apiPage) {
 	const entries = (await getCollection('docs')).filter((e) => suiteForId(e.id, suitesConfig) === suite);
 	suiteSidebar = resolveSidebar(items, { entries, currentPath: Astro.url.pathname });
 }
-// The Help Center's product switcher. Skills (cross-product, its own sidebar) and API Docs
-// (the header's "API for" switcher) do not carry it, so each tab has one switcher at most.
-const helpTab = !apiPage && !isApiPath(Astro.url.pathname) && !isSkillsPath(Astro.url.pathname);
-const switcher = suitesOn && helpTab ? Object.keys(suitesConfig.suites).filter((k) => built.has(k)) : [];
-const currentConf = suitesConfig.suites[suite as keyof typeof suitesConfig.suites];
+// One product dropdown per tab (ProductSwitch.astro): "Help for", "API for", "Skills for".
+const path = Astro.url.pathname;
+const onSkills = isSkillsPath(path);
+const onApi = apiPage || isApiPath(path);
+const helpTab = !onApi && !onSkills;
+const deployedKeys = suitesOn ? Object.keys(suitesConfig.suites).filter((k) => built.has(k)) : [];
+const conf = (k: string) => suitesConfig.suites[k as keyof typeof suitesConfig.suites] as { label: string; summary?: string; home: string };
+const switchProps = onApi
+	? {
+			forLabel: 'API for',
+			current: apiProductAt(path)?.key ?? PLATFORM,
+			// ?via=all clears a legacy help scope, which would hide the API sidebar's untagged links.
+			items: suitesOn
+				? builtProducts().map((P) => ({ key: P.key, label: P.label, summary: conf(P.key)?.summary, href: `${P.base}?via=all` }))
+				: [],
+		}
+	: onSkills
+		? {
+				forLabel: 'Skills for',
+				dynamic: true,
+				items: deployedKeys
+					.filter((k) => k === PLATFORM || skillsFor(k).length > 0)
+					.map((k) => ({ key: k, label: conf(k).label, summary: conf(k).summary, href: `${SKILLS_BASE}?for=${k}` })),
+			}
+		: {
+				forLabel: 'Help for',
+				current: suite,
+				items: deployedKeys.map((k) => ({
+					key: k,
+					label: conf(k).label,
+					summary: conf(k).summary,
+					href: k === PLATFORM ? '/?via=platform' : `${conf(k).home}?via=${k}`,
+				})),
+			};
 ---
 
-{
-	switcher.length > 0 && (
-		<details class="sb-suite-switch" data-current={suite} hidden>
-			<summary aria-label={`Help for ${currentConf.label}. Switch product`}>
-				<ProductBadge product={suite as 'platform'} size="md" />
-				<span class="sb-suite-switch-text">
-					<span class="sb-suite-switch-for">Help for</span>
-					<span class="sb-suite-switch-name">{currentConf.label}</span>
-				</span>
-				<svg class="sb-suite-switch-chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="m4 6 4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg>
-			</summary>
-			<ul>
-				{switcher.map((key) => {
-					const conf = suitesConfig.suites[key as keyof typeof suitesConfig.suites];
-					return (
-						<li data-suite={key} hidden>
-							<a href={key === PLATFORM ? '/?via=platform' : `${conf.home}?via=${key}`} aria-current={key === suite ? 'page' : undefined}>
-								<ProductBadge product={key as 'platform'} size="md" />
-								<span class="sb-suite-switch-text">
-									<span class="sb-suite-switch-name">{conf.label}</span>
-									<span class="sb-suite-switch-summary">{conf.summary}</span>
-								</span>
-							</a>
-						</li>
-					);
-				})}
-			</ul>
-		</details>
-	)
-}
+<ProductSwitch {...switchProps} />
 
 {
 	suiteConf && (
