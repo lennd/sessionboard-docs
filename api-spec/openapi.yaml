@@ -14980,6 +14980,124 @@ paths:
           $ref: '#/components/responses/MarketingForbidden'
         '404':
           description: The event is not in your organization.
+  /v1/organization/{orgId}/marketing/events/tours/{tourId}/listing:
+    get:
+      operationId: get-tour-listing
+      summary: A tour's listing page
+      description: >-
+        The listing pages (public Sites) an Events list for this tour can go on. The page with `has_tour: true` is the
+        tour's listing page; none means it has not been made yet. Pass its `site_id` to
+        `POST /v1/organization/{orgId}/marketing/pages/sites/{siteId}/domains` to put the tour on your own domain.
+        Changes nothing. Requires `read:marketing`. Also at `GET /v1/marketing/events/tours/{tourId}/listing`.
+      tags:
+        - Marketing
+      parameters:
+        - $ref: '#/components/parameters/MarketingOrgId'
+        - name: tourId
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 96
+          description: The tour, from `GET /v1/organization/{orgId}/marketing/events/tours`.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    type: object
+                    properties:
+                      pages:
+                        type: array
+                        items:
+                          allOf:
+                            - $ref: '#/components/schemas/TourListingPage'
+                            - type: object
+                              properties:
+                                has_tour:
+                                  type: boolean
+                                  description: This page already lists the tour.
+        '403':
+          $ref: '#/components/responses/MarketingForbidden'
+    post:
+      operationId: add-tour-to-listing
+      summary: Make a tour's listing page
+      description: >-
+        Puts the tour on a public listing page: an Events list of its stops, each shown once its own event page is
+        live. With `siteId` the list is added to that listing page; without it a listing page named after the tour is
+        made, or the one that already lists the tour is returned (never a second). The page is public as soon as it
+        is made, so a call from an AI assistant answers `202` with `status: needs_approval` and a link, and runs once
+        a person approves it in Sessionboard. Sends nothing. Requires `write:marketing`.
+        Also at `POST /v1/marketing/events/tours/{tourId}/listing`.
+      tags:
+        - Marketing
+      parameters:
+        - $ref: '#/components/parameters/MarketingOrgId'
+        - name: tourId
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 96
+          description: The tour, from `GET /v1/organization/{orgId}/marketing/events/tours`.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                siteId:
+                  type: string
+                  format: uuid
+                  description: A listing page's `site_id` from the GET to add the tour to. Omit to make one.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    allOf:
+                      - $ref: '#/components/schemas/TourListingPage'
+                      - type: object
+                        properties:
+                          created:
+                            type: boolean
+                            description: A new listing page was made.
+                          already:
+                            type: boolean
+                            description: The page already listed the tour; nothing changed.
+        '202':
+          description: Called by an AI assistant. Waiting for a person's OK in Sessionboard.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    type: object
+                    properties:
+                      status:
+                        type: string
+                        enum: [needs_approval]
+                      approval_id:
+                        type: string
+                      url:
+                        type: string
+                        description: Where a person approves the request.
+        '400':
+          description: That page cannot hold an Events list.
+        '403':
+          $ref: '#/components/responses/MarketingForbidden'
+        '404':
+          description: The tour or the listing page is not in your organization.
   /v1/organization/{orgId}/marketing/goals/discovery/{eventId}:
     get:
       operationId: get-ai-discovery
@@ -17995,6 +18113,35 @@ components:
               type: number
         business_hub:
           $ref: '#/components/schemas/ChatgptBusinessHub'
+    TourListingPage:
+      type: object
+      description: A listing page (a public Site) a tour can go on.
+      properties:
+        site_id:
+          type: string
+          format: uuid
+          description: Pass to the custom-domain, edit and publish calls for Sites.
+        name:
+          type: string
+        url:
+          type: string
+          description: Where the page is served.
+        type:
+          type: string
+          description: The Site's type, e.g. `event_portal`.
+        live:
+          type: boolean
+          description: Visitors see the page's saved content at `url` as soon as it exists.
+        published:
+          type: boolean
+          description: The page has been published (what search engines and the sitemap read).
+        published_at:
+          type: string
+          format: date-time
+          nullable: true
+        has_unpublished_changes:
+          type: boolean
+          description: A draft is waiting; visitors do not see it until it is published.
     EventTurnout:
       type: object
       description: How one event is doing. Every number under `prediction` is an estimate.
