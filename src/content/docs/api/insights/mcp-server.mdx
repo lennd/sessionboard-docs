@@ -184,6 +184,24 @@ A webinar's sharing pieces, the same ones as on the webinar's After tab in Sessi
 
 Try: *"Make email signatures for next week's webinar and add Jordan and Priya to the team"* or *"Which speakers don't have a sharing link yet?"*
 
+### Marketing: preview and edit before it goes out (7 tools)
+
+So an assistant can show you an email, newsletter, sign-up form or ad before anyone sees it, and change it, without opening Sessionboard. Reads need `read:events` (event emails) or `read:marketing`; changes need `write:marketing`.
+
+| Tool | Description |
+|------|-------------|
+| `preview_event_email` | One of an event's or webinar's lifecycle emails rendered as Sessionboard's preview draws it: the live version, or the design the assistant proposed (`version: proposed`), with accessibility warnings. Renders only. Calls [Preview a lifecycle email](/api/reference/event-emails/preview-a-lifecycle-email) |
+| `update_newsletter_issue` | Change a draft or scheduled issue's subject, preheader, layout or blocks. `get_newsletter_issue` returns the rendered issue to show |
+| `send_newsletter_test` | Send the issue to your own inbox only, as subscribers will get it. Not counted and not in results |
+| `unschedule_newsletter_issue` | Take a scheduled issue back to draft before it sends |
+| `list_signup_forms` | Every sign-up form and recording gate: where it shows, its words, what it asks, its list and double opt-in |
+| `update_signup_form` | Change a form's words, fields, list, double opt-in or consent text, or archive it. A form on a live page changes at once |
+| `update_ads` | Edit an ad draft (cap, dates, audience, copy) before you approve it. Each edit needs a new approval; nothing spends |
+
+Try: *"Show me the reminder email you proposed for Thursday's webinar"* or *"Send me a test of this month's newsletter, then hold it until Monday"*
+
+The Marketing tools' descriptions also carry the event rules an assistant should follow: registrations and turnout are different numbers; speakers get their sharing link while there is still time to post before the start, and sharing switches to the recording after; nothing is emailed or posted without your yes; and only your organization's own first-party data is used.
+
 ### Tasks (2 tools)
 
 Your team's to-dos in Sessionboard Platform: a title, an assignee, a due date with an optional time, a reminder, and the contacts, sessions, sponsors, exhibitors or groups a task is about. See the [Tasks guide](/api/guides/tasks). In an organization that uses a self-serve Sessionboard product, these tools answer "Tasks are part of Sessionboard Platform." instead.
@@ -267,6 +285,10 @@ Some Marketing and Learning actions reach people outside your team, spend money 
 - **Don't retry.** Calling the same tool again creates another request; tell the person where to approve instead.
 - **See what waits:** `list_approvals` lists every request still waiting, across Marketing, Learning, Awards and Sessions: what it is, the person's own words when the assistant passed them (`asked`), who asked, when, and the link to approve it. It is read-only, and no tool approves or declines anything. It calls `GET /v1/marketing/approvals` (`read:marketing`, a key not restricted to particular events).
 - Every assistant action, including the approvals, is listed under **Apps › AI assistants** in Sessionboard, with who asked and what changed. An admin can pause assistant writes for the organization; while paused, write tools return `423`.
+
+## Edits you can see and undo
+
+When an assistant edits something that already exists (an event page, a Site, a lifecycle email proposal, a newsletter issue, a campaign draft), the answer carries `what_changed` — one plain sentence per change, with before and after — and `kept`, which names the call that puts the earlier version back. Before an assistant edits a draft holding someone else's unpublished work, Sessionboard keeps that draft as a version first. Results reports (`get_results`, `get_advocacy_results`, `get_field_event_results`, `get_webinar_outcomes`) also carry a `story`: headline, findings, next move and slide-ready sections, each number citing the field it comes from. Nothing in an edit reaches people; the actions above still wait for your OK.
 
 ## Marketing in the conversation
 

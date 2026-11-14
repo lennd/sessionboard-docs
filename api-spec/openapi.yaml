@@ -55,6 +55,8 @@ tags:
     description: Ask a natural-language question about one event and get a cited answer. Requires the `read:ask` scope, granted explicitly.
   - name: Sharing
     description: A webinar's sharing pieces, for your own tools and AI assistants — email signatures for your team, share cards, speakers' personal links and a draft kit of posts for your team. Reads need `read:events`, writes `write:marketing`. Webinars only. Sending email signatures from an AI assistant waits for a person's OK (`202 needs_approval`).
+  - name: Event Emails
+    description: An in-person event's or webinar's lifecycle emails (confirmation, reminders, replay) for your own tools and AI assistants. Reads need `read:events`. Designs an assistant proposes wait for a person to accept them in Sessionboard.
   - name: Metadata Writes
     description: Create, update, and delete session metadata (rooms, tracks, tags, formats, levels, languages, statuses). Requires the `write:metadata` scope.
   - name: Agenda Planning
@@ -5734,6 +5736,89 @@ paths:
         '429':
           $ref: '#/components/responses/RegistrationTooManyRequests'
 
+  /v1/event/{eventId}/emails/{key}/authoring/preview:
+    post:
+      operationId: preview-event-email
+      summary: Preview a lifecycle email
+      description: |
+        Renders one of an in-person event's or webinar's lifecycle emails exactly as Sessionboard's own
+        preview draws it: the event's real name, date, venue and join link, the Brand kit, and the footer the
+        send adds. `version: live` (the default) is what sends today; `version: proposed` is the design an AI
+        assistant proposed, which a person has not accepted yet (`404` when there is none).
+
+        Returns `subject`, `preheader`, `html`, `text`, `design_mode` and `accessibility_warnings`. A read:
+        it stores nothing and emails no one. Requires `read:events`; the organization's AI switch applies, and
+        a key restricted to particular events can preview only those events' emails.
+      tags:
+        - Event Emails
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: The event or webinar
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The email's key, e.g. `gathering-reminder`
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                version:
+                  type: string
+                  enum: [live, proposed]
+                  default: live
+      responses:
+        '200':
+          description: The rendered email.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    properties:
+                      key:
+                        type: string
+                      version:
+                        type: string
+                        enum: [live, proposed]
+                      proposed_by:
+                        type: [object, 'null']
+                        description: Who proposed the design (`proposed` only)
+                      proposed_at:
+                        type: [string, 'null']
+                        format: date-time
+                      subject:
+                        type: string
+                      preheader:
+                        type: [string, 'null']
+                      html:
+                        type: string
+                      text:
+                        type: [string, 'null']
+                      design_mode:
+                        type: string
+                      accessibility_warnings:
+                        type: array
+                        items:
+                          type: object
+        '401':
+          description: Missing, invalid or expired token.
+        '403':
+          description: The token lacks `read:events`, is restricted to other events, or AI features are off for the organization.
+        '404':
+          description: The event is not in the token's organization, there is no email with that key, or there is no proposed design.
   /v1/event/{eventId}/sharing/signatures:
     get:
       operationId: get-sharing-email-signatures
@@ -18699,6 +18784,66 @@ paths:
           $ref: '#/components/responses/MarketingForbidden'
         '404':
           description: The event is not in your organization.
+  /v1/organization/{orgId}/marketing/results:
+    get:
+      operationId: get-marketing-results
+      summary: Get the results report
+      description: >-
+        One report for an event, a webinar (leave out `eventId` for the latest), the organization, or one sponsor
+        (`scope=sponsor`, counts only — no attendee is ever named). Event, webinar and org reports carry `totals`,
+        `funnel`, `channels`, `people` (who shared), `posts`, `content`, `gaps` and the `net_new` split; a sponsor report
+        carries `totals` and `sessions`. Every report also carries `story`: the same numbers as a headline, findings,
+        drivers, a next move and deck-ready sections, each claim citing the fields it comes from. Requires
+        `read:marketing`; a key restricted to particular events must name one of them as `eventId`. Also at
+        `GET /v1/marketing/results`.
+      tags:
+        - Marketing
+      parameters:
+        - $ref: '#/components/parameters/MarketingOrgId'
+        - name: scope
+          in: query
+          schema:
+            type: string
+            enum: [event, webinar, org, sponsor]
+            default: event
+        - name: eventId
+          in: query
+          schema:
+            type: string
+        - name: sponsorId
+          in: query
+          schema:
+            type: string
+          description: With `scope=sponsor`. Pick one with `GET …/marketing/results/sponsors`.
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: '`payload` with the report and its `story`'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    type: object
+                    properties:
+                      scope:
+                        type: string
+                      totals:
+                        type: object
+                      story:
+                        $ref: '#/components/schemas/ResultsStory'
+        '403':
+          $ref: '#/components/responses/MarketingForbidden'
   /v1/organization/{orgId}/marketing/results/questions:
     get:
       operationId: list-webinar-questions-to-follow-up
@@ -19756,8 +19901,9 @@ paths:
       operationId: update-newsletter-issue
       summary: Update an issue
       description: >-
-        Subject, preheader and blocks of a draft. Requires `write:marketing`; refused for a key restricted to particular
-        events. Also at `PUT /v1/marketing/newsletter/issues/{issueId}`.
+        Subject, preheader, layout and blocks of a draft or scheduled issue (a sent issue cannot change). Sends nothing.
+        Requires `write:marketing`; refused for a key restricted to particular events. Also at
+        `PUT /v1/marketing/newsletter/issues/{issueId}`.
       tags:
         - Marketing
       parameters:
@@ -19781,10 +19927,27 @@ paths:
                   type: string
                 blocks:
                   type: array
-                  description: 'Blocks: heading, text, clip, quote, episode, button'
+                  description: 'Blocks: heading, text, clip, quote, episode, button, image (the whole list, in order)'
+                layout:
+                  type: string
+                  enum: [single, feature, digest]
       responses:
         '200':
-          description: '`payload` with the result'
+          description: >-
+            `payload.issue` with the edited issue, plus `what_changed` and `kept`. The issue as it was is kept as a
+            version before every edit; restore it with `POST …/issues/{issueId}/versions/{versionId}/restore`.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    allOf:
+                      - type: object
+                        properties:
+                          issue:
+                            type: object
+                      - $ref: '#/components/schemas/EditReceipt'
         '403':
           $ref: '#/components/responses/MarketingForbidden'
         '404':
@@ -19812,6 +19975,100 @@ paths:
           $ref: '#/components/responses/MarketingForbidden'
         '404':
           description: Not found in your organization.
+  /v1/organization/{orgId}/marketing/newsletter/issues/{issueId}/versions:
+    get:
+      operationId: list-newsletter-issue-versions
+      summary: List an issue's kept versions
+      description: >-
+        The issue as it was before each edit, newest first: `version`, `summary` (what the edit that replaced it
+        changed, in plain words), `replaced_by` (who: a person or the assistant's name) and `created_at`. Requires
+        `read:marketing`; refused for a key restricted to particular events. Also at
+        `GET /v1/marketing/newsletter/issues/{issueId}/versions`.
+      tags:
+        - Marketing
+      parameters:
+        - $ref: '#/components/parameters/MarketingOrgId'
+        - name: issueId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The issue
+      responses:
+        '200':
+          description: '`payload` with `issue_id` and `versions`'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    type: object
+                    properties:
+                      issue_id:
+                        type: string
+                      versions:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/DraftVersion'
+        '403':
+          $ref: '#/components/responses/MarketingForbidden'
+        '404':
+          description: Not found in your organization.
+  /v1/organization/{orgId}/marketing/newsletter/issues/{issueId}/versions/{versionId}/restore:
+    post:
+      operationId: restore-newsletter-issue-version
+      summary: Restore a kept version of an issue
+      description: >-
+        Puts a kept version's subject, preheader, layout and blocks back on a draft or scheduled issue. The issue as it
+        is now is kept first, so a restore can be undone too. Sends nothing. Returns `restored_version`, the issue,
+        `what_changed` and `kept`. Requires `write:marketing`; refused for a key restricted to particular events. Also
+        at `POST /v1/marketing/newsletter/issues/{issueId}/versions/{versionId}/restore`.
+      tags:
+        - Marketing
+      parameters:
+        - $ref: '#/components/parameters/MarketingOrgId'
+        - name: issueId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The issue
+        - name: versionId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: '`kept.version_id` from an edit, or an id from the versions list'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Restored.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    allOf:
+                      - type: object
+                        properties:
+                          restored_version:
+                            type: integer
+                          issue:
+                            type: object
+                      - $ref: '#/components/schemas/EditReceipt'
+        '400':
+          description: The issue was sent; it can no longer change.
+        '403':
+          $ref: '#/components/responses/MarketingForbidden'
+        '404':
+          description: The issue or the version is not in your organization.
   /v1/organization/{orgId}/marketing/newsletter/issues/{issueId}/schedule:
     post:
       operationId: schedule-newsletter-issue
@@ -20759,7 +21016,11 @@ paths:
                   name: Northwind Summit 2027
       responses:
         '200':
-          description: Saved. The new `revision`, what changed, and the Site's pages and diff.
+          description: >-
+            Saved. The new `revision`, what changed, and the Site's pages and diff. `what_changed` describes this edit
+            (before → after, in plain words); `kept` says how to undo it. When an API or assistant edit replaces
+            unpublished work by someone else (or its own from more than 10 minutes ago), that draft is first kept as a
+            version with `source: checkpoint`, restorable with the versions restore route.
           content:
             application/json:
               schema:
@@ -20789,6 +21050,13 @@ paths:
                           $ref: '#/components/schemas/SitePage'
                       diff:
                         $ref: '#/components/schemas/SiteDiff'
+                      what_changed:
+                        $ref: '#/components/schemas/WhatChanged'
+                      kept:
+                        $ref: '#/components/schemas/EditKept'
+                      reaches_people:
+                        type: string
+                        description: Nothing in a draft is live; publishing needs a person.
         '400':
           description: An edit could not apply (the message names it), or a block failed its schema (`details` per block).
         '403':
@@ -20980,7 +21248,9 @@ paths:
       summary: List a Site's versions
       description: >-
         Every publish, newest first, with a plain-language summary of what it changed. A Site's first publish also
-        keeps the Site as it was before (`source: baseline`). Also at `GET /v1/sites/{siteId}/versions`.
+        keeps the Site as it was before (`source: baseline`). Draft checkpoints are listed too (`source: checkpoint`):
+        an unpublished draft by someone else, kept before an API or assistant edit changed it. Restoring any version
+        writes the draft, never live. Also at `GET /v1/sites/{siteId}/versions`.
       tags:
         - Sites
       parameters:
@@ -26535,6 +26805,8 @@ components:
               type: string
               description: How it was counted, in one sentence ending "Association, not credit."
               example: Deals created on an account within 180 days after someone there registered for or watched a webinar. Association, not credit.
+            story:
+              $ref: '#/components/schemas/ResultsStory'
     WebinarOutcomesSettings:
       type: object
       properties:
@@ -35610,6 +35882,192 @@ components:
 
 
 
+    WhatChanged:
+      type: object
+      description: >-
+        What one edit changed, in plain words. `summary` is one sentence per change ("Changed Hero heading on the home
+        page: “Old” → “New”"); the lists carry the same changes as data. Text is plain (HTML removed) and clipped to
+        200 characters; a block lists at most 8 changed fields and says how many more there were.
+      properties:
+        has_changes:
+          type: boolean
+        summary:
+          type: array
+          items:
+            type: string
+        added:
+          type: array
+          items:
+            type: object
+            properties:
+              where: { type: [string, 'null'], example: on the home page }
+              what: { type: [string, 'null'], example: FAQ }
+              block_id: { type: [string, 'null'] }
+              kind: { type: [string, 'null'] }
+              text: { type: [string, 'null'] }
+        changed:
+          type: array
+          items:
+            type: object
+            properties:
+              where: { type: [string, 'null'] }
+              what: { type: [string, 'null'] }
+              block_id: { type: [string, 'null'] }
+              kind: { type: [string, 'null'] }
+              fields:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    field: { type: string }
+                    label: { type: string }
+                    before: { type: [string, 'null'] }
+                    after: { type: [string, 'null'] }
+              more_fields: { type: integer }
+        removed:
+          type: array
+          items:
+            type: object
+            properties:
+              where: { type: [string, 'null'] }
+              what: { type: [string, 'null'] }
+              block_id: { type: [string, 'null'] }
+              kind: { type: [string, 'null'] }
+              text: { type: [string, 'null'] }
+        moved:
+          type: array
+          items:
+            type: object
+            properties:
+              where: { type: [string, 'null'] }
+              what: { type: [string, 'null'] }
+              block_id: { type: [string, 'null'] }
+              from: { type: integer }
+              to: { type: integer }
+    EditKept:
+      type: object
+      description: How to get back to what was there before this edit.
+      properties:
+        kept:
+          type: boolean
+        version_id:
+          type: [string, 'null']
+        version:
+          type: [integer, 'null']
+        how:
+          type: string
+          description: One sentence saying where the earlier version is and how to restore it.
+        restore:
+          type: [object, 'null']
+          description: The call that undoes this edit.
+          properties:
+            tool:
+              type: string
+              example: restore_site_version
+            args:
+              type: object
+    EditReceipt:
+      type: object
+      description: >-
+        Returned by every edit to an existing Marketing asset (event pages, Sites, lifecycle email proposals,
+        newsletter issues, campaign drafts): what changed, how to undo it, and whether anything reaches people.
+      properties:
+        what_changed:
+          $ref: '#/components/schemas/WhatChanged'
+        kept:
+          $ref: '#/components/schemas/EditKept'
+        reaches_people:
+          type: string
+    DraftVersion:
+      type: object
+      properties:
+        id: { type: string }
+        version: { type: integer }
+        summary:
+          type: array
+          items: { type: string }
+          description: What the edit that replaced this version changed.
+        replaced_by:
+          type: [object, 'null']
+          properties:
+            label: { type: [string, 'null'], example: Claude }
+            vendor: { type: [string, 'null'] }
+            at: { type: [string, 'null'], format: date-time }
+        created_at: { type: string, format: date-time }
+    ResultsStory:
+      type: object
+      description: >-
+        The report as a narrative, ready to say back or to turn into slides. Every number in it is a field of the same
+        response, named in `cites` (paths such as `totals.registrations` or `channels[0].share`). Nothing is
+        estimated or taken from outside Sessionboard; what the data cannot support is listed in `missing`. Attendees
+        are never named.
+      properties:
+        version: { type: integer, example: 1 }
+        kind:
+          type: string
+          enum: [event, webinar, org, sponsor, advocacy, field_event, webinar_outcomes]
+        title: { type: string }
+        headline:
+          $ref: '#/components/schemas/StoryClaim'
+        findings:
+          type: array
+          maxItems: 5
+          items:
+            allOf:
+              - $ref: '#/components/schemas/StoryClaim'
+              - type: object
+                properties:
+                  id: { type: string }
+                  value: { type: [number, 'null'] }
+        drivers:
+          type: array
+          items:
+            $ref: '#/components/schemas/StoryClaim'
+        next_move:
+          type: [object, 'null']
+          properties:
+            text: { type: string }
+            why: { type: string }
+            cites:
+              type: array
+              items: { type: string }
+        sections:
+          type: array
+          description: One slide each.
+          items:
+            type: object
+            properties:
+              title: { type: string }
+              bullets:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StoryClaim'
+              chart:
+                type: [object, 'null']
+                properties:
+                  type: { type: string, enum: [bar, funnel, kpi] }
+                  title: { type: string }
+                  x: { type: string, example: label }
+                  y: { type: string, example: value }
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        label: { type: string }
+                        value: { type: number }
+                  cites: { type: string }
+        missing:
+          type: array
+          items: { type: string }
+        rules: { type: string }
+    StoryClaim:
+      type: object
+      properties:
+        text: { type: string }
+        cites:
+          type: array
+          items: { type: string }
     SiteSummary:
       type: object
       properties:
@@ -35869,7 +36327,7 @@ components:
           description: '`0` is the Site before its first versioned publish.'
         source:
           type: string
-          enum: [publish, baseline]
+          enum: [publish, baseline, checkpoint]
         summary:
           type: array
           items:
