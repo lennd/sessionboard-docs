@@ -1,0 +1,65 @@
+---
+/**
+ * The product dropdown at the top of the sidebar on every tab: "Help for ▾" (Help
+ * Center), "API for ▾" (API Docs) and "Skills for ▾" (Skills). One look, one
+ * behaviour: hidden until src/scripts/account.mjs finds the reader holds two or more of
+ * these products (staff: all of them), each item shown only if the reader holds it.
+ * Styles: "Product switcher" in src/styles/custom.css.
+ *
+ * `current` is the product this page belongs to. Skills pages belong to no product: the
+ * reader's choice is stamped on <html data-sb-skills> by the head script
+ * (src/lib/skills.mjs skillsHeadScript) before first paint, so the button renders every
+ * name and CSS shows the chosen one (`dynamic`).
+ */
+import ProductBadge from './ProductBadge.astro';
+
+interface Item {
+	key: string;
+	label: string;
+	summary?: string;
+	href: string;
+}
+interface Props {
+	forLabel: string;
+	items: Item[];
+	current?: string;
+	dynamic?: boolean;
+}
+const { forLabel, items, current, dynamic = false } = Astro.props;
+const shown = dynamic ? items : items.filter((i) => i.key === current);
+---
+
+{
+	items.length > 1 && (
+		<details class="sb-suite-switch" data-current={dynamic ? undefined : current} data-dynamic={dynamic ? '' : undefined} hidden>
+			<summary>
+				{shown.map((i) => (
+					<span class="sb-suite-switch-current" data-key={i.key}>
+						<ProductBadge product={i.key as 'platform'} size="md" />
+						<span class="sb-suite-switch-text">
+							<span class="sb-suite-switch-for">{forLabel}</span>
+							<span class="sb-suite-switch-name">{i.label}</span>
+						</span>
+						<span class="sr-only">. Switch product</span>
+					</span>
+				))}
+				<svg class="sb-suite-switch-chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+					<path d="m4 6 4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+				</svg>
+			</summary>
+			<ul>
+				{items.map((i) => (
+					<li data-suite={i.key} hidden>
+						<a href={i.href} aria-current={!dynamic && i.key === current ? 'page' : undefined}>
+							<ProductBadge product={i.key as 'platform'} size="md" />
+							<span class="sb-suite-switch-text">
+								<span class="sb-suite-switch-name">{i.label}</span>
+								{i.summary && <span class="sb-suite-switch-summary">{i.summary}</span>}
+							</span>
+						</a>
+					</li>
+				))}
+			</ul>
+		</details>
+	)
+}

@@ -22,3 +22,13 @@ test('every skill gets an ask and steps; changes wait for your OK first', () => 
     else assert.equal(wait, -1, `${skill.id} reads only`);
   }
 });
+
+test('"Skills for" views name real groups, and every self-serve view has skills', async () => {
+  const { SKILLS_FOR, skillsFor, skillsByProduct } = await import('../src/lib/skills.mjs');
+  const groups = new Set(skillsByProduct().map((g) => g.key));
+  for (const [product, keys] of Object.entries(SKILLS_FOR)) {
+    for (const k of keys) assert.ok(SKILL_PRODUCTS.some((p) => p.key === k), `${product} → ${k}`);
+    assert.ok(skillsFor(product).some((k) => groups.has(k)), `${product} has skills`);
+  }
+  assert.equal(skillsFor('platform').length, SKILL_PRODUCTS.length);
+});
