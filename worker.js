@@ -18,9 +18,7 @@ import { apiProductForPath } from './src/lib/api-docs/products.mjs';
 import apiProducts from './src/data/api/products.json';
 import mintlifyRedirects from './src/data/api/mintlify-redirects.json';
 import { retiredApiDocsTarget } from './src/lib/api-docs/retired-host.mjs';
-import { ACCOUNT_PREFIX, accountResponse, grantAllowsPath, isAccountRequest, isSignedInRequest, isStaffRequest, recheckStaff } from './src/lib/account-session.mjs';
-import { suiteForPath } from './src/lib/suites.mjs';
-import suitesConfig from './src/data/suites.json';
+import { ACCOUNT_PREFIX, accountResponse, isAccountRequest, isSignedInRequest, isStaffRequest, recheckStaff } from './src/lib/account-session.mjs';
 
 // `/en/migrated/knowledge-base/…` is a live path prefix left over from an
 // earlier HubSpot migration; Google still has URLs under it.
@@ -524,9 +522,23 @@ export default {
     if (signedInOnlyPage && !signedIn) return signInRequired(request, url);
     // A docs-grant reader (an outsider with only a staff grant) never reads signed-in-only pages.
     if (signedInOnlyPage && !(await isAccountRequest(request, env))) return notFoundPage(url, env);
-    // A grant reader reads the API docs and product suites the grant names (checked here, not in page script).
-    if (signedIn && !(await grantAllowsPath(request, env, site, { apiProduct: apiProductForPath(url.pathname, apiProducts), suite: suiteForPath(url.pathname, suitesConfig) }))) {
-      return notFoundPage(url, env);
+    // Docs-grant entitlements no longer gate anything: every page they used to cover is public
+    // (2026-11-14), and signed-in-only pages are refused to grant readers above.
+
+    // Skill downloads: the manifest and the bundles a reader gets leave out the skills they cannot
+    // open (scripts/build-skill-downloads.mjs). A restricted skill's own ZIP answers like its article.
+    // The signed-in copies themselves are for signed-in accounts only.
+    if (url.pathname.startsWith('/skills/downloads/_member/') && !(await isAccountRequest(request, env))) return notFoundPage(url, env);
+    const skillVariant = url.pathname.match(/^\/skills\/downloads\/(skills\.json|sessionboard-[a-z0-9-]+\.zip)$/);
+    if (skillVariant && !(await isStaffRequest(request, env))) {
+      const tier = signedIn && (await isAccountRequest(request, env)) ? '_member' : '_public';
+      const variant = await env.ASSETS.fetch(new Request(`${url.origin}/skills/downloads/${tier}/${skillVariant[1]}`, request));
+      if (variant.ok) {
+        const headers = new Headers(variant.headers);
+        headers.set('Cache-Control', 'private, max-age=300');
+        headers.append('Vary', 'Cookie');
+        return new Response(variant.body, { status: variant.status, headers });
+      }
     }
 
     // HubSpot KB sitemap path → Starlight sitemap
