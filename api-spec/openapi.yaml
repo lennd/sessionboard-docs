@@ -11372,6 +11372,724 @@ paths:
         '429':
           $ref: '#/components/responses/AwardsWorkspaceTooManyRequests'
 
+  /v1/organization/{orgId}/awards/workspace/programs/{programId}/scorecard:
+    put:
+      operationId: awards-workspace-put-scorecard
+      summary: Replace the scorecard
+      description: >-
+        The full scorecard Reviewers fill in, in order (up to 12): each criterion `scale_1_5`, `scale_1_10` or
+        `free_text`, with optional `required`, `weight` and `description`. Keep a criterion by sending its `id`; one
+        left out is removed. 409 `scoring_started` once any Reviewer has scored. Requires `write:awards`; the token's
+        user must manage the program. Refused for a key restricted to particular events. Also at `PUT
+        /v1/awards/workspace/programs/{programId}/scorecard`.
+      tags:
+        - Awards workspace
+      parameters:
+        - $ref: '#/components/parameters/AwardsOrgId'
+        - $ref: '#/components/parameters/AwardsProgramId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [criteria]
+              properties:
+                criteria:
+                  type: array
+                  minItems: 1
+                  maxItems: 12
+                  items:
+                    type: object
+                    required: [label, type]
+                    properties:
+                      id: { type: string, format: uuid }
+                      label: { type: string, maxLength: 200 }
+                      type: { type: string, enum: [scale_1_5, scale_1_10, free_text] }
+                      required: { type: boolean }
+                      weight: { type: number, minimum: 0, maximum: 100 }
+                      description: { type: string, maxLength: 1000 }
+                source:
+                  $ref: '#/components/schemas/AwardsWorkspaceSource'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    additionalProperties: true
+        '400':
+          $ref: '#/components/responses/AwardsWorkspaceBadRequest'
+        '401':
+          $ref: '#/components/responses/AwardsWorkspaceUnauthorized'
+        '403':
+          $ref: '#/components/responses/AwardsWorkspaceWriteForbidden'
+        '404':
+          $ref: '#/components/responses/AwardsWorkspaceProgramNotFound'
+        '423':
+          $ref: '#/components/responses/AwardsWorkspacePaused'
+        '429':
+          $ref: '#/components/responses/AwardsWorkspaceTooManyRequests'
+
+  /v1/organization/{orgId}/awards/workspace/programs/{programId}/form:
+    put:
+      operationId: awards-workspace-put-form
+      summary: Replace the nomination form questions
+      description: >-
+        The nomination form's questions, in order. Keep a question by sending its `id` (from the program read's
+        `form`); change its `name`, `required`, `description` or `options`. A new question needs `type` (and `options`
+        for select, radio, checkbox and multiselect) and goes in the section named by `section` (made when missing) or
+        the last section. A question left out is removed; answers already given stay restorable. Everything this shape
+        does not carry (sections, conditions, file limits) is kept. Questions the program read marks `system` cannot
+        be removed (409 `system_question`). Send the read's `form_revision` as `revision`: 409 when the form was saved
+        since. Returns the saved `form` and `form_revision`. Requires `write:awards`; the token's user must manage the
+        program. Refused for a key restricted to particular events. Also at `PUT
+        /v1/awards/workspace/programs/{programId}/form`.
+      tags:
+        - Awards workspace
+      parameters:
+        - $ref: '#/components/parameters/AwardsOrgId'
+        - $ref: '#/components/parameters/AwardsProgramId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [questions]
+              properties:
+                questions:
+                  type: array
+                  minItems: 1
+                  maxItems: 100
+                  items:
+                    type: object
+                    required: [name]
+                    properties:
+                      id: { type: string, format: uuid }
+                      name: { type: string, maxLength: 500 }
+                      type: { type: string, enum: [text, textarea, email, url, number, phone, date, select, radio, checkbox, multiselect, file, countries] }
+                      required: { type: boolean }
+                      description: { type: string, maxLength: 2000 }
+                      options: { type: array, maxItems: 100, items: { type: string, maxLength: 200 } }
+                      section: { type: string, maxLength: 200 }
+                revision:
+                  type: integer
+                  minimum: 0
+                source:
+                  $ref: '#/components/schemas/AwardsWorkspaceSource'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    additionalProperties: true
+        '409':
+          description: A `system` question was left out (`system_question`), or the form changed since `revision`.
+        '400':
+          $ref: '#/components/responses/AwardsWorkspaceBadRequest'
+        '401':
+          $ref: '#/components/responses/AwardsWorkspaceUnauthorized'
+        '403':
+          $ref: '#/components/responses/AwardsWorkspaceWriteForbidden'
+        '404':
+          $ref: '#/components/responses/AwardsWorkspaceProgramNotFound'
+        '423':
+          $ref: '#/components/responses/AwardsWorkspacePaused'
+        '429':
+          $ref: '#/components/responses/AwardsWorkspaceTooManyRequests'
+
+  /v1/organization/{orgId}/awards/workspace/programs/{programId}/archive:
+    post:
+      operationId: awards-workspace-archive-program
+      summary: Archive or restore a program
+      description: >-
+        `archived: true` archives the program (it leaves the lists and takes no nominations; nothing is deleted);
+        `false` restores it. Requires `write:awards`; the token's user must manage the program. Refused for a key
+        restricted to particular events. Also at `POST /v1/awards/workspace/programs/{programId}/archive`.
+      tags:
+        - Awards workspace
+      parameters:
+        - $ref: '#/components/parameters/AwardsOrgId'
+        - $ref: '#/components/parameters/AwardsProgramId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [archived]
+              properties:
+                archived:
+                  type: boolean
+                source:
+                  $ref: '#/components/schemas/AwardsWorkspaceSource'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    additionalProperties: true
+        '400':
+          $ref: '#/components/responses/AwardsWorkspaceBadRequest'
+        '401':
+          $ref: '#/components/responses/AwardsWorkspaceUnauthorized'
+        '403':
+          $ref: '#/components/responses/AwardsWorkspaceWriteForbidden'
+        '404':
+          $ref: '#/components/responses/AwardsWorkspaceProgramNotFound'
+        '423':
+          $ref: '#/components/responses/AwardsWorkspacePaused'
+        '429':
+          $ref: '#/components/responses/AwardsWorkspaceTooManyRequests'
+
+  /v1/organization/{orgId}/awards/workspace/programs/{programId}/reviewers/{userId}:
+    delete:
+      operationId: awards-workspace-remove-reviewer
+      summary: Remove a Reviewer
+      description: >-
+        Takes a Reviewer (`userId` from the review progress) off the program: their unscored assignments go, scores
+        already given stay. From an API call it answers `202` with `status: needs_approval`; a person approves it in
+        Sessionboard Awards. Requires `write:awards`; the token's user must manage the program. Refused for a key
+        restricted to particular events. Also at `DELETE
+        /v1/awards/workspace/programs/{programId}/reviewers/{userId}`.
+      tags:
+        - Awards workspace
+      parameters:
+        - $ref: '#/components/parameters/AwardsOrgId'
+        - $ref: '#/components/parameters/AwardsProgramId'
+        - name: userId
+          in: path
+          required: true
+          description: The Reviewer's user id
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    additionalProperties: true
+        '202':
+          $ref: '#/components/responses/AwardsWorkspaceNeedsApproval'
+        '400':
+          $ref: '#/components/responses/AwardsWorkspaceBadRequest'
+        '401':
+          $ref: '#/components/responses/AwardsWorkspaceUnauthorized'
+        '403':
+          $ref: '#/components/responses/AwardsWorkspaceWriteForbidden'
+        '404':
+          $ref: '#/components/responses/AwardsWorkspaceProgramNotFound'
+        '423':
+          $ref: '#/components/responses/AwardsWorkspacePaused'
+        '429':
+          $ref: '#/components/responses/AwardsWorkspaceTooManyRequests'
+
+  /v1/organization/{orgId}/awards/workspace/programs/{programId}/nominations/{submissionId}/remove:
+    post:
+      operationId: awards-workspace-remove-nomination
+      summary: Remove or restore a nomination
+      description: >-
+        Moves a nomination to the Trash, or brings it back with `undo: true`. Removing from an API call answers `202`
+        with `status: needs_approval`; restoring runs at once. Requires `write:awards`; the token's user must manage
+        the program. Refused for a key restricted to particular events. Also at `POST
+        /v1/awards/workspace/programs/{programId}/nominations/{submissionId}/remove`.
+      tags:
+        - Awards workspace
+      parameters:
+        - $ref: '#/components/parameters/AwardsOrgId'
+        - $ref: '#/components/parameters/AwardsProgramId'
+        - name: submissionId
+          in: path
+          required: true
+          description: The nomination (submission) id
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                undo:
+                  type: boolean
+                source:
+                  $ref: '#/components/schemas/AwardsWorkspaceSource'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    additionalProperties: true
+        '202':
+          $ref: '#/components/responses/AwardsWorkspaceNeedsApproval'
+        '400':
+          $ref: '#/components/responses/AwardsWorkspaceBadRequest'
+        '401':
+          $ref: '#/components/responses/AwardsWorkspaceUnauthorized'
+        '403':
+          $ref: '#/components/responses/AwardsWorkspaceWriteForbidden'
+        '404':
+          $ref: '#/components/responses/AwardsWorkspaceProgramNotFound'
+        '423':
+          $ref: '#/components/responses/AwardsWorkspacePaused'
+        '429':
+          $ref: '#/components/responses/AwardsWorkspaceTooManyRequests'
+
+  /v1/organization/{orgId}/awards/workspace/programs/{programId}/nominations/{submissionId}/review-summary:
+    post:
+      operationId: awards-workspace-review-summary
+      summary: Summarize the reviews of a nomination
+      description: >-
+        A short summary of the Reviewers' comments and scores on one nomination. A POST because each call writes a new
+        summary, but it changes nothing (`read:awards` is enough). Requires `read:awards`; the token's user must
+        manage the program. Refused for a key restricted to particular events. Also at `POST
+        /v1/awards/workspace/programs/{programId}/nominations/{submissionId}/review-summary`.
+      tags:
+        - Awards workspace
+      parameters:
+        - $ref: '#/components/parameters/AwardsOrgId'
+        - $ref: '#/components/parameters/AwardsProgramId'
+        - name: submissionId
+          in: path
+          required: true
+          description: The nomination (submission) id
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                language:
+                  type: string
+                  maxLength: 20
+                source:
+                  $ref: '#/components/schemas/AwardsWorkspaceSource'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    additionalProperties: true
+        '401':
+          $ref: '#/components/responses/AwardsWorkspaceUnauthorized'
+        '403':
+          $ref: '#/components/responses/AwardsWorkspaceWriteForbidden'
+        '404':
+          $ref: '#/components/responses/AwardsWorkspaceProgramNotFound'
+        '429':
+          $ref: '#/components/responses/AwardsWorkspaceTooManyRequests'
+
+  /v1/organization/{orgId}/awards/workspace/programs/{programId}/public-vote:
+    put:
+      operationId: awards-workspace-public-vote
+      summary: Open or close the People's Choice vote
+      description: >-
+        `open: true` opens a public vote on the Awards Site for every nomination (`ballot: all`) or only Finalists
+        (`finalists`), until `closesAt` (default 14 days). Opening from an API call answers `202` with `status:
+        needs_approval`; closing runs at once. Growth plan, trials and Enterprise Awards. Requires `write:awards`; the
+        token's user must manage the program. Refused for a key restricted to particular events. Also at `PUT
+        /v1/awards/workspace/programs/{programId}/public-vote`.
+      tags:
+        - Awards workspace
+      parameters:
+        - $ref: '#/components/parameters/AwardsOrgId'
+        - $ref: '#/components/parameters/AwardsProgramId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [open]
+              properties:
+                open:
+                  type: boolean
+                ballot:
+                  type: string
+                  enum: [all, finalists]
+                closesAt:
+                  type: string
+                  format: date-time
+                source:
+                  $ref: '#/components/schemas/AwardsWorkspaceSource'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    additionalProperties: true
+        '202':
+          $ref: '#/components/responses/AwardsWorkspaceNeedsApproval'
+        '400':
+          $ref: '#/components/responses/AwardsWorkspaceBadRequest'
+        '401':
+          $ref: '#/components/responses/AwardsWorkspaceUnauthorized'
+        '403':
+          $ref: '#/components/responses/AwardsWorkspaceWriteForbidden'
+        '404':
+          $ref: '#/components/responses/AwardsWorkspaceProgramNotFound'
+        '423':
+          $ref: '#/components/responses/AwardsWorkspacePaused'
+        '429':
+          $ref: '#/components/responses/AwardsWorkspaceTooManyRequests'
+
+  /v1/organization/{orgId}/awards/workspace/programs/{programId}/winners:
+    put:
+      operationId: awards-workspace-put-winners
+      summary: Record the Winners
+      description: >-
+        The full list of Winners and Finalists: each `submissionId` with a `winnerTypeId` from the program's
+        `winner_types`. A nomination left out is no longer a Winner; an empty list clears them. Emails no one
+        (announcing is separate). From an API call it answers `202` with `status: needs_approval`, and the Winners are
+        recorded as the person who approves. 422 `reviews_incomplete` until every submitted nomination has a complete
+        scorecard. Requires `write:awards`; the token's user must manage the program. Refused for a key restricted to
+        particular events. Also at `PUT /v1/awards/workspace/programs/{programId}/winners`.
+      tags:
+        - Awards workspace
+      parameters:
+        - $ref: '#/components/parameters/AwardsOrgId'
+        - $ref: '#/components/parameters/AwardsProgramId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [winners]
+              properties:
+                winners:
+                  type: array
+                  maxItems: 200
+                  items:
+                    type: object
+                    required: [submissionId, winnerTypeId]
+                    properties:
+                      submissionId: { type: string, format: uuid }
+                      winnerTypeId: { type: string, format: uuid }
+                source:
+                  $ref: '#/components/schemas/AwardsWorkspaceSource'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    additionalProperties: true
+        '202':
+          $ref: '#/components/responses/AwardsWorkspaceNeedsApproval'
+        '422':
+          description: Scorecards are unfinished (`reviews_incomplete`).
+        '400':
+          $ref: '#/components/responses/AwardsWorkspaceBadRequest'
+        '401':
+          $ref: '#/components/responses/AwardsWorkspaceUnauthorized'
+        '403':
+          $ref: '#/components/responses/AwardsWorkspaceWriteForbidden'
+        '404':
+          $ref: '#/components/responses/AwardsWorkspaceProgramNotFound'
+        '423':
+          $ref: '#/components/responses/AwardsWorkspacePaused'
+        '429':
+          $ref: '#/components/responses/AwardsWorkspaceTooManyRequests'
+
+  /v1/organization/{orgId}/awards/workspace/programs/{programId}/announce/preview:
+    get:
+      operationId: awards-workspace-announce-preview
+      summary: Preview the announcement
+      description: >-
+        Who would get the Winner and Finalist emails and who the thank-you (unless `notifyOthers=false`), what blocks
+        announcing (`blocked { code, message }`: `no_winners`, `reviews_incomplete`), and an earlier announcement's
+        progress. Sends nothing. Requires `read:awards`; the token's user must manage the program. Refused for a key
+        restricted to particular events. Also at `GET /v1/awards/workspace/programs/{programId}/announce/preview`.
+      tags:
+        - Awards workspace
+      parameters:
+        - $ref: '#/components/parameters/AwardsOrgId'
+        - $ref: '#/components/parameters/AwardsProgramId'
+        - name: notifyOthers
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    additionalProperties: true
+        '401':
+          $ref: '#/components/responses/AwardsWorkspaceUnauthorized'
+        '403':
+          $ref: '#/components/responses/AwardsWorkspaceWriteForbidden'
+        '404':
+          $ref: '#/components/responses/AwardsWorkspaceProgramNotFound'
+        '429':
+          $ref: '#/components/responses/AwardsWorkspaceTooManyRequests'
+
+  /v1/organization/{orgId}/awards/workspace/programs/{programId}/remind:
+    post:
+      operationId: awards-workspace-remind
+      summary: Remind Reviewers or unfinished nominators
+      description: >-
+        `audience: reviewers` (scorecards to finish, while review is open) or `drafts` (nominations started and not
+        submitted, while nominations are open). With `?preview=true` it lists who would get it and who is skipped and
+        sends nothing. Without it, an API call answers `202` with `status: needs_approval`. Nobody gets the same
+        reminder twice in 24 hours. Requires `write:awards`; the token's user must manage the program. Refused for a
+        key restricted to particular events. Also at `POST /v1/awards/workspace/programs/{programId}/remind`.
+      tags:
+        - Awards workspace
+      parameters:
+        - $ref: '#/components/parameters/AwardsOrgId'
+        - $ref: '#/components/parameters/AwardsProgramId'
+        - name: preview
+          in: query
+          required: false
+          schema:
+            type: boolean
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [audience]
+              properties:
+                audience:
+                  type: string
+                  enum: [reviewers, drafts]
+                source:
+                  $ref: '#/components/schemas/AwardsWorkspaceSource'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    additionalProperties: true
+        '202':
+          $ref: '#/components/responses/AwardsWorkspaceNeedsApproval'
+        '400':
+          $ref: '#/components/responses/AwardsWorkspaceBadRequest'
+        '401':
+          $ref: '#/components/responses/AwardsWorkspaceUnauthorized'
+        '403':
+          $ref: '#/components/responses/AwardsWorkspaceWriteForbidden'
+        '404':
+          $ref: '#/components/responses/AwardsWorkspaceProgramNotFound'
+        '423':
+          $ref: '#/components/responses/AwardsWorkspacePaused'
+        '429':
+          $ref: '#/components/responses/AwardsWorkspaceTooManyRequests'
+
+  /v1/organization/{orgId}/awards/workspace/programs/{programId}/reminders/{reminderId}:
+    get:
+      operationId: awards-workspace-get-reminder
+      summary: Get a reminder
+      description: >-
+        One reminder's delivery progress: sent, failed and still going. Requires `read:awards`; the token's user must
+        manage the program. Refused for a key restricted to particular events. Also at `GET
+        /v1/awards/workspace/programs/{programId}/reminders/{reminderId}`.
+      tags:
+        - Awards workspace
+      parameters:
+        - $ref: '#/components/parameters/AwardsOrgId'
+        - $ref: '#/components/parameters/AwardsProgramId'
+        - name: reminderId
+          in: path
+          required: true
+          description: The reminder id
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    additionalProperties: true
+        '401':
+          $ref: '#/components/responses/AwardsWorkspaceUnauthorized'
+        '403':
+          $ref: '#/components/responses/AwardsWorkspaceWriteForbidden'
+        '404':
+          $ref: '#/components/responses/AwardsWorkspaceProgramNotFound'
+        '429':
+          $ref: '#/components/responses/AwardsWorkspaceTooManyRequests'
+
+  /v1/organization/{orgId}/awards/workspace/reports/{report}:
+    get:
+      operationId: awards-workspace-get-report
+      summary: Get a report
+      description: >-
+        Every nomination across the organization's Awards programs (those the token's user manages): nominee,
+        category, state, score and scorecards done. Search with `q`, sort with `sort` and `dir`, page with `page` and
+        `limit`, and filter with `program`, `category`, `state`, `reviewed` or `submitted_at_from` / `submitted_at_to`
+        (the answer lists each filter's options). Requires `read:awards`; the token's user must manage the program.
+        Refused for a key restricted to particular events. Also at `GET /v1/awards/workspace/reports/{report}`.
+      tags:
+        - Awards workspace
+      parameters:
+        - $ref: '#/components/parameters/AwardsOrgId'
+        - name: report
+          in: path
+          required: true
+          description: The report (`nominations`)
+          schema:
+            type: string
+            enum: [nominations]
+        - { name: q, in: query, required: false, schema: { type: string, maxLength: 200 } }
+        - { name: sort, in: query, required: false, schema: { type: string } }
+        - { name: dir, in: query, required: false, schema: { type: string, enum: [asc, desc] } }
+        - { name: page, in: query, required: false, schema: { type: integer, minimum: 1 } }
+        - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1 } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    additionalProperties: true
+        '401':
+          $ref: '#/components/responses/AwardsWorkspaceUnauthorized'
+        '403':
+          $ref: '#/components/responses/AwardsWorkspaceWriteForbidden'
+        '404':
+          $ref: '#/components/responses/AwardsWorkspaceProgramNotFound'
+        '429':
+          $ref: '#/components/responses/AwardsWorkspaceTooManyRequests'
+
+  /v1/organization/{orgId}/awards/workspace/reports/{report}/export:
+    get:
+      operationId: awards-workspace-export-report
+      summary: Export a report as CSV
+      description: >-
+        The same rows as Get a report, with the same search and filters, as a CSV file. Requires `read:awards`; the
+        token's user must manage the program. Refused for a key restricted to particular events. Also at `GET
+        /v1/awards/workspace/reports/{report}/export`.
+      tags:
+        - Awards workspace
+      parameters:
+        - $ref: '#/components/parameters/AwardsOrgId'
+        - name: report
+          in: path
+          required: true
+          description: The report (`nominations`)
+          schema:
+            type: string
+            enum: [nominations]
+        - { name: q, in: query, required: false, schema: { type: string, maxLength: 200 } }
+        - { name: sort, in: query, required: false, schema: { type: string } }
+        - { name: dir, in: query, required: false, schema: { type: string, enum: [asc, desc] } }
+        - { name: page, in: query, required: false, schema: { type: integer, minimum: 1 } }
+        - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1 } }
+      responses:
+        '200':
+          description: The CSV file
+          content:
+            text/csv:
+              schema:
+                type: string
+        '401':
+          $ref: '#/components/responses/AwardsWorkspaceUnauthorized'
+        '403':
+          $ref: '#/components/responses/AwardsWorkspaceWriteForbidden'
+        '404':
+          $ref: '#/components/responses/AwardsWorkspaceProgramNotFound'
+        '429':
+          $ref: '#/components/responses/AwardsWorkspaceTooManyRequests'
+
   /v1/organization/{orgId}/awards/workspace/results:
     get:
       operationId: awards-workspace-get-results
