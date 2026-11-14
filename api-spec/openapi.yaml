@@ -15103,6 +15103,610 @@ paths:
           $ref: '#/components/responses/MarketingForbidden'
         '404':
           description: The tour or the listing page is not in your organization.
+  /v1/organization/{orgId}/marketing/events/tours/{tourId}/send:
+    post:
+      operationId: send-tour-invitations
+      summary: "Send a tour's invitations"
+      description: >-
+        Emails the invitation to everyone not invited yet on every stop of the tour (or only `eventIds`), each signed by their host. Stops whose page is not live are skipped and named. It reaches people, so a call from an AI assistant answers `202` with `status: needs_approval` and runs once a person approves it in Sessionboard. Requires `write:marketing`. Also at `POST /v1/marketing/events/tours/{tourId}/send`.
+      tags:
+        - Marketing
+      parameters:
+        - $ref: '#/components/parameters/MarketingOrgId'
+        - name: tourId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "The tour, from `GET .../marketing/events/tours`."
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                eventIds:
+                  type: array
+                  items:
+                    type: integer
+                  description: "Only these stops"
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    type: object
+                    additionalProperties: true
+        '202':
+          description: "An AI assistant asked; it waits for a person's OK in Sessionboard (`status` needs_approval, `approval_id`, `url`)."
+        '403':
+          $ref: '#/components/responses/MarketingForbidden'
+  /v1/organization/{orgId}/marketing/events/{eventId}/emails/rewrite:
+    post:
+      operationId: rewrite-in-person-email
+      summary: "New words for an in-person event email"
+      description: >-
+        Claude writes a subject and message for one of the event's emails (`key` from `GET .../events/{eventId}/emails`), following `instruction`. Suggested only unless `save: true`. Nothing is ever sent. Requires `write:marketing`. Also at `POST /v1/marketing/events/{eventId}/emails/rewrite`.
+      tags:
+        - Marketing
+      parameters:
+        - $ref: '#/components/parameters/MarketingOrgId'
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "Event or webinar id."
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                key:
+                  type: string
+                  description: "Which email"
+                instruction:
+                  type: string
+                  description: "What to change, in plain words"
+                save:
+                  type: boolean
+                  description: "Save the new words as the email"
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    type: object
+                    additionalProperties: true
+        '403':
+          $ref: '#/components/responses/MarketingForbidden'
+  /v1/organization/{orgId}/marketing/events/{eventId}/archive:
+    post:
+      operationId: archive-marketing-event
+      summary: "Archive an event"
+      description: >-
+        Takes an event or webinar out of the event lists and pickers; its public page shows "This event has ended" instead of the page and Register form. Nothing is deleted: `DELETE` on the same path restores both. The page goes offline for everyone, so a call from an AI assistant answers `202` with `status: needs_approval`. Requires `write:marketing`. Also at `POST /v1/marketing/events/{eventId}/archive`.
+      tags:
+        - Marketing
+      parameters:
+        - $ref: '#/components/parameters/MarketingOrgId'
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "Event or webinar id."
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    type: object
+                    additionalProperties: true
+        '202':
+          description: "An AI assistant asked; it waits for a person's OK in Sessionboard (`status` needs_approval, `approval_id`, `url`)."
+        '403':
+          $ref: '#/components/responses/MarketingForbidden'
+    delete:
+      operationId: restore-marketing-event
+      summary: "Restore an archived event"
+      description: >-
+        Brings an archived event back into the lists and its page back as it was. Requires `write:marketing`. Also at `DELETE /v1/marketing/events/{eventId}/archive`.
+      tags:
+        - Marketing
+      parameters:
+        - $ref: '#/components/parameters/MarketingOrgId'
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "Event or webinar id."
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    type: object
+                    additionalProperties: true
+        '403':
+          $ref: '#/components/responses/MarketingForbidden'
+  /v1/organization/{orgId}/marketing/apps/{appId}/ad-accounts:
+    get:
+      operationId: list-ad-accounts
+      summary: "List ad accounts"
+      description: >-
+        LinkedIn Ads only (`appId` `linkedin-ads`): the ad accounts the connected LinkedIn member can run ads on, re-read from LinkedIn, and which one Goals ads run on. Requires `read:marketing`. Also at `GET /v1/marketing/apps/{appId}/ad-accounts`.
+      tags:
+        - Marketing
+      parameters:
+        - $ref: '#/components/parameters/MarketingOrgId'
+        - name: appId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "`linkedin-ads`"
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    type: object
+                    additionalProperties: true
+        '403':
+          $ref: '#/components/responses/MarketingForbidden'
+  /v1/organization/{orgId}/marketing/apps/{appId}/ad-account:
+    post:
+      operationId: choose-ad-account
+      summary: "Choose the ad account"
+      description: >-
+        LinkedIn Ads only: the ad account Goals ads run on, from the ad accounts list. Spends nothing. Requires `write:marketing`. Also at `POST /v1/marketing/apps/{appId}/ad-account`.
+      tags:
+        - Marketing
+      parameters:
+        - $ref: '#/components/parameters/MarketingOrgId'
+        - name: appId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "`linkedin-ads`"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                adAccountId:
+                  type: string
+                  description: "The LinkedIn ad account id (digits)"
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    type: object
+                    additionalProperties: true
+        '403':
+          $ref: '#/components/responses/MarketingForbidden'
+  /v1/organization/{orgId}/marketing/content/recordings/{mediaId}/retry:
+    post:
+      operationId: retry-recording-transcript
+      summary: "Retry a transcript"
+      description: >-
+        Transcribes a recording again after `transcript_status` is `failed`. Requires `write:marketing`. Also at `POST /v1/marketing/content/recordings/{mediaId}/retry`.
+      tags:
+        - Marketing
+      parameters:
+        - $ref: '#/components/parameters/MarketingOrgId'
+        - name: mediaId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "Recording id."
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    type: object
+                    additionalProperties: true
+        '403':
+          $ref: '#/components/responses/MarketingForbidden'
+  /v1/organization/{orgId}/marketing/pages/events/{eventId}/registration-form:
+    get:
+      operationId: get-registration-form
+      summary: "Get an event page's registration form"
+      description: >-
+        The registration form as the Marketing form builder shows it: Name and Email (always first and required), then each question in order with its id, label, kind and whether it is required, suggestions, the catalog of questions the organization already has, and whether the sponsor / partner box is offered. Changes nothing. Requires `read:marketing`. Also at `GET /v1/marketing/pages/events/{eventId}/registration-form`.
+      tags:
+        - Marketing
+      parameters:
+        - $ref: '#/components/parameters/MarketingOrgId'
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "Event or webinar id."
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    type: object
+                    additionalProperties: true
+        '403':
+          $ref: '#/components/responses/MarketingForbidden'
+    put:
+      operationId: set-registration-form
+      summary: "Set an event page's registration form"
+      description: >-
+        The whole list of questions after Name and Email, in order, and which are required. A question left out is removed from the form, not deleted. Showing a question only after an answer is refused on a self-serve plan (`enterprise_only`). Requires `write:marketing`. Also at `PUT /v1/marketing/pages/events/{eventId}/registration-form`.
+      tags:
+        - Marketing
+      parameters:
+        - $ref: '#/components/parameters/MarketingOrgId'
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "Event or webinar id."
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fields:
+                  type: array
+                  items:
+                    type: object
+                  description: "Every question after Name and Email, in order: `{ id, required? }`"
+                partnerOptIn:
+                  type: boolean
+                  description: "Offer the sponsor / partner box (kept when absent)"
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    type: object
+                    additionalProperties: true
+        '403':
+          $ref: '#/components/responses/MarketingForbidden'
+  /v1/organization/{orgId}/marketing/pages/events/{eventId}/registration-form/questions:
+    post:
+      operationId: add-registration-question
+      summary: "Add a registration question"
+      description: >-
+        A new question of the event's own, saved at the end of the form. `kind` is one of `short_text`, `long_text`, `single_choice`, `multiple_choice`, `yes_no`, `link`, `number`; choice kinds take `options`. Requires `write:marketing`. Also at `POST /v1/marketing/pages/events/{eventId}/registration-form/questions`.
+      tags:
+        - Marketing
+      parameters:
+        - $ref: '#/components/parameters/MarketingOrgId'
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: "Event or webinar id."
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                label:
+                  type: string
+                  description: "The question"
+                kind:
+                  type: string
+                  description: "The answer type"
+                options:
+                  type: array
+                  items:
+                    type: string
+                  description: "Choices"
+                required:
+                  type: boolean
+                  description: "Must be answered"
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    type: object
+                    additionalProperties: true
+        '403':
+          $ref: '#/components/responses/MarketingForbidden'
+  /v1/organization/{orgId}/marketing/results/shares:
+    get:
+      operationId: list-result-shares
+      summary: "List results share links"
+      description: >-
+        Read-only results links made with `POST .../results/shares`, newest first, with views and whether each was revoked. `eventId` narrows to one event. Requires `read:marketing`. Also at `GET /v1/marketing/results/shares`.
+      tags:
+        - Marketing
+      parameters:
+        - $ref: '#/components/parameters/MarketingOrgId'
+        - name: eventId
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: Only this event's links.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    type: object
+                    additionalProperties: true
+        '403':
+          $ref: '#/components/responses/MarketingForbidden'
+  /v1/organization/{orgId}/marketing/results/shares/{shareId}:
+    delete:
+      operationId: revoke-result-share
+      summary: "Revoke a results share link"
+      description: >-
+        The link stops working for anyone who opens it. Requires `write:marketing`. Also at `DELETE /v1/marketing/results/shares/{shareId}`.
+      tags:
+        - Marketing
+      parameters:
+        - $ref: '#/components/parameters/MarketingOrgId'
+        - name: shareId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "Share link id."
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    type: object
+                    additionalProperties: true
+        '403':
+          $ref: '#/components/responses/MarketingForbidden'
+  /v1/organization/{orgId}/marketing/goals/ads/{adId}/pause:
+    post:
+      operationId: pause-ads
+      summary: "Pause an ad"
+      description: >-
+        Spend stops until it is resumed. Requires `write:marketing`. Also at `POST /v1/marketing/goals/ads/{adId}/pause`.
+      tags:
+        - Marketing
+      parameters:
+        - $ref: '#/components/parameters/MarketingOrgId'
+        - name: adId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "Ad id."
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    type: object
+                    additionalProperties: true
+        '403':
+          $ref: '#/components/responses/MarketingForbidden'
+  /v1/organization/{orgId}/marketing/goals/ads/{adId}/resume:
+    post:
+      operationId: resume-ads
+      summary: "Resume an ad"
+      description: >-
+        Restarts a paused ad within the spend cap already approved; it never raises the cap. Requires `write:marketing`. Also at `POST /v1/marketing/goals/ads/{adId}/resume`.
+      tags:
+        - Marketing
+      parameters:
+        - $ref: '#/components/parameters/MarketingOrgId'
+        - name: adId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "Ad id."
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    type: object
+                    additionalProperties: true
+        '403':
+          $ref: '#/components/responses/MarketingForbidden'
+  /v1/organization/{orgId}/marketing/audience/forms/{formId}/questions:
+    get:
+      operationId: get-signup-form-questions
+      summary: "Get a sign-up form's questions"
+      description: >-
+        The questions a sign-up form asks, in order. Requires `read:marketing`. Also at `GET /v1/marketing/audience/forms/{formId}/questions`.
+      tags:
+        - Marketing
+      parameters:
+        - $ref: '#/components/parameters/MarketingOrgId'
+        - name: formId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "Sign-up form id."
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    type: object
+                    additionalProperties: true
+        '403':
+          $ref: '#/components/responses/MarketingForbidden'
+    put:
+      operationId: set-signup-form-questions
+      summary: "Set a sign-up form's questions"
+      description: >-
+        The whole list of questions, in order. Requires `write:marketing`. Also at `PUT /v1/marketing/audience/forms/{formId}/questions`.
+      tags:
+        - Marketing
+      parameters:
+        - $ref: '#/components/parameters/MarketingOrgId'
+        - name: formId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "Sign-up form id."
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    type: object
+                    additionalProperties: true
+        '403':
+          $ref: '#/components/responses/MarketingForbidden'
+    post:
+      operationId: add-signup-form-question
+      summary: "Add a sign-up form question"
+      description: >-
+        A new question at the end of the form. Requires `write:marketing`. Also at `POST /v1/marketing/audience/forms/{formId}/questions`.
+      tags:
+        - Marketing
+      parameters:
+        - $ref: '#/components/parameters/MarketingOrgId'
+        - name: formId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "Sign-up form id."
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    type: object
+                    additionalProperties: true
+        '403':
+          $ref: '#/components/responses/MarketingForbidden'
+  /v1/organization/{orgId}/marketing/audience/website/enable:
+    post:
+      operationId: enable-website-tag
+      summary: "Turn on the website tag"
+      description: >-
+        Turns on the organization's website tag; `GET .../audience/website` returns the snippet to paste. Requires `write:marketing`. Also at `POST /v1/marketing/audience/website/enable`.
+      tags:
+        - Marketing
+      parameters:
+        - $ref: '#/components/parameters/MarketingOrgId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    type: object
+                    additionalProperties: true
+        '403':
+          $ref: '#/components/responses/MarketingForbidden'
   /v1/organization/{orgId}/marketing/goals/discovery/{eventId}:
     get:
       operationId: get-ai-discovery
