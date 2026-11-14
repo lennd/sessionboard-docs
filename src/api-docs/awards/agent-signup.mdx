@@ -1,0 +1,59 @@
+---
+title: "Sign up with an AI agent"
+description: "How an AI agent creates a Sessionboard Awards workspace for a person, saves a card through Stripe and starts a plan, with no card data in the chat"
+---
+
+An AI agent (Claude, ChatGPT, your own) can sign a person up for Sessionboard Awards, set it up, have them save a card and start a plan. The person does two things: reads the agent the code Sessionboard emails them, and saves a card on Stripe's page. Nothing else needs Sessionboard's screens.
+
+## What the agent can and can't do
+
+| The agent can | The agent can't |
+|---|---|
+| Start a sign-up for the person's work email | Verify the email itself: only the code in the person's inbox creates the account |
+| Finish it with the code the person reads back | See, type or pass a card number: the person saves the card on Stripe's page |
+| Set up the workspace with the Awards tools and API | Send anything to people outside the team without the person's OK in Sessionboard |
+| Quote a plan, and start it on the saved card once the person agrees | Start a plan without a card on file, or change a running plan (that's a Stripe page for the person) |
+
+## Card rules
+
+- A card is needed before Sessionboard emails anyone outside your team (campaigns, invitations, reminders, decision emails). The trial starts without one.
+- Every self-serve product needs a card before it emails people outside the team.
+- Saving a card charges nothing. A plan bills the card when the trial ends, or at once when no trial is running.
+
+## The flow over the API
+
+1. **Compare plans.** `GET /v1/plans?product=awards` needs no token: every plan's price, limits, the trial and the card rules.
+2. **Start.** `POST /v1/signup` with `email`, `product: "awards"`, `region` (`us` or `eu`, which must match the host: `public-api.sessionboard.com` or `public-api-eu.sessionboard.com`) and `agent_name`. Sessionboard emails the person a 6-digit code naming you and saying that sharing the code accepts Sessionboard's Terms. Nothing is created yet.
+3. **Ask the person for the code.** Never guess it: five wrong codes end the sign-up, and a new one is five per address an hour.
+4. **Finish.** `POST /v1/signup/{signup_id}/verify` with `code`. The workspace is created (the same as a sign-up on the website) and you get an OAuth `access_token` (1 hour) and `refresh_token` (7 days, rotating). Refresh at `/oauth/token` with `grant_type=refresh_token`, the refresh token and the returned `client_id`. Pass your own `client_id` if you registered one.
+5. **Card.** `POST /v1/billing/card` returns a Stripe link. Give it to the person and say nothing will be charged. They see "Card saved" when it's done.
+6. **Wait for the card.** Poll `GET /v1/billing` until `card_on_file` is `true`. It shows only the card's brand and last 4 digits.
+7. **Plan.** `POST /v1/billing/plan` with `plan` and `interval` returns a quote (price, card, when the first charge happens). Tell the person, and call again with `confirm: true` and a `request_id` only after they say yes.
+
+Then set up the workspace with the [Awards API and MCP tools](/sessionboard-awards/api/mcp-tools).
+
+## The flow over MCP
+
+Connect your assistant to `https://mcp.sessionboard.com/signup/mcp` (EU: the EU MCP host). It needs no account. The tools:
+
+| Tool | What it does |
+|---|---|
+| `get_plans` | Plans, prices, limits and card rules |
+| `start_signup` | Sessionboard emails the person a code |
+| `finish_signup` | The person's code creates the workspace and signs this conversation in as them. The credential stays with the connector and never appears in the chat |
+| `get_billing` | Card on file, plan, trial |
+| `get_card_link` | The Stripe page for the person |
+| `start_plan` | Quote, then `confirm: true` after the person agrees |
+
+Every other Awards tool works in the same conversation once `finish_signup` succeeds. If the conversation ends, the person connects the regular Sessionboard connector (they sign in with a code sent to their email).
+
+## Errors to handle
+
+| Code | Meaning |
+|---|---|
+| `account_exists` | The address already has a Sessionboard account. The person signs in and connects the regular connector |
+| `work_email_required` | Ask for their work email |
+| `wrong_region` | The response names the right host (`api_url`) |
+| `code_wrong`, `code_expired`, `too_many_attempts` | Ask again, or start over |
+| `card_required` | Get a card link first |
+| `signups_closed` | Self-serve sign-up for this product isn't open yet |

@@ -30,6 +30,10 @@
   ],
   "tags": [
     {
+      "name": "Agent sign-up",
+      "description": "Sign up for a self-serve Sessionboard product (Marketing, Learning, Awards, Sessions, CRM) from an AI agent, then save a card and start a plan, with no person in Sessionboard's UI except the card, which they save on Stripe's page. The person proves their email with a 6-digit code Sessionboard sends them; neither Sessionboard nor the agent ever sees a card number."
+    },
+    {
       "name": "Awards workspace",
       "description": "The self-serve Sessionboard Awards workspace: Home, the awards profile, programs and their categories, opening and closing nominations, the one review pass (reviewers and assignments), announcing winners and results. Organization-level: paths start at `/v1/organization/{orgId}/awards/workspace`, and the same operations are served under `/v1/awards/workspace` with the organization taken from the token. Reads need `read:awards`, writes `write:awards`. A key restricted to particular events cannot use it. Opening nominations, inviting reviewers and announcing wait for a person's OK (`202 needs_approval`); picking winners is a person's alone and has no API.\n"
     }
@@ -1216,6 +1220,774 @@
           },
           "429": {
             "$ref": "#/components/responses/AwardsWorkspaceTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/plans": {
+      "get": {
+        "operationId": "agent-list-plans",
+        "summary": "List self-serve plans, prices and card rules",
+        "description": "Every self-serve product's plans with monthly and yearly prices (USD, before tax), limits, the free trial and the card rules, so an agent can compare without a demo. No token. Built from the same catalog checkout bills from.",
+        "tags": [
+          "Agent sign-up"
+        ],
+        "security": [],
+        "parameters": [
+          {
+            "name": "product",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "marketing",
+                "learning",
+                "awards",
+                "sessions",
+                "crm"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The catalog",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "version": {
+                          "type": "string",
+                          "example": "2026-11-14"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "example": "usd"
+                        },
+                        "prices_exclude_tax": {
+                          "type": "boolean"
+                        },
+                        "products": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string",
+                                "example": "marketing"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "summary": {
+                                "type": "string"
+                              },
+                              "trial": {
+                                "type": "object",
+                                "properties": {
+                                  "days": {
+                                    "type": "integer",
+                                    "nullable": true
+                                  },
+                                  "plan": {
+                                    "type": "string"
+                                  },
+                                  "card_required": {
+                                    "type": "boolean"
+                                  }
+                                }
+                              },
+                              "card_required_at_signup": {
+                                "type": "boolean",
+                                "description": "True for CRM only."
+                              },
+                              "card_required_before_sending": {
+                                "type": "boolean"
+                              },
+                              "billing_intervals": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "enum": [
+                                    "month",
+                                    "year"
+                                  ]
+                                }
+                              },
+                              "plans": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "key": {
+                                      "type": "string",
+                                      "example": "growth"
+                                    },
+                                    "name": {
+                                      "type": "string"
+                                    },
+                                    "price": {
+                                      "type": "object",
+                                      "properties": {
+                                        "currency": {
+                                          "type": "string"
+                                        },
+                                        "month": {
+                                          "type": "number",
+                                          "nullable": true
+                                        },
+                                        "year": {
+                                          "type": "number",
+                                          "nullable": true
+                                        }
+                                      }
+                                    },
+                                    "limits": {
+                                      "type": "object",
+                                      "additionalProperties": {
+                                        "type": "number",
+                                        "nullable": true
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "card_rules": {
+                          "type": "object"
+                        },
+                        "agent_signup": {
+                          "type": "object",
+                          "description": "The steps, the MCP endpoint and tools, and what an agent can and cannot do."
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests from this address"
+          }
+        }
+      }
+    },
+    "/v1/signup": {
+      "post": {
+        "operationId": "agent-start-signup",
+        "summary": "Start a sign-up for a person",
+        "description": "Emails the person a 6-digit code that names the agent and the product and says that sharing the code accepts Sessionboard's Terms. Nothing but the code challenge is created. Ask the person for the code, then call verify. No token. Uses the same rules as the web sign-up: a work email, one account per address, five codes per address an hour. Call the region's own host: an EU sign-up never passes through the US API.",
+        "tags": [
+          "Agent sign-up"
+        ],
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email",
+                  "product"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "maxLength": 320,
+                    "description": "The person's own work email."
+                  },
+                  "product": {
+                    "type": "string",
+                    "enum": [
+                      "marketing",
+                      "learning",
+                      "awards",
+                      "sessions",
+                      "crm"
+                    ]
+                  },
+                  "region": {
+                    "type": "string",
+                    "enum": [
+                      "us",
+                      "eu"
+                    ],
+                    "description": "Where the data is stored. Must match the host (409 `wrong_region` otherwise)."
+                  },
+                  "agent_name": {
+                    "type": "string",
+                    "maxLength": 120,
+                    "description": "How the email names you, e.g. \"Claude\"."
+                  },
+                  "language": {
+                    "type": "string",
+                    "enum": [
+                      "en_US",
+                      "de_DE",
+                      "es_ES",
+                      "fr_FR"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Code sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "signup_id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "code_sent"
+                          ]
+                        },
+                        "email_hint": {
+                          "type": "string",
+                          "example": "j•••@northwind.com"
+                        },
+                        "product": {
+                          "type": "string"
+                        },
+                        "region": {
+                          "type": "string"
+                        },
+                        "expires_in_minutes": {
+                          "type": "integer",
+                          "example": 15
+                        },
+                        "next": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or invalid field"
+          },
+          "403": {
+            "description": "`signups_closed`: self-serve sign-up for this product is not open"
+          },
+          "409": {
+            "description": "`account_exists` (the person should sign in) or `wrong_region` (with `api_url`, the right host)"
+          },
+          "422": {
+            "description": "`work_email_required`"
+          },
+          "429": {
+            "description": "`too_many_attempts`"
+          },
+          "503": {
+            "description": "`code_not_sent`: try again in a minute"
+          }
+        }
+      }
+    },
+    "/v1/signup/{signupId}/verify": {
+      "post": {
+        "operationId": "agent-verify-signup",
+        "summary": "Finish a sign-up with the person's code",
+        "description": "Creates the workspace exactly as the web sign-up does (14-day trial; CRM starts on Free) and returns an OAuth access token (1 hour) and refresh token (7 days, rotating; refresh at `/oauth/token` with `grant_type=refresh_token` and the returned `client_id`) for that person in that workspace. The token works on this API and the MCP server. Five wrong codes end the sign-up. A code from the web sign-up page is refused. No token.",
+        "tags": [
+          "Agent sign-up"
+        ],
+        "security": [],
+        "parameters": [
+          {
+            "name": "signupId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "code"
+                ],
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "pattern": "^[0-9]{6}$"
+                  },
+                  "client_id": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "description": "Your OAuth client id from dynamic client registration, if you have one."
+                  },
+                  "timezone": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "description": "The person's IANA timezone."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Workspace created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "created"
+                          ]
+                        },
+                        "product": {
+                          "type": "string"
+                        },
+                        "region": {
+                          "type": "string"
+                        },
+                        "organization": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "domain": {
+                              "type": "string"
+                            },
+                            "trial_end_date": {
+                              "type": "string",
+                              "format": "date",
+                              "nullable": true
+                            }
+                          }
+                        },
+                        "user": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "integer"
+                            },
+                            "email": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "access_token": {
+                          "type": "string"
+                        },
+                        "token_type": {
+                          "type": "string",
+                          "enum": [
+                            "Bearer"
+                          ]
+                        },
+                        "expires_in": {
+                          "type": "integer",
+                          "example": 3600
+                        },
+                        "refresh_token": {
+                          "type": "string"
+                        },
+                        "scope": {
+                          "type": "string"
+                        },
+                        "client_id": {
+                          "type": "string"
+                        },
+                        "token_endpoint": {
+                          "type": "string",
+                          "format": "uri"
+                        },
+                        "api_base_url": {
+                          "type": "string",
+                          "format": "uri"
+                        },
+                        "mcp_url": {
+                          "type": "string",
+                          "format": "uri"
+                        },
+                        "card": {
+                          "type": "object",
+                          "properties": {
+                            "card_on_file": {
+                              "type": "boolean"
+                            },
+                            "required_now": {
+                              "type": "boolean",
+                              "description": "True for CRM."
+                            },
+                            "required_before_sending": {
+                              "type": "boolean"
+                            },
+                            "next": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`code_wrong` or `code_expired`"
+          },
+          "429": {
+            "description": "`too_many_attempts`"
+          }
+        }
+      }
+    },
+    "/v1/billing": {
+      "get": {
+        "operationId": "agent-get-billing",
+        "summary": "Get card and plan status",
+        "description": "Whether a card is on file (brand and last 4 only), the plan, interval, trial end, whether a plan is running, and whether sending to people waits for a card. Poll it after giving the person a card link. `read:billing` or any product read scope. Also at `GET /v1/organization/{orgId}/billing`.",
+        "tags": [
+          "Agent sign-up"
+        ],
+        "parameters": [
+          {
+            "name": "product",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "marketing",
+                "learning",
+                "awards",
+                "sessions",
+                "crm"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Billing status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "product": {
+                          "type": "string"
+                        },
+                        "card_on_file": {
+                          "type": "boolean"
+                        },
+                        "card": {
+                          "type": "object",
+                          "nullable": true,
+                          "properties": {
+                            "brand": {
+                              "type": "string"
+                            },
+                            "last4": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "plan": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "interval": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "stage": {
+                          "type": "string",
+                          "example": "trial"
+                        },
+                        "trial_end": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "subscribed": {
+                          "type": "boolean"
+                        },
+                        "sending_needs_card": {
+                          "type": "boolean"
+                        },
+                        "card_required_now": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token"
+          },
+          "403": {
+            "description": "Token lacks a read scope"
+          }
+        }
+      }
+    },
+    "/v1/billing/card": {
+      "post": {
+        "operationId": "agent-card-link",
+        "summary": "Get a card link for the person",
+        "description": "A Stripe Checkout page in setup mode the person opens to save a card. Nothing is charged. When they finish, Stripe sends them to a Sessionboard page that says \"Card saved\" and `card_on_file` turns true. Returns no link when a card is already on file. Requires `write:billing` and the person's Plan and billing permission. Also at `POST /v1/organization/{orgId}/billing/card`.",
+        "tags": [
+          "Agent sign-up"
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "product": {
+                    "type": "string",
+                    "enum": [
+                      "marketing",
+                      "learning",
+                      "awards",
+                      "sessions",
+                      "crm"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The link (or that a card is on file)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "card_on_file": {
+                          "type": "boolean"
+                        },
+                        "url": {
+                          "type": "string",
+                          "format": "uri",
+                          "nullable": true,
+                          "example": "https://checkout.stripe.com/c/pay/cs_…"
+                        },
+                        "give_to_person": {
+                          "type": "string"
+                        },
+                        "then": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token"
+          },
+          "403": {
+            "description": "Token lacks `write:billing`, or the person lacks the Plan and billing permission"
+          },
+          "409": {
+            "description": "`contract_billing`: billed by contract"
+          }
+        }
+      }
+    },
+    "/v1/billing/plan": {
+      "post": {
+        "operationId": "agent-start-plan",
+        "summary": "Quote or start a plan on the saved card",
+        "description": "Without `confirm`, returns the quote: plan, price, interval, the card's brand and last 4, and when the first charge happens (when the trial ends, if one is running). Tell the person and call again with `confirm: true` only after they agree; that starts the plan on the saved card. The same `request_id` never starts it twice. A workspace already on a plan gets a Stripe page to switch it. Requires `write:billing`. Also at `POST /v1/organization/{orgId}/billing/plan`.",
+        "tags": [
+          "Agent sign-up"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "plan"
+                ],
+                "properties": {
+                  "plan": {
+                    "type": "string",
+                    "description": "A plan key from `GET /v1/plans`."
+                  },
+                  "interval": {
+                    "type": "string",
+                    "enum": [
+                      "month",
+                      "year"
+                    ],
+                    "description": "Default month. CRM is yearly only."
+                  },
+                  "confirm": {
+                    "type": "boolean"
+                  },
+                  "request_id": {
+                    "type": "string",
+                    "maxLength": 64
+                  },
+                  "product": {
+                    "type": "string",
+                    "enum": [
+                      "marketing",
+                      "learning",
+                      "awards",
+                      "sessions",
+                      "crm"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "`kind` is `confirm_subscribe` (the quote), `subscribed`, `declined` (nothing charged) or `manage_in_portal` (with `url`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "confirm_subscribe",
+                            "subscribed",
+                            "declined",
+                            "manage_in_portal"
+                          ]
+                        },
+                        "plan": {
+                          "type": "string"
+                        },
+                        "interval": {
+                          "type": "string"
+                        },
+                        "price": {
+                          "type": "number"
+                        },
+                        "currency": {
+                          "type": "string"
+                        },
+                        "first_charge_at": {
+                          "type": "string",
+                          "description": "An ISO date-time, or `now`."
+                        },
+                        "card": {
+                          "type": "object",
+                          "properties": {
+                            "brand": {
+                              "type": "string"
+                            },
+                            "last4": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "url": {
+                          "type": "string",
+                          "format": "uri",
+                          "description": "For `manage_in_portal`."
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`unknown_plan` or `yearly_only`"
+          },
+          "402": {
+            "description": "`card_required`: get a card link first"
+          },
+          "403": {
+            "description": "Token lacks `write:billing`, or the person lacks the Plan and billing permission"
           }
         }
       }
