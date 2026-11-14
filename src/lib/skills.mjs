@@ -59,8 +59,13 @@ export const productsForGroup = (group) => ['platform', ...Object.keys(SKILLS_FO
  * then the Help Center suite the reader was last in (suites.mjs SUITE_COOKIE); else
  * Platform. Stamps <html data-sb-skills>, which skillsCss() reads.
  */
-export function skillsHeadScript(suiteCookie) {
+export function skillsHeadScript(suiteCookie, pathname = '') {
   const keys = ['platform', ...Object.keys(SKILLS_FOR)];
+  // On a skill's own page, the view must include that skill: otherwise switch to the
+  // self-serve product that owns it (or Platform) for this page, without changing the choice.
+  const id = pathname.replace(/\.html$/, '').replace(/\/+$/, '').split('/').pop();
+  const skill = manifest.skills.find((s) => s.id === id);
+  const fits = skill ? productsForGroup(skill.product) : keys;
   return `(function(){
 var K=${JSON.stringify(keys)},C=${JSON.stringify(SKILLS_FOR_COOKIE)},S=${JSON.stringify(suiteCookie)},d=document,l=location;
 var ok=function(k){return K.indexOf(k)>-1;};
@@ -69,6 +74,7 @@ var f=null;try{f=new URLSearchParams(l.search).get('for');}catch(e){}
 var tail='; path=/; SameSite=Lax'+(l.protocol==='https:'?'; Secure':'');
 if(f!==null){if(ok(f))d.cookie=C+'='+f+tail;try{var u=new URL(l.href);u.searchParams.delete('for');history.replaceState(history.state,'',u.pathname+u.search+u.hash);}catch(e){}}
 var k=ok(f)?f:get(C);if(!ok(k))k=get(S);if(!ok(k))k='platform';
+var F=${JSON.stringify(fits)};if(F.indexOf(k)<0)k=F[1]||F[0];
 d.documentElement.setAttribute('data-sb-skills',k);
 })();`;
 }

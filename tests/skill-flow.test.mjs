@@ -32,3 +32,26 @@ test('"Skills for" views name real groups, and every self-serve view has skills'
   }
   assert.equal(skillsFor('platform').length, SKILL_PRODUCTS.length);
 });
+
+test('every skill has its own steps and outcome (unique, pauses only where it changes things)', async () => {
+  const { SKILL_FLOWS } = await import('../src/data/skill-flows.mjs');
+  const labels = new Set();
+  const drawings = new Set();
+  for (const skill of manifest.skills) {
+    const f = SKILL_FLOWS[skill.id];
+    assert.ok(f, `${skill.id} has no entry in src/data/skill-flows.mjs`);
+    assert.ok(f.works.length >= 3 && f.works.length <= 4, `${skill.id} works length`);
+    const wait = f.works.findIndex((s) => s.kind === 'wait');
+    const writes = skill.tools.some((t) => t.access !== 'read');
+    if (wait > -1) {
+      assert.ok(writes, `${skill.id} pauses but never changes anything`);
+      assert.ok(f.works.slice(wait + 1).every((s) => s.kind === 'next') && wait < f.works.length - 1, `${skill.id} after OK`);
+    }
+    for (const s of f.works) assert.ok(s.label.length <= 34, `${skill.id} label too long: ${s.label}`);
+    assert.ok(!labels.has(f.get.label), `${skill.id} outcome label repeats`);
+    assert.ok(!drawings.has(f.get.svg), `${skill.id} drawing repeats`);
+    labels.add(f.get.label);
+    drawings.add(f.get.svg);
+  }
+  for (const id of Object.keys(SKILL_FLOWS)) assert.ok(manifest.skills.some((s) => s.id === id), `${id} is not a skill`);
+});

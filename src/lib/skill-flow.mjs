@@ -27,6 +27,24 @@ const GENERIC = new Set([
   'List Sites',
 ]);
 
+import { SKILL_FLOWS } from '../data/skill-flows.mjs';
+
+const wrap = (body) =>
+  `<svg viewBox="0 0 168 112" fill="none" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${body}</svg>`;
+
+/**
+ * The strip for one skill: its hand-written entry in src/data/skill-flows.mjs (steps and
+ * outcome unique to that skill), or, for a skill not written up yet, the generic version
+ * from its tools and product group.
+ */
+export function stripFor(skill) {
+  const own = SKILL_FLOWS[skill.id];
+  const auto = flowFor(skill);
+  if (!own) return { ...auto, get: OUTCOMES[skill.product] ?? OUTCOMES.insights, own: false };
+  const ask = own.ask ?? auto.ask;
+  return { ask, steps: own.works, get: { label: own.get.label, svg: wrap(own.get.svg) }, own: true };
+}
+
 export function flowFor(skill, { reads = 2 } = {}) {
   const full = String(skill.prompts?.[0] ?? skill.starterPrompt ?? '').split('\n')[0].trim();
   // Keep the bubble to a few lines: cut at a word, never mid-word.

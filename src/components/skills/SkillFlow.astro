@@ -4,14 +4,13 @@
  * action row on its page. Real text throughout; the outcome drawing is decorative.
  * Three columns from 40rem, stacked below.
  */
-import { flowFor, OUTCOMES } from '../../lib/skill-flow.mjs';
+import { stripFor } from '../../lib/skill-flow.mjs';
 
 interface Props {
-	skill: { product: string; prompts?: string[]; starterPrompt?: string; tools: { title: string; access: string }[] };
+	skill: { id: string; product: string; prompts?: string[]; starterPrompt?: string; tools: { title: string; access: string }[] };
 }
 const { skill } = Astro.props;
-const { ask, steps } = flowFor(skill);
-const outcome = OUTCOMES[skill.product as keyof typeof OUTCOMES] ?? OUTCOMES.insights;
+const { ask, steps, get: outcome } = stripFor(skill);
 ---
 
 <figure class="sb-flow not-content" aria-label="How this skill works">
@@ -190,4 +189,13 @@ const outcome = OUTCOMES[skill.product as keyof typeof OUTCOMES] ?? OUTCOMES.ins
 	.sb-flow-get :global(.ac) { stroke: var(--sl-color-accent); }
 	.sb-flow-get :global(.fac) { fill: var(--sl-color-accent); }
 	.sb-flow-get :global(svg) { --sb-flow-bg: var(--sl-color-bg); }
+	.sb-flow-get :global(.sb-flow-tag) {
+		font: 600 9px/1 var(--__sl-font-mono, ui-monospace, monospace);
+		letter-spacing: 0.06em;
+		fill: var(--sl-color-gray-3);
+		stroke: none;
+	}
+	.sb-flow-ask {
+		overflow-wrap: break-word;
+	}
 </style>
