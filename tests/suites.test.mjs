@@ -218,7 +218,10 @@ test('each suite sidebar lists every page of its suite and nothing else', () => 
   for (const [key, suite] of Object.entries(config.suites)) {
     if (key === PLATFORM) continue;
     const listed = sidebarSlugs(JSON.parse(readFileSync(join(root, `src/data/suites/${suite.sidebar}.sidebar.json`), 'utf8')));
-    const onDisk = pages.filter((p) => suiteForId(p.id, config) === key).map((p) => p.id);
+    // A `draft: true` page is left out of production builds, so it has no sidebar entry yet.
+    const onDisk = pages
+      .filter((p) => suiteForId(p.id, config) === key && !/^draft:\s*true\s*$/m.test(p.source.split(/^---\s*$/m)[1] ?? ''))
+      .map((p) => p.id);
     assert.deepEqual([...listed].sort(), [...onDisk].sort(), `${key} sidebar vs ${suite.path}`);
     assert.ok(onDisk.includes(suite.home.slice(1)), `${key} home ${suite.home} exists`);
   }
