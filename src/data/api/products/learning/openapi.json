@@ -2889,6 +2889,58 @@
         }
       }
     },
+    "/v1/organization/{orgId}/learning/quiz-reviews/{attemptId}/files/{questionId}": {
+      "get": {
+        "operationId": "get-learning-quiz-review-file",
+        "summary": "Open an uploaded quiz answer",
+        "description": "A short-lived link to the file a learner uploaded as an answer, to read before scoring the attempt. Reads only. Requires `read:learning`. A key restricted to particular events is refused with `403 ORG_WIDE_TOKEN_REQUIRED`. Also at `GET /v1/learning/quiz-reviews/{attemptId}/files/{questionId}`.",
+        "tags": [
+          "Learning"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "name": "attemptId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The quiz attempt id (from List quiz attempts to review)."
+          },
+          {
+            "name": "questionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The question whose uploaded answer to open."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`{ url, filename }`: a short-lived download link."
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
     "/v1/organization/{orgId}/learning/submissions": {
       "get": {
         "operationId": "list-learning-submissions",
@@ -3024,6 +3076,48 @@
           },
           "423": {
             "$ref": "#/components/responses/LearningAssistantsPaused"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/submissions/{progressId}/file": {
+      "get": {
+        "operationId": "get-learning-submission-file",
+        "summary": "Open a submission's file",
+        "description": "A short-lived link to the file a learner handed in, to read before approving or rejecting it. Reads only. Requires `read:learning`. A key restricted to particular events is refused with `403 ORG_WIDE_TOKEN_REQUIRED`. Also at `GET /v1/learning/submissions/{progressId}/file`.",
+        "tags": [
+          "Learning"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "name": "progressId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The progress id (from List submissions to review)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`{ url, filename }`: a short-lived download link."
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
           },
           "429": {
             "$ref": "#/components/responses/LearningTooManyRequests"
