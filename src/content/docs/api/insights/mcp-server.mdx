@@ -184,6 +184,39 @@ Try: *"Show me the reminder email you proposed for Thursday's webinar"* or *"Sen
 
 The Marketing tools' descriptions also carry the event rules an assistant should follow: registrations and turnout are different numbers; speakers get their sharing link while there is still time to post before the start, and sharing switches to the recording after; nothing is emailed or posted without your yes; and only your organization's own first-party data is used.
 
+### Sessionboard Sessions (37 tools)
+
+The self-serve Sessions workspace: one call for speakers per event, your own accept and decline decisions, and the agenda for your website. The tools call the Sessions workspace routes (`/v1/sessions-workspace/…`, the organization taken from the token); reads need `read:sessions`, changes `write:sessions`, and a key restricted to particular events cannot use them. Ids come back in every answer: `event_id` from `get_sessions_home`, session ids from `list_submissions` or `get_event_agenda`, room, track and format ids from `get_event_agenda`.
+
+| Tool | Description |
+|------|-------------|
+| `get_sessions_home` | Your plan, every Sessions event with its counts, and whether its call for speakers is open. Start here |
+| `get_sessions_event` | One event: dates, where, its call for speakers (link, title, welcome text, closing date), rooms, tracks, sponsors |
+| `manage_sessions_event` | Create or update an event: name, dates, timezone, where, and the language speakers read |
+| `import_sessions_event_from_url` | Make a Sessions event from its public page. Preview with `dry_run: true` first; a page that redirects says which address to use instead |
+| `set_rooms_and_tracks` | Replace the rooms, tracks and formats, in order (keep one by passing its id) |
+| `manage_call_for_speakers` | Change what speakers see, close the call, or open it. Opening waits for your OK |
+| `get_call_questions` / `manage_call_questions` | The questions on the call; add, create, remove, require or reorder them |
+| `list_submissions` | Submissions with speakers, decision, time, room, track and the team's picks |
+| `get_team_picks` / `set_my_pick` | Each teammate's Yes, Maybe or No; your own pick |
+| `decide_submission` | Accept, waitlist, decline or undecide. Emails no one |
+| `manage_program_session` | Add a session (accepted, or as a submission) or update one: time, room, track, format, sponsor tags. A session can be placed on the agenda in the same call |
+| `list_event_speakers` | Everyone on an accepted session |
+| `get_event_agenda` | The agenda, its conflicts, and the rooms, tracks, formats and sponsors to choose from |
+| `manage_event_sponsors` | Add or remove a sponsor to tag sessions with |
+| `preview_event_import` / `import_event_program` / `import_event_speakers` / `import_event_sponsors` | Preview and import rows of sessions, speakers or sponsors |
+| `publish_event_agenda` | Publish the agenda and speaker wall to your website (embed snippets). Waits for your OK |
+| `get_decision_emails` / `preview_decision_email` / `update_decision_email` | The declined and waitlisted emails: read, preview as a speaker gets it, edit |
+| `send_decision_emails` | Email declined or waitlisted speakers. Waits for your OK |
+| `get_speaker_emails` | The speaker emails plan for accepted speakers: tasks, due date, reminders, each speaker's progress |
+| `update_speaker_emails_plan` / `pause_speaker_emails` | Change the plan; pause or resume every email at once |
+| `approve_speaker_emails` | Approve the plan so the invites and reminders go. Waits for your OK |
+| `list_event_connections` / `link_event_connection` / `preview_event_push` | The apps the agenda can be pushed to, the vendor event it is linked to, and what a push would send (`blocked` says what stops it). A person connects an app with its keys in Sessionboard |
+| `push_event_agenda` / `get_push_history` | Push sessions, speakers and the agenda one way. Waits for your OK |
+| `get_sessions_marketing` / `list_session_media` / `transcribe_session_media` | Speakers' share kits, and a session's recordings and transcripts |
+
+Try: *"Make our 2027 summit from its web page, add a Main Stage and an AI track, and open the call for speakers"* or *"Accept the three highest-rated submissions and draft the speaker emails"*
+
 ### Tasks (2 tools)
 
 Your team's to-dos in Sessionboard Platform: a title, an assignee, a due date with an optional time, a reminder, and the contacts, sessions, sponsors, exhibitors or groups a task is about. See the [Tasks guide](/api/guides/tasks). In an organization that uses a self-serve Sessionboard product, these tools answer "Tasks are part of Sessionboard Platform." instead.
@@ -273,7 +306,7 @@ Pre-built templates that structure the AI's approach to common report types:
 
 ## Actions that wait for your OK
 
-Some Marketing and Learning actions reach people outside your team, spend money or publish something public. When an AI assistant asks for one of these through MCP, Sessionboard does not run it. It records a request and answers with a link where a person on your team approves or declines it:
+Some Marketing, Learning and Sessions actions reach people outside your team, spend money or publish something public. When an AI assistant asks for one of these through MCP, Sessionboard does not run it. It records a request and answers with a link where a person on your team approves or declines it:
 
 ```json
 {
@@ -284,7 +317,7 @@ Some Marketing and Learning actions reach people outside your team, spend money 
 }
 ```
 
-- **What waits:** launching or resuming a campaign, sending invitations, content kits or email signatures, sending a "Keep everyone engaged" round or offer, publishing an event page, gallery, course or on-demand library, approving ads or raising an ad budget, starting live captions, and assigning training.
+- **What waits:** launching or resuming a campaign, sending invitations, content kits or email signatures, sending a "Keep everyone engaged" round or offer, publishing an event page, gallery, course or on-demand library, approving ads or raising an ad budget, starting live captions, assigning training, and in Sessions opening the call for speakers, publishing the agenda, pushing it to an app, sending decision emails and approving the speaker emails plan.
 - **What runs:** drafts, edits to drafts and reads. Credit is never set or granted by an assistant.
 - **Approving** runs the original request as the person who approved it, with their permissions. Declining records the answer and nothing happens. The assistant sees the outcome the next time it reads the record.
 - **Don't retry.** Calling the same tool again creates another request; tell the person where to approve instead.
