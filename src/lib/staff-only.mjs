@@ -48,43 +48,90 @@ function staffOnlySuitePrefixes() {
     .map(([key, s]) => ({ key, prefix: trimSlashes(s.path) }));
 }
 
-/** The configured rule, normalized: `{ prefixes: string[], pages: Set<string> }`. */
-export function staffOnlyRule(site) {
-  const config = site?.staffOnly ?? {};
+const normalizeRule = (config = {}) => ({
+  prefixes: (config.prefixes ?? []).map(trimSlashes).filter(Boolean),
+  pages: (config.pages ?? []).map(trimSlashes).filter(Boolean),
+});
+
+/**
+ * Two tiers share this plumbing (Josh, 2026-11-14):
+ *   - staff:    site.json `staffOnly` plus unreleased suites — super users only;
+ *   - signedIn: site.json `signedInOnly` — any signed-in Sessionboard user
+ *               (registration, check-in, badges, lead scanning, Expo: whatever
+ *               Cvent would find competitive). Never public.
+ * The plain names below (staffOnlyRule, isStaffOnlySlug, isStaffOnlyPath,
+ * isStaffOnlyHref, staffOnlyGlobs) mean "restricted": either tier. Every
+ * build-time surface that keeps a page from the public (search, sitemap,
+ * llms.txt, noindex, sidebar markers, Team Lead) uses them and so fails
+ * closed. Only worker.js tells the tiers apart (staffTierPath / signedInOnlyPath).
+ */
+function tierRule(site, tier) {
+  const staff = normalizeRule(site?.staffOnly);
+  const signedIn = normalizeRule(site?.signedInOnly);
+  const suites = staffOnlySuitePrefixes().map((s) => s.prefix);
+  const parts = tier === 'staff' ? [staff] : tier === 'signedIn' ? [signedIn] : [staff, signedIn];
   return {
-    prefixes: [
-      ...(config.prefixes ?? []).map(trimSlashes).filter(Boolean),
-      ...staffOnlySuitePrefixes().map((s) => s.prefix),
-    ],
-    pages: new Set((config.pages ?? []).map(trimSlashes).filter(Boolean)),
+    prefixes: [...parts.flatMap((r) => r.prefixes), ...(tier === 'signedIn' ? [] : suites)],
+    pages: new Set(parts.flatMap((r) => r.pages)),
   };
 }
 
-/** Is the page at this route slug (`registration/overview`, `/onsite`) staff-only? */
-export function isStaffOnlySlug(slug, site) {
+/** The configured rule (both tiers), normalized: `{ prefixes: string[], pages: Set<string> }`. */
+export function staffOnlyRule(site) {
+  return tierRule(site, 'all');
+}
+
+function slugMatches(slug, rule) {
   const clean = trimSlashes(slug).replace(/\.html$/, '');
   if (!clean) return false;
-  const { prefixes, pages } = staffOnlyRule(site);
-  return pages.has(clean) || prefixes.some((p) => clean === p || clean.startsWith(`${p}/`));
+  return rule.pages.has(clean) || rule.prefixes.some((p) => clean === p || clean.startsWith(`${p}/`));
+}
+
+/** Is the page at this route slug (`registration/overview`, `/onsite`) restricted (either tier)? */
+export function isStaffOnlySlug(slug, site) {
+  return slugMatches(slug, tierRule(site, 'all'));
+}
+
+/** Is the page at this route slug in the signed-in tier only (not staff)? */
+export function isSignedInOnlySlug(slug, site) {
+  return !slugMatches(slug, tierRule(site, 'staff')) && slugMatches(slug, tierRule(site, 'signedIn'));
+}
+
+function decodePath(pathname) {
+  try {
+    return decodeURIComponent(pathname);
+  } catch {
+    return pathname;
+  }
+}
+
+/** Path → the tier test it needs: a share card tests its page; an unreleased suite's screenshots are staff. */
+function pathMatches(pathname, site, tier) {
+  const path = decodePath(pathname);
+  const og = path.match(/^\/og\/(.+)\.png$/);
+  const rule = tierRule(site, tier);
+  if (og) return slugMatches(og[1].replace(/--/g, '/'), rule);
+  const shot = path.match(/^\/images\/suites\/([^/]+)\//);
+  if (shot) return tier !== 'signedIn' && staffOnlySuitePrefixes().some((s) => s.key === shot[1]);
+  return slugMatches(path, rule);
 }
 
 /**
- * Is this request path staff-only? Covers the page itself (with or without
+ * Is this request path restricted (either tier)? Covers the page itself (with or without
  * `.html` or a trailing slash) and its share card (`/og/<slug with -- for />.png`).
  */
 export function isStaffOnlyPath(pathname, site) {
-  let path;
-  try {
-    path = decodeURIComponent(pathname);
-  } catch {
-    path = pathname;
-  }
-  const og = path.match(/^\/og\/(.+)\.png$/);
-  if (og) return isStaffOnlySlug(og[1].replace(/--/g, '/'), site);
-  // An unreleased suite's screenshots.
-  const shot = path.match(/^\/images\/suites\/([^/]+)\//);
-  if (shot) return staffOnlySuitePrefixes().some((s) => s.key === shot[1]);
-  return isStaffOnlySlug(path, site);
+  return pathMatches(pathname, site, 'all');
+}
+
+/** Is this request path in the staff tier (super users only)? */
+export function isStaffTierPath(pathname, site) {
+  return pathMatches(pathname, site, 'staff');
+}
+
+/** Is this request path signed-in only (any signed-in user, not public, not staff-only)? */
+export function isSignedInOnlyPath(pathname, site) {
+  return !pathMatches(pathname, site, 'staff') && pathMatches(pathname, site, 'signedIn');
 }
 
 /**
@@ -92,7 +139,7 @@ export function isStaffOnlyPath(pathname, site) {
  * Root-relative and same-site absolute links count; anchors, other hosts and
  * `app:` markers do not.
  */
-export function isStaffOnlyHref(href, site) {
+export function isStaffOnlyHref(href, site, tier = 'all') {
   if (!href) return false;
   let path = href;
   if (/^https?:\/\//i.test(href)) {
@@ -108,11 +155,16 @@ export function isStaffOnlyHref(href, site) {
   } else if (!href.startsWith('/')) {
     return false;
   }
-  return isStaffOnlyPath(path.split(/[?#]/)[0], site);
+  return pathMatches(path.split(/[?#]/)[0], site, tier);
 }
 
 /** Glob patterns (micromatch, against content ids) for the starlight-llms-txt `exclude` option. */
 export function staffOnlyGlobs(site) {
   const { prefixes, pages } = staffOnlyRule(site);
   return [...prefixes.flatMap((p) => [p, `${p}/**`]), ...pages];
+}
+
+/** OpenAPI tags whose operations are signed-in only (site.json `signedInOnly.apiTags`): kept out of the public spec and llms.txt. */
+export function signedInOnlyApiTags(site) {
+  return new Set(site?.signedInOnly?.apiTags ?? []);
 }

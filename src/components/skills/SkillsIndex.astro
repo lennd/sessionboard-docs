@@ -12,6 +12,7 @@ import ProductBadge from '../ProductBadge.astro';
 // section left with none, from the page everyone else gets. The count is recomputed from what is
 // left in the page, so a customer never sees a number that includes them.
 const staff = (id: string) => isStaffOnlyHref(`${SKILLS_BASE}/${id}`, site);
+const staffTier = (id: string) => isStaffOnlyHref(`${SKILLS_BASE}/${id}`, site, 'staff');
 const groups = skillsByProduct().map((g) => ({ ...g, staffOnly: g.skills.every((s) => staff(s.id)) }));
 const total = groups.reduce((n, g) => n + g.skills.filter((s) => !staff(s.id)).length, 0);
 ---
@@ -33,8 +34,9 @@ const total = groups.reduce((n, g) => n + g.skills.filter((s) => !staff(s.id)).l
 					{g.skills.map((s) => (
 						<li
 							data-text={`${s.title} ${s.summary} ${s.prompts.join(' ')} ${g.label}`.toLowerCase()}
-							data-staff-only={staff(s.id) ? '' : undefined}
-							title={staff(s.id) ? 'Visible to Sessionboard staff only' : undefined}
+							data-staff-only={staffTier(s.id) ? '' : undefined}
+							data-signed-in-only={staff(s.id) && !staffTier(s.id) ? '' : undefined}
+							title={staffTier(s.id) ? 'Visible to Sessionboard staff only' : staff(s.id) ? 'Visible to signed-in customers only' : undefined}
 						>
 							<a href={`${SKILLS_BASE}/${s.id}`}>{s.title}</a>
 							<p>{s.summary}</p>

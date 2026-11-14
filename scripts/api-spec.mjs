@@ -62,6 +62,7 @@ export function productsOf(path, op) {
 }
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const SITE = JSON.parse(readFileSync(join(ROOT, 'site.json'), 'utf8'));
 const CHECK = process.argv.includes('--check');
 const HTTP_METHODS = new Set(['get', 'put', 'post', 'delete', 'options', 'head', 'patch', 'trace']);
 
@@ -154,9 +155,16 @@ const outputs = new Map();
 const source = yaml.load(readFileSync(join(ROOT, 'api-spec/openapi.yaml'), 'utf8'));
 const spec = productSpec(source, 'platform');
 const specJson = JSON.stringify(spec, null, 2) + '\n';
+// The full spec renders the reference pages; worker.js serves the signed-in-only ones
+// (site.json signedInOnly) to signed-in readers only. The public spec files leave
+// those operations out (registration, check-in, badges, Expo — Josh, 2026-11-14).
 outputs.set('src/data/api/openapi.json', specJson);
-outputs.set('public/api/openapi.json', specJson);
-outputs.set('public/api/openapi.yaml', specJson);
+const signedInOnlyTags = new Set(SITE.signedInOnly?.apiTags ?? []);
+const publicSpec = withoutHiddenOperations(spec, (path, op) => !(op.tags || []).some((t) => signedInOnlyTags.has(t)));
+const publicSpecJson = JSON.stringify(publicSpec, null, 2) + '\n';
+outputs.set('src/data/api/openapi.public.json', publicSpecJson);
+outputs.set('public/api/openapi.json', publicSpecJson);
+outputs.set('public/api/openapi.yaml', publicSpecJson);
 
 // ---------------------------------------------------------------- guide titles
 const nav = JSON.parse(readFileSync(join(ROOT, 'src/data/api/nav.json'), 'utf8'));

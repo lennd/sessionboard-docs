@@ -25,14 +25,18 @@ import {
 } from '../src/lib/suites.mjs';
 
 const root = new URL('..', import.meta.url).pathname;
-const config = JSON.parse(readFileSync(join(root, 'src/data/suites.json'), 'utf8'));
+const live = JSON.parse(readFileSync(join(root, 'src/data/suites.json'), 'utf8'));
+// The mechanics below are tested on the live suites with every self-serve suite unreleased,
+// so a release (2026-11-14: every suite is public) does not change what they prove.
+const config = { ...live, suites: Object.fromEntries(Object.entries(live.suites).map(([k, v]) => [k, k === 'platform' ? v : { ...v, released: false }])) };
 const ALL = builtSuites(config, { SB_PREVIEW_SUITES: '1' });
 const NONE = builtSuites(config, {});
 
+test('every suite is released (Josh, 2026-11-14: anyone can switch product views)', () => {
+  for (const key of Object.keys(live.suites)) assert.equal(live.suites[key].released ?? true, true, `${key} is released`);
+});
+
 test('production builds only Platform until a suite is released', () => {
-  for (const key of Object.keys(config.suites)) {
-    if (key !== PLATFORM) assert.equal(config.suites[key].released, false, `${key} is unreleased on this branch`);
-  }
   assert.deepEqual([...NONE], [PLATFORM]);
   assert.equal(anySelfServeBuilt(NONE), false);
   assert.deepEqual([...ALL].sort(), ['awards', 'crm', 'learning', 'marketing', 'platform', 'sessions']);

@@ -4,6 +4,15 @@ Starlight Help Center. Canonical host is `site.json` — never hardcode `learn.`
 
 Read `STYLE.md` before editing a page.
 
+## Public, crawled — except what Cvent would find competitive
+
+Since 2026-11-14 the Help Center, API docs and skills are open to everyone and every crawler (Josh: "ungate it all… crawled, agent friendly, indexed"). Two exceptions, both in `site.json`:
+
+- `staffOnly`: super users only. These are unreleased products (Registration, Expo, Onsite, Attend) and Enablement.
+- `signedInOnly`: any signed-in user. This covers anything about Sessionboard's own registration, ticketing, check-in, badges, lead scanning, Expo or booth sales, and the Attend app.
+
+**Never write any of that onto a public page. Ask Josh before writing it at all**, and before moving a page out of either list. `npm run check:restricted` (in Docs CI) fails a public page that mentions these subjects. The public `/api/openapi.json` and `/api/llms.txt` leave out the `signedInOnly.apiTags` operations.
+
 ## Product facts come from web-api, not from the UI or an existing article
 
 Before writing or updating any article, read

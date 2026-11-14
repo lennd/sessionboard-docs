@@ -48,6 +48,13 @@ jobs:
       - name: API spec is built and keeps its contract
         run: npm run api:check
 
+      # The docs are public and crawled (2026-11-14). Nothing public may cover
+      # registration, lead scanning, check-in, badges, Expo or the Attend app:
+      # those pages are site.json signedInOnly / staffOnly. Ask Josh before
+      # loosening a pattern or opening a page.
+      - name: No restricted subjects on public pages
+        run: npm run check:restricted
+
       # One Skills article per skill, generated from public/skills/downloads/skills.json
       # (packaged in lennd/sessionboard-mcp-server, where each skill is checked against the
       # tools the server registers). A hand edit to an article, or a manifest refreshed
@@ -167,16 +174,25 @@ jobs:
           set -euo pipefail
           base=https://learn.sessionboard.com
 
-          # Sign-in only (worker.js): a signed-out visitor is sent to the landing
-          # page, which is the one page anyone can open.
-          code=$(curl -s -o /dev/null -w '%{http_code}' --retry 3 --retry-delay 3 "$base/welcome")
-          [ "$code" = 200 ] || { echo "::error::/welcome returned $code"; exit 1; }
+          # Open since 2026-11-14 (worker.js): every public page answers 200 to a
+          # signed-out request, with no X-Robots-Tag that would deindex it.
+          # Headers are captured first rather than piped into grep: `grep -q`
+          # exits on the first match, curl takes SIGPIPE, and under pipefail that
+          # non-zero status would read as "no header found".
+          for path in / /sessions/accept-decline /api /llms.txt /api/llms.txt /sitemap-index.xml /pagefind/pagefind-entry.json /robots.txt; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' --retry 3 --retry-delay 3 "$base$path")
+            [ "$code" = 200 ] || { echo "::error::$path returned $code signed out, expected 200"; exit 1; }
+          done
           headers=$(curl -sI --retry 3 --retry-delay 3 "$base/sessions/accept-decline")
-          grep -qi '^location: /welcome?return=' <<<"$headers" || { echo "::error::a signed-out article request was not sent to /welcome — the Help Center is open"; exit 1; }
-          code=$(curl -s -o /dev/null -w '%{http_code}' "$base/pagefind/pagefind-entry.json")
-          [ "$code" = 404 ] || { echo "::error::search index answered $code signed out, expected 404"; exit 1; }
-          code=$(curl -s -o /dev/null -w '%{http_code}' "$base/sitemap.xml")
-          [ "$code" = 302 ] || [ "$code" = 404 ] || { echo "::error::sitemap answered $code signed out"; exit 1; }
+          if grep -qi '^x-robots-tag' <<<"$headers"; then echo "::error::a public article sends X-Robots-Tag — it would deindex the Help Center"; exit 1; fi
+          # Restricted pages never reach a signed-out request: signed-in-only →
+          # the landing page; staff-only → 404 (site.json signedInOnly / staffOnly).
+          headers=$(curl -sI --retry 3 --retry-delay 3 "$base/api/guides/registration-and-expo")
+          grep -qi '^location: /api/welcome?return=' <<<"$headers" || { echo "::error::a signed-in-only page was served signed out"; exit 1; }
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$base/registration/overview")
+          [ "$code" = 404 ] || { echo "::error::a staff-only page answered $code signed out, expected 404"; exit 1; }
+          spec=$(curl -s --retry 3 --retry-delay 3 "$base/api/openapi.json")
+          if grep -q '"/v1/event/{eventId}/registrations"' <<<"$spec"; then echo "::error::the public OpenAPI spec holds Registration operations"; exit 1; fi
 
           # The legacy KB host has to keep redirecting; 311 mapped URLs depend on it.
           code=$(curl -s -o /dev/null -w '%{http_code}' https://help.sessionboard.com/)
