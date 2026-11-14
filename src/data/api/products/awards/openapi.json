@@ -1584,6 +1584,198 @@
         }
       }
     },
+    "/v1/organization/{orgId}/awards/workspace/programs/{programId}/nominations": {
+      "post": {
+        "operationId": "awards-workspace-add-nomination",
+        "summary": "Add a nomination on someone's behalf",
+        "description": "Enters a nomination for someone, as an admin: the nominee, the nominator (programs where someone else nominates; default the token's user), the category and answers to the nomination form's questions. With every required question answered it is submitted and goes to review like a nomination made on the program's Site; otherwise it stays a draft and `missing_fields` names what is left (call again with the same nominee and the answers to finish it). Works on draft, open and closed programs. The same nominee (by email) is never nominated twice: an existing nomination comes back with `already_entered: true`. Emails no one, and runs at once from an AI assistant. The program needs a Site. Requires `write:awards`; the token's user must manage the program. Refused for a key restricted to particular events. Also at `POST /v1/awards/workspace/programs/{programId}/nominations`.",
+        "tags": [
+          "Awards workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AwardsOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/AwardsProgramId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "nominee"
+                ],
+                "properties": {
+                  "nominee": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "email"
+                    ],
+                    "properties": {
+                      "email": {
+                        "type": "string",
+                        "format": "email"
+                      },
+                      "first_name": {
+                        "type": "string"
+                      },
+                      "last_name": {
+                        "type": "string"
+                      },
+                      "organization": {
+                        "type": "string"
+                      },
+                      "title": {
+                        "type": "string",
+                        "description": "Job title"
+                      }
+                    }
+                  },
+                  "nominator": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "email"
+                    ],
+                    "properties": {
+                      "email": {
+                        "type": "string",
+                        "format": "email"
+                      },
+                      "first_name": {
+                        "type": "string"
+                      },
+                      "last_name": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "categoryId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Required when the program has more than one category"
+                  },
+                  "answers": {
+                    "type": "object",
+                    "description": "`{ questionId: value }` for the nomination form's questions (question ids from the program read). Each value is checked like the Site checks it.",
+                    "additionalProperties": true
+                  },
+                  "submit": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Submit once every required question is answered. `false` keeps a draft."
+                  },
+                  "source": {
+                    "$ref": "#/components/schemas/AwardsWorkspaceSource"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "submission_id": {
+                          "type": "string"
+                        },
+                        "program_id": {
+                          "type": "string"
+                        },
+                        "category_id": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "status": {
+                          "type": "string",
+                          "description": "`draft`, the program's submitted status, or `pending_payment`"
+                        },
+                        "friendly_id": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "submitted": {
+                          "type": "boolean"
+                        },
+                        "already_entered": {
+                          "type": "boolean"
+                        },
+                        "created": {
+                          "type": "boolean"
+                        },
+                        "reason": {
+                          "type": "string",
+                          "description": "`missing_fields` when `submit` was asked but required questions are empty"
+                        },
+                        "missing_fields": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "field_id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "type": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        },
+                        "nomination_mode": {
+                          "type": "string"
+                        },
+                        "url": {
+                          "type": "string",
+                          "description": "The nomination on the program's Site"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/AwardsWorkspaceBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/AwardsWorkspaceUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/AwardsWorkspaceWriteForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/AwardsWorkspaceProgramNotFound"
+          },
+          "423": {
+            "$ref": "#/components/responses/AwardsWorkspacePaused"
+          },
+          "429": {
+            "$ref": "#/components/responses/AwardsWorkspaceTooManyRequests"
+          }
+        }
+      }
+    },
     "/v1/organization/{orgId}/awards/workspace/programs/{programId}/nominations/{submissionId}/remove": {
       "post": {
         "operationId": "awards-workspace-remove-nomination",
