@@ -10,6 +10,7 @@ import rehypeAppLinks from './plugins/rehype-app-links.mjs';
 import { isStaffOnlyHref, staffOnlyGlobs } from './src/lib/staff-only.mjs';
 import suitesConfig from './src/data/suites.json' with { type: 'json' };
 import { suiteStaticFiles } from './src/lib/suites-build.mjs';
+import { restrictedCards } from './src/lib/restricted-cards.mjs';
 import { ACADEMY_SLUG, academyOpen } from './src/lib/academy.mjs';
 
 // The staff-only enablement section (src/pages/<internalPrefix>/) is unlisted.
@@ -39,6 +40,8 @@ export default defineConfig({
     // Suites left out of an SB_PUBLIC_SUITES_ONLY build leave no static files behind.
     // Otherwise unreleased suites are deployed staff-only (src/lib/staff-only.mjs).
     suiteStaticFiles(suitesConfig),
+    // Cards linking to a restricted page carry its tier marker, so the Worker drops the whole card.
+    restrictedCards(site),
     // Staff-only sections (site.json `staffOnly`, src/lib/staff-only.mjs) stay out too.
     sitemap({
       filter: (page) =>
