@@ -38,6 +38,27 @@ A deal or membership counts when it starts within 180 days after someone's first
 
 Try: *"Who asked buying questions at last month's webinars and hasn't heard from us?"*, *"Which topics keep people watching longest?"*, *"Do members who come to our webinars renew more?"* or *"Did companies that attended sign exhibitor contracts?"*
 
+## Edits you can see and undo
+
+When an assistant changes something that already exists — an event page, a Site, a lifecycle email, a newsletter issue or a campaign draft — the answer says what changed and how to put it back:
+
+- `what_changed.summary` is one plain sentence per change, for example *Changed Hero heading on the home page: “Spring Summit 2026” → “Spring Summit 2027”*. The same changes come as data in `added`, `changed` (each field with `before` and `after`), `removed` and `moved`. The assistant is told to show you the summary.
+- `kept` says where the earlier version is and which call restores it (`kept.restore`). Before an assistant edits a draft that holds someone else's unpublished work, Sessionboard keeps that draft as a version first, so nothing is overwritten without a way back. Newsletter issues and campaign drafts keep a version before every edit; an earlier email proposal stays in the email's history.
+- Nothing in an edit reaches people. Publishing, accepting an email, scheduling an issue and launching a campaign still wait for a person's OK.
+
+| Edit | Undo with |
+|------|-----------|
+| `edit_event_page`, `make_event_page`, `update_event_page_draft`, `remove_event_page_block`, `edit_site` | `restore_site_version` (or `discard_site_draft` when the draft matched what is live) |
+| `update_event_email_draft` | The email's history in Sessionboard; what sends does not change until a person accepts |
+| `update_newsletter_issue` | `restore_newsletter_issue_version` |
+| `manage_campaign` `update` | `manage_campaign` `restore_version` (list them with `versions`) |
+
+## Results with a story
+
+`get_results` (including a sponsor's report), `get_advocacy_results`, `get_field_event_results` and `get_webinar_outcomes` return, beside the numbers, a `story`: a `headline`, three to five `findings`, what drove them (`drivers`), a `next_move`, and `sections` ready to become slides, each with bullets and a chart spec (`type`, `title`, `data`). Every number in the story is a field of the same answer, named in `cites`; nothing is estimated, and what the data cannot support is listed in `missing`. Sponsor reports name no attendee.
+
+Try: *"Make me a five-slide recap of how Acme's sponsorship did"* or *"What changed on the event page since yesterday, and put the FAQ back."*
+
 ## Podcasts, newsletter, journeys, video, website, consent and sponsor links
 
 The same scopes and the same organization-wide rule apply. Tools that publish, send, switch on emails to real people or share data with a sponsor never run straight from an assistant: Sessionboard answers `needs_approval` with a link, and a person approves the request in Sessionboard Marketing (**Waiting for your OK**). The assistant is told to pass the link on and not to call again. Drafts are made at once, and nothing in a draft reaches anyone until a person publishes or sends it.
@@ -53,6 +74,9 @@ The same scopes and the same organization-wide rule apply. Tools that publish, s
 | `get_newsletter` | read | The newsletter: name, from name, reply-to, list, cadence (after each event, monthly or manual), sending state and its issues with their status |
 | `draft_newsletter_issue` | write | A draft issue written from an event's recaps, clips, quotes and podcast episodes, or an empty one. Sends nothing |
 | `get_newsletter_issue` | read | One issue: subject, preheader, blocks, status, scheduled time and how many people it would reach |
+| `update_newsletter_issue` | write · destructive | Edit a draft or scheduled issue's subject, preview text, layout or blocks. Sends nothing. The issue as it was is kept, and the answer says what changed and how to put it back |
+| `list_newsletter_issue_versions` | read | The kept versions of an issue, newest first, each with what the next edit changed and who made it |
+| `restore_newsletter_issue_version` | write · destructive | Put a kept version back. The issue as it is now is kept first, so this can be undone too |
 | `schedule_newsletter_issue` | write · destructive | Send an issue to everyone subscribed to the list, now or at a set time. Waits for a person's OK |
 | `get_newsletter_results` | read | A sent issue's results: delivered, opens, clicks by link, unsubscribes, bounces |
 | `list_journeys` | read | The four journeys (no-show → recording, attendee → recap and next event, new subscriber → welcome, invited but not registered → reminder): on or off, delay, the email and how many people each would reach |

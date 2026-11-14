@@ -5108,7 +5108,7 @@
         },
         "responses": {
           "200": {
-            "description": "Saved. The new `revision`, what changed, and the Site's pages and diff.",
+            "description": "Saved. The new `revision`, what changed, and the Site's pages and diff. `what_changed` describes this edit (before → after, in plain words); `kept` says how to undo it. When an API or assistant edit replaces unpublished work by someone else (or its own from more than 10 minutes ago), that draft is first kept as a version with `source: checkpoint`, restorable with the versions restore route.",
             "content": {
               "application/json": {
                 "schema": {
@@ -5151,6 +5151,16 @@
                         },
                         "diff": {
                           "$ref": "#/components/schemas/SiteDiff"
+                        },
+                        "what_changed": {
+                          "$ref": "#/components/schemas/WhatChanged"
+                        },
+                        "kept": {
+                          "$ref": "#/components/schemas/EditKept"
+                        },
+                        "reaches_people": {
+                          "type": "string",
+                          "description": "Nothing in a draft is live; publishing needs a person."
                         }
                       }
                     }
@@ -9338,6 +9348,233 @@
           },
           "note": {
             "type": "string"
+          }
+        }
+      },
+      "WhatChanged": {
+        "type": "object",
+        "description": "What one edit changed, in plain words. `summary` is one sentence per change (\"Changed Hero heading on the home page: “Old” → “New”\"); the lists carry the same changes as data. Text is plain (HTML removed) and clipped to 200 characters; a block lists at most 8 changed fields and says how many more there were.",
+        "properties": {
+          "has_changes": {
+            "type": "boolean"
+          },
+          "summary": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "added": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "where": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "example": "on the home page"
+                },
+                "what": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "example": "FAQ"
+                },
+                "block_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "kind": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "text": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            }
+          },
+          "changed": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "where": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "what": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "block_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "kind": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "fields": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "field": {
+                        "type": "string"
+                      },
+                      "label": {
+                        "type": "string"
+                      },
+                      "before": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "after": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    }
+                  }
+                },
+                "more_fields": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "removed": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "where": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "what": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "block_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "kind": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "text": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            }
+          },
+          "moved": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "where": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "what": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "block_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "from": {
+                  "type": "integer"
+                },
+                "to": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        }
+      },
+      "EditKept": {
+        "type": "object",
+        "description": "How to get back to what was there before this edit.",
+        "properties": {
+          "kept": {
+            "type": "boolean"
+          },
+          "version_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "version": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "how": {
+            "type": "string",
+            "description": "One sentence saying where the earlier version is and how to restore it."
+          },
+          "restore": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "The call that undoes this edit.",
+            "properties": {
+              "tool": {
+                "type": "string",
+                "example": "restore_site_version"
+              },
+              "args": {
+                "type": "object"
+              }
+            }
           }
         }
       },
