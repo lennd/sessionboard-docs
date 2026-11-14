@@ -670,6 +670,9 @@ li[data-staff-only] li[data-staff-only] > a > span:first-child::after {
    (?via=marketing from the product's Help button). Which bar shows, and which
    sidebar entries hide, is the CSS from src/lib/help-scope.mjs scopeCss. */
 .sb-scope-bar {
+  /* Hidden unless the scope CSS (help-scope.mjs scopeCss) shows the reader's own bar.
+     Pages that skip that CSS (Skills, suite pages) must not show every bar at once. */
+  display: none;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
@@ -722,33 +725,117 @@ html[data-sb-scope] #starlight__search .pagefind-ui__result[hidden] {
   color: var(--sl-color-white);
   text-decoration: none;
 }
+/* "Help for ▾": one dropdown instead of a row of chips. The button names the
+   product being read; the list gives each product the reader holds with a
+   one-line summary (suites.json `summary`). */
 .sb-suite-switch {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.25rem 0.5rem;
-  margin-bottom: 0.75rem;
-  font-size: var(--sl-text-xs);
+  position: relative;
+  margin-bottom: 1rem;
 }
 .sb-suite-switch[hidden],
-.sb-suite-switch a[hidden] {
+.sb-suite-switch li[hidden],
+html[data-sb-switch] .sb-suite-title {
   display: none;
 }
-.sb-suite-switch-label {
+.sb-suite-switch > summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.6rem;
+  background: var(--sl-color-bg);
+  color: var(--sl-color-white);
+}
+.sb-suite-switch > summary::-webkit-details-marker {
+  display: none;
+}
+.sb-suite-switch > summary:hover,
+.sb-suite-switch[open] > summary {
+  border-color: var(--sl-color-gray-4);
+  background: var(--sl-color-gray-6);
+}
+.sb-suite-switch > summary:focus-visible,
+.sb-suite-switch a:focus-visible {
+  outline: 2px solid var(--sl-color-text-accent);
+  outline-offset: 2px;
+}
+.sb-suite-switch-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+.sb-suite-switch-for {
+  font-size: var(--sl-text-xs);
   color: var(--sl-color-gray-3);
+}
+.sb-suite-switch-name {
+  font-size: var(--sl-text-sm);
   font-weight: 600;
 }
-.sb-suite-switch a {
-  padding: 0.15rem 0.55rem;
-  border: 1px solid var(--sl-color-hairline);
-  border-radius: 999px;
-  color: var(--sl-color-gray-2);
+.sb-suite-switch-chevron {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  margin-inline-start: auto;
+  color: var(--sl-color-gray-3);
+  transition: transform 0.15s ease;
+}
+.sb-suite-switch[open] .sb-suite-switch-chevron {
+  transform: rotate(180deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .sb-suite-switch-chevron {
+    transition: none;
+  }
+}
+.sb-suite-switch ul {
+  position: absolute;
+  z-index: 30;
+  inset-inline: 0;
+  top: calc(100% + 0.35rem);
+  margin: 0;
+  padding: 0.3rem;
+  list-style: none;
+  background: var(--sl-color-bg);
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.6rem;
+  box-shadow: var(--sl-shadow-md);
+}
+.sb-suite-switch li + li {
+  margin-top: 0.1rem;
+}
+.sb-suite-switch li a {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 0.45rem;
+  color: var(--sl-color-white);
   text-decoration: none;
 }
-.sb-suite-switch a[aria-current='page'] {
-  border-color: var(--sl-color-accent);
-  color: var(--sl-color-white);
+.sb-suite-switch li a:hover {
+  background: var(--sl-color-gray-6);
+}
+.sb-suite-switch li a[aria-current='page'] {
   background: var(--sl-color-accent-low);
+}
+.sb-suite-switch li a[aria-current='page']::after {
+  content: '';
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  margin-inline-start: auto;
+  background-color: var(--sl-color-text-accent);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='m3.5 8.5 3 3 6-7' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center / contain;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='m3.5 8.5 3 3 6-7' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center / contain;
+}
+.sb-suite-switch-summary {
+  font-size: var(--sl-text-xs);
+  color: var(--sl-color-gray-2);
 }
 html[data-sb-suite] #starlight__search .pagefind-ui__result[hidden],
 html[data-sb-suite]:not([data-sb-suite='platform']) #starlight__search .pagefind-ui__message {
@@ -786,13 +873,16 @@ html[data-sb-suite]:not([data-sb-suite='platform']) #starlight__search .pagefind
 .sb-product-badge[data-product='marketing'] { color: #6d4bd8; background: #ece7fb; }
 .sb-product-badge[data-product='learning'] { color: #b45309; background: #fbefdf; }
 .sb-product-badge[data-product='awards'] { color: #be2459; background: #fbe4ec; }
+.sb-product-badge[data-product='sessions'] { color: #047857; background: #dcf3ea; }
+.sb-product-badge[data-product='crm'] { color: #0e7490; background: #dcf1f6; }
 :root[data-theme='dark'] .sb-product-badge[data-product='platform'] { color: #a9c4f5; background: rgb(30 98 216 / 0.25); }
 :root[data-theme='dark'] .sb-product-badge[data-product='marketing'] { color: #c9bcf7; background: rgb(109 75 216 / 0.25); }
 :root[data-theme='dark'] .sb-product-badge[data-product='learning'] { color: #f5c98f; background: rgb(180 83 9 / 0.25); }
 :root[data-theme='dark'] .sb-product-badge[data-product='awards'] { color: #f3a6c0; background: rgb(190 36 89 / 0.25); }
+:root[data-theme='dark'] .sb-product-badge[data-product='sessions'] { color: #6ee7b7; background: rgb(4 120 87 / 0.25); }
+:root[data-theme='dark'] .sb-product-badge[data-product='crm'] { color: #8fdcec; background: rgb(14 116 144 / 0.25); }
 .sb-suite-title,
-.sb-scope-bar-title,
-.sb-suite-switch a {
+.sb-scope-bar-title {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;

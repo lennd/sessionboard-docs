@@ -11,8 +11,8 @@
  * (/sessionboard-marketing/…) renders that suite's own sidebar
  * (src/data/suites/<key>.sidebar.json) and title instead of Platform's. When
  * any self-serve suite is built, every page also carries the suite switcher,
- * hidden until src/scripts/account.mjs finds the reader holds two or more
- * suites. With no self-serve suite built, the output is what it always was.
+ * a "Help for ▾" dropdown hidden until src/scripts/account.mjs finds the reader
+ * holds two or more suites (it then stands in for the suite title). With no self-serve suite built, the output is what it always was.
  */
 import MobileMenuFooter from 'virtual:starlight/components/MobileMenuFooter';
 import SidebarPersister from '@astrojs/starlight/components/SidebarPersister.astro';
@@ -22,9 +22,12 @@ import ProductBadge from './ProductBadge.astro';
 import helpScopes from '../data/help-scopes.json';
 import suitesConfig from '../data/suites.json';
 import { getCollection } from 'astro:content';
+import { isSkillsPath } from '../lib/skills.mjs';
+import { apiProductAt } from '../lib/api-docs/data';
 import { PLATFORM, anySelfServeBuilt, deployedSuites, resolveSidebar, suiteForId } from '../lib/suites.mjs';
 
 const { sidebar, id } = Astro.locals.starlightRoute;
+const isApiPath = (p: string) => Boolean(apiProductAt(p));
 // Every deployed suite; src/scripts/account.mjs shows a reader only the ones they may read
 // (staff: all of them, unreleased suites included).
 const built = deployedSuites(suitesConfig, process.env);
@@ -45,23 +48,41 @@ if (suiteConf && 'sidebar' in suiteConf && !apiPage) {
 	const entries = (await getCollection('docs')).filter((e) => suiteForId(e.id, suitesConfig) === suite);
 	suiteSidebar = resolveSidebar(items, { entries, currentPath: Astro.url.pathname });
 }
-const switcher = suitesOn ? Object.keys(suitesConfig.suites).filter((k) => built.has(k)) : [];
+// The Help Center's product switcher. Skills (cross-product, its own sidebar) and API Docs
+// (the header's "API for" switcher) do not carry it, so each tab has one switcher at most.
+const helpTab = !apiPage && !isApiPath(Astro.url.pathname) && !isSkillsPath(Astro.url.pathname);
+const switcher = suitesOn && helpTab ? Object.keys(suitesConfig.suites).filter((k) => built.has(k)) : [];
+const currentConf = suitesConfig.suites[suite as keyof typeof suitesConfig.suites];
 ---
 
 {
 	switcher.length > 0 && (
-		<nav class="sb-suite-switch" aria-label="Help for" data-current={suite} hidden>
-			<span class="sb-suite-switch-label">Help for</span>
-			{switcher.map((key) => {
-				const conf = suitesConfig.suites[key as keyof typeof suitesConfig.suites];
-				return (
-					<a href={key === PLATFORM ? '/?via=platform' : `${conf.home}?via=${key}`} data-suite={key} aria-current={key === suite ? 'page' : undefined} hidden>
-						<ProductBadge product={key as 'platform'} />
-						{conf.label}
-					</a>
-				);
-			})}
-		</nav>
+		<details class="sb-suite-switch" data-current={suite} hidden>
+			<summary aria-label={`Help for ${currentConf.label}. Switch product`}>
+				<ProductBadge product={suite as 'platform'} size="md" />
+				<span class="sb-suite-switch-text">
+					<span class="sb-suite-switch-for">Help for</span>
+					<span class="sb-suite-switch-name">{currentConf.label}</span>
+				</span>
+				<svg class="sb-suite-switch-chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="m4 6 4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg>
+			</summary>
+			<ul>
+				{switcher.map((key) => {
+					const conf = suitesConfig.suites[key as keyof typeof suitesConfig.suites];
+					return (
+						<li data-suite={key} hidden>
+							<a href={key === PLATFORM ? '/?via=platform' : `${conf.home}?via=${key}`} aria-current={key === suite ? 'page' : undefined}>
+								<ProductBadge product={key as 'platform'} size="md" />
+								<span class="sb-suite-switch-text">
+									<span class="sb-suite-switch-name">{conf.label}</span>
+									<span class="sb-suite-switch-summary">{conf.summary}</span>
+								</span>
+							</a>
+						</li>
+					);
+				})}
+			</ul>
+		</details>
 	)
 }
 
@@ -75,7 +96,7 @@ const switcher = suitesOn ? Object.keys(suitesConfig.suites).filter((k) => built
 }
 
 {
-	!suiteConf && Object.entries(helpScopes.scopes).map(([key, scope]) => (
+	!suiteConf && helpTab && Object.entries(helpScopes.scopes).map(([key, scope]) => (
 		<div class="sb-scope-bar" data-for={key}>
 			<a class="sb-scope-bar-title" href={scope.home}>
 				<ProductBadge product={key as 'marketing'} />

@@ -153,6 +153,8 @@ None is written yet.
 
 ### Removed: Release notes
 
+> **Superseded.** Release notes came back in-site at `/help/release-notes` (2026-09-12), and Canny was retired in 2026-11; `feedback.sessionboard.com` now 301s to the release notes. The paragraphs below are kept as the audit's history.
+
 Sixteen monthly release-notes pages, newest dated June 2025, were deleted along
 with their sidebar section. Release notes are published on Canny
 (`feedback.sessionboard.com/changelog`), which the home page already linked.
