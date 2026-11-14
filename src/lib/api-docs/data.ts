@@ -6,6 +6,7 @@
  */
 import registry from '../../data/api/products.json';
 import platformSpec from '../../data/api/openapi.json';
+import publicPlatformSpec from '../../data/api/openapi.public.json';
 import platformNav from '../../data/api/nav.json';
 import platformSource from '../../data/api/source.json';
 import { PLATFORM, apiProductForPath, deployedApiProducts, productKeys } from './products.mjs';
@@ -78,7 +79,14 @@ export function layoutFor(P: ApiProduct) {
 
 /** The domain landing pages a product's reference has (<base>/reference/<slug>). */
 export function domainsFor(P: ApiProduct) {
-  return referenceDomains({ layout: layoutFor(P), nav: P.nav, spec: P.spec, base: P.base, registry, source: P.source });
+  // Domain landing pages are public and static: Platform's render from the public spec, which
+  // leaves out the signed-in-only operations (site.json signedInOnly.apiTags), and a resource
+  // left with nothing to list is dropped.
+  const spec = P.key === PLATFORM ? (publicPlatformSpec as Json) : P.spec;
+  return referenceDomains({ layout: layoutFor(P), nav: P.nav, spec, base: P.base, registry, source: P.source }).map((d) => ({
+    ...d,
+    resources: d.resources.filter((r: { ops: unknown[] }) => r.ops.length > 0),
+  }));
 }
 
 /**

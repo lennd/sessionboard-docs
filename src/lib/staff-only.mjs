@@ -25,6 +25,8 @@
  * Slugs here are route slugs without a leading slash (`registration/overview`).
  */
 import suitesConfig from '../data/suites.json' with { type: 'json' };
+// Screenshots and media used only by restricted pages (scripts/build-restricted-assets.mjs).
+import restrictedAssets from '../data/restricted-assets.json' with { type: 'json' };
 
 const trimSlashes = (value) => String(value ?? '').replace(/^\/+|\/+$/g, '');
 
@@ -113,6 +115,12 @@ function pathMatches(pathname, site, tier) {
   if (og) return slugMatches(og[1].replace(/--/g, '/'), rule);
   const shot = path.match(/^\/images\/suites\/([^/]+)\//);
   if (shot) return tier !== 'signedIn' && staffOnlySuitePrefixes().some((s) => s.key === shot[1]);
+  // A restricted page's own screenshots and media take its tier.
+  const assetTier = restrictedAssets[path];
+  if (assetTier) return tier === 'all' || tier === assetTier;
+  // A skill's download takes its article's tier (skills/<id>).
+  const skillZip = path.match(/^\/skills\/downloads\/([a-z0-9-]+)\.zip$/);
+  if (skillZip) return slugMatches(`skills/${skillZip[1]}`, rule);
   return slugMatches(path, rule);
 }
 

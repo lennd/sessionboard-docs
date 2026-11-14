@@ -11,7 +11,7 @@ Since 2026-11-14 the Help Center, API docs and skills are open to everyone and e
 - `staffOnly`: super users only. These are unreleased products (Registration, Expo, Onsite, Attend) and Enablement.
 - `signedInOnly`: any signed-in user. This covers anything about Sessionboard's own registration, ticketing, check-in, badges, lead scanning, Expo or booth sales, and the Attend app.
 
-**Never write any of that onto a public page. Ask Josh before writing it at all**, and before moving a page out of either list. `npm run check:restricted` (in Docs CI) fails a public page that mentions these subjects. The public `/api/openapi.json` and `/api/llms.txt` leave out the `signedInOnly.apiTags` operations.
+**Never write any of that onto a public page. Ask Josh before writing it at all**, and before moving a page out of either list. `npm run check:restricted` (in Docs CI) fails a public page that mentions these subjects. The public `/api/openapi.json` and `/api/llms.txt` leave out the `signedInOnly.apiTags` operations. A restricted page's screenshots inherit its tier through `src/data/restricted-assets.json`: after adding or moving an image on a restricted page, run `npm run assets:restricted` and commit the result (CI checks it). Skill downloads (`skills.json`, bundles, per-skill ZIPs) are served filtered to the reader's tier (`scripts/build-skill-downloads.mjs`).
 
 ## Product facts come from web-api, not from the UI or an existing article
 

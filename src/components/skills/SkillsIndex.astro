@@ -13,7 +13,14 @@ import ProductBadge from '../ProductBadge.astro';
 // left in the page, so a customer never sees a number that includes them.
 const staff = (id: string) => isStaffOnlyHref(`${SKILLS_BASE}/${id}`, site);
 const staffTier = (id: string) => isStaffOnlyHref(`${SKILLS_BASE}/${id}`, site, 'staff');
-const groups = skillsByProduct().map((g) => ({ ...g, staffOnly: g.skills.every((s) => staff(s.id)) }));
+// A section is hidden only from readers who cannot open any of its skills: from non-staff when
+// every skill is staff-only, from signed-out readers when every skill is restricted but at least
+// one is open to signed-in readers.
+const groups = skillsByProduct().map((g) => {
+  const restricted = g.skills.every((s) => staff(s.id));
+  const allStaffTier = g.skills.every((s) => staffTier(s.id));
+  return { ...g, staffOnly: restricted && allStaffTier, signedInOnly: restricted && !allStaffTier };
+});
 const total = groups.reduce((n, g) => n + g.skills.filter((s) => !staff(s.id)).length, 0);
 ---
 
@@ -25,7 +32,7 @@ const total = groups.reduce((n, g) => n + g.skills.filter((s) => !staff(s.id)).l
 	<p class="sb-skills-count" role="status" aria-live="polite">{total} skills</p>
 	{
 		groups.map((g) => (
-			<section class="sb-skills-group" data-group data-skills-for={productsForGroup(g.key).join(' ')} data-staff-only={g.staffOnly ? '' : undefined}>
+			<section class="sb-skills-group" data-group data-skills-for={productsForGroup(g.key).join(' ')} data-staff-only={g.staffOnly ? '' : undefined} data-signed-in-only={g.signedInOnly ? '' : undefined}>
 				<h2 id={`skills-${g.key}`}>
 					<ProductBadge product={g.badge as 'platform'} size="md" />
 					{g.label}
