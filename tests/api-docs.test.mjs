@@ -188,3 +188,21 @@ test('the layout sidebar marks the current page and links every recipe', () => {
   }
   assert.deepEqual(sidebar.map((g) => g.label), ['Get started', 'Recipes', 'Guides', 'Reference']);
 });
+
+test('no code sample or Try-it body starts a paid plan: POST /v1/billing/plan samples never send confirm: true', () => {
+  let seen = 0;
+  for (const key of ['marketing', 'learning', 'awards', 'crm']) {
+    const file = `src/data/api/products/${key}/openapi.json`;
+    if (!existsSync(new URL(`../${file}`, import.meta.url))) continue;
+    const spec = json(file);
+    const item = spec.paths['/v1/billing/plan'];
+    if (!item) continue;
+    const o = listOperations(spec, '').find((x) => x.path === '/v1/billing/plan' && x.method === 'post');
+    const r = sampleRequest(spec, { ...o, item, op: item.post });
+    seen += 1;
+    assert.ok(r.body && r.body.plan, `${key}: the sample names a plan`);
+    assert.notEqual(r.body.confirm, true, `${key}: the sample must be a quote, never confirm: true`);
+    for (const s of codeSamples(r)) assert.ok(!/"confirm"\s*:\s*true|confirm=True|confirm: true/.test(JSON.stringify(s)), `${key}: a code sample carries confirm: true`);
+  }
+  assert.ok(seen >= 1, 'at least one suite documents POST /v1/billing/plan');
+});
