@@ -42,6 +42,10 @@
       "description": "The self-serve Sessionboard Learning workspace: Home, courses, learners, putting a meeting on demand, credits and results, and publishing (which waits for a person's OK, `202 needs_approval`). Organization-level: paths start at `/v1/organization/{orgId}/learning/workspace`, and the same operations are served under `/v1/learning/workspace` with the organization taken from the token. Requires the preview scopes `read:learning` / `write:learning`, named explicitly. A key restricted to particular events cannot use it.\n"
     },
     {
+      "name": "Learning Sites",
+      "description": "The organization's public Learning Sites: what each shows, who may enter, and its hero. Creating or changing one waits for a person's OK (`202 needs_approval`). Same scopes and paths as Learning (`…/learning/sites`).\n"
+    },
+    {
       "name": "Learning meetings",
       "description": "Bring in a meeting from a registration platform (Cvent, Swoogo, Bizzabo and others) and turn its sessions into draft courses: the platforms and what each brings, the platform's events, the import and its progress. Nothing is written back to the platform, and nothing is published. Same scopes and paths as the Learning workspace (`…/learning/workspace/meetings`).\n"
     },
@@ -2354,6 +2358,42 @@
             "description": "The draft changed since `baseUpdatedAt` (`code: COURSE_DRAFT_STALE`, with the current `updated_at`)."
           }
         }
+      },
+      "delete": {
+        "operationId": "delete-course-draft",
+        "summary": "Delete a course draft",
+        "description": "Deletes a course draft that has not been published. Published courses are not touched. Requires `write:learning`. Also at `DELETE /v1/learning/drafts/{draftId}`.",
+        "tags": [
+          "Learning"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/CourseDraftId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
       }
     },
     "/v1/organization/{orgId}/learning/drafts/{draftId}/apply": {
@@ -2514,6 +2554,2546 @@
           },
           "403": {
             "$ref": "#/components/responses/LearningForbidden"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/assignments": {
+      "get": {
+        "operationId": "list-learning-assignments",
+        "summary": "List assignments",
+        "description": "Every assignment in the organization with what was assigned, to whom, the due date, how many have finished and how many are overdue. Reads only. Requires `read:learning`. Also at `GET /v1/learning/assignments`.",
+        "tags": [
+          "Learning"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/assignments/{assignmentId}/nudge": {
+      "post": {
+        "operationId": "nudge-learning-assignment",
+        "summary": "Remind people about an assignment",
+        "description": "Sends a reminder to everyone who has not finished the assignment. Answers `202` with `status: needs_approval` and a link when an AI assistant (an MCP connection) calls it; nothing happens until a person approves it in Sessionboard Learning, and it then runs as them. Do not call again while the request is pending. Requires `write:learning`. Also at `POST /v1/learning/assignments/{assignmentId}/nudge`.",
+        "tags": [
+          "Learning"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "name": "assignmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The assignment id (from List assignments)."
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "prompt": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "description": "What the person asked for, shown on the approval request."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "202": {
+            "$ref": "#/components/responses/LearningNeedsApproval"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "423": {
+            "$ref": "#/components/responses/LearningAssistantsPaused"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/assignments/{assignmentId}": {
+      "delete": {
+        "operationId": "delete-learning-assignment",
+        "summary": "Remove an assignment",
+        "description": "Removes the assignment. Progress people already made is kept. Requires `write:learning`. Also at `DELETE /v1/learning/assignments/{assignmentId}`.",
+        "tags": [
+          "Learning"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "name": "assignmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The assignment id (from List assignments)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/people": {
+      "get": {
+        "operationId": "list-learning-people",
+        "summary": "Learner progress (learners by courses)",
+        "description": "Every learner with their progress in each course: not started, in progress or completed, and when. Reads only. Requires `read:learning`. Also at `GET /v1/learning/people`.",
+        "tags": [
+          "Learning"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/team": {
+      "get": {
+        "operationId": "get-learning-team",
+        "summary": "The Learning team",
+        "description": "The teammates who can manage Learning and who can be assigned training. Reads only. Requires `read:learning`. Also at `GET /v1/learning/team`.",
+        "tags": [
+          "Learning"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/quiz-reviews": {
+      "get": {
+        "operationId": "list-learning-quiz-reviews",
+        "summary": "List quiz attempts to review",
+        "description": "Quiz attempts with written answers that wait for a person to score them. Reads only. Requires `read:learning`. Also at `GET /v1/learning/quiz-reviews`.",
+        "tags": [
+          "Learning"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/quiz-reviews/{attemptId}": {
+      "post": {
+        "operationId": "grade-learning-quiz-attempt",
+        "summary": "Score a quiz attempt",
+        "description": "Gives points for each written answer and an optional note to the learner. The learner is told their result. Answers `202` with `status: needs_approval` and a link when an AI assistant (an MCP connection) calls it; nothing happens until a person approves it in Sessionboard Learning, and it then runs as them. Do not call again while the request is pending. Requires `write:learning`. Also at `POST /v1/learning/quiz-reviews/{attemptId}`.",
+        "tags": [
+          "Learning"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "name": "attemptId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The quiz attempt id (from List quiz attempts to review)."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "points": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "description": "Points by question id."
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 2000
+                  }
+                },
+                "required": [
+                  "points"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "202": {
+            "$ref": "#/components/responses/LearningNeedsApproval"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "423": {
+            "$ref": "#/components/responses/LearningAssistantsPaused"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/submissions": {
+      "get": {
+        "operationId": "list-learning-submissions",
+        "summary": "List submissions to review",
+        "description": "Work learners handed in (uploads and written assignments) that waits for approval. Reads only. Requires `read:learning`. Also at `GET /v1/learning/submissions`.",
+        "tags": [
+          "Learning"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "name": "mine",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Only submissions assigned to the token's user."
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Page, from 1."
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "description": "Rows per page."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/submissions/{progressId}": {
+      "post": {
+        "operationId": "decide-learning-submission",
+        "summary": "Approve or reject a submission",
+        "description": "Approves or rejects a learner's submitted work, with an optional comment. The learner is told. Answers `202` with `status: needs_approval` and a link when an AI assistant (an MCP connection) calls it; nothing happens until a person approves it in Sessionboard Learning, and it then runs as them. Do not call again while the request is pending. Requires `write:learning`. Also at `POST /v1/learning/submissions/{progressId}`.",
+        "tags": [
+          "Learning"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "name": "progressId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The progress id (from List submissions to review)."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "decision": {
+                    "type": "string",
+                    "enum": [
+                      "approve",
+                      "reject"
+                    ]
+                  },
+                  "comment": {
+                    "type": "string",
+                    "maxLength": 2000
+                  }
+                },
+                "required": [
+                  "decision"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "202": {
+            "$ref": "#/components/responses/LearningNeedsApproval"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "423": {
+            "$ref": "#/components/responses/LearningAssistantsPaused"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/certifications/create": {
+      "post": {
+        "operationId": "learning-create-certification",
+        "summary": "Create a certification",
+        "description": "Makes a certification from lessons and courses. A draft is made right away. Publishing it (`status: published`) reaches learners, so for an AI assistant that call answers `202` with `status: needs_approval` and a link, and nothing is published until a person approves it in Sessionboard Learning. Requires `write:learning`. A key restricted to particular events is refused with `403 ORG_WIDE_TOKEN_REQUIRED`. Also at `POST /v1/learning/certifications/create`.",
+        "tags": [
+          "Learning certifications"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "summary": {
+                    "type": "string"
+                  },
+                  "badgeColor": {
+                    "type": "string",
+                    "pattern": "^#[0-9A-Fa-f]{6}$",
+                    "description": "`#RRGGBB`."
+                  },
+                  "requirements": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "lesson",
+                            "series"
+                          ]
+                        },
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "id"
+                      ]
+                    },
+                    "description": "The lessons and courses (`series`) it requires."
+                  },
+                  "validityMonths": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 1,
+                    "maximum": 120,
+                    "description": "Months until the award expires; `null` for never."
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "draft",
+                      "published",
+                      "retired"
+                    ]
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created as a draft; `payload.certification`."
+          },
+          "202": {
+            "$ref": "#/components/responses/LearningNeedsApproval"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "423": {
+            "$ref": "#/components/responses/LearningAssistantsPaused"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/certifications/{certificationId}": {
+      "get": {
+        "operationId": "learning-get-certification",
+        "summary": "Get a certification",
+        "description": "One certification with its requirements and who holds it. Reads only. Requires `read:learning`. A key restricted to particular events is refused with `403 ORG_WIDE_TOKEN_REQUIRED`. Also at `GET /v1/learning/certifications/{certificationId}`.",
+        "tags": [
+          "Learning certifications"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "name": "certificationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The certification id (from List certifications)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      },
+      "put": {
+        "operationId": "learning-update-certification",
+        "summary": "Update a certification",
+        "description": "Changes the fields you send. Setting `status` to `published` or `retired` reaches learners, so it waits for a person. Answers `202` with `status: needs_approval` and a link when an AI assistant (an MCP connection) calls it; nothing happens until a person approves it in Sessionboard Learning, and it then runs as them. Do not call again while the request is pending. Requires `write:learning`. A key restricted to particular events is refused with `403 ORG_WIDE_TOKEN_REQUIRED`. Also at `PUT /v1/learning/certifications/{certificationId}`.",
+        "tags": [
+          "Learning certifications"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "name": "certificationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The certification id (from List certifications)."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "summary": {
+                    "type": "string"
+                  },
+                  "badgeColor": {
+                    "type": "string",
+                    "pattern": "^#[0-9A-Fa-f]{6}$",
+                    "description": "`#RRGGBB`."
+                  },
+                  "requirements": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "lesson",
+                            "series"
+                          ]
+                        },
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "id"
+                      ]
+                    },
+                    "description": "The lessons and courses (`series`) it requires."
+                  },
+                  "validityMonths": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 1,
+                    "maximum": 120,
+                    "description": "Months until the award expires; `null` for never."
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "draft",
+                      "published",
+                      "retired"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "202": {
+            "$ref": "#/components/responses/LearningNeedsApproval"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "423": {
+            "$ref": "#/components/responses/LearningAssistantsPaused"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/sites": {
+      "get": {
+        "operationId": "learning-list-sites",
+        "summary": "List Learning Sites",
+        "description": "The organization's public Learning Sites with address, access and what each shows. Reads only. Requires `read:learning`. A key restricted to particular events is refused with `403 ORG_WIDE_TOKEN_REQUIRED`. Also at `GET /v1/learning/sites`.",
+        "tags": [
+          "Learning Sites"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/sites/create": {
+      "post": {
+        "operationId": "learning-create-site",
+        "summary": "Create a Learning Site",
+        "description": "Makes a Learning Site, which is public to its audience. Answers `202` with `status: needs_approval` and a link when an AI assistant (an MCP connection) calls it; nothing happens until a person approves it in Sessionboard Learning, and it then runs as them. Do not call again while the request is pending. Requires `write:learning`. A key restricted to particular events is refused with `403 ORG_WIDE_TOKEN_REQUIRED`. Also at `POST /v1/learning/sites/create`.",
+        "tags": [
+          "Learning Sites"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "slug": {
+                    "type": "string",
+                    "description": "The address of the site."
+                  },
+                  "showcase": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "certification",
+                            "series",
+                            "lesson"
+                          ]
+                        },
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "tags": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "id"
+                      ]
+                    },
+                    "description": "What the site shows."
+                  },
+                  "accessMode": {
+                    "type": "string",
+                    "enum": [
+                      "open",
+                      "members",
+                      "sso"
+                    ]
+                  },
+                  "ssoLoginEnabled": {
+                    "type": "boolean"
+                  },
+                  "selfEnroll": {
+                    "type": "boolean"
+                  },
+                  "hero": {
+                    "type": "object",
+                    "properties": {
+                      "title": {
+                        "type": "string"
+                      },
+                      "intro": {
+                        "type": "string"
+                      },
+                      "imageUrl": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "202": {
+            "$ref": "#/components/responses/LearningNeedsApproval"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "423": {
+            "$ref": "#/components/responses/LearningAssistantsPaused"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/sites/{siteId}": {
+      "get": {
+        "operationId": "learning-get-site",
+        "summary": "Get a Learning Site",
+        "description": "One Learning Site with its showcase, access and hero. Reads only. Requires `read:learning`. A key restricted to particular events is refused with `403 ORG_WIDE_TOKEN_REQUIRED`. Also at `GET /v1/learning/sites/{siteId}`.",
+        "tags": [
+          "Learning Sites"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The Learning Site id (from List Learning Sites)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      },
+      "put": {
+        "operationId": "learning-update-site",
+        "summary": "Update a Learning Site",
+        "description": "Changes the fields you send. Answers `202` with `status: needs_approval` and a link when an AI assistant (an MCP connection) calls it; nothing happens until a person approves it in Sessionboard Learning, and it then runs as them. Do not call again while the request is pending. Requires `write:learning`. A key restricted to particular events is refused with `403 ORG_WIDE_TOKEN_REQUIRED`. Also at `PUT /v1/learning/sites/{siteId}`.",
+        "tags": [
+          "Learning Sites"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The Learning Site id (from List Learning Sites)."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "slug": {
+                    "type": "string",
+                    "description": "The address of the site."
+                  },
+                  "showcase": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "certification",
+                            "series",
+                            "lesson"
+                          ]
+                        },
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "tags": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "id"
+                      ]
+                    },
+                    "description": "What the site shows."
+                  },
+                  "accessMode": {
+                    "type": "string",
+                    "enum": [
+                      "open",
+                      "members",
+                      "sso"
+                    ]
+                  },
+                  "ssoLoginEnabled": {
+                    "type": "boolean"
+                  },
+                  "selfEnroll": {
+                    "type": "boolean"
+                  },
+                  "hero": {
+                    "type": "object",
+                    "properties": {
+                      "title": {
+                        "type": "string"
+                      },
+                      "intro": {
+                        "type": "string"
+                      },
+                      "imageUrl": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "202": {
+            "$ref": "#/components/responses/LearningNeedsApproval"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "423": {
+            "$ref": "#/components/responses/LearningAssistantsPaused"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/profile": {
+      "get": {
+        "operationId": "learning-get-profile",
+        "summary": "Get the Learning profile",
+        "description": "The organization's Learning profile (name, audience, how it trains). Reads only. Requires `read:learning`. A key restricted to particular events is refused with `403 ORG_WIDE_TOKEN_REQUIRED`. Also at `GET /v1/learning/workspace/profile`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      },
+      "put": {
+        "operationId": "learning-update-profile",
+        "summary": "Update the Learning profile",
+        "description": "Changes the profile fields you send. Requires `write:learning`. A key restricted to particular events is refused with `403 ORG_WIDE_TOKEN_REQUIRED`. Also at `PUT /v1/learning/workspace/profile`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true,
+                "description": "The profile fields to change (see Get the Learning profile)."
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/add": {
+      "post": {
+        "operationId": "learning-add-to-org",
+        "summary": "Add Learning to the organization",
+        "description": "Turns Learning on for an organization that does not have it yet. Requires `write:learning`. A key restricted to particular events is refused with `403 ORG_WIDE_TOKEN_REQUIRED`. Also at `POST /v1/learning/workspace/add`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/learner-settings": {
+      "put": {
+        "operationId": "learning-update-learner-settings",
+        "summary": "Update learner settings",
+        "description": "Turns learner notes and course feedback on or off. Requires `write:learning`. A key restricted to particular events is refused with `403 ORG_WIDE_TOKEN_REQUIRED`. Also at `PUT /v1/learning/workspace/learner-settings`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "notes": {
+                    "type": "boolean"
+                  },
+                  "feedback": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/plan-features": {
+      "get": {
+        "operationId": "learning-get-plan-features",
+        "summary": "What the plan includes",
+        "description": "The features the organization's Learning plan includes. Reads only. Requires `read:learning`. A key restricted to particular events is refused with `403 ORG_WIDE_TOKEN_REQUIRED`. Also at `GET /v1/learning/workspace/plan-features`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/courses/{lessonId}/status": {
+      "put": {
+        "operationId": "learning-set-course-status",
+        "summary": "Archive or restore a course",
+        "description": "Sets a course to `draft` or `archived`. Requires `write:learning`. A key restricted to particular events is refused with `403 ORG_WIDE_TOKEN_REQUIRED`. Also at `PUT /v1/learning/workspace/courses/{lessonId}/status`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/LearningLessonId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "draft",
+                      "archived"
+                    ]
+                  }
+                },
+                "required": [
+                  "status"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/courses/{lessonId}/feedback-settings": {
+      "put": {
+        "operationId": "learning-set-course-feedback-settings",
+        "summary": "Course feedback settings",
+        "description": "Whether feedback on the course is anonymous. Requires `write:learning`. A key restricted to particular events is refused with `403 ORG_WIDE_TOKEN_REQUIRED`. Also at `PUT /v1/learning/workspace/courses/{lessonId}/feedback-settings`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/LearningLessonId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "anonymous": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "anonymous"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/courses/{lessonId}/draft": {
+      "delete": {
+        "operationId": "learning-discard-course-draft",
+        "summary": "Discard a course's unpublished changes",
+        "description": "Throws away the unpublished edits to a published course. The published version stays. Requires `write:learning`. A key restricted to particular events is refused with `403 ORG_WIDE_TOKEN_REQUIRED`. Also at `DELETE /v1/learning/workspace/courses/{lessonId}/draft`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/LearningLessonId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/courses/{lessonId}/versions": {
+      "get": {
+        "operationId": "learning-list-course-versions",
+        "summary": "List a course's versions",
+        "description": "The course's published versions, newest first. Reads only. Requires `read:learning`. A key restricted to particular events is refused with `403 ORG_WIDE_TOKEN_REQUIRED`. Also at `GET /v1/learning/workspace/courses/{lessonId}/versions`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/LearningLessonId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/feedback": {
+      "get": {
+        "operationId": "learning-list-feedback",
+        "summary": "Learner feedback",
+        "description": "Feedback learners left on courses. Reads only. Requires `read:learning`. A key restricted to particular events is refused with `403 ORG_WIDE_TOKEN_REQUIRED`. Also at `GET /v1/learning/workspace/feedback`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "name": "lessonId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Only this course."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/languages": {
+      "get": {
+        "operationId": "learning-get-languages",
+        "summary": "Get languages",
+        "description": "The languages the organization's courses are offered in. Reads only. Requires `read:learning`. A key restricted to particular events is refused with `403 ORG_WIDE_TOKEN_REQUIRED`. Also at `GET /v1/learning/workspace/languages`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      },
+      "put": {
+        "operationId": "learning-set-languages",
+        "summary": "Set languages",
+        "description": "Replaces the organization's language list. Answers `202` with `status: needs_approval` and a link when an AI assistant (an MCP connection) calls it; nothing happens until a person approves it in Sessionboard Learning, and it then runs as them. Do not call again while the request is pending. Requires `write:learning`. A key restricted to particular events is refused with `403 ORG_WIDE_TOKEN_REQUIRED`. Also at `PUT /v1/learning/workspace/languages`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "languages": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Language codes."
+                  }
+                },
+                "required": [
+                  "languages"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "202": {
+            "$ref": "#/components/responses/LearningNeedsApproval"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "423": {
+            "$ref": "#/components/responses/LearningAssistantsPaused"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/courses/{lessonId}/translations": {
+      "get": {
+        "operationId": "learning-list-course-translations",
+        "summary": "List a course's translations",
+        "description": "The languages a course is translated into and how complete each is. Reads only. Requires `read:learning`. A key restricted to particular events is refused with `403 ORG_WIDE_TOKEN_REQUIRED`. Also at `GET /v1/learning/workspace/courses/{lessonId}/translations`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/LearningLessonId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/courses/{lessonId}/translations/{language}": {
+      "get": {
+        "operationId": "learning-get-course-translation",
+        "summary": "Get a course translation",
+        "description": "The translated strings for one language. Reads only. Requires `read:learning`. A key restricted to particular events is refused with `403 ORG_WIDE_TOKEN_REQUIRED`. Also at `GET /v1/learning/workspace/courses/{lessonId}/translations/{language}`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/LearningLessonId"
+          },
+          {
+            "name": "language",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Language code, such as `es` or `fr`."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      },
+      "put": {
+        "operationId": "learning-save-course-translation",
+        "summary": "Save a course translation",
+        "description": "Saves translated strings. Setting `published: true` shows the translation to learners, so it waits for a person. Answers `202` with `status: needs_approval` and a link when an AI assistant (an MCP connection) calls it; nothing happens until a person approves it in Sessionboard Learning, and it then runs as them. Do not call again while the request is pending. Requires `write:learning`. A key restricted to particular events is refused with `403 ORG_WIDE_TOKEN_REQUIRED`. Also at `PUT /v1/learning/workspace/courses/{lessonId}/translations/{language}`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/LearningLessonId"
+          },
+          {
+            "name": "language",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Language code, such as `es` or `fr`."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "strings": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  },
+                  "published": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "202": {
+            "$ref": "#/components/responses/LearningNeedsApproval"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "423": {
+            "$ref": "#/components/responses/LearningAssistantsPaused"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/courses/{lessonId}/translations/{language}/translate": {
+      "post": {
+        "operationId": "learning-translate-course",
+        "summary": "Translate a course with AI",
+        "description": "Fills a translation draft with a machine translation. Nothing is published. Requires `write:learning`. A key restricted to particular events is refused with `403 ORG_WIDE_TOKEN_REQUIRED`. Also at `POST /v1/learning/workspace/courses/{lessonId}/translations/{language}/translate`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/LearningLessonId"
+          },
+          {
+            "name": "language",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Language code, such as `es` or `fr`."
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "scope": {
+                    "type": "string",
+                    "enum": [
+                      "missing",
+                      "all"
+                    ],
+                    "description": "`missing` fills only blanks; `all` redoes every string."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/site-showcase": {
+      "post": {
+        "operationId": "learning-set-site-showcase",
+        "summary": "Show courses on Learning Sites",
+        "description": "Adds courses, series or certifications to the showcase of Learning Sites. Answers `202` with `status: needs_approval` and a link when an AI assistant (an MCP connection) calls it; nothing happens until a person approves it in Sessionboard Learning, and it then runs as them. Do not call again while the request is pending. Requires `write:learning`. A key restricted to particular events is refused with `403 ORG_WIDE_TOKEN_REQUIRED`. Also at `POST /v1/learning/workspace/site-showcase`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "certification",
+                            "series",
+                            "lesson"
+                          ]
+                        },
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "id"
+                      ]
+                    }
+                  },
+                  "siteIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                },
+                "required": [
+                  "items",
+                  "siteIds"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "202": {
+            "$ref": "#/components/responses/LearningNeedsApproval"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "423": {
+            "$ref": "#/components/responses/LearningAssistantsPaused"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/learners/activity": {
+      "get": {
+        "operationId": "learning-learner-activity",
+        "summary": "Learner activity",
+        "description": "Recent learner activity across courses. Reads only. Requires `read:learning`. A key restricted to particular events is refused with `403 ORG_WIDE_TOKEN_REQUIRED`. Also at `GET /v1/learning/workspace/learners/activity`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/learners/{personId}/comms": {
+      "get": {
+        "operationId": "learning-learner-comms",
+        "summary": "Emails sent to a learner",
+        "description": "The emails and reminders sent to one learner. Reads only. Requires `read:learning`. A key restricted to particular events is refused with `403 ORG_WIDE_TOKEN_REQUIRED`. Also at `GET /v1/learning/workspace/learners/{personId}/comms`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/LearningPersonId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/learners/{personId}/accommodation": {
+      "put": {
+        "operationId": "learning-set-learner-accommodation",
+        "summary": "Set a learner's accommodation",
+        "description": "Gives a learner more time on timed quizzes. Requires `write:learning`. A key restricted to particular events is refused with `403 ORG_WIDE_TOKEN_REQUIRED`. Also at `PUT /v1/learning/workspace/learners/{personId}/accommodation`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/LearningPersonId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "timeMultiplier": {
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 4
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 2000
+                  }
+                },
+                "required": [
+                  "timeMultiplier"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/comms": {
+      "get": {
+        "operationId": "learning-get-comms",
+        "summary": "Learner emails and reminders",
+        "description": "The reminder (nudge) settings and email templates. Reads only. Requires `read:learning`. A key restricted to particular events is refused with `403 ORG_WIDE_TOKEN_REQUIRED`. Also at `GET /v1/learning/workspace/comms`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/comms/nudges": {
+      "put": {
+        "operationId": "learning-set-nudges",
+        "summary": "Set automatic reminders",
+        "description": "Turns automatic reminders on or off, how many days apart they go and which templates they use. They email learners. Answers `202` with `status: needs_approval` and a link when an AI assistant (an MCP connection) calls it; nothing happens until a person approves it in Sessionboard Learning, and it then runs as them. Do not call again while the request is pending. Requires `write:learning`. A key restricted to particular events is refused with `403 ORG_WIDE_TOKEN_REQUIRED`. Also at `PUT /v1/learning/workspace/comms/nudges`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "enabled": {
+                    "type": "boolean"
+                  },
+                  "cadenceDays": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": 1
+                    }
+                  },
+                  "templateIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "202": {
+            "$ref": "#/components/responses/LearningNeedsApproval"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "423": {
+            "$ref": "#/components/responses/LearningAssistantsPaused"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/comms/templates/manage": {
+      "post": {
+        "operationId": "learning-manage-email-templates",
+        "summary": "Manage email templates",
+        "description": "Creates, updates, duplicates or deletes an email template. Nothing is sent. Requires `write:learning`. A key restricted to particular events is refused with `403 ORG_WIDE_TOKEN_REQUIRED`. Also at `POST /v1/learning/workspace/comms/templates/manage`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "create",
+                      "update",
+                      "duplicate",
+                      "delete"
+                    ]
+                  },
+                  "templateId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "subject": {
+                    "type": "string"
+                  },
+                  "body": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "action"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/comms/send": {
+      "post": {
+        "operationId": "learning-send-learner-email",
+        "summary": "Email learners",
+        "description": "Emails chosen learners (`personIds`) or an `audience` (`stalled`, `in_progress`, `completed`, `all`), from a template (`templateId`) or a `subject` and `body`. With `preview: true` it shows who would get it and what they would see, and never sends. A real send reaches learners, so for an AI assistant it answers `202` with `status: needs_approval` and a link, and nothing is sent until a person approves it in Sessionboard Learning. Requires `write:learning`. A key restricted to particular events is refused with `403 ORG_WIDE_TOKEN_REQUIRED`. Also at `POST /v1/learning/workspace/comms/send`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "personIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "audience": {
+                    "type": "string",
+                    "enum": [
+                      "stalled",
+                      "in_progress",
+                      "completed",
+                      "all"
+                    ]
+                  },
+                  "templateId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "subject": {
+                    "type": "string"
+                  },
+                  "body": {
+                    "type": "string"
+                  },
+                  "preview": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "202": {
+            "$ref": "#/components/responses/LearningNeedsApproval"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "423": {
+            "$ref": "#/components/responses/LearningAssistantsPaused"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/credit-goals": {
+      "put": {
+        "operationId": "learning-set-credit-goals",
+        "summary": "Set credit goals",
+        "description": "Sets how much of each credit type learners are expected to earn in a cycle. Answers `202` with `status: needs_approval` and a link when an AI assistant (an MCP connection) calls it; nothing happens until a person approves it in Sessionboard Learning, and it then runs as them. Do not call again while the request is pending. Requires `write:learning`. A key restricted to particular events is refused with `403 ORG_WIDE_TOKEN_REQUIRED`. Also at `PUT /v1/learning/workspace/credit-goals`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "goals": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "creditTypeId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "amount": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "cycleMonths": {
+                          "type": "integer",
+                          "enum": [
+                            12,
+                            24,
+                            36
+                          ]
+                        }
+                      },
+                      "required": [
+                        "creditTypeId",
+                        "amount",
+                        "cycleMonths"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "goals"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "202": {
+            "$ref": "#/components/responses/LearningNeedsApproval"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "423": {
+            "$ref": "#/components/responses/LearningAssistantsPaused"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/reports/{report}": {
+      "get": {
+        "operationId": "learning-get-report",
+        "summary": "Get a report",
+        "description": "One report: `claims`, `completions`, `learners`, `certifications` or `feedback`. Reads only. Requires `read:learning`. A key restricted to particular events is refused with `403 ORG_WIDE_TOKEN_REQUIRED`. Also at `GET /v1/learning/workspace/reports/{report}`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "name": "report",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "One of `claims`, `completions`, `learners`, `certifications`, `feedback`."
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Page, from 1."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500
+            },
+            "description": "Rows per page."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/learning/workspace/reports/{report}/export": {
+      "get": {
+        "operationId": "learning-export-report",
+        "summary": "Export a report",
+        "description": "The same report as a CSV download. Reads only. Requires `read:learning`. A key restricted to particular events is refused with `403 ORG_WIDE_TOKEN_REQUIRED`. Also at `GET /v1/learning/workspace/reports/{report}/export`.",
+        "tags": [
+          "Learning workspace"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LearningOrgId"
+          },
+          {
+            "name": "report",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "One of `claims`, `completions`, `learners`, `certifications`, `feedback`."
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Page, from 1."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500
+            },
+            "description": "Rows per page."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "$ref": "#/components/responses/LearningBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/LearningUnauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/LearningWorkspaceForbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/LearningOrgNotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/LearningTooManyRequests"
           }
         }
       }
