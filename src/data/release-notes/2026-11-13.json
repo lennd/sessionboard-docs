@@ -1385,6 +1385,812 @@
         "pending": null,
         "live": null
       }
+    },
+    {
+      "id": "sso-enforce-without-verification",
+      "title": "Enforce SSO login before completing a sign-in test",
+      "summary": "Admins can now turn on **Enforce login via SSO** for a SAML or OIDC configuration even when no successful sign-in test has been run. Previously, the API returned a `409` error unless the configuration had a `verified` status, blocking organizations whose security policies prevent sharing test credentials.",
+      "article": "/integrations/sso#enforced-authentication",
+      "related": [],
+      "kind": "fixed",
+      "module": "Settings",
+      "features": [
+        "sso"
+      ],
+      "availability": "on_request",
+      "enable": {
+        "how": "setting",
+        "path": "Organization Settings → Security → SSO → SAML / OIDC configuration → Enforce login via SSO"
+      },
+      "where": {
+        "scope": "org",
+        "path": "Organization Settings → Security → SSO"
+      },
+      "permissions": [
+        "event.settings.manage_sso"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizations whose IT or security policies prevent sharing test credentials (for example, accounts protected by MFA or company-wide SSO) can now enforce SSO login as soon as the IdP configuration is saved, without first completing a sign-in test.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "If an admin enforces a config that has never been tested and the config is wrong, users on that domain lose password login until enforcement is turned off. Confirm the customer understands the risk before enabling."
+        },
+        "when_to_bring_up": "A customer says they cannot complete the SSO sign-in test because of MFA or company security policy and are stuck on the enforcement step.",
+        "who_should_get_it": "Enterprise customers with strict IdP policies that block test-credential sharing.",
+        "staff_path": "Organization Settings → Security → SSO",
+        "gotchas": "Enforcement is still reversible by any admin with SSO permissions, but if the config is misconfigured, domain users lose password login until it is turned off. The sign-in test step itself is unchanged and still recommended.",
+        "talk_track": "You no longer need to pass a sign-in test before enforcing SSO. You can enforce as soon as the config is saved — just make sure the IdP settings are correct first, because enforcement locks out password login for your domain.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide's \"Enforced authentication\" section should note that enforcement can be enabled at any setup status and does not require a completed sign-in test, along with a caution that an untested config will lock out password login if misconfigured.",
+          "why_use_it": null,
+          "at": "2026-11-13T18:48:16.119Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5358"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "product": "platform",
+      "platform": false
+    },
+    {
+      "id": "agenda-embed-card-field-selection",
+      "title": "Agenda embed collapsed card shows its own configurable fields",
+      "summary": "The agenda embed's collapsed session card can now display a custom set of fields — such as speakers, level, tags, or custom fields — separate from the pop-up's field selection. When an **Agenda Card** field scope is configured, each field appears as a short labelled line on the card, clamped to two lines. Embeds with no card-scope configuration render exactly as before.",
+      "article": "/sessions/embeds#how-to-create-an-embed",
+      "related": [
+        "/sessions/embeds"
+      ],
+      "kind": "new",
+      "module": "Program",
+      "features": [
+        "embeds_v2"
+      ],
+      "availability": "on_request",
+      "enable": {
+        "how": "support",
+        "path": "Ask your Customer Success Manager to enable the Agenda Card field scope; then configure the embed's card fields in the embed editor"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Program → Embeds → Agenda embed → Card fields"
+      },
+      "permissions": [
+        "event.embeds.update"
+      ],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Organizers who embed their agenda on an external website can now surface key details — like speaker names, session level, or a custom field — directly on the collapsed card, so attendees get the context they need without opening the pop-up.",
+      "internal": {
+        "cs_action": {
+          "kind": "must_enable",
+          "note": "The agenda-card field scope must be written and served by the web-api fix/cs1113-g10 branch, and the setting added in web-ui-v2 fix/cs1113-g10. All three repos must be deployed together. No existing embeds are affected (0 agenda-card rows in prod today)."
+        },
+        "when_to_bring_up": "When a customer asks for more session detail on the collapsed agenda card, or wants to show speaker names without requiring attendees to open the pop-up.",
+        "who_should_get_it": "Customers using Embeds V2 (on_request) who publish an agenda embed on their own website and want richer card-level information.",
+        "staff_path": "Program → Embeds → select an agenda embed → Card fields tab",
+        "gotchas": "Embeds publish to prod manually — merging to main deploys DEV only. Coordinate the prod deploy across all three repos (web-api, web-ui-v2, sessionboard-embeds).",
+        "talk_track": "You can now choose a separate set of fields for the collapsed agenda card — speakers, level, tags, whatever matters most — so attendees see the right context at a glance without having to open every session.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The embeds guide should document the new Agenda Card field scope: how to configure card-level fields separately from pop-up fields, which field types are supported, and how track/format/room are always shown as badges/lines regardless of the card selection.",
+          "why_use_it": "The agenda embed lets you publish a live, filterable schedule on any webpage without rebuilding it every time the program changes. You control which fields appear on the collapsed card and which appear in the session pop-up, so attendees see the right amount of detail at a glance and can dig deeper on demand. Track, format, and room information stay in their familiar positions, and any additional fields — speakers, level, tags, or custom data — appear as labelled lines below.",
+          "at": "2026-11-13T19:03:37.831Z"
+        }
+      },
+      "product": "platform",
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-embeds#139"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "platform": false
+    },
+    {
+      "id": "applicant-flow-controls-use-accent-color",
+      "title": "Applicant flow controls now follow the Site accent color, not the primary color",
+      "summary": "Buttons, checkboxes, radio buttons, switches, step-progress markers, category cards and other interactive controls in the applicant flow (**Continue to Application**, category pickers, form fields, checkout, confirmation) now draw their fill and border from the Site's **Accent** color rather than the **Primary** color. Sites that set **Primary** to white or another light color for section backgrounds no longer see invisible or low-contrast controls. No setting change is needed; the fix applies automatically to all Sites.",
+      "article": "/awards/setting-up-your-sessionboard-site#site-url--branding",
+      "related": [
+        "/site/site-builder",
+        "/site/program-site"
+      ],
+      "kind": "fixed",
+      "module": "Portals",
+      "features": [
+        "awards"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Site → applicant flow (apply, checkout, confirmation, request forms)"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "An awards or CFP program that uses a white or light Primary color for content-box backgrounds no longer has invisible buttons and form controls in the applicant flow. Controls pick up the Accent color automatically, so applicants always see clearly styled interactive elements without any reconfiguration.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Automatic for all Sites. Sites that had no accent saved continue to derive control colors from Primary, preserving their existing look."
+        },
+        "when_to_bring_up": "A customer reports that buttons or form controls are invisible or hard to see in their applicant flow, or when onboarding a customer who sets Primary to white for content-box styling.",
+        "who_should_get_it": "Any customer using a Sessionboard Site for awards, CFP or portal applications, especially those with a light or white Primary color.",
+        "staff_path": "Site builder → Branding → Primary Color / Accent Color",
+        "gotchas": "Sites with no accent saved fall back to Primary for controls — same as before. Sites with an accent under 3:1 contrast against white get an auto-darkened edge color for checkbox/radio borders; the fill itself stays as chosen.",
+        "talk_track": "If you set your Primary color to white to get clean content boxes, your application buttons and form controls now stay visible because they pull from your Accent color instead. Nothing to configure — it just works.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should document that Primary colors the section backgrounds and hero/nav areas while Accent colors interactive controls (buttons, checkboxes, radios, switches, step markers) in the applicant flow, and explain the automatic contrast adjustments applied to the Accent.",
+          "why_use_it": "Sessionboard Sites let you brand every surface of your applicant experience — landing page, application form, checkout and confirmation — using a Primary color for section backgrounds and an Accent color for interactive highlights. Separating these two roles means you can choose a white or light background for content areas while keeping buttons, checkboxes and progress markers in a distinct, accessible color. The platform automatically computes contrast-safe fill, border and text variants from your Accent so controls remain legible across light and dark Site themes.",
+          "at": "2026-11-13T19:16:08.200Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-org-portal#333"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "product": "platform",
+      "platform": false
+    },
+    {
+      "id": "admin-tasks-layer-phase-1",
+      "title": "Manage tasks across your whole program with My Tasks, record Task cards and note follow-ups",
+      "summary": "A new **My Tasks** page (available at the org and event level) lists every task assigned to you or your team, with filters for assignee, event, linked record type, priority and status, sortable columns, bulk **Mark complete** and **Reassign**, and **Export CSV**. A **Tasks** card now appears in the Contact, Session and Sponsor/Exhibitor sidebars so you can create and track tasks directly from any record. On the Notes tab, **Add follow-up** lets you attach a task to any note, with due date, time, assignee and reminder; completed follow-ups show who finished them and offer **Reopen**.",
+      "article": "/api/guides/tasks",
+      "related": [
+        "/contacts/contact-profile",
+        "/portals/assign-tasks",
+        "/faq/how-to-track-task-completion-in-the-event-portal"
+      ],
+      "kind": "new",
+      "module": "Program",
+      "features": [],
+      "availability": "limited_release",
+      "enable": {
+        "how": "support",
+        "path": "Ask your Customer Success Manager to enable Tasks for your org; then My Tasks appears in the org and event sidebars"
+      },
+      "where": {
+        "scope": "both",
+        "path": "My Tasks (org or event sidebar) · Contact / Session / Sponsor sidebar → Tasks card · Notes tab → Add follow-up"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Event teams juggling dozens of speaker, sponsor and session action items can now see every open task in one place, filter to what is overdue or due today, and mark items complete without leaving the page. Linking a task directly to a contact or session note keeps context together and removes the need for a separate project-management tool.",
+      "internal": {
+        "cs_action": {
+          "kind": "must_enable",
+          "note": "The entire Tasks layer is gated to super-users on Platform orgs only. CS must confirm the org is Platform-tier before enabling; self-serve orgs see a 'Tasks are part of Sessionboard Platform' message."
+        },
+        "when_to_bring_up": "When a customer asks how to track speaker or sponsor action items inside Sessionboard, or when they mention using a separate tool like Asana or Trello alongside Sessionboard.",
+        "who_should_get_it": "Platform-tier organizers who manage multi-person event teams and need task assignment and follow-up tracking tied to their program records.",
+        "staff_path": "Requires super-user flag + Platform org/event; access levels read from /user/me/access-levels.",
+        "gotchas": "Self-serve orgs (Marketing, Learning, Awards workspaces) are blocked at the API level with a 403 TASKS_PLATFORM_ONLY error; the UI surfaces a plain message and renders no card. The web-api PR on branch feature/sb-10486-tasks-layer must also be deployed.",
+        "talk_track": "Instead of copying contact names into a spreadsheet to track who still needs a bio or headshot, your team can create tasks directly on each contact record, assign them to the right person, set a due date, and see everything overdue in one filtered view — all without leaving Sessionboard.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The article index has /api/guides/tasks covering the API contract, but there is no organizer-facing guide explaining the My Tasks page, the record Tasks card, or note follow-ups; a new guide under /program/tasks or /contacts/tasks should document these surfaces for non-developer users.",
+          "why_use_it": "Tasks gives your team a single place to create, assign and track action items that are tied directly to the contacts, sessions and sponsors in your program. Each task carries a due date, optional reminder, priority and linked records, so nothing falls through the cracks between email threads and spreadsheets. The My Tasks view lets anyone on the team see their own queue or the full team's workload, filter by status and export for reporting. Follow-up tasks attached to notes keep the reason a task was created visible alongside the conversation that prompted it.",
+          "at": "2026-11-13T19:28:01.049Z"
+        }
+      },
+      "product": "platform",
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1590"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:limited_release",
+      "platform": false
+    },
+    {
+      "id": "reviewer-import-tags-update-control",
+      "title": "Reviewer import gains Tags and duplicate-handling columns",
+      "summary": "The **Import Evaluators** CSV template now includes two new columns. **Tags** accepts pipe-separated tag names and adds them to each reviewer (missing tags are created automatically; existing tags are kept). **Update record if already exists** controls what happens when the email matches a reviewer already on the event: `TRUE` updates their affiliation and tags, `FALSE` reports a row error, and leaving it blank preserves the previous behaviour so existing import files keep working.",
+      "article": "/evaluations/review-plan-reviewers#import-reviewers",
+      "related": [
+        "/evaluations/call-for-reviewers",
+        "/evaluations/review-plan-rounds"
+      ],
+      "kind": "improved",
+      "module": "Program",
+      "features": [],
+      "permissions": [
+        "event.evaluation_plans.read"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Program → Review → Evaluators → Import Evaluators"
+      },
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Events that tag reviewers by expertise or committee can now apply those tags in bulk during the import rather than tagging manually after the fact. The duplicate-handling column also lets teams safely re-run or update an import without accidentally re-enrolling people who are already assigned.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Both columns are additive and optional; existing import files with neither column behave exactly as before."
+        },
+        "when_to_bring_up": "When a customer asks how to tag reviewers in bulk, or when they report confusion about re-importing a reviewer list that already has people enrolled.",
+        "who_should_get_it": "Any event using the Evaluators import, especially those with large review committees or multi-round plans.",
+        "staff_path": "Program → Review → Evaluators → Import Evaluators",
+        "gotchas": "Blank in the 'Update record if already exists' column keeps legacy behaviour (no error, no update). FALSE errors only on reviewers who were enrolled before the import run started, so the same person on two rows in the same import is never flagged as a duplicate.",
+        "talk_track": "You can now tag reviewers and control duplicate handling right in your import CSV — no post-import cleanup needed.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide's Import Reviewers section should document the two new template columns (Tags and Update record if already exists), their accepted values, and how the duplicate cutoff works.",
+          "why_use_it": "Importing reviewers lets you enroll a large committee in one step instead of adding people one by one. The import matches on email address, fills in affiliation, and now applies tags so reviewers are organised from the moment they land. Use it at the start of a review cycle or whenever you need to update a batch of reviewers across multiple rounds.",
+          "at": "2026-11-13T19:36:01.637Z"
+        }
+      },
+      "product": "platform",
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5362"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "platform": false
+    },
+    {
+      "id": "awards-submission-confirmation-on-payment",
+      "title": "Awards submission confirmation email now sends after payment, not before",
+      "summary": "On awards programs that charge a fee **on submission**, the **Submission Confirmation** email is now sent only after the applicant completes payment — not when they click **Submit** and land on the payment page. Applicants who pay by card, apply a 100% promo code, or check out via invoice each receive exactly one confirmation once their entry moves to **Submitted**. Programs with no fee, or fees charged on acceptance, continue to send the confirmation immediately on submit.",
+      "article": "/awards/awards-notifications-email-templates",
+      "related": [
+        "/awards/awards-pricing-payments-invoices"
+      ],
+      "kind": "fixed",
+      "module": "Awards",
+      "features": [
+        "awards"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Awards Site → submission → Complete Your Payment"
+      },
+      "permissions": [],
+      "audience": [
+        "participant"
+      ],
+      "use_case": "Awards programs that charge a fee on submission no longer send applicants a \"your submission has been received\" email before they pay, which previously caused confusion when entries sat in Pending Payment. Applicants now get the confirmation only once their payment goes through and their entry is truly submitted.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Automatic fix. No action needed. The organizer's new-submission admin notice is unchanged."
+        },
+        "when_to_bring_up": "When a customer running a paid awards program reports that applicants received a submission confirmation before paying, or asks why entries are stuck in Pending Payment with a confirmation already sent.",
+        "who_should_get_it": "Any customer with an awards program that charges a fee on submission and has the Submission Confirmation notification enabled.",
+        "staff_path": "Awards → program → Notifications",
+        "gotchas": "Eight US programs were affected at ship time. Existing Pending Payment entries that had already received the old premature confirmation will not receive a duplicate — the activity guard skips entries still in pending_payment at send time.",
+        "talk_track": "Applicants on paid awards programs now get the confirmation email only after their payment clears, so they always know their entry is truly in.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that on programs priced \"on submission,\" the Submission Confirmation email is sent after payment completes rather than immediately after the applicant clicks Submit.",
+          "why_use_it": null,
+          "at": "2026-11-13T19:49:38.686Z"
+        }
+      },
+      "product": "platform",
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5360"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "platform": false
+    },
+    {
+      "id": "remove-submission-from-event",
+      "title": "Remove a submission from an event after \"Add to Event\"",
+      "summary": "Organizers can now undo **Add to Event** from the submission sidebar. Choosing **Remove from Event** unlinks the submission; an optional **Move session to trash** choice soft-deletes the associated session in the same action. Submissions whose linked session was already deleted no longer show a stale event assignment anywhere in the UI, lists, exports, or Pipeline.",
+      "article": "/speaker-crm/speaker-crm-interest-forms#managing-submissions",
+      "related": [
+        "/speaker-crm/pipeline",
+        "/sessions/create-a-session"
+      ],
+      "kind": "new",
+      "module": "Program",
+      "features": [
+        "pipeline"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Speaker CRM → Interest Forms → [submission] → sidebar → Remove from Event"
+      },
+      "permissions": [
+        "event.sessions.delete"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "When a submission was accidentally linked to the wrong event, or a speaker's session needs to be pulled back before the agenda is finalised, an organizer can remove the event link — and optionally trash the session — without contacting support or manually cleaning up database rows.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "The action is available to any org member for link-only removal; trashing the session additionally requires the Sessions DELETE permission on that event. Stale links to already-deleted sessions are filtered out automatically in all list and export views — no data migration is required, though an optional cleanup SQL is available for Josh to run."
+        },
+        "when_to_bring_up": "A customer asks how to undo Add to Event, or reports that a submission still shows an event assignment after the session was deleted.",
+        "who_should_get_it": "Any customer using Pipeline / interest forms who promotes submissions to events.",
+        "staff_path": "Speaker CRM → Interest Forms → [submission] → sidebar",
+        "gotchas": "Restoring a trashed session does not restore the submission link; the organizer must run Add to Event again. Speaker-only links (no session) are removed via Remove from Event, not by the session-delete hook.",
+        "talk_track": "You can now reverse Add to Event directly from the submission sidebar — just click Remove from Event. If you also want to pull the session out of the event, choose Move session to trash at the same time.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The interest-forms guide should add a section explaining Remove from Event: how to access it from the submission sidebar, the keep vs. trash session options, the permission required to trash, and what happens to stale links when a session is deleted.",
+          "why_use_it": "Interest form submissions flow into the Pipeline and can be promoted to an event with Add to Event. Remove from Event gives you a clean way to reverse that decision: the submission returns to an unassigned state, stale links to deleted sessions are cleared automatically, and the Pipeline card re-mirrors to the next live assignment. Trashing the session at the same time keeps your event's session list tidy without a separate step.",
+          "at": "2026-11-13T20:11:01.664Z"
+        }
+      },
+      "product": "platform",
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5364"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta",
+      "platform": false
+    },
+    {
+      "id": "remove-from-event-interest-form",
+      "title": "Remove an interest-form submission from an event it was added to",
+      "summary": "Each event listed in the **Assigned to event** banner on an interest-form submission now has a **Remove from event** button. A confirmation dialog names the event and lets you choose whether to keep the linked session or move it to the event's trash. On success, the submission tables, pipeline cards, and the event's sessions all refresh, and **Add to Event** becomes available again.",
+      "article": "/speaker-crm/speaker-crm-interest-forms#managing-submissions",
+      "related": [
+        "/speaker-crm/pipeline"
+      ],
+      "kind": "new",
+      "module": "CRM",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Speaker CRM → Interest Forms → [submission] → Assigned to event banner → Remove from event"
+      },
+      "permissions": [
+        "org.interest_forms.update"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "When a submission was accidentally added to the wrong event, or plans change, organizers can now unlink it without contacting support — and optionally clean up the session that was created at the same time.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Ships default-on. The trash option appears only when the API returns the removeFromEventSessionActions field, so it is safe against older environments."
+        },
+        "when_to_bring_up": "A customer asks how to undo an 'Add to Event' action or complains that a submission is stuck assigned to the wrong event.",
+        "who_should_get_it": "Any customer using interest forms and the pipeline.",
+        "staff_path": "Speaker CRM → Interest Forms → open a submission → Assigned to event banner",
+        "gotchas": "Speaker-only links (no session created) show a simplified confirmation that notes no session was involved. The trash option only appears when the API manifest supports it.",
+        "talk_track": "You can now remove a submission from an event directly from the submission sidebar — choose to keep the session or send it to trash, and the submission is immediately available to re-assign.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should document the Remove from event button in the Assigned to event banner, including the keep-vs-trash choice and what happens to speaker-only links.",
+          "why_use_it": "Interest forms let you collect speaker interest at the organization level and route submissions into specific events. The ability to remove a submission from an event means a mis-routed or changed submission does not stay permanently locked to the wrong event, keeping your pipeline and session lists accurate without manual workarounds.",
+          "at": "2026-11-13T20:18:16.779Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1606"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "product": "platform",
+      "platform": false
+    },
+    {
+      "id": "bulk-permissions-copy-statuses-field-rules-contacts-view-permissions",
+      "title": "Bulk Permissions can copy statuses, Field Rules has a permission gate, and Contacts views have create/edit/delete permissions",
+      "summary": "Three permission-related improvements ship together. **Bulk Permissions** (Org Settings → Permissions) gains a **Copy statuses and their role restrictions** option on the template event card, with a role picker and a preview of new statuses and restrictions before you apply. **Field Rules** on the org and event Fields pages is now hidden from roles that lack \"Can manage field rules\", keeping that advanced tool out of the wrong hands. The **Contacts** saved-views dropdown now respects **canCreateViews / canEditViews / canDeleteViews** role flags, so **Save Changes**, **Save as New View**, **Rename**, visibility, **Delete** and **Copy views from another event** are hidden for roles that should not touch shared views; choosing a view and resetting always remain available.",
+      "article": "/event-team/bulk-apply-permissions-across-events",
+      "related": [
+        "/event-team/invite-manage-event-team-members",
+        "/settings/field-rules",
+        "/reporting/dashboard-views"
+      ],
+      "kind": "improved",
+      "module": "Settings",
+      "features": [
+        "field_rules"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Org Settings → Permissions (Bulk Permissions); Fields (Field Rules button); Contacts → saved-views dropdown"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizations that run many events can now copy session statuses and their role restrictions in one bulk operation instead of recreating them by hand. Teams that want to lock down who can create or rename shared contact views, or who can edit field rules, can do so through role permissions without any workaround.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "The Contacts view permission flags (canCreateViews/canEditViews/canDeleteViews) and the Field Rules permission gate are only active once the API advertises the new permission slugs. Until then, behaviour is identical to today. The Bulk Permissions status-copy option appears only when the source event's roles endpoint returns a 'statuses' domain."
+        },
+        "when_to_bring_up": "When a customer asks how to prevent certain roles from creating or deleting shared contact views, or wants to copy their status setup (including role restrictions) to new events in bulk.",
+        "who_should_get_it": "Customers with multiple events and complex role setups, or anyone who has asked about locking down Field Rules or shared views.",
+        "staff_path": "Org Settings → Permissions → Bulk Permissions; event Fields page; event Contacts page → saved-views dropdown",
+        "gotchas": "All three gates are behind a new useAdvertisedPermission hook — they are invisible until the companion API PR (#5365) is deployed. Either PR can go first safely.",
+        "talk_track": "You can now copy statuses and their role restrictions when bulk-applying permissions, so new events inherit exactly who can move sessions to each status. You can also restrict which roles can create or rename shared contact views, and hide Field Rules from anyone who shouldn't touch them.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The bulk-apply guide should add a section describing the new \"Copy statuses and their role restrictions\" option, including the role picker and the preview step.",
+          "why_use_it": "Bulk Permissions lets you push a consistent role and permission setup from a template event to many events at once, so your team always works with the same access model regardless of which event they open. Copying statuses alongside their role restrictions means the rules about who can move a session to a given status travel with the status itself. Field Rules and saved-view permissions give admins fine-grained control over which roles can change shared configuration, protecting the setup that the rest of the team depends on.",
+          "at": "2026-11-13T20:24:39.177Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1607"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "product": "platform",
+      "platform": false
+    },
+    {
+      "id": "automations-duplicate-copy",
+      "title": "Duplicate automations and copy them to another event",
+      "summary": "Each automation row's menu now offers **Duplicate** and **Copy to another event…**. **Duplicate** creates an identical copy in the same event (turned off). **Copy to another event…** opens a dialog where you pick any other event in the org; after copying, the dialog lists anything that could not be carried over. If a copied automation has unresolved issues, a banner appears in the builder until the automation is saved. Copied automations are always turned off. Both options appear only when the API signals support for copying.",
+      "article": "/automations/overview",
+      "kind": "new",
+      "module": "Automations",
+      "features": [
+        "automations"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Automations → [automation row] → ⋯ menu → Duplicate / Copy to another event…"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "An organizer who runs the same automation logic across multiple events can copy a working automation to a new event in seconds instead of rebuilding it from scratch, then review any items that need to be re-mapped before turning it on.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Both options are hidden until the matching web-api branch (fix/cs1113-g10) is deployed. Confirm API is live before telling customers the feature is available."
+        },
+        "when_to_bring_up": "When a customer asks how to reuse automations across events or says they are rebuilding the same automation every year.",
+        "who_should_get_it": "Any organizer who runs recurring events with similar automation workflows.",
+        "staff_path": "Automations → [automation row] → ⋯ menu",
+        "gotchas": "Copied automations are always off; the builder shows a banner listing anything that could not be carried over (e.g. fields or statuses that don't exist in the target event). The controls are hidden until the API returns copySupported.",
+        "talk_track": "You can now copy any automation to another event in one click — pick the event, review what needs attention, then turn it on when you're ready.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The Automations overview guide should add a section explaining how to duplicate an automation and how to copy one to another event, including what the copy dialog shows and what the builder banner means.",
+          "why_use_it": "Automations let you trigger actions — emails, status changes, task assignments and more — whenever something happens in your event. Duplicating an automation lets you iterate on a copy without touching the live version. Copying to another event means the logic you refined for one event travels with you to the next, so you spend time on content rather than configuration.",
+          "at": "2026-11-13T20:42:42.261Z"
+        }
+      },
+      "related": [
+        "/sessions/copy-sessions-from-another-event"
+      ],
+      "product": "platform",
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1609"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "platform": false
+    },
+    {
+      "id": "portal-upload-extended-due-date",
+      "title": "Set a per-submission extended upload deadline in the speaker portal",
+      "summary": "A new **Portal Content Upload Extended Until** date field on each session lets organizers grant individual submissions more time to upload files, independent of the event-wide upload window. Turning the extension switch off clears the date. The extended deadline is respected by the upload guard, upload slots, and the poster builder, and is carried when a session is duplicated or copied.",
+      "article": "/sessions/enable-upload-download-content",
+      "related": [
+        "/portals/portals-101",
+        "/portals/collect-documents"
+      ],
+      "kind": "new",
+      "module": "Portals",
+      "features": [
+        "sessions"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "setting",
+        "path": "Sessions → [open a session] → Portal Content Upload Extended Until"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Sessions → [open a session] → Portal Content Upload Extended Until"
+      },
+      "permissions": [
+        "event.sessions.update"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "When a speaker misses the upload deadline due to travel or technical issues, an organizer can grant that specific session extra time without reopening the upload window for the entire event.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer asks how to give one speaker extra time to upload files after the event-wide window has closed.",
+        "who_should_get_it": "Any organizer running a portal with file uploads who needs to handle exceptions on a per-session basis.",
+        "staff_path": "Sessions → [open a session] → Portal Content Upload Extended Until",
+        "gotchas": "Turning the extension switch off clears the stored date. Sessions with the switch already on (54 in US, 0 in EU at launch) keep their existing behaviour — no date means an open-ended extension.",
+        "talk_track": "Instead of reopening uploads for everyone, you can now give a single session its own extended deadline right on the session record.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The guide should document the new Portal Content Upload Extended Until field on a session, how the switch interacts with the date, and how the extension is enforced in the portal upload guard and poster builder.",
+          "why_use_it": "The portal upload window controls when speakers can submit files for their sessions. Setting a per-submission extended deadline lets you accommodate individual speakers who need more time without affecting every other session in the event. The extension carries through when sessions are duplicated or copied, so your workflow stays consistent across events.",
+          "at": "2026-11-13T21:06:45.027Z"
+        }
+      },
+      "product": "platform",
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5372"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "platform": false
+    },
+    {
+      "id": "transcribe-participant-roles-rail",
+      "title": "Live Transcribe rail shows each participant's role",
+      "summary": "The live-session rail is now labelled **Participants** and displays each person's role beneath their name. The **Tag speakers** dialog and tag picker also show roles and list up to 25 participants before search (previously 8). Events using an older API response are unaffected.",
+      "article": "/marketing/live-transcribe",
+      "related": [
+        "/concepts/participant-roles"
+      ],
+      "kind": "improved",
+      "module": "Marketing",
+      "features": [
+        "marketing_transcribe"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Marketing → Live Transcribe → session rail → Participants"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "AV operators tagging speakers during a live session can now see each person's role (Speaker, Moderator, Chairperson, etc.) directly in the rail and tag picker, so they pick the right person without having to look up roles elsewhere.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer uses Live Transcribe for multi-speaker or panel sessions and wants cleaner attribution.",
+        "who_should_get_it": "Events using Live Transcribe with sessions that have multiple participant roles.",
+        "staff_path": "Marketing → Live Transcribe",
+        "gotchas": "Roles only appear when the API returns the new `roles` column; older API responses render as before.",
+        "talk_track": "The Participants rail now shows each person's role so your AV crew can tag the right speaker instantly, even in a panel with a moderator and multiple presenters.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that the rail is now labelled Participants, that roles appear beneath each name, and that the tag picker lists up to 25 participants before search.",
+          "why_use_it": "Live Transcribe lets your AV team capture and attribute spoken content to the right people in real time. Seeing each participant's role in the rail and tag picker removes guesswork when a session has multiple speakers, moderators, or chairpersons, keeping your transcript attribution accurate from the start.",
+          "at": "2026-11-13T21:13:47.936Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1612"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "product": "platform",
+      "platform": false
     }
   ]
 }
