@@ -1,6 +1,6 @@
 ---
 title: "Bulk-apply permissions across events"
-description: "Copy roles, field settings and team role assignments from one template event to up to 250 events at once, with a per-event preview before anything changes."
+description: "Copy roles, field settings, statuses and team role assignments from one template event to up to 250 events at once, with a per-event preview before anything changes."
 ---
 
 import { Note, Steps, Step } from '@compat';
@@ -37,6 +37,7 @@ Tick one or more options:
 
 - **Copy roles and their permissions**, then pick the custom roles to copy. Roles are matched by name, ignoring capitals and extra spaces. A role that is missing in a target event is created; a role that already exists there gets the template role's permissions.
 - **Copy field visibility and locking**, then pick the roles whose field settings you want to copy. Fields are matched by their internal name, so a custom field copied between events matches its copy.
+- **Copy statuses and their role restrictions**, then pick the roles whose status restrictions you want to copy. Custom statuses are matched by name: a status the target event is missing is created, and statuses it already has are never renamed or deleted. Each selected role then gets the template role's [status restrictions](/event-team/invite-manage-event-team-members#limit-which-statuses-a-role-can-set), pointed at the target event's own statuses. The preview shows lines such as *Create status "Needs Revision"* and *"Track Chair" can set 3 statuses*. The Admin role is skipped, because it can always set any status.
 - **Assign team members to a role**, then choose **Add to role** or **Remove from role**, the role, and the team members. Adding someone who already holds a different role in a target event moves them to the new role; removing someone only takes effect where they hold that role.
 </Step>
 
@@ -62,7 +63,7 @@ If you change any selection after previewing, the preview is cleared and you pre
 - **Each event is updated on its own.** One event failing does not undo or stop the others. Temporary database errors are retried automatically; an event that still fails is marked **Failed** and the rest carry on.
 - **A stale preview is refused.** If anything in the target events changed between your preview and clicking **Apply changes** — someone edited a role, a field, or the team — the run does not start. You see *Something changed since you previewed*; click **Preview changes** again and review the new preview before applying.
 - **Running it again is safe.** Events that already match the template plan as **No changes**, so to retry failed events, preview and apply the same selection again and only the events that still differ are touched.
-- **Every change is in History.** Each target event's [**History > Audit**](/communications/email-sms-history#audit) log records the role, permission, field and team changes, attributed to the person who applied them.
+- **Every change is in History.** Each target event's [**History > Audit**](/communications/email-sms-history#audit) log records the role, permission, field, status and team changes, attributed to the person who applied them.
 
 ## What is not copied
 
@@ -73,7 +74,7 @@ If you change any selection after previewing, the preview is cleared and you pre
 - **Missing fields are skipped.** A field setting is copied only where the target event has a field with the same internal name.
 - **Removals only touch that role.** Removing someone who holds a different role in a target event leaves them in that role, with a warning.
 - **No invitation emails.** Adding team members to a role through Bulk Permissions does not email them. Send an invite from **Event Team** if they need one.
-- **Status permissions are not copied.** Which session statuses a role may set ([limit which statuses a role can set](/event-team/invite-manage-event-team-members#limit-which-statuses-a-role-can-set)) is set per event.
+- **Status restrictions are copied only when you ask.** Which session statuses a role may set ([limit which statuses a role can set](/event-team/invite-manage-event-team-members#limit-which-statuses-a-role-can-set)) stays as it is in each event unless you tick **Copy statuses and their role restrictions**. That option only adds statuses; it never renames or removes one.
 - **Portal User** cannot be assigned here — portal access comes from Contacts.
 
 <Note>
