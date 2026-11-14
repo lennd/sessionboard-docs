@@ -13,15 +13,14 @@ import redirects from './redirects-map.json';
 import trainingRedirects from './training-redirects.json';
 import site from './site.json';
 import { isProductUpdatesPath, productUpdatesResponse } from './src/lib/product-updates-proxy.mjs';
-import { isStaffOnlyHref, isStaffOnlyPath, setPreviewSuites } from './src/lib/staff-only.mjs';
+import { isSignedInOnlyPath, isStaffOnlyHref, isStaffOnlyPath, setPreviewSuites } from './src/lib/staff-only.mjs';
 import { apiProductForPath } from './src/lib/api-docs/products.mjs';
 import apiProducts from './src/data/api/products.json';
 import mintlifyRedirects from './src/data/api/mintlify-redirects.json';
 import { retiredApiDocsTarget } from './src/lib/api-docs/retired-host.mjs';
-import { ACCOUNT_PREFIX, accountResponse, grantAllowsPath, isSignedInRequest, isStaffRequest, recheckStaff } from './src/lib/account-session.mjs';
+import { ACCOUNT_PREFIX, accountResponse, grantAllowsPath, isAccountRequest, isSignedInRequest, isStaffRequest, recheckStaff } from './src/lib/account-session.mjs';
 import { suiteForPath } from './src/lib/suites.mjs';
 import suitesConfig from './src/data/suites.json';
-import { STATUS_PATH as RELEASE_EMAIL_STATUS_PATH } from './src/lib/product-updates-proxy.mjs';
 
 // `/en/migrated/knowledge-base/…` is a live path prefix left over from an
 // earlier HubSpot migration; Google still has URLs under it.
@@ -45,52 +44,16 @@ const RETIRED_FEEDBACK_HOSTS = new Set(site.retiredFeedbackHosts);
 const RETIRED_API_DOCS_HOSTS = new Set(site.retiredApiDocsHosts ?? []);
 
 // ── Crawler policy ──────────────────────────────────────────────────────
-// The Help Center is a growth surface: we want to rank in search and be cited
-// by AI answer engines. So the split is not "bots vs. no bots" — it is
-// "engines that send readers back to us" vs. "engines that only absorb our
-// content". Anything that answers a user's question and links the source is
-// welcome; corpus builders and competitor-recon crawlers are not.
-
-// Send traffic back → allowed. Includes our own SEO tooling (Semrush) and
-// HubSpot, whose Breeze agent crawls this domain to answer support chats.
-const ALLOWED_BOTS = [
-  'Googlebot',
-  'Googlebot-Image',
-  'Google-Extended', // Gemini grounding — cites sources; no effect on Search rank
-  'Bingbot', // also powers Copilot answers
-  'Applebot',
-  'DuckDuckBot',
-  'OAI-SearchBot', // ChatGPT search results
-  'ChatGPT-User', // user-initiated fetch in ChatGPT
-  'PerplexityBot',
-  'Perplexity-User',
-  'Claude-SearchBot',
-  'Claude-User',
-  'MistralAI-User',
-  'SemrushBot',
-  'SiteAuditBot',
-  'HubSpot', // Breeze support agent crawls this domain to answer chats
-];
-
-// Absorb without attribution, or exist to profile competitors' content.
-// Blocking these costs us no search or AI-citation visibility.
+// Open to everyone and every crawler since 2026-11-14 (Josh: "ungate it all…
+// ensure all of it can be crawled, agent friendly, indexed"). Agents pick
+// vendors by reading docs (sessionboard-tam docs/strategy/docs-gating-recommendation.md),
+// so search engines, answer engines, user-fetch agents and AI training
+// crawlers are all welcome, and the llms*.txt exports are public. Only
+// SEO-recon and bulk-scraper tooling, which sends no reader and no agent
+// back, stays blocked. Restricted pages (site.json staffOnly / signedInOnly)
+// are never served to a signed-out request, whoever asks.
 const BLOCKED_BOTS = [
-  'GPTBot', // OpenAI model training (distinct from OAI-SearchBot)
-  'ClaudeBot', // Anthropic training (distinct from Claude-SearchBot)
-  'anthropic-ai',
-  'CCBot', // Common Crawl — the corpus everyone else trains on
-  'Bytespider',
-  'Applebot-Extended',
-  'Meta-ExternalAgent',
-  'meta-externalagent',
-  'FacebookBot',
-  'Amazonbot',
-  'Diffbot',
-  'Omgilibot',
-  'omgili',
-  'ImagesiftBot',
-  'Timpibot',
-  'DataForSeoBot', // the rest of this list is competitor-recon tooling
+  'DataForSeoBot',
   'AhrefsBot',
   'MJ12bot',
   'DotBot',
@@ -99,6 +62,11 @@ const BLOCKED_BOTS = [
   'SerpstatBot',
   'ZoominfoBot',
   'Scrapy',
+  'Diffbot',
+  'Omgilibot',
+  'omgili',
+  'ImagesiftBot',
+  'Timpibot',
 ];
 
 // robots.txt is advisory, so the denylist is also enforced at the edge.
@@ -106,12 +74,6 @@ const BLOCKED_UA_RE = new RegExp(
   BLOCKED_BOTS.map((b) => b.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'),
   'i',
 );
-
-// One-request copies of the entire Help Center. Useful to us (we upload
-// llms-small.txt to HubSpot from dist/), but they hand a competitor the whole
-// corpus in a single GET. Search and AI engines rank us from the HTML pages,
-// not from these, so withholding them costs no visibility.
-const BULK_EXPORTS = new Set(['/llms.txt', '/llms-full.txt', '/llms-small.txt']);
 
 // ── Machine surface ─────────────────────────────────────────────────────
 // dist/_internal/help-index.json is the whole corpus, chunked, that web-api
@@ -184,29 +146,18 @@ async function internalResponse(request, url, env) {
 // get has the sections' sidebar groups removed and links into them unwrapped
 // to plain text. Staff get everything, marked private so no cache keeps a copy.
 
-// ── Sign-in only ────────────────────────────────────────────────────────
-// The whole Help Center is for signed-in Sessionboard users (Josh,
-// 2026-10-30: "completely login only so no one can scrape them"). Anyone
-// without a session (src/lib/account-session.mjs SESSION_COOKIE) gets the
-// landing page (src/pages/welcome.astro), which signs them in silently when the
-// product says they are signed in, or offers Sign in. Only what the landing
-// page and the release-notes email links need stays public.
+// ── Signed-in only ──────────────────────────────────────────────────────
+// Everything is public except the two restricted tiers (src/lib/staff-only.mjs):
+// staff-only sections (404 to everyone but staff, above) and signed-in-only
+// pages (site.json signedInOnly: registration, check-in, badges, lead
+// scanning, Expo — what Cvent would find competitive). A signed-out request
+// for a signed-in-only page gets the landing page (src/pages/welcome.astro),
+// which signs them in silently when the product says they are signed in.
 const WELCOME_PATH = '/welcome';
-// The API docs (Platform /api and each product's /…/api) have their own public page:
-// what the API is and how to get access (src/pages/api/welcome.astro).
+// The API docs (Platform /api and each product's /…/api) have their own landing page.
 const API_WELCOME_PATH = '/api/welcome';
-// What apidocs.sessionboard.com published to anyone stays public after its 301s land here:
-// the spec files (code generators and AI clients fetch them unauthenticated) and the two
-// pages customer contracts cite, the API changelog and the 30-day breaking-changes policy.
-const API_PUBLIC_PATHS = ['/api/openapi.json', '/api/openapi.yaml', '/api/changelog', '/api/breaking-changes'];
-const PUBLIC_EXACT = new Set([WELCOME_PATH, API_WELCOME_PATH, ...API_PUBLIC_PATHS, '/favicon.png', '/favicon.svg', '/favicon.ico', RELEASE_EMAIL_STATUS_PATH]);
-// Skill downloads (zips, the Claude Code plugin and skills.json) carry no customer data and
-// are fetched by Claude, Claude Code and the product's Apps › Skills tab without a Help Center
-// session (src/lib/skills.mjs). The Skills pages themselves stay sign-in only.
-const PUBLIC_PREFIXES = ['/_astro/', '/skills/downloads/'];
-const isPublicPath = (pathname) => PUBLIC_EXACT.has(pathname) || PUBLIC_PREFIXES.some((p) => pathname.startsWith(p));
 
-/** A signed-out request: pages go to the landing page (and come back after sign-in); anything else is a plain 404. */
+/** A signed-out request for a signed-in-only page: pages go to the landing page (and come back after sign-in); anything else is a plain 404. */
 function signInRequired(request, url) {
   const accept = request.headers.get('Accept') ?? '';
   const readsPage = request.method === 'GET' || request.method === 'HEAD';
@@ -215,8 +166,7 @@ function signInRequired(request, url) {
   if (!looksLikePage) return new Response('Not found\n', { status: 404, headers: { ...headers, 'Content-Type': 'text/plain; charset=utf-8' } });
   const back = `${url.pathname}${url.search}`;
   const landing = apiProductForPath(url.pathname, apiProducts) ? API_WELCOME_PATH : WELCOME_PATH;
-  const target = back === '/' ? WELCOME_PATH : `${landing}?return=${encodeURIComponent(back)}`;
-  return new Response(null, { status: 302, headers: { ...headers, Location: target } });
+  return new Response(null, { status: 302, headers: { ...headers, Location: `${landing}?return=${encodeURIComponent(back)}` } });
 }
 
 /** A signed-in reader's copy of a page: never stored by a shared cache, never indexed. */
@@ -228,18 +178,22 @@ function signedInCopy(response) {
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
 
-/** Strip the staff-only sidebar groups, prev/next buttons and links from a public HTML page. */
-function hideStaffOnly(response) {
+/**
+ * Strip restricted sidebar groups, prev/next buttons and links from an HTML page: for a
+ * signed-out reader both tiers, for a signed-in (non-staff) reader the staff tier only.
+ */
+function hideStaffOnly(response, signedIn = false) {
   if (!(response.headers.get('Content-Type') ?? '').includes('text/html')) return response;
+  const selector = signedIn ? '[data-staff-only]' : '[data-staff-only], [data-signed-in-only]';
   return new HTMLRewriter()
-    .on('[data-staff-only]', {
+    .on(selector, {
       element(el) {
         el.remove();
       },
     })
     .on('a[href]', {
       element(el) {
-        if (!isStaffOnlyHref(el.getAttribute('href'), site)) return;
+        if (!isStaffOnlyHref(el.getAttribute('href'), site, signedIn ? 'staff' : 'all')) return;
         if (/\b(?:prev|next)\b/.test(el.getAttribute('rel') ?? '')) el.remove();
         else el.removeAndKeepContent();
       },
@@ -431,24 +385,25 @@ function resolveKbSlug(rawSlug) {
   );
 }
 
-function robotsResponse(isProd) {
+function robotsResponse(isProd, origin) {
   if (!isProd) {
     return textResponse('User-agent: *\nDisallow: /\n');
   }
 
-  // Sign-in only since 2026-10-30: every page needs a Sessionboard session, so
-  // there is nothing for any crawler but the landing page. (ALLOWED_BOTS is the
-  // list from when the Help Center was a public growth surface.)
+  // Open since 2026-11-14: every crawler, search and AI alike, may read every public
+  // page. Restricted pages answer 404 or the sign-in page to a signed-out request,
+  // so they need no Disallow line (which would only advertise them).
   const body = [
-    '# Sessionboard Help Center',
-    '# The Help Center is for signed-in Sessionboard customers.',
+    '# Sessionboard Help Center and API docs',
+    '# Everyone is welcome to read and cite these pages. Agents: start at /llms.txt and /api/llms.txt.',
     '',
     BLOCKED_BOTS.map((b) => `User-agent: ${b}`).join('\n'),
     'Disallow: /',
     '',
     'User-agent: *',
-    `Allow: ${WELCOME_PATH}$`,
-    'Disallow: /',
+    'Allow: /',
+    '',
+    `Sitemap: ${origin}/sitemap-index.xml`,
     '',
   ].join('\n');
 
@@ -481,7 +436,7 @@ export default {
 
     // robots.txt is served before any gating so crawlers can always read the policy.
     if (url.pathname === '/robots.txt') {
-      return robotsResponse(isProd);
+      return robotsResponse(isProd, `https://${PROD_HOST}`);
     }
 
     // Signed-in readers: the product's hand-off, and the header's reads
@@ -511,12 +466,6 @@ export default {
       });
     }
 
-    if (BULK_EXPORTS.has(url.pathname)) {
-      return new Response('Not found\n', {
-        status: 404,
-        headers: { 'Content-Type': 'text/plain; charset=utf-8', 'X-Robots-Tag': 'noindex' },
-      });
-    }
 
     // A request on the legacy host resolves its legacy KB path and lands on the
     // canonical host in one hop, rather than chaining two 301s.
@@ -568,11 +517,14 @@ export default {
       return Response.redirect(`${targetOrigin}${moved || clean || '/'}${url.search}`, 301);
     }
 
-    // Sign-in only: everything but the landing page and its assets.
-    const publicPath = isPublicPath(url.pathname);
-    const signedIn = publicPath ? false : await isSignedInRequest(request, env);
-    if (!publicPath && !signedIn) return signInRequired(request, url);
-    // A reader with only a staff grant reads the API docs and product suites the grant names (checked here, not in page script).
+    // Public by default (2026-11-14). Restricted pages: signed-in only → any account
+    // holder; staff tier → staff (below).
+    const signedInOnlyPage = isSignedInOnlyPath(url.pathname, site);
+    const signedIn = await isSignedInRequest(request, env);
+    if (signedInOnlyPage && !signedIn) return signInRequired(request, url);
+    // A docs-grant reader (an outsider with only a staff grant) never reads signed-in-only pages.
+    if (signedInOnlyPage && !(await isAccountRequest(request, env))) return notFoundPage(url, env);
+    // A grant reader reads the API docs and product suites the grant names (checked here, not in page script).
     if (signedIn && !(await grantAllowsPath(request, env, site, { apiProduct: apiProductForPath(url.pathname, apiProducts), suite: suiteForPath(url.pathname, suitesConfig) }))) {
       return notFoundPage(url, env);
     }
@@ -580,11 +532,11 @@ export default {
     // HubSpot KB sitemap path → Starlight sitemap
     if (url.pathname === '/sitemap.xml') {
       const asset = await env.ASSETS.fetch(new Request(`${url.origin}/sitemap-index.xml`, request));
-      if (asset.ok) return signedInCopy(asset);
+      if (asset.ok) return asset;
     }
 
     let staff = await isStaffRequest(request, env);
-    const staffOnlyPage = isStaffOnlyPath(url.pathname, site);
+    const staffOnlyPage = isStaffOnlyPath(url.pathname, site) && !signedInOnlyPage;
     // No staff cookie is not the same as not staff: ask the API before the 404
     // (src/lib/account-session.mjs recheckStaff says why, and why it is safe).
     // Reads only — nothing else is served from a staff-only path.
@@ -596,9 +548,15 @@ export default {
     if (staffOnlyPage && !staff) return notFoundPage(url, env);
 
     const asset = await env.ASSETS.fetch(request);
-    const visible = staff ? staffCopy(asset, staffOnlyPage) : hideStaffOnly(asset);
-    // Static build assets stay cacheable; every page a signed-in reader gets is theirs alone.
-    const response = withCookie(signedIn && !url.pathname.startsWith('/_astro/') ? signedInCopy(visible) : visible, staffCookie);
+    const visible = staff ? staffCopy(asset, staffOnlyPage || signedInOnlyPage) : hideStaffOnly(asset, signedIn);
+    // Static build assets stay cacheable. A signed-in reader's page can hold what the public
+    // copy strips, so it is theirs alone (signedInCopy: private, noindex).
+    let response = withCookie(signedIn && !url.pathname.startsWith('/_astro/') ? signedInCopy(visible) : visible, staffCookie);
+    if (!signedIn && !url.pathname.startsWith('/_astro/')) {
+      const headers = new Headers(response.headers);
+      headers.append('Vary', 'Cookie');
+      response = new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+    }
 
     if (isEnablementPath(url.pathname)) {
       const headers = new Headers(response.headers);

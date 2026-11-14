@@ -75,9 +75,9 @@ The server uses the streamable HTTP transport and supports OAuth 2.0 with PKCE a
   </Step>
 </Steps>
 
-## Available Tools (46)
+## Available tools
 
-The MCP server exposes 46 tools in five groups. Write operations use a `manage_*` pattern — one tool per entity with an `action` parameter to pick the operation (e.g., `action: "create"`).
+The MCP server groups its tools as below. Write operations use a `manage_*` pattern — one tool per entity with an `action` parameter to pick the operation (e.g., `action: "create"`).
 
 All tools include [MCP annotations](https://modelcontextprotocol.io/docs/concepts/tools#tool-annotations) for safe AI behavior — read tools are marked `readOnlyHint: true`, every `manage_*` tool is marked `destructiveHint: true` because each can overwrite an existing record through its `update` action (even the ones with no `delete`), and all are `openWorldHint: false` because every tool is bounded to your organization's data. Clients such as Claude and ChatGPT use these hints to ask for confirmation before a write runs.
 
@@ -147,24 +147,6 @@ Each `manage_*` tool handles all operations for an entity — create, update, de
 | `manage_org_dashboard` | `list`, `get`, `create`, `update`, `delete` | `write:events` | Org-level dashboards (cross-event) |
 | `manage_org_widget` | `create`, `update`, `delete` | `write:events` | Org-level dashboard widgets |
 | `manage_org_report` | `list`, `run`, `create`, `create_from_nl`, `update`, `delete` | `write:events` | Org-level saved reports (cross-event) |
-
-### Registration (9 tools)
-
-Read-only answers about an event's registration: the funnel, conversion per form, abandoned checkouts, the waitlist, attendees, orders, payments, membership, capacity and setup. They need the `read:registrations` scope, which is in preview: tick it under **Opt-in** when you create an API token, or name it in your OAuth `scope` request. The event must have Registration turned on (Early Access); otherwise these tools say so instead of answering.
-
-| Tool | Actions | Description |
-|------|---------|-------------|
-| `read_registration_summary` | — | Registrations by status, by day, per ticket type, attendee type and form; member mix; revenue; orders per status; invoices still owed; capacity pools |
-| `find_registrations` | `search`, `get` | Find attendees by a name, email or company fragment, or filter by status, ticket type, attendee type or form; one registration in full |
-| `read_registration_orders` | `list`, `get` | Find an order by number or buyer email, or list orders by status (`awaiting_invoice`, `partially_paid` still owe); one order in full |
-| `read_registration_payments` | `list`, `get` | Payment records: card and bank payments through your payment gateway and offline money, failed attempts with their reason, refunds and the charge they refund. Never card numbers or tokens |
-| `read_registration_members` | `lookup`, `list` | Check one email the way the form does (member, lapsed or none), or list registrations with the membership recorded when they registered |
-| `read_registration_capacity` | — | Every ticket type's capacity, sold and available, plus shared capacity pools |
-| `read_registration_funnel` | — | Conversion per registration form: form views, checkouts started and completed, registrations, the rates between them, abandoned checkouts and what they held, abandonment in the last 7 and 30 days and by ticket type |
-| `read_registration_waitlist` | — | Who is waiting, as counts: per form and ticket type, the event waitlist of closed forms, open / expired / taken offers, and each form's waitlist settings |
-| `read_registration_setup` | `section` | Fee groups and their promo codes, donation funds with raised and pledged totals, workshop picking rules, the badge print queue |
-
-Try: *"How many people registered for Annual Meeting 2026 last week, and how much is still owed on invoices?"* or *"Is ada@example.org a member, and is she registered?"* or *"Which registration form converts best, and how many checkouts were abandoned this week?"*
 
 ### Sharing a webinar (9 tools)
 

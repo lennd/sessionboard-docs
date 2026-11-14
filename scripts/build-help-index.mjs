@@ -31,7 +31,7 @@ import { fileURLToPath } from 'node:url';
 
 import { absolutizeAssets } from '../src/lib/absolutize-assets.mjs';
 import { annotateImages, imageSize } from '../src/lib/annotate-images.mjs';
-import { isStaffOnlySlug } from '../src/lib/staff-only.mjs';
+import { isSignedInOnlySlug, isStaffOnlySlug } from '../src/lib/staff-only.mjs';
 import { ACADEMY_SLUG, academyOpen } from '../src/lib/academy.mjs';
 import { PLATFORM, deployedSuites, keepEntry, suiteForId } from '../src/lib/suites.mjs';
 
@@ -377,7 +377,11 @@ for (const file of walk(DOCS).sort()) {
   if (rel === ACADEMY_SLUG && !academyOpen(site)) continue;
   // Staff-only sections (site.json `staffOnly`) are not public, and Team Lead
   // answers customers: an answer citing them would link to a 404.
-  if (isStaffOnlySlug(rel.replace(/\/index$/, ''), site)) continue;
+  // Signed-in-only pages (site.json `signedInOnly`) stay in: Ask answers signed-in
+  // customers, and this corpus is served only to web-api (bearer token).
+  if (isStaffOnlySlug(rel.replace(/\/index$/, ''), site) && !isSignedInOnlySlug(rel.replace(/\/index$/, ''), site)) continue;
+  // A draft (frontmatter `draft: true`) is not built, so there is nothing to cite.
+  if (/^---[\s\S]*?^draft:\s*true\s*$[\s\S]*?^---/m.test(readFileSync(file, 'utf8'))) continue;
   // A self-serve suite that is not in this build (src/data/suites.json
   // `released`, SB_PREVIEW_SUITES) has no pages to index.
   const suiteId = rel.replace(/\/index$/, '');

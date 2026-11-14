@@ -10,7 +10,8 @@
  *
  * Second addition: an entry whose pages are all staff-only (site.json
  * `staffOnly`) carries data-staff-only, and worker.js removes it from the HTML
- * anyone without a staff session gets.
+ * anyone without a staff session gets; one whose pages are all signed-in only
+ * (site.json `signedInOnly`) carries data-signed-in-only, removed for signed-out readers.
  *
  * Third addition: every link's <li> carries data-products (the article's
  * frontmatter `products`, space-separated, empty when untagged), and a
@@ -46,9 +47,11 @@ const productsByPath = new Map((await getCollection('docs')).map((e) => [entryPa
 const scopeHomes = new Set(Object.values(helpScopes.scopes).map((s) => s.home));
 const linkPath = (entry: SidebarEntry) => (entry.type === 'link' ? normalizePath(entry.href) : null);
 
-const staffOnly = (entry: SidebarEntry) => {
+// 'staff' (super users only), 'signedIn' (any signed-in user, site.json signedInOnly) or null (public).
+const tierOf = (entry: SidebarEntry): 'staff' | 'signedIn' | null => {
 	const links = entry.type === 'group' ? flattenSidebar(entry.entries) : [entry];
-	return links.length > 0 && links.every((link) => isStaffOnlyHref(link.href, site));
+	if (!links.length || !links.every((link) => isStaffOnlyHref(link.href, site))) return null;
+	return links.some((link) => isStaffOnlyHref(link.href, site, 'staff')) ? 'staff' : 'signedIn';
 };
 ---
 
@@ -58,8 +61,9 @@ const staffOnly = (entry: SidebarEntry) => {
 			<li
 				data-group={entry.type === 'group' ? entry.label : undefined}
 				data-skills-for={(entry as { sbFor?: string[] }).sbFor?.join(' ')}
-				data-staff-only={staffOnly(entry) ? '' : undefined}
-				title={staffOnly(entry) ? 'Visible to Sessionboard staff only' : undefined}
+				data-staff-only={tierOf(entry) === 'staff' ? '' : undefined}
+				data-signed-in-only={tierOf(entry) === 'signedIn' ? '' : undefined}
+				title={tierOf(entry) === 'staff' ? 'Visible to Sessionboard staff only' : tierOf(entry) === 'signedIn' ? 'Visible to signed-in customers only' : undefined}
 				data-products={entry.type === 'link' ? (productsByPath.get(linkPath(entry)!) ?? []).join(' ') : undefined}
 				data-scope-home={entry.type === 'link' && scopeHomes.has(linkPath(entry)!) ? '' : undefined}
 			>
