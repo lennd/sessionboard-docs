@@ -9,6 +9,22 @@ Release notes for the Marketing API and its MCP tools. Entries are grouped by mo
 
 ## Upcoming
 
+### Marketing: edits you can see and undo, and results with a story
+
+**Added — what changed, on every edit.** Edits to an existing event page, Site, lifecycle email proposal, newsletter issue or campaign draft now return `what_changed` (one plain sentence per change in `summary`, and `added` / `changed` with `before` and `after` / `removed` / `moved` as data) and `kept` (where the earlier version is and the call that restores it). Schemas `WhatChanged`, `EditKept`, `EditReceipt`.
+
+**Added — nothing is overwritten without a way back.** Before an API or assistant edit replaces someone else's unpublished Site or event page draft, the draft is kept as a version (`source: checkpoint` in the versions list) and restores with the existing versions restore route. Newsletter issues keep a version before every edit: `GET .../marketing/newsletter/issues/{issueId}/versions` and `POST .../issues/{issueId}/versions/{versionId}/restore` (also under `/v1/marketing/...`). Campaign drafts keep one too (`manage` actions `versions` and `restore_version`). An earlier, unaccepted email proposal stays in the email's history instead of being removed.
+
+**Added — `story` on results.** `GET .../marketing/results` (event, webinar, organization and sponsor reports) and `GET .../marketing/results/outcomes` carry `story`: a headline, three to five findings, drivers, a next move and slide-ready sections with chart specs. Every number cites the field it comes from (`ResultsStory`). The sharing results summary and in-person event results carry it too.
+
+**Added — MCP tools `list_newsletter_issue_versions` and `restore_newsletter_issue_version`;** `update_newsletter_issue` answers with what changed. See [Marketing MCP tools](/sessionboard-marketing/api/mcp-tools#edits-you-can-see-and-undo).
+
+All of this is additive; existing fields and status codes are unchanged. Publishing, accepting, scheduling and launching still wait for a person's OK.
+
+<Note>
+These arrive with an upcoming Sessionboard release. The date will be added here when they are live.
+</Note>
+
 ### Marketing: webinar questions, topic watch time and outcomes
 
 **Added — webinar reporting.** `GET /v1/organization/{orgId}/marketing/results/questions` lists questions asked in your webinars that are worth following up and whether anyone has followed up in your CRM or AMS since. `GET .../results/topic-watch-time` gives live and on-demand watch time by topic (medians; topics under 5 people left out). `GET .../results/outcomes` gives what happened after people attended: sales pipeline and closed won from accounts that attended, memberships and renewals, or exhibitor and sponsor contracts, depending on your organization's kind. `GET` / `PUT .../results/outcomes/settings` reads and sets how many days after the first webinar a deal or membership still counts (30 to 365, default 180). Every response carries `org_kind` and `labels`, your organization's own words for people and money, and outcomes carry a `method` sentence. All are also served under `/v1/marketing/results/...` with the organization taken from the token, and need `read:marketing` (the settings `PUT` needs `write:marketing`). Additive; nothing existing changes. See the [Marketing API overview](/sessionboard-marketing/api).

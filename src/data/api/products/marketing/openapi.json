@@ -163,6 +163,97 @@
         }
       }
     },
+    "/v1/organization/{orgId}/marketing/results": {
+      "get": {
+        "operationId": "get-marketing-results",
+        "summary": "Get the results report",
+        "description": "One report for an event, a webinar (leave out `eventId` for the latest), the organization, or one sponsor (`scope=sponsor`, counts only — no attendee is ever named). Event, webinar and org reports carry `totals`, `funnel`, `channels`, `people` (who shared), `posts`, `content`, `gaps` and the `net_new` split; a sponsor report carries `totals` and `sessions`. Every report also carries `story`: the same numbers as a headline, findings, drivers, a next move and deck-ready sections, each claim citing the fields it comes from. Requires `read:marketing`; a key restricted to particular events must name one of them as `eventId`. Also at `GET /v1/marketing/results`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "event",
+                "webinar",
+                "org",
+                "sponsor"
+              ],
+              "default": "event"
+            }
+          },
+          {
+            "name": "eventId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sponsorId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "With `scope=sponsor`. Pick one with `GET …/marketing/results/sponsors`."
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`payload` with the report and its `story`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "scope": {
+                          "type": "string"
+                        },
+                        "totals": {
+                          "type": "object"
+                        },
+                        "story": {
+                          "$ref": "#/components/schemas/ResultsStory"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          }
+        }
+      }
+    },
     "/v1/organization/{orgId}/marketing/results/questions": {
       "get": {
         "operationId": "list-webinar-questions-to-follow-up",
@@ -1748,7 +1839,7 @@
       "put": {
         "operationId": "update-newsletter-issue",
         "summary": "Update an issue",
-        "description": "Subject, preheader and blocks of a draft. Requires `write:marketing`; refused for a key restricted to particular events. Also at `PUT /v1/marketing/newsletter/issues/{issueId}`.",
+        "description": "Subject, preheader, layout and blocks of a draft or scheduled issue (a sent issue cannot change). Sends nothing. Requires `write:marketing`; refused for a key restricted to particular events. Also at `PUT /v1/marketing/newsletter/issues/{issueId}`.",
         "tags": [
           "Marketing"
         ],
@@ -1781,7 +1872,15 @@
                   },
                   "blocks": {
                     "type": "array",
-                    "description": "Blocks: heading, text, clip, quote, episode, button"
+                    "description": "Blocks: heading, text, clip, quote, episode, button, image (the whole list, in order)"
+                  },
+                  "layout": {
+                    "type": "string",
+                    "enum": [
+                      "single",
+                      "feature",
+                      "digest"
+                    ]
                   }
                 }
               }
@@ -1790,7 +1889,31 @@
         },
         "responses": {
           "200": {
-            "description": "`payload` with the result"
+            "description": "`payload.issue` with the edited issue, plus `what_changed` and `kept`. The issue as it was is kept as a version before every edit; restore it with `POST …/issues/{issueId}/versions/{versionId}/restore`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "allOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "issue": {
+                              "type": "object"
+                            }
+                          }
+                        },
+                        {
+                          "$ref": "#/components/schemas/EditReceipt"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
           },
           "403": {
             "$ref": "#/components/responses/MarketingForbidden"
@@ -1830,6 +1953,148 @@
           },
           "404": {
             "description": "Not found in your organization."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/newsletter/issues/{issueId}/versions": {
+      "get": {
+        "operationId": "list-newsletter-issue-versions",
+        "summary": "List an issue's kept versions",
+        "description": "The issue as it was before each edit, newest first: `version`, `summary` (what the edit that replaced it changed, in plain words), `replaced_by` (who: a person or the assistant's name) and `created_at`. Requires `read:marketing`; refused for a key restricted to particular events. Also at `GET /v1/marketing/newsletter/issues/{issueId}/versions`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "issueId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The issue"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`payload` with `issue_id` and `versions`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "issue_id": {
+                          "type": "string"
+                        },
+                        "versions": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/DraftVersion"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "Not found in your organization."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/newsletter/issues/{issueId}/versions/{versionId}/restore": {
+      "post": {
+        "operationId": "restore-newsletter-issue-version",
+        "summary": "Restore a kept version of an issue",
+        "description": "Puts a kept version's subject, preheader, layout and blocks back on a draft or scheduled issue. The issue as it is now is kept first, so a restore can be undone too. Sends nothing. Returns `restored_version`, the issue, `what_changed` and `kept`. Requires `write:marketing`; refused for a key restricted to particular events. Also at `POST /v1/marketing/newsletter/issues/{issueId}/versions/{versionId}/restore`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "issueId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The issue"
+          },
+          {
+            "name": "versionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "`kept.version_id` from an edit, or an id from the versions list"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Restored.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "allOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "restored_version": {
+                              "type": "integer"
+                            },
+                            "issue": {
+                              "type": "object"
+                            }
+                          }
+                        },
+                        {
+                          "$ref": "#/components/schemas/EditReceipt"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The issue was sent; it can no longer change."
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "The issue or the version is not in your organization."
           }
         }
       }
@@ -3193,7 +3458,7 @@
         },
         "responses": {
           "200": {
-            "description": "Saved. The new `revision`, what changed, and the Site's pages and diff.",
+            "description": "Saved. The new `revision`, what changed, and the Site's pages and diff. `what_changed` describes this edit (before → after, in plain words); `kept` says how to undo it. When an API or assistant edit replaces unpublished work by someone else (or its own from more than 10 minutes ago), that draft is first kept as a version with `source: checkpoint`, restorable with the versions restore route.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3236,6 +3501,16 @@
                         },
                         "diff": {
                           "$ref": "#/components/schemas/SiteDiff"
+                        },
+                        "what_changed": {
+                          "$ref": "#/components/schemas/WhatChanged"
+                        },
+                        "kept": {
+                          "$ref": "#/components/schemas/EditKept"
+                        },
+                        "reaches_people": {
+                          "type": "string",
+                          "description": "Nothing in a draft is live; publishing needs a person."
                         }
                       }
                     }
@@ -3541,7 +3816,7 @@
       "get": {
         "operationId": "list-site-versions",
         "summary": "List a Site's versions",
-        "description": "Every publish, newest first, with a plain-language summary of what it changed. A Site's first publish also keeps the Site as it was before (`source: baseline`). Also at `GET /v1/sites/{siteId}/versions`.",
+        "description": "Every publish, newest first, with a plain-language summary of what it changed. A Site's first publish also keeps the Site as it was before (`source: baseline`). Draft checkpoints are listed too (`source: checkpoint`): an unpublished draft by someone else, kept before an API or assistant edit changed it. Restoring any version writes the draft, never live. Also at `GET /v1/sites/{siteId}/versions`.",
         "tags": [
           "Sites"
         ],
@@ -4691,6 +4966,9 @@
                 "type": "string",
                 "description": "How it was counted, in one sentence ending \"Association, not credit.\"",
                 "example": "Deals created on an account within 180 days after someone there registered for or watched a webinar. Association, not credit."
+              },
+              "story": {
+                "$ref": "#/components/schemas/ResultsStory"
               }
             }
           }
@@ -5003,6 +5281,462 @@
           "summary": {
             "type": "string",
             "description": "One plain paragraph to lead with."
+          }
+        }
+      },
+      "WhatChanged": {
+        "type": "object",
+        "description": "What one edit changed, in plain words. `summary` is one sentence per change (\"Changed Hero heading on the home page: “Old” → “New”\"); the lists carry the same changes as data. Text is plain (HTML removed) and clipped to 200 characters; a block lists at most 8 changed fields and says how many more there were.",
+        "properties": {
+          "has_changes": {
+            "type": "boolean"
+          },
+          "summary": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "added": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "where": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "example": "on the home page"
+                },
+                "what": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "example": "FAQ"
+                },
+                "block_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "kind": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "text": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            }
+          },
+          "changed": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "where": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "what": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "block_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "kind": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "fields": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "field": {
+                        "type": "string"
+                      },
+                      "label": {
+                        "type": "string"
+                      },
+                      "before": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "after": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    }
+                  }
+                },
+                "more_fields": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "removed": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "where": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "what": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "block_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "kind": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "text": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            }
+          },
+          "moved": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "where": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "what": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "block_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "from": {
+                  "type": "integer"
+                },
+                "to": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        }
+      },
+      "EditKept": {
+        "type": "object",
+        "description": "How to get back to what was there before this edit.",
+        "properties": {
+          "kept": {
+            "type": "boolean"
+          },
+          "version_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "version": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "how": {
+            "type": "string",
+            "description": "One sentence saying where the earlier version is and how to restore it."
+          },
+          "restore": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "The call that undoes this edit.",
+            "properties": {
+              "tool": {
+                "type": "string",
+                "example": "restore_site_version"
+              },
+              "args": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      },
+      "EditReceipt": {
+        "type": "object",
+        "description": "Returned by every edit to an existing Marketing asset (event pages, Sites, lifecycle email proposals, newsletter issues, campaign drafts): what changed, how to undo it, and whether anything reaches people.",
+        "properties": {
+          "what_changed": {
+            "$ref": "#/components/schemas/WhatChanged"
+          },
+          "kept": {
+            "$ref": "#/components/schemas/EditKept"
+          },
+          "reaches_people": {
+            "type": "string"
+          }
+        }
+      },
+      "DraftVersion": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer"
+          },
+          "summary": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "What the edit that replaced this version changed."
+          },
+          "replaced_by": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "label": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "example": "Claude"
+              },
+              "vendor": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              }
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ResultsStory": {
+        "type": "object",
+        "description": "The report as a narrative, ready to say back or to turn into slides. Every number in it is a field of the same response, named in `cites` (paths such as `totals.registrations` or `channels[0].share`). Nothing is estimated or taken from outside Sessionboard; what the data cannot support is listed in `missing`. Attendees are never named.",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "example": 1
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "event",
+              "webinar",
+              "org",
+              "sponsor",
+              "advocacy",
+              "field_event",
+              "webinar_outcomes"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "headline": {
+            "$ref": "#/components/schemas/StoryClaim"
+          },
+          "findings": {
+            "type": "array",
+            "maxItems": 5,
+            "items": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/StoryClaim"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "value": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "drivers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StoryClaim"
+            }
+          },
+          "next_move": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "text": {
+                "type": "string"
+              },
+              "why": {
+                "type": "string"
+              },
+              "cites": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "sections": {
+            "type": "array",
+            "description": "One slide each.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string"
+                },
+                "bullets": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StoryClaim"
+                  }
+                },
+                "chart": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "bar",
+                        "funnel",
+                        "kpi"
+                      ]
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "x": {
+                      "type": "string",
+                      "example": "label"
+                    },
+                    "y": {
+                      "type": "string",
+                      "example": "value"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "label": {
+                            "type": "string"
+                          },
+                          "value": {
+                            "type": "number"
+                          }
+                        }
+                      }
+                    },
+                    "cites": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "missing": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "rules": {
+            "type": "string"
+          }
+        }
+      },
+      "StoryClaim": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "cites": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
@@ -5437,7 +6171,8 @@
             "type": "string",
             "enum": [
               "publish",
-              "baseline"
+              "baseline",
+              "checkpoint"
             ]
           },
           "summary": {
