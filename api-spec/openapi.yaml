@@ -14980,6 +14980,127 @@ paths:
           $ref: '#/components/responses/MarketingForbidden'
         '404':
           description: The event is not in your organization.
+  /v1/organization/{orgId}/marketing/goals/discovery/{eventId}:
+    get:
+      operationId: get-ai-discovery
+      summary: Found by AI (what AI assistants say about an event)
+      description: >-
+        Whether the event is found when someone asks an AI assistant. Each week Sessionboard asks the connected
+        assistants (Claude, ChatGPT; through their own APIs, nothing scraped) up to 8 buyer questions and records
+        whether the answer names the event, a speaker or a session, and whether it cites the event's own pages.
+        Returns the latest check's `headline` against the one before, the `trend`, the `answers`, one `next_move`,
+        the mentions the event's own people created by sharing, and the cost.
+        `business_hub` is what ChatGPT itself reports for the organization's claimed business profile (OpenAI
+        Business Hub, rolling 28 days), as the organization entered it. It is per organization, so every event shows
+        the same reading. Reads only. Requires `read:marketing`. Also at `GET /v1/marketing/goals/discovery/{eventId}`.
+      tags:
+        - Marketing
+      parameters:
+        - $ref: '#/components/parameters/MarketingOrgId'
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: The event or webinar.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    $ref: '#/components/schemas/AiDiscovery'
+        '403':
+          $ref: '#/components/responses/MarketingForbidden'
+        '404':
+          description: The event is not in your organization.
+    patch:
+      operationId: update-ai-discovery
+      summary: Change what Found by AI asks, or record ChatGPT Business Hub numbers
+      description: >-
+        Changes the questions an event's check asks, the topic and city the suggested questions use, or whether the
+        weekly check runs. `businessHub` records the organization's ChatGPT Business Hub numbers that a person read
+        off chatgpt.com/business-hub: Business Hub has no API, so Sessionboard never fetches them. Each call with
+        `businessHub` adds a reading to the organization's history; entering the same period again replaces that
+        period's topics. Answers with the same body as the GET. Sends and spends nothing. Requires
+        `write:marketing`. Also at `PATCH /v1/marketing/goals/discovery/{eventId}`.
+      tags:
+        - Marketing
+      parameters:
+        - $ref: '#/components/parameters/MarketingOrgId'
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: The event or webinar.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Any of these. Each key is also accepted in snake_case (`business_hub`, `period_end`).
+              properties:
+                questions:
+                  type: array
+                  nullable: true
+                  maxItems: 8
+                  description: Up to 8 questions. `null` goes back to the suggested questions written from the event.
+                  items:
+                    type: object
+                    required:
+                      - text
+                    properties:
+                      key:
+                        type: string
+                        maxLength: 40
+                        description: Keep the key from the GET so the trend compares like with like.
+                      text:
+                        type: string
+                        maxLength: 300
+                      kind:
+                        type: string
+                        enum:
+                          - discovery
+                          - named
+                        description: '`discovery` never names the event; `named` asks about it by name.'
+                topic:
+                  type: string
+                  nullable: true
+                  maxLength: 120
+                  description: What the event is about, used in the suggested questions.
+                city:
+                  type: string
+                  nullable: true
+                  maxLength: 120
+                  description: The city used in the suggested questions.
+                enabled:
+                  type: boolean
+                  description: Whether the weekly check runs.
+                businessHub:
+                  $ref: '#/components/schemas/ChatgptBusinessHubInput'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    $ref: '#/components/schemas/AiDiscovery'
+        '400':
+          description: >-
+            A value is out of range: a count that is not a whole number of 0 or more, a `periodEnd` in the future or
+            not `YYYY-MM-DD`, more than 20 topics, or a `businessHub` with no mentions, clicks or topics.
+        '403':
+          $ref: '#/components/responses/MarketingForbidden'
+        '404':
+          description: The event is not in your organization.
   /v1/organization/{orgId}/marketing/audience/forms:
     get:
       operationId: list-signup-forms
@@ -17659,6 +17780,221 @@ components:
           description: What visitors agree to; `{org}` is replaced with your organization's name.
         successMessage:
           type: string
+    ChatgptBusinessHubInput:
+      type: object
+      description: >-
+        The organization's ChatGPT Business Hub numbers as a person read them. At least one of `mentions`, `clicks`
+        or `topics`.
+      properties:
+        periodEnd:
+          type: string
+          format: date
+          description: The last day of the 28 days Business Hub shows. Defaults to today; never in the future.
+        mentions:
+          type: integer
+          nullable: true
+          minimum: 0
+          description: ChatGPT answers that cited the business's website.
+        clicks:
+          type: integer
+          nullable: true
+          minimum: 0
+          description: Clicks from ChatGPT to the claimed domain.
+        topics:
+          description: Discovery topics, top first. A list, or pasted text with one topic per line. At most 20.
+          oneOf:
+            - type: array
+              maxItems: 20
+              items:
+                type: string
+                maxLength: 120
+            - type: string
+              maxLength: 4000
+        domain:
+          type: string
+          nullable: true
+          maxLength: 253
+          description: The domain the ChatGPT profile claims, e.g. `example.org`. Clicks count only for this domain.
+    ChatgptBusinessHub:
+      type: object
+      description: >-
+        What ChatGPT itself reports for the organization's claimed business profile, as entered. Each discovery topic
+        is also recorded as a signal, so Content Gaps can show topics ChatGPT sends people for that have no session.
+      properties:
+        claim_url:
+          type: string
+          description: Where to claim the profile (`https://chatgpt.com/business-hub`).
+        period_days:
+          type: integer
+          description: How many days a reading covers (28).
+        entered:
+          type: boolean
+          description: '`false` until the first reading; show the claim steps.'
+        domain:
+          type: string
+          nullable: true
+          description: The newest claimed domain entered.
+        latest:
+          type: object
+          nullable: true
+          properties:
+            period_start:
+              type: string
+              format: date
+            period_end:
+              type: string
+              format: date
+            mentions:
+              type: integer
+              nullable: true
+            clicks:
+              type: integer
+              nullable: true
+            previous_mentions:
+              type: integer
+              nullable: true
+              description: The reading before this one.
+            previous_clicks:
+              type: integer
+              nullable: true
+            mentions_change:
+              type: integer
+              nullable: true
+            clicks_change:
+              type: integer
+              nullable: true
+            topics:
+              type: array
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  sessions:
+                    type: integer
+                    nullable: true
+                    description: The organization's live sessions on the topic, by topic tag or a whole-word title match.
+                  no_session:
+                    type: boolean
+                    description: '`true` when ChatGPT sends people for the topic and there is no session on it.'
+        history:
+          type: array
+          description: Up to 12 readings, oldest first, the newest entry per period.
+          items:
+            type: object
+            properties:
+              period_end:
+                type: string
+                format: date
+              mentions:
+                type: integer
+                nullable: true
+              clicks:
+                type: integer
+                nullable: true
+    AiDiscovery:
+      type: object
+      description: Found by AI for one event.
+      properties:
+        event:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+        enabled:
+          type: boolean
+          description: Whether the weekly check runs.
+        questions:
+          type: array
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+              text:
+                type: string
+              kind:
+                type: string
+                enum:
+                  - discovery
+                  - named
+        assistants:
+          type: array
+          description: Which assistants are asked. Never claim an assistant was asked when `connected` is false.
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+              label:
+                type: string
+              connected:
+                type: boolean
+        headline:
+          type: object
+          nullable: true
+          description: The latest check. `null` before the first one.
+          properties:
+            mentioned:
+              type: integer
+              description: Answers that named the event, a speaker or a session.
+            total:
+              type: integer
+            cited:
+              type: integer
+              description: Answers that cited the event's own pages.
+            previous_mentioned:
+              type: integer
+              nullable: true
+            change:
+              type: string
+              nullable: true
+              enum:
+                - up
+                - down
+                - same
+            run_at:
+              type: string
+              format: date-time
+        trend:
+          type: array
+          description: One point per check, oldest first (up to 12).
+          items:
+            type: object
+        answers:
+          type: array
+          description: The latest check's answers, with what each mentioned and cited.
+          items:
+            type: object
+        next_move:
+          type: object
+          properties:
+            kind:
+              type: string
+              enum:
+                - run_first
+                - publish_page
+                - make_readable
+                - speakers_share
+                - spread_the_word
+                - keep_going
+        created:
+          type: object
+          description: Mentions the event's own people created by sharing.
+        cost:
+          type: object
+          properties:
+            last_run_usd:
+              type: number
+              nullable: true
+            estimate_run_usd:
+              type: number
+            last_30_days_usd:
+              type: number
+        business_hub:
+          $ref: '#/components/schemas/ChatgptBusinessHub'
     EventTurnout:
       type: object
       description: How one event is doing. Every number under `prediction` is an estimate.
