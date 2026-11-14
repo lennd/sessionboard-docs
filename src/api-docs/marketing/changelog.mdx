@@ -16,6 +16,18 @@ Release notes for the Marketing API and its MCP tools. Entries are grouped by mo
 **Added — invite teammates:** [`POST /v1/team/invite`](/sessionboard-marketing/api/reference/agent-sign-up/invite-teammates) invites up to 20 colleagues, on any kind of account. From an AI assistant it waits for a person's OK in Sessionboard (`202`, `needs_approval`). New preview scope `write:team`; the product's own write scope works too. The MCP tool is `invite_teammates`.
 
 
+### Marketing: everything an AI agent needs to finish the job
+
+**Added — an event page's registration form.** `GET /v1/organization/{orgId}/marketing/pages/events/{eventId}/registration-form` returns the questions after Name and Email, in order, with suggestions and your catalog; `PUT` sets the whole list; `POST .../registration-form/questions` adds a question of the event's own.
+
+**Added — archive and restore an event.** `POST .../marketing/events/{eventId}/archive` takes an event out of your lists and its page offline (an AI assistant's call waits for a person's OK); `DELETE` on the same path restores it. Nothing is deleted.
+
+**Added — more steps on the API:** a tour's invitations (`POST .../events/tours/{tourId}/send`, approval for an assistant), new words for an in-person email (`POST .../events/{eventId}/emails/rewrite`), results share links (`GET .../results/shares`, `DELETE .../results/shares/{shareId}`), ad pause and resume (`POST .../goals/ads/{adId}/pause`, `/resume`), the LinkedIn ad account ads run on (`GET .../apps/{appId}/ad-accounts`, `POST .../apps/{appId}/ad-account`), a transcript retry (`POST .../content/recordings/{mediaId}/retry`), a sign-up form's questions (`GET`/`PUT`/`POST .../audience/forms/{formId}/questions`) and turning on the website tag (`POST .../audience/website/enable`). All are also served under `/v1/marketing/...` and need the preview scopes `read:marketing` / `write:marketing`.
+
+**Added — MCP tools** `get_registration_form`, `update_registration_form`, `add_registration_question`, `archive_event`, `restore_event`, `send_tour_invitations`, `update_newsletter`, `list_result_shares`, `revoke_result_share`, `pause_ads`, `resume_ads`, `list_ad_accounts`, `choose_ad_account`, `enable_website_tag` and `retry_transcript`. `manage_campaign` also takes the `spread_the_word` and `wrapped` kinds. See [Marketing MCP tools](/sessionboard-marketing/api/mcp-tools).
+
+**Fixed — the `asked` argument.** Page, configuration and page / email draft edits no longer refuse a write that carries the person's request (`source.prompt`).
+
 ### Marketing: a tour's listing page
 
 **Added — a tour's listing page.** `GET /v1/organization/{orgId}/marketing/events/tours/{tourId}/listing` returns the listing pages a tour can go on, each with `site_id`, `url`, `has_tour`, `live`, `published`, `published_at` and `has_unpublished_changes`. `POST` on the same path with `{ "siteId"? }` adds the tour's list of stops to that page, or makes a listing page named after the tour (it returns the existing one if the tour is already listed). The page is public as soon as it is made, so a call from an AI assistant answers `202` with `status: needs_approval` and runs once a person approves it in Sessionboard. It sends nothing. Pass the returned `site_id` to `POST .../marketing/pages/sites/{siteId}/domains` to put the tour on your own domain. Both are also served under `/v1/marketing/...` and need the preview scopes `read:marketing` / `write:marketing`.
