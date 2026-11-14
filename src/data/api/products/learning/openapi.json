@@ -3285,6 +3285,166 @@
           }
         }
       }
+    },
+    "/v1/team/invite": {
+      "post": {
+        "operationId": "agent-invite-teammates",
+        "summary": "Invite teammates",
+        "description": "Invites up to 20 colleagues to the organization, on any kind of account. Each address gets one email: on a self-serve workspace (Marketing, Learning, Awards, Sessions, CRM) they sign in with that address and a 6-digit code, no password; on a Sessionboard Platform account they get the usual invitation to set a password. Each becomes a pending member with the role given (default Org Admin). An address that is already a member is reported, not invited again. Because every invitee is emailed, a call made by an AI assistant (an OAuth connection or an API token) answers `202` with `status: needs_approval` and a Sessionboard link: nothing is sent until a person approves it there, and it then goes out as them. No card is needed: teammates are the organization's own team. Requires `write:team` or the product's own write scope (`write:marketing`, `write:learning`, `write:awards`, `write:sessions`, `write:crm`) and the person's Manage users permission. Seats on a self-serve plan apply. Also at `POST /v1/organization/{orgId}/team/invite`.",
+        "tags": [
+          "Agent sign-up"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "emails"
+                ],
+                "properties": {
+                  "emails": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 20,
+                    "items": {
+                      "type": "string",
+                      "maxLength": 320
+                    },
+                    "description": "Work email addresses. Duplicates are invited once."
+                  },
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "admin",
+                      "admin_lite",
+                      "program_manager"
+                    ],
+                    "description": "Their role in the organization. Default `admin` (Org Admin)."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Invited (a person's own call)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "results": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "email": {
+                                "type": "string"
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "invited",
+                                  "already_member",
+                                  "invalid",
+                                  "cannot_invite"
+                                ]
+                              },
+                              "user_id": {
+                                "type": "integer",
+                                "description": "For `invited`."
+                              },
+                              "emailed": {
+                                "type": "boolean",
+                                "description": "For `invited`."
+                              }
+                            }
+                          }
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": [
+                            "admin",
+                            "admin_lite",
+                            "program_manager"
+                          ]
+                        },
+                        "sign_in": {
+                          "type": "string",
+                          "enum": [
+                            "code",
+                            "password"
+                          ],
+                          "description": "`code` on a self-serve workspace, `password` on a Platform account."
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "An assistant's call: waiting for a person's OK in Sessionboard. Nothing was sent.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "needs_approval"
+                          ]
+                        },
+                        "approval_id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "url": {
+                          "type": "string",
+                          "format": "uri",
+                          "description": "Where a person approves or declines it."
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No email address in the list, more than 20, or an unknown role"
+          },
+          "401": {
+            "description": "Missing or invalid token"
+          },
+          "403": {
+            "description": "Token lacks `write:team` or a product write scope, the person lacks Manage users, or the plan has no free seats"
+          },
+          "423": {
+            "description": "A person paused connected assistants in Sessionboard"
+          }
+        }
+      }
     }
   },
   "components": {

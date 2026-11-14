@@ -18,11 +18,11 @@ export const ENFORCED = ['learning', 'awards'];
 
 /**
  * Routes every self-serve product shares and documents (agent sign-up, plans,
- * billing). Snapshotted in their token-org form (`/signup`, `/billing`),
+ * billing, inviting teammates). Snapshotted in their token-org form (`/signup`, `/billing`),
  * which is what the spec documents; the `/organization/:orgId/billing` twin
  * is mentioned in the descriptions.
  */
-export const SHARED_ROUTE_PATHS = ['/signup', '/signup/:signupId/verify', '/plans', '/billing', '/billing/card', '/billing/plan'];
+export const SHARED_ROUTE_PATHS = ['/signup', '/signup/:signupId/verify', '/plans', '/billing', '/billing/card', '/billing/plan', '/team/invite'];
 
 /** Express `/organization/:orgId/x/:id` → spec `/v1/organization/{orgId}/x/{id}`. */
 export const toSpecPath = (path) => `/v1${path.replace(/:([A-Za-z0-9_]+)/g, '{$1}')}`;

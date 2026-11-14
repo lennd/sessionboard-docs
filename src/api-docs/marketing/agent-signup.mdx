@@ -11,6 +11,7 @@ An AI agent (Claude, ChatGPT, your own) can sign a person up for Sessionboard Ma
 |---|---|
 | Start a sign-up for the person's work email | Verify the email itself: only the code in the person's inbox creates the account |
 | Finish it with the code the person reads back | See, type or pass a card number: the person saves the card on Stripe's page |
+| Invite the person's colleagues once they approve the invitations in Sessionboard | Invite anyone without the person's OK |
 | Set up the workspace with the Marketing tools and API | Send anything to people outside the team without the person's OK in Sessionboard |
 | Quote a plan, and start it on the saved card once the person agrees | Start a plan without a card on file, or change a running plan (that's a Stripe page for the person) |
 
@@ -29,6 +30,7 @@ An AI agent (Claude, ChatGPT, your own) can sign a person up for Sessionboard Ma
 5. **Card.** `POST /v1/billing/card` returns a Stripe link. Give it to the person and say nothing will be charged. They see "Card saved" when it's done.
 6. **Wait for the card.** Poll `GET /v1/billing` until `card_on_file` is `true`. It shows only the card's brand and last 4 digits.
 7. **Plan.** `POST /v1/billing/plan` with `plan` and `interval` returns a quote (price, card, when the first charge happens). Tell the person, and call again with `confirm: true` and a `request_id` only after they say yes.
+8. **Teammates.** `POST /v1/team/invite` with the `emails` the person gives you (up to 20) and an optional `role` (`admin`, the default, `admin_lite` or `program_manager`). Each colleague is emailed and signs in with a code, no password. Because it emails people, your call comes back `202` with `status: needs_approval` and a link: tell the person the invitations are waiting for their OK in Sessionboard, and don't call again. No card is needed for teammates.
 
 Then set up the workspace with the [Marketing API and MCP tools](/sessionboard-marketing/api/mcp-tools).
 
@@ -44,6 +46,7 @@ Connect your assistant to `https://mcp.sessionboard.com/signup/mcp` (EU: the EU 
 | `get_billing` | Card on file, plan, trial |
 | `get_card_link` | The Stripe page for the person |
 | `start_plan` | Quote, then `confirm: true` after the person agrees |
+| `invite_teammates` | Invite the person's colleagues; waits for their OK in Sessionboard |
 
 Every other Marketing tool works in the same conversation once `finish_signup` succeeds. If the conversation ends, the person connects the regular Sessionboard connector (they sign in with a code sent to their email).
 
