@@ -9,7 +9,7 @@ import { Note, Accordion, AccordionGroup } from '@compat';
 
 Swoogo is a conference management system that facilitates registration, attendee tracking, and automated marketing tools.
 
-Sessionboard users can connect their events with Swoogo and sync session and speaker data from Sessionboard to Swoogo. This one-way integration is a user-friendly process that facilitates data transfer to Swoogo once users have approved and scheduled their sessions in Sessionboard.
+Sessionboard users can connect their events with Swoogo and sync session and speaker data from Sessionboard to Swoogo. Optionally, each sync can also write Swoogo Registration IDs back to the event's contacts (see [Write back Swoogo Registration ID to contacts](#write-back-swoogo-registration-id-to-contacts)). The integration is a user-friendly process that facilitates data transfer to Swoogo once users have approved and scheduled their sessions in Sessionboard.
 
 ---
 
@@ -63,6 +63,24 @@ If a session has registrants assigned to it in Swoogo, it cannot be deleted
 </Note>
 
 ![Event Settings](/images/kb/cf602234-image-png-Feb-27-2026-05-47-50-3285-PM.png)
+
+### Write back Swoogo Registration ID to contacts
+
+Turn on **Write back Swoogo Registration ID to contacts** to see, on each contact, whether that person is registered in Swoogo. The setting is off by default and is set per event mapping, so one Swoogo-connected event can have it on and another off.
+
+When it is on, every sync reads the registrants of the mapped Swoogo event and writes each registrant's ID to the matching contact of the Sessionboard event:
+
+- **Matching.** A contact that already holds the registrant's ID keeps it. Otherwise the registrant is matched to the contact with the same email address, ignoring capitals and spaces around it.
+- **Field.** Under **Registration ID field**, keep **Create a read-only "Swoogo Registration ID" field** and Sessionboard adds a read-only text field with that name to the event's contacts when you save. Or pick an existing text field of the event's contacts.
+- **No match.** Contacts with no Swoogo registration stay empty. Registrants who match no contact are skipped; Sessionboard never creates contacts from registrants.
+- **Two matches.** When two contacts share the registrant's email, or two registrants share one contact, nothing is written for them. Fix the duplicate email and sync again.
+- **History.** Unchanged IDs are not written again. Each run's log in **History > Integrations > Sync History** lists the registrants that were skipped and why.
+
+Turning the setting off stops the write-back. The field and the IDs already written stay on the contacts.
+
+<Note>
+Reading the registrant list uses part of the Swoogo API allowance. If Swoogo's rate limit is reached, the sync stops and says when you can run it again.
+</Note>
 
 ## Mapping session fields
 Once your events have been connected, your next window will allow you to map your designated session fields. Within the dropdown, be sure you have selected the correct event that you wish to map the session fields for.
