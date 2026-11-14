@@ -195,6 +195,29 @@ Your team's to-dos in Sessionboard Platform: a title, an assignee, a due date wi
 
 Try: *"What's on my plate this week?"*, *"Remind Dana to chase Dr. Okafor's disclosure by Friday"*, *"What's overdue across my events?"* or *"Mark the AV task done: forms received"*.
 
+### Sessionboard CRM
+
+Everything in Sessionboard CRM — People, Groups (companies, sponsors, exhibitors), tags, imports, connected apps, the pipeline, contracts, exports and hand-offs to the other Sessionboard apps — over the Public API CRM routes. Reads need `read:crm`, changes `write:crm`; OAuth clients get both by default. A self-serve CRM account needs a card on file before it imports or adds people: the tools say so and hand you `get_card_link` (product `crm`), a Stripe page the person opens. Deleting, archiving, sending, resending and voiding ask you first.
+
+| Tool | Scope | Description |
+| --- | --- | --- |
+| `get_crm_home` | `read:crm` | Counts by tag, active contacts against the plan's limit, setup steps, newest people |
+| `find_crm_people`, `get_crm_person`, `find_warm_opportunities` | `read:crm` | Everyone the organization knows, one row per email, with tags, companies, pipeline stage and signals |
+| `manage_crm_person`, `tag_crm_people`, `delete_crm_people` | `write:crm` | Add or change a person, add or remove tags on up to 500, delete (after you say yes) |
+| `find_crm_companies`, `manage_crm_company`, `tag_crm_companies`, `link_crm_company_people`, `delete_crm_companies` | `read:crm` / `write:crm` | Groups and the people in them |
+| `import_crm_people` | `write:crm` | Preview, then import people or companies from a spreadsheet's rows; returns each person's key and each company's id for the next step |
+| `list_crm_sources`, `discover_crm_people`, `start_crm_attendee_sync` | `read:crm` / `write:crm` | What a connected CRM, AMS or event platform holds, compared with your People, and bringing an event's attendees in |
+| `find_crm_contacts`, `get_crm_contact`, `add_people_to_crm_contacts` | `read:crm` / `write:crm` | The Contact record behind a speaker or a company's person |
+| `list_crm_tags`, `manage_crm_tag`, `tag_crm_contacts` | `read:crm` / `write:crm` | Your own tags: list, create, rename, delete, and add or remove them on up to 500 Contacts |
+| `add_crm_note` | `write:crm` | A note on a Contact, for anything a standard field doesn't hold |
+| `get_crm_pipeline`, `add_to_crm_pipeline`, `move_crm_pipeline_entry`, `archive_crm_pipeline_entry` | `read:crm` / `write:crm` | Stages and entries; add by Contact id or person key, move with a note, take off (after you say yes) |
+| `list_crm_contract_templates`, `add_crm_contract_starter`, `list_crm_contracts`, `get_crm_contract`, `send_crm_contract`, `void_crm_contract` | `read:crm` / `write:crm` | Templates and starters, contracts and signers; sending, resending and voiding only after you say yes |
+| `export_crm_contacts`, `export_crm_list` | `read:crm` | Contacts, People, Groups, the pipeline or contracts as CSV with the list's own filters (first 1,000 rows) |
+| `hand_off_crm_people` | `write:crm` | Hand a selection to Marketing, Sessions, Learning or Awards as a tag, with the link that opens it there |
+| `get_ams_mapping`, `get_member_snapshot`, `preview_ams_writeback`, `run_ams_writeback` | `read:crm` / `write:crm` | An association management system's field mapping, member snapshot and write-back |
+
+Try: *"Import this sheet of speakers, tag them speaker and put them in the pipeline for our spring summit"*, *"Who came to five of our webinars but isn't in the pipeline?"* or *"Export everyone tagged sponsor at Acme"*.
+
 ## Asking about an event
 
 `ask_event` answers a question about one event the way an organizer would want it answered. The answer is grounded in the event's program (sessions, speakers, exhibitors, sponsors), session transcripts, the event's knowledge and pinned answers, and the Sessionboard Help Center, and it cites its sources with `[n]` markers listed under **Sources**. It calls [`POST /v1/event/{eventId}/ask`](/api/reference/ask/ask-a-question-about-an-event).
