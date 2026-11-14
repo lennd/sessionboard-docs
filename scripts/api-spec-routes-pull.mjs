@@ -19,7 +19,7 @@ import { existsSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { PRODUCT_ROUTE_PREFIXES, toSpecPath } from './lib/api-product-routes.mjs';
+import { PRODUCT_ROUTE_PREFIXES, SHARED_ROUTE_PATHS, toSpecPath } from './lib/api-product-routes.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const apiDir = resolve(process.env.PUBLIC_API_DIR || join(root, '..', 'sessionboard-public-api'));
@@ -54,7 +54,7 @@ for (const [product, prefixes] of Object.entries(PRODUCT_ROUTE_PREFIXES)) {
     ...new Set(
       routes
         .map((r) => r.split(' '))
-        .filter(([, path]) => prefixes.some((p) => path === p || path.startsWith(`${p}/`)))
+        .filter(([, path]) => SHARED_ROUTE_PATHS.includes(path) || prefixes.some((p) => path === p || path.startsWith(`${p}/`)))
         .map(([method, path]) => `${method} ${toSpecPath(path)}`),
     ),
   ].sort();
