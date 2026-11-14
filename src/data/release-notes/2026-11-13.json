@@ -283,7 +283,9 @@
         "emailed_at": null
       },
       "ideas": [],
-      "media": [],
+      "media": [
+        "/images/kb/review-plan-reviewers-tab-menu.png"
+      ],
       "gated": null,
       "platform": false
     },
@@ -627,7 +629,9 @@
       },
       "related": [],
       "ideas": [],
-      "media": [],
+      "media": [
+        "/images/kb/site-builder-overview.png"
+      ],
       "gated": null,
       "product": "platform",
       "platform": false
@@ -922,7 +926,7 @@
       "id": "side-panel-dropdowns-close-on-outside-click",
       "title": "Contact, group and account profile dropdowns now close when you click outside them",
       "summary": "In the **Contact Profile**, **Group Profile** and **Account Profile** side panels, opening a dropdown or multi-select attribute field and then clicking elsewhere in the panel now closes the list. Previously, lists stayed open and stacked on top of each other when a second field was opened, covering the fields below.",
-      "article": "/contacts/contact-profile",
+      "article": "/contacts/contact-profile#open-a-profile",
       "related": [
         "/speaker-crm/overview",
         "/speaker-crm/creating-crm-fields"
@@ -1391,209 +1395,6 @@
       }
     },
     {
-      "id": "sso-enforce-without-verification",
-      "title": "Enforce SSO login before completing a sign-in test",
-      "summary": "Admins can now turn on **Enforce login via SSO** for a SAML or OIDC configuration even when no successful sign-in test has been run. Previously, the API returned a `409` error unless the configuration had a `verified` status, blocking organizations whose security policies prevent sharing test credentials.",
-      "article": "/integrations/sso#enforced-authentication",
-      "related": [],
-      "kind": "fixed",
-      "module": "Settings",
-      "features": [
-        "sso"
-      ],
-      "availability": "on_request",
-      "enable": {
-        "how": "setting",
-        "path": "Organization Settings → Security → SSO → SAML / OIDC configuration → Enforce login via SSO"
-      },
-      "where": {
-        "scope": "org",
-        "path": "Organization Settings → Security → SSO"
-      },
-      "permissions": [
-        "event.settings.manage_sso"
-      ],
-      "audience": [
-        "organizer"
-      ],
-      "use_case": "Organizations whose IT or security policies prevent sharing test credentials (for example, accounts protected by MFA or company-wide SSO) can now enforce SSO login as soon as the IdP configuration is saved, without first completing a sign-in test.",
-      "internal": {
-        "cs_action": {
-          "kind": "review_before_customers_see",
-          "note": "If an admin enforces a config that has never been tested and the config is wrong, users on that domain lose password login until enforcement is turned off. Confirm the customer understands the risk before enabling."
-        },
-        "when_to_bring_up": "A customer says they cannot complete the SSO sign-in test because of MFA or company security policy and are stuck on the enforcement step.",
-        "who_should_get_it": "Enterprise customers with strict IdP policies that block test-credential sharing.",
-        "staff_path": "Organization Settings → Security → SSO",
-        "gotchas": "Enforcement is still reversible by any admin with SSO permissions, but if the config is misconfigured, domain users lose password login until it is turned off. The sign-in test step itself is unchanged and still recommended.",
-        "talk_track": "You no longer need to pass a sign-in test before enforcing SSO. You can enforce as soon as the config is saved — just make sure the IdP settings are correct first, because enforcement locks out password login for your domain.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The guide's \"Enforced authentication\" section should note that enforcement can be enabled at any setup status and does not require a completed sign-in test, along with a caution that an untested config will lock out password login if misconfigured.",
-          "why_use_it": null,
-          "at": "2026-11-13T18:48:16.119Z"
-        }
-      },
-      "shipped": {
-        "prs": [
-          "lennd/sessionboard-web-api#5358"
-        ],
-        "docs_only": false,
-        "pending": null,
-        "live": {
-          "us": "2026-11-14",
-          "eu": "2026-11-14",
-          "me": "2026-11-14"
-        },
-        "announced_at": null,
-        "emailed_at": null
-      },
-      "ideas": [],
-      "media": [],
-      "gated": null,
-      "product": "platform",
-      "platform": false
-    },
-    {
-      "id": "agenda-embed-card-field-selection",
-      "title": "Agenda embed collapsed card shows its own configurable fields",
-      "summary": "The agenda embed's collapsed session card can now display a custom set of fields — such as speakers, level, tags, or custom fields — separate from the pop-up's field selection. When an **Agenda Card** field scope is configured, each field appears as a short labelled line on the card, clamped to two lines. Embeds with no card-scope configuration render exactly as before.",
-      "article": "/sessions/embeds#how-to-create-an-embed",
-      "related": [
-        "/sessions/embeds"
-      ],
-      "kind": "new",
-      "module": "Program",
-      "features": [
-        "embeds_v2"
-      ],
-      "availability": "on_request",
-      "enable": {
-        "how": "support",
-        "path": "Ask your Customer Success Manager to enable the Agenda Card field scope; then configure the embed's card fields in the embed editor"
-      },
-      "where": {
-        "scope": "event",
-        "path": "Program → Embeds → Agenda embed → Card fields"
-      },
-      "permissions": [
-        "event.embeds.update"
-      ],
-      "audience": [
-        "organizer",
-        "participant"
-      ],
-      "use_case": "Organizers who embed their agenda on an external website can now surface key details — like speaker names, session level, or a custom field — directly on the collapsed card, so attendees get the context they need without opening the pop-up.",
-      "internal": {
-        "cs_action": {
-          "kind": "must_enable",
-          "note": "The agenda-card field scope must be written and served by the web-api fix/cs1113-g10 branch, and the setting added in web-ui-v2 fix/cs1113-g10. All three repos must be deployed together. No existing embeds are affected (0 agenda-card rows in prod today)."
-        },
-        "when_to_bring_up": "When a customer asks for more session detail on the collapsed agenda card, or wants to show speaker names without requiring attendees to open the pop-up.",
-        "who_should_get_it": "Customers using Embeds V2 (on_request) who publish an agenda embed on their own website and want richer card-level information.",
-        "staff_path": "Program → Embeds → select an agenda embed → Card fields tab",
-        "gotchas": "Embeds publish to prod manually — merging to main deploys DEV only. Coordinate the prod deploy across all three repos (web-api, web-ui-v2, sessionboard-embeds).",
-        "talk_track": "You can now choose a separate set of fields for the collapsed agenda card — speakers, level, tags, whatever matters most — so attendees see the right context at a glance without having to open every session.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "medium",
-          "docs_gap": "The embeds guide should document the new Agenda Card field scope: how to configure card-level fields separately from pop-up fields, which field types are supported, and how track/format/room are always shown as badges/lines regardless of the card selection.",
-          "why_use_it": "The agenda embed lets you publish a live, filterable schedule on any webpage without rebuilding it every time the program changes. You control which fields appear on the collapsed card and which appear in the session pop-up, so attendees see the right amount of detail at a glance and can dig deeper on demand. Track, format, and room information stay in their familiar positions, and any additional fields — speakers, level, tags, or custom data — appear as labelled lines below.",
-          "at": "2026-11-13T19:03:37.831Z"
-        }
-      },
-      "product": "platform",
-      "shipped": {
-        "prs": [
-          "lennd/sessionboard-embeds#139"
-        ],
-        "docs_only": false,
-        "pending": null,
-        "live": {
-          "us": "2026-11-14",
-          "eu": "2026-11-14",
-          "me": "2026-11-14"
-        },
-        "announced_at": null,
-        "emailed_at": null
-      },
-      "ideas": [],
-      "media": [],
-      "gated": null,
-      "platform": false
-    },
-    {
-      "id": "applicant-flow-controls-use-accent-color",
-      "title": "Applicant flow controls now follow the Site accent color, not the primary color",
-      "summary": "Buttons, checkboxes, radio buttons, switches, step-progress markers, category cards and other interactive controls in the applicant flow (**Continue to Application**, category pickers, form fields, checkout, confirmation) now draw their fill and border from the Site's **Accent** color rather than the **Primary** color. Sites that set **Primary** to white or another light color for section backgrounds no longer see invisible or low-contrast controls. No setting change is needed; the fix applies automatically to all Sites.",
-      "article": "/awards/setting-up-your-sessionboard-site#site-url--branding",
-      "related": [
-        "/site/site-builder",
-        "/site/program-site"
-      ],
-      "kind": "fixed",
-      "module": "Portals",
-      "features": [
-        "awards"
-      ],
-      "availability": "everyone",
-      "enable": {
-        "how": "default_on",
-        "path": null
-      },
-      "where": {
-        "scope": "org",
-        "path": "Site → applicant flow (apply, checkout, confirmation, request forms)"
-      },
-      "permissions": [],
-      "audience": [
-        "organizer",
-        "participant"
-      ],
-      "use_case": "An awards or CFP program that uses a white or light Primary color for content-box backgrounds no longer has invisible buttons and form controls in the applicant flow. Controls pick up the Accent color automatically, so applicants always see clearly styled interactive elements without any reconfiguration.",
-      "internal": {
-        "cs_action": {
-          "kind": "none",
-          "note": "Automatic for all Sites. Sites that had no accent saved continue to derive control colors from Primary, preserving their existing look."
-        },
-        "when_to_bring_up": "A customer reports that buttons or form controls are invisible or hard to see in their applicant flow, or when onboarding a customer who sets Primary to white for content-box styling.",
-        "who_should_get_it": "Any customer using a Sessionboard Site for awards, CFP or portal applications, especially those with a light or white Primary color.",
-        "staff_path": "Site builder → Branding → Primary Color / Accent Color",
-        "gotchas": "Sites with no accent saved fall back to Primary for controls — same as before. Sites with an accent under 3:1 contrast against white get an auto-darkened edge color for checkbox/radio borders; the fill itself stays as chosen.",
-        "talk_track": "If you set your Primary color to white to get clean content boxes, your application buttons and form controls now stay visible because they pull from your Accent color instead. Nothing to configure — it just works.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The guide should document that Primary colors the section backgrounds and hero/nav areas while Accent colors interactive controls (buttons, checkboxes, radios, switches, step markers) in the applicant flow, and explain the automatic contrast adjustments applied to the Accent.",
-          "why_use_it": "Sessionboard Sites let you brand every surface of your applicant experience — landing page, application form, checkout and confirmation — using a Primary color for section backgrounds and an Accent color for interactive highlights. Separating these two roles means you can choose a white or light background for content areas while keeping buttons, checkboxes and progress markers in a distinct, accessible color. The platform automatically computes contrast-safe fill, border and text variants from your Accent so controls remain legible across light and dark Site themes.",
-          "at": "2026-11-13T19:16:08.200Z"
-        }
-      },
-      "shipped": {
-        "prs": [
-          "lennd/sessionboard-web-org-portal#333"
-        ],
-        "docs_only": false,
-        "pending": null,
-        "live": {
-          "us": "2026-11-14",
-          "eu": "2026-11-14",
-          "me": "2026-11-14"
-        },
-        "announced_at": null,
-        "emailed_at": null
-      },
-      "ideas": [],
-      "media": [],
-      "gated": null,
-      "product": "platform",
-      "platform": false
-    },
-    {
       "id": "admin-tasks-layer-phase-1",
       "title": "Manage tasks across your whole program with My Tasks, record Task cards and note follow-ups",
       "summary": "A new **My Tasks** page (available at the org and event level) lists every task assigned to you or your team, with filters for assignee, event, linked record type, priority and status, sortable columns, bulk **Mark complete** and **Reassign**, and **Export CSV**. A **Tasks** card now appears in the Contact, Session and Sponsor/Exhibitor sidebars so you can create and track tasks directly from any record. On the Notes tab, **Add follow-up** lets you attach a task to any note, with due date, time, assignee and reminder; completed follow-ups show who finished them and offer **Reopen**.",
@@ -1660,77 +1461,10 @@
       "platform": false
     },
     {
-      "id": "reviewer-import-tags-update-control",
-      "title": "Reviewer import gains Tags and duplicate-handling columns",
-      "summary": "The **Import Evaluators** CSV template now includes two new columns. **Tags** accepts pipe-separated tag names and adds them to each reviewer (missing tags are created automatically; existing tags are kept). **Update record if already exists** controls what happens when the email matches a reviewer already on the event: `TRUE` updates their affiliation and tags, `FALSE` reports a row error, and leaving it blank preserves the previous behaviour so existing import files keep working.",
-      "article": "/evaluations/review-plan-reviewers#import-reviewers",
-      "related": [
-        "/evaluations/call-for-reviewers",
-        "/evaluations/review-plan-rounds"
-      ],
-      "kind": "improved",
-      "module": "Program",
-      "features": [],
-      "permissions": [
-        "event.evaluation_plans.read"
-      ],
-      "availability": "everyone",
-      "enable": {
-        "how": "default_on",
-        "path": null
-      },
-      "where": {
-        "scope": "event",
-        "path": "Program → Review → Evaluators → Import Evaluators"
-      },
-      "audience": [
-        "organizer"
-      ],
-      "use_case": "Events that tag reviewers by expertise or committee can now apply those tags in bulk during the import rather than tagging manually after the fact. The duplicate-handling column also lets teams safely re-run or update an import without accidentally re-enrolling people who are already assigned.",
-      "internal": {
-        "cs_action": {
-          "kind": "none",
-          "note": "Both columns are additive and optional; existing import files with neither column behave exactly as before."
-        },
-        "when_to_bring_up": "When a customer asks how to tag reviewers in bulk, or when they report confusion about re-importing a reviewer list that already has people enrolled.",
-        "who_should_get_it": "Any event using the Evaluators import, especially those with large review committees or multi-round plans.",
-        "staff_path": "Program → Review → Evaluators → Import Evaluators",
-        "gotchas": "Blank in the 'Update record if already exists' column keeps legacy behaviour (no error, no update). FALSE errors only on reviewers who were enrolled before the import run started, so the same person on two rows in the same import is never flagged as a duplicate.",
-        "talk_track": "You can now tag reviewers and control duplicate handling right in your import CSV — no post-import cleanup needed.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The guide's Import Reviewers section should document the two new template columns (Tags and Update record if already exists), their accepted values, and how the duplicate cutoff works.",
-          "why_use_it": "Importing reviewers lets you enroll a large committee in one step instead of adding people one by one. The import matches on email address, fills in affiliation, and now applies tags so reviewers are organised from the moment they land. Use it at the start of a review cycle or whenever you need to update a batch of reviewers across multiple rounds.",
-          "at": "2026-11-13T19:36:01.637Z"
-        }
-      },
-      "product": "platform",
-      "shipped": {
-        "prs": [
-          "lennd/sessionboard-web-api#5362"
-        ],
-        "docs_only": false,
-        "pending": null,
-        "live": {
-          "us": "2026-11-14",
-          "eu": "2026-11-14",
-          "me": "2026-11-14"
-        },
-        "announced_at": null,
-        "emailed_at": null
-      },
-      "ideas": [],
-      "media": [],
-      "gated": null,
-      "platform": false
-    },
-    {
       "id": "awards-submission-confirmation-on-payment",
-      "title": "Awards submission confirmation email now sends after payment, not before",
-      "summary": "On awards programs that charge a fee **on submission**, the **Submission Confirmation** email is now sent only after the applicant completes payment — not when they click **Submit** and land on the payment page. Applicants who pay by card, apply a 100% promo code, or check out via invoice each receive exactly one confirmation once their entry moves to **Submitted**. Programs with no fee, or fees charged on acceptance, continue to send the confirmation immediately on submit.",
-      "article": "/awards/awards-notifications-email-templates",
+      "title": "Awards: the submission confirmation is sent after payment",
+      "summary": "On an awards program that charges a fee **on submission**, applicants no longer get the **Submission Confirmation** when they click **Submit** and land on payment. It goes out once, when payment moves the entry from **Pending Payment** to **Submitted** — by card, with a 100% promo code, or through cart checkout. Programs with no fee still send it on submit.",
+      "article": "/awards/awards-notifications-email-templates#submission-confirmation",
       "related": [
         "/awards/awards-pricing-payments-invoices"
       ],
@@ -1746,31 +1480,23 @@
       },
       "where": {
         "scope": "org",
-        "path": "Awards Site → submission → Complete Your Payment"
+        "path": "Awards Site → entry → Complete Your Payment"
       },
       "permissions": [],
       "audience": [
+        "organizer",
         "participant"
       ],
-      "use_case": "Awards programs that charge a fee on submission no longer send applicants a \"your submission has been received\" email before they pay, which previously caused confusion when entries sat in Pending Payment. Applicants now get the confirmation only once their payment goes through and their entry is truly submitted.",
+      "use_case": "Applicants who haven't paid yet are no longer told their entry was received, so nobody assumes they are done while their entry sits unpaid.",
       "internal": {
         "cs_action": {
           "kind": "none",
-          "note": "Automatic fix. No action needed. The organizer's new-submission admin notice is unchanged."
+          "note": "Automatic. Entries that received the early email before this fix were not emailed again."
         },
-        "when_to_bring_up": "When a customer running a paid awards program reports that applicants received a submission confirmation before paying, or asks why entries are stuck in Pending Payment with a confirmation already sent.",
-        "who_should_get_it": "Any customer with an awards program that charges a fee on submission and has the Submission Confirmation notification enabled.",
-        "staff_path": "Awards → program → Notifications",
-        "gotchas": "Eight US programs were affected at ship time. Existing Pending Payment entries that had already received the old premature confirmation will not receive a duplicate — the activity guard skips entries still in pending_payment at send time.",
-        "talk_track": "Applicants on paid awards programs now get the confirmation email only after their payment clears, so they always know their entry is truly in.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The guide should note that on programs priced \"on submission,\" the Submission Confirmation email is sent after payment completes rather than immediately after the applicant clicks Submit.",
-          "why_use_it": null,
-          "at": "2026-11-13T19:49:38.686Z"
-        }
+        "when_to_bring_up": "A customer says applicants got a confirmation but their entry shows Pending Payment.",
+        "who_should_get_it": "Awards customers that charge an entry fee on submission.",
+        "staff_path": "Awards → program → Notifications → Submission Confirmation",
+        "gotchas": "About 30 US entries got the early confirmation before the fix; nothing was resent. Retried payments never send a second email."
       },
       "product": "platform",
       "shipped": {
@@ -1788,89 +1514,22 @@
         "emailed_at": null
       },
       "ideas": [],
-      "media": [],
+      "media": [
+        "/images/kb/awards-notification-customize.png"
+      ],
       "gated": null,
       "platform": false
     },
     {
-      "id": "remove-submission-from-event",
-      "title": "Remove a submission from an event after \"Add to Event\"",
-      "summary": "Organizers can now undo **Add to Event** from the submission sidebar. Choosing **Remove from Event** unlinks the submission; an optional **Move session to trash** choice soft-deletes the associated session in the same action. Submissions whose linked session was already deleted no longer show a stale event assignment anywhere in the UI, lists, exports, or Pipeline.",
-      "article": "/speaker-crm/speaker-crm-interest-forms#managing-submissions",
+      "id": "applicant-flow-controls-use-accent-color",
+      "title": "Sites: applicant buttons and form controls follow the Accent Color",
+      "summary": "On a Site's applicant pages — apply, cart, checkout, confirmation, request forms and the reviewer home — buttons, radio buttons and checkboxes now use the Site's **Accent Color**, with a text and border shade picked for contrast. **Primary Color** still fills the content boxes, so a white Primary no longer makes the controls invisible.",
+      "article": "/awards/setting-up-your-sessionboard-site#site-url--branding",
       "related": [
-        "/speaker-crm/pipeline",
-        "/sessions/create-a-session"
+        "/site/program-site"
       ],
-      "kind": "new",
-      "module": "Program",
-      "features": [
-        "pipeline"
-      ],
-      "availability": "beta",
-      "enable": {
-        "how": "default_on",
-        "path": null
-      },
-      "where": {
-        "scope": "org",
-        "path": "Speaker CRM → Interest Forms → [submission] → sidebar → Remove from Event"
-      },
-      "permissions": [
-        "event.sessions.delete"
-      ],
-      "audience": [
-        "organizer"
-      ],
-      "use_case": "When a submission was accidentally linked to the wrong event, or a speaker's session needs to be pulled back before the agenda is finalised, an organizer can remove the event link — and optionally trash the session — without contacting support or manually cleaning up database rows.",
-      "internal": {
-        "cs_action": {
-          "kind": "none",
-          "note": "The action is available to any org member for link-only removal; trashing the session additionally requires the Sessions DELETE permission on that event. Stale links to already-deleted sessions are filtered out automatically in all list and export views — no data migration is required, though an optional cleanup SQL is available for Josh to run."
-        },
-        "when_to_bring_up": "A customer asks how to undo Add to Event, or reports that a submission still shows an event assignment after the session was deleted.",
-        "who_should_get_it": "Any customer using Pipeline / interest forms who promotes submissions to events.",
-        "staff_path": "Speaker CRM → Interest Forms → [submission] → sidebar",
-        "gotchas": "Restoring a trashed session does not restore the submission link; the organizer must run Add to Event again. Speaker-only links (no session) are removed via Remove from Event, not by the session-delete hook.",
-        "talk_track": "You can now reverse Add to Event directly from the submission sidebar — just click Remove from Event. If you also want to pull the session out of the event, choose Move session to trash at the same time.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The interest-forms guide should add a section explaining Remove from Event: how to access it from the submission sidebar, the keep vs. trash session options, the permission required to trash, and what happens to stale links when a session is deleted.",
-          "why_use_it": "Interest form submissions flow into the Pipeline and can be promoted to an event with Add to Event. Remove from Event gives you a clean way to reverse that decision: the submission returns to an unassigned state, stale links to deleted sessions are cleared automatically, and the Pipeline card re-mirrors to the next live assignment. Trashing the session at the same time keeps your event's session list tidy without a separate step.",
-          "at": "2026-11-13T20:11:01.664Z"
-        }
-      },
-      "product": "platform",
-      "shipped": {
-        "prs": [
-          "lennd/sessionboard-web-api#5364"
-        ],
-        "docs_only": false,
-        "pending": null,
-        "live": {
-          "us": "2026-11-14",
-          "eu": "2026-11-14",
-          "me": "2026-11-14"
-        },
-        "announced_at": null,
-        "emailed_at": null
-      },
-      "ideas": [],
-      "media": [],
-      "gated": "availability:beta",
-      "platform": false
-    },
-    {
-      "id": "remove-from-event-interest-form",
-      "title": "Remove an interest-form submission from an event it was added to",
-      "summary": "Each event listed in the **Assigned to event** banner on an interest-form submission now has a **Remove from event** button. A confirmation dialog names the event and lets you choose whether to keep the linked session or move it to the event's trash. On success, the submission tables, pipeline cards, and the event's sessions all refresh, and **Add to Event** becomes available again.",
-      "article": "/speaker-crm/speaker-crm-interest-forms#managing-submissions",
-      "related": [
-        "/speaker-crm/pipeline"
-      ],
-      "kind": "new",
-      "module": "CRM",
+      "kind": "fixed",
+      "module": "Portals",
       "features": [],
       "availability": "everyone",
       "enable": {
@@ -1879,47 +1538,32 @@
       },
       "where": {
         "scope": "org",
-        "path": "Speaker CRM → Interest Forms → [submission] → Assigned to event banner → Remove from event"
+        "path": "Site → apply, cart, checkout, confirmation, request forms, reviewer home"
       },
-      "permissions": [
-        "org.interest_forms.update"
-      ],
+      "permissions": [],
       "audience": [
-        "organizer"
+        "organizer",
+        "participant"
       ],
-      "use_case": "When a submission was accidentally added to the wrong event, or plans change, organizers can now unlink it without contacting support — and optionally clean up the session that was created at the same time.",
+      "use_case": "A Site that uses a white or light Primary Color for clean content boxes keeps visible, on-brand buttons and checkboxes for applicants without any workaround.",
       "internal": {
         "cs_action": {
           "kind": "none",
-          "note": "Ships default-on. The trash option appears only when the API returns the removeFromEventSessionActions field, so it is safe against older environments."
+          "note": "Automatic. Sites with no Accent Color keep their current look. The Primary and Accent hints in the Site builder now describe this."
         },
-        "when_to_bring_up": "A customer asks how to undo an 'Add to Event' action or complains that a submission is stuck assigned to the wrong event.",
-        "who_should_get_it": "Any customer using interest forms and the pipeline.",
-        "staff_path": "Speaker CRM → Interest Forms → open a submission → Assigned to event banner",
-        "gotchas": "Speaker-only links (no session created) show a simplified confirmation that notes no session was involved. The trash option only appears when the API manifest supports it.",
-        "talk_track": "You can now remove a submission from an event directly from the submission sidebar — choose to keep the session or send it to trash, and the submission is immediately available to re-assign.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The guide should document the Remove from event button in the Assigned to event banner, including the keep-vs-trash choice and what happens to speaker-only links.",
-          "why_use_it": "Interest forms let you collect speaker interest at the organization level and route submissions into specific events. The ability to remove a submission from an event means a mis-routed or changed submission does not stay permanently locked to the wrong event, keeping your pipeline and session lists accurate without manual workarounds.",
-          "at": "2026-11-13T20:18:16.779Z"
-        }
+        "when_to_bring_up": "A customer reports invisible or white-on-white buttons, radios or checkboxes on their application form.",
+        "who_should_get_it": "Awards and CFP customers whose Site uses a white or very light Primary Color.",
+        "staff_path": "Site builder → Site → Branding → Signed-in portal",
+        "gotchas": "Review scoring, My Profile and My Submissions still draw controls from Primary Color; that is a known follow-up."
       },
       "shipped": {
         "prs": [
-          "lennd/sessionboard-web-ui-v2#1606"
+          "lennd/sessionboard-web-org-portal#333",
+          "lennd/sessionboard-web-ui-v2#1602"
         ],
         "docs_only": false,
         "pending": null,
-        "live": {
-          "us": "2026-11-14",
-          "eu": "2026-11-14",
-          "me": "2026-11-14"
-        },
-        "announced_at": null,
-        "emailed_at": null
+        "live": null
       },
       "ideas": [],
       "media": [],
@@ -1928,19 +1572,277 @@
       "platform": false
     },
     {
-      "id": "bulk-permissions-copy-statuses-field-rules-contacts-view-permissions",
-      "title": "Bulk Permissions can copy statuses, Field Rules has a permission gate, and Contacts views have create/edit/delete permissions",
-      "summary": "Three permission-related improvements ship together. **Bulk Permissions** (Org Settings → Permissions) gains a **Copy statuses and their role restrictions** option on the template event card, with a role picker and a preview of new statuses and restrictions before you apply. **Field Rules** on the org and event Fields pages is now hidden from roles that lack \"Can manage field rules\", keeping that advanced tool out of the wrong hands. The **Contacts** saved-views dropdown now respects **canCreateViews / canEditViews / canDeleteViews** role flags, so **Save Changes**, **Save as New View**, **Rename**, visibility, **Delete** and **Copy views from another event** are hidden for roles that should not touch shared views; choosing a view and resetting always remain available.",
-      "article": "/event-team/bulk-apply-permissions-across-events",
+      "id": "cfp-submitter-name-fix",
+      "title": "Submission Confirmation: Submitter name names the submitter, and a new Recipient name tag",
+      "summary": "Participants who get a copy of the **Submission Confirmation** (roles with **Send submission confirmation email** on) were greeted as if they were the submitter. **Submitter name** now always names the person who submitted, and a new **Recipient name** merge tag greets each reader by their own name.",
+      "article": "/sessions/submission-forms#notifications",
       "related": [
-        "/event-team/invite-manage-event-team-members",
-        "/settings/field-rules",
-        "/reporting/dashboard-views"
+        "/communications/automated-emails#submission-confirmation"
       ],
-      "kind": "improved",
-      "module": "Settings",
+      "kind": "fixed",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Submission form → Notifications → Submission Confirmation"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Moderators and co-presenters copied on a confirmation now read who actually submitted the session, and the email can still address them personally.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Templates that say 'Dear Submitter name' should switch to Recipient name so each participant is greeted by their own name; Josh updated the 8 US and 1 EU templates found at release."
+        },
+        "when_to_bring_up": "A speaker or moderator says the confirmation email called them the submitter.",
+        "who_should_get_it": "Events whose submission forms send the confirmation to participant roles.",
+        "staff_path": "Submission form → Notifications → Submission Confirmation → Merge tags"
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5361"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": null
+      },
+      "ideas": [],
+      "media": [],
+      "product": "platform"
+    },
+    {
+      "id": "reviewer-focus-mode-phones",
+      "title": "Review scoring works on phones in Focus mode",
+      "summary": "On a Site's review page, **Focus** no longer squeezes the scorecard into a sliver on phones and landscape screens. On a phone the submission and the scorecard stack in one scroll; from tablet width the scorecard scrolls in its own pane with **Save review** pinned, so it is always reachable.",
+      "article": "/evaluations/how-to-evaluate-sessions#reviewing-a-submission",
+      "related": [],
+      "kind": "fixed",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Site → review workspace → submission"
+      },
+      "permissions": [],
+      "audience": [
+        "participant"
+      ],
+      "use_case": "Reviewers can score on their phone between sessions without losing the Save review button.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Automatic."
+        },
+        "when_to_bring_up": "A reviewer says they can't reach Save review on a phone or tablet.",
+        "who_should_get_it": "Any customer whose reviewers score on mobile devices.",
+        "staff_path": "Review plan → Preview as reviewer, at phone width"
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-org-portal#332"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": null
+      },
+      "ideas": [],
+      "media": [],
+      "product": "platform"
+    },
+    {
+      "id": "reviewer-home-site-welcome",
+      "title": "Reviewers see the Site's welcome message on their home page",
+      "summary": "The reviewer home on a Site shows the signed-in welcome **Title** and **Description** above the review rounds, as submitters already saw. Sites without a welcome message show nothing extra.",
+      "article": "/site/program-site#setting-up-your-program-site",
+      "related": [
+        "/evaluations/how-to-evaluate-sessions#my-reviews"
+      ],
+      "kind": "fixed",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Site → reviewer home"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "The welcome text you write for the Site — instructions, deadlines, a thank-you — now reaches your reviewers too.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Automatic."
+        },
+        "when_to_bring_up": "A customer asks why reviewers don't see the welcome text on the portal home.",
+        "who_should_get_it": "Customers that run reviews on a Site with a welcome message.",
+        "staff_path": "Site builder → Portal → Home"
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-org-portal#332"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": null
+      },
+      "ideas": [],
+      "media": [],
+      "product": "platform"
+    },
+    {
+      "id": "review-assignments-subsession-pool",
+      "title": "Review assignments count the right pool for plans that review subsessions",
+      "summary": "On a review plan's **Assignments** step, **Filtered submissions** now comes from the server on every round, so it matches what **Assign** creates. A plan that reviews subsessions, with none in scope, says *No eligible subsessions match this round's scope and filters* instead of showing a count it could never assign.",
+      "article": "/evaluations/review-plan-assignments#impact-preview",
+      "related": [],
+      "kind": "fixed",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Program → Review → plan → Assignments"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Admins see the real number of submissions a round will assign before they click Assign, so a plan set up for the wrong target is obvious straight away.",
+      "internal": {
+        "cs_action": {
+          "kind": "reach_out",
+          "note": "What a plan reviews can't change after creation. A customer whose subsession plan shows 0 needs a new plan that reviews submissions."
+        },
+        "when_to_bring_up": "A customer says the assignment count changed or the plan assigns nothing.",
+        "who_should_get_it": "Customers using review plans, especially with subsessions.",
+        "staff_path": "Program → Review → plan → Edit → Assignments"
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1592"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": null
+      },
+      "ideas": [],
+      "media": [],
+      "product": "platform"
+    },
+    {
+      "id": "report-pivot-dates-follow-format",
+      "title": "Reports: pivoted date columns follow your date format",
+      "summary": "In a side-by-side (pivot) report, renamed date columns such as **Session 1: Starts at** now use the event's export date format in the grid and in CSV and XLSX downloads, like every other date column.",
+      "article": "/reporting/report-builder#nested-rows-and-pivot",
+      "related": [],
+      "kind": "fixed",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Reports → Report Builder → Pivot"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Pivoted schedules read the same way as the rest of the report, so they can go straight to a printer or a partner.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Automatic."
+        },
+        "when_to_bring_up": "A customer reports raw timestamps in a pivoted report or its export.",
+        "who_should_get_it": "Customers who pivot sessions or participants side by side.",
+        "staff_path": "Reports → a report with Pivot → Download"
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5348"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": null
+      },
+      "ideas": [],
+      "media": [],
+      "product": "platform"
+    },
+    {
+      "id": "report-review-fields-no-extra-columns",
+      "title": "Reports with review fields show only the columns you picked",
+      "summary": "Adding a review field, such as **Session avg score**, to a report no longer adds about fifteen extra review columns. Reports that read reviews return only the columns the report asks for, in the grid, share links and scheduled reports.",
+      "article": "/reporting/report-builder#review-answers-one-row-per-session",
+      "related": [],
+      "kind": "fixed",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Reports, report share links and scheduled reports"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Review reports stay clean and match what the admin built, so they can be shared without trimming columns by hand.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Automatic. Other reports are unchanged."
+        },
+        "when_to_bring_up": "A customer sees unexpected review columns in a custom report.",
+        "who_should_get_it": "Customers reporting on review scores.",
+        "staff_path": "Reports → a Sessions report with a review field"
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5348"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": null
+      },
+      "ideas": [],
+      "media": [],
+      "product": "platform"
+    },
+    {
+      "id": "automations-checkbox-trigger",
+      "title": "Automations: checkbox triggers fire on checked or unchecked",
+      "summary": "When an automation watches a checkbox field, **Changed to a specific value** now offers **Becomes checked** or **Becomes unchecked** instead of a text box, and the automation fires only in that direction. You can't save or enable it with the option on and nothing picked.",
+      "article": "/automations/overview#when",
+      "related": [],
+      "kind": "fixed",
       "features": [
-        "field_rules"
+        "automations"
       ],
       "availability": "everyone",
       "enable": {
@@ -1948,36 +1850,75 @@
         "path": null
       },
       "where": {
-        "scope": "both",
-        "path": "Org Settings → Permissions (Bulk Permissions); Fields (Field Rules button); Contacts → saved-views dropdown"
+        "scope": "event",
+        "path": "Automations → When"
       },
       "permissions": [],
       "audience": [
         "organizer"
       ],
-      "use_case": "Organizations that run many events can now copy session statuses and their role restrictions in one bulk operation instead of recreating them by hand. Teams that want to lock down who can create or rename shared contact views, or who can edit field rules, can do so through role permissions without any workaround.",
+      "use_case": "Send an email or assign reviewers the moment a box such as 'Travel booked' or 'Needs AV' is ticked, or when it is cleared.",
       "internal": {
         "cs_action": {
-          "kind": "review_before_customers_see",
-          "note": "The Contacts view permission flags (canCreateViews/canEditViews/canDeleteViews) and the Field Rules permission gate are only active once the API advertises the new permission slugs. Until then, behaviour is identical to today. The Bulk Permissions status-copy option appears only when the source event's roles endpoint returns a 'statuses' domain."
+          "kind": "none",
+          "note": "Automatic. An automation that typed 'true' before should be reopened and set to Becomes checked."
         },
-        "when_to_bring_up": "When a customer asks how to prevent certain roles from creating or deleting shared contact views, or wants to copy their status setup (including role restrictions) to new events in bulk.",
-        "who_should_get_it": "Customers with multiple events and complex role setups, or anyone who has asked about locking down Field Rules or shared views.",
-        "staff_path": "Org Settings → Permissions → Bulk Permissions; event Fields page; event Contacts page → saved-views dropdown",
-        "gotchas": "All three gates are behind a new useAdvertisedPermission hook — they are invisible until the companion API PR (#5365) is deployed. Either PR can go first safely.",
-        "talk_track": "You can now copy statuses and their role restrictions when bulk-applying permissions, so new events inherit exactly who can move sessions to each status. You can also restrict which roles can create or rename shared contact views, and hide Field Rules from anyone who shouldn't touch them.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The bulk-apply guide should add a section describing the new \"Copy statuses and their role restrictions\" option, including the role picker and the preview step.",
-          "why_use_it": "Bulk Permissions lets you push a consistent role and permission setup from a template event to many events at once, so your team always works with the same access model regardless of which event they open. Copying statuses alongside their role restrictions means the rules about who can move a session to a given status travel with the status itself. Field Rules and saved-view permissions give admins fine-grained control over which roles can change shared configuration, protecting the setup that the rest of the team depends on.",
-          "at": "2026-11-13T20:24:39.177Z"
-        }
+        "when_to_bring_up": "A customer's checkbox automation never fires.",
+        "who_should_get_it": "Customers using automations on checkbox fields.",
+        "staff_path": "Automations → automation → When → A field changes → a checkbox field"
       },
       "shipped": {
         "prs": [
-          "lennd/sessionboard-web-ui-v2#1607"
+          "lennd/sessionboard-web-api#5348",
+          "lennd/sessionboard-web-ui-v2#1593",
+          "lennd/sessionboard-web-ui-v2#1617"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": null
+      },
+      "ideas": [],
+      "media": [],
+      "product": "platform"
+    },
+    {
+      "id": "reviewer-import-tags-update-control",
+      "title": "Reviewer import: Tags and Update record if already exists",
+      "summary": "The reviewer import template has two new columns. **Tags** adds pipe-separated reviewer tags, creating any the event doesn't have. **Update record if already exists** decides what happens to a reviewer already on the event: `TRUE` or blank updates them, `FALSE` skips the row with an error.",
+      "article": "/evaluations/review-plan-reviewers#import-reviewers",
+      "related": [
+        "/evaluations/review-plan-assignments#import-assignments-from-a-spreadsheet"
+      ],
+      "kind": "improved",
+      "module": "Program",
+      "features": [],
+      "permissions": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Program → Review → plan → Plan options → Import reviewers"
+      },
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Committees arrive already tagged by expertise or panel, and an import meant for new people can't overwrite reviewers you have already set up.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Both columns are optional; old files import exactly as before."
+        },
+        "when_to_bring_up": "A customer tags reviewers by hand after every import, or asks how to avoid touching existing reviewers.",
+        "who_should_get_it": "Events with large review committees.",
+        "staff_path": "Program → Review → plan → Plan options → Import reviewers → Generate Template"
+      },
+      "product": "platform",
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5362"
         ],
         "docs_only": false,
         "pending": null,
@@ -1990,16 +1931,337 @@
         "emailed_at": null
       },
       "ideas": [],
+      "media": [
+        "/images/kb/eval-plan-options-import-assignments.png"
+      ],
+      "gated": null,
+      "platform": false
+    },
+    {
+      "id": "call-for-reviewers-bulk-actions",
+      "title": "Call for Reviewers: approve, decline, resend or remove many people at once",
+      "summary": "The Call for Reviewers people table has row checkboxes and a bulk bar: **Approve**, **Decline**, **Resend invitation** and **Remove**. Each confirms the count first, leaves alone anyone it doesn't apply to, and reports partial failures. It works on events and Awards programs.",
+      "article": "/evaluations/call-for-reviewers#act-on-many-people-at-once",
+      "related": [
+        "/awards/call-for-reviewers#the-people-list"
+      ],
+      "kind": "new",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Call for Reviewers → people table"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Approve a whole batch of reviewer applications or chase every unanswered invitation in one click instead of row by row.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Available to anyone who can manage the call."
+        },
+        "when_to_bring_up": "A customer has dozens of pending reviewer applications.",
+        "who_should_get_it": "Events and Awards programs recruiting reviewers through a call.",
+        "staff_path": "Program → Review → Call for Reviewers → people table"
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1604"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": null
+      },
+      "ideas": [],
+      "media": [],
+      "product": "platform"
+    },
+    {
+      "id": "submissions-review-progress-columns",
+      "title": "Review progress columns on the Submissions list",
+      "summary": "**Program → Submissions** has a **Review progress** column group under **Preferences → Columns**: one column per round of every live review plan, reading reviews done out of assigned, such as **3 / 5**.",
+      "article": "/evaluations/evaluation-plans#review-progress-on-the-submissions-list",
+      "related": [],
+      "kind": "new",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Program → Submissions"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Program chairs can see which submissions are still waiting on reviewers without opening each plan.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "On for every event with a review plan. The columns are not in exports and are not sortable yet."
+        },
+        "when_to_bring_up": "A customer asks to see review progress next to their submission fields.",
+        "who_should_get_it": "Events using review plans.",
+        "staff_path": "Program → Submissions → Preferences → Columns → Review progress",
+        "gotchas": "Not exported and not sortable yet."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5362",
+          "lennd/sessionboard-web-ui-v2#1604"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": null
+      },
+      "ideas": [],
+      "media": [],
+      "product": "platform"
+    },
+    {
+      "id": "contacts-view-permissions",
+      "title": "Contacts: permissions to create, edit and delete saved views",
+      "summary": "Event and organization roles have **Can create views**, **Can edit views** and **Can delete views** under **Contacts**, matching Sessions. Without them, the save, rename and delete items are hidden in the Saved Views menu and the API refuses the change. Every existing role has all three.",
+      "article": "/event-team/invite-manage-event-team-members#who-can-save-edit-and-delete-views",
+      "related": [],
+      "kind": "new",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Team → Permissions → Contacts"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Keep shared contact views stable: let coordinators use the team's views without being able to overwrite or delete them.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Every role was granted all three at release, so nothing changed until an admin turns one off."
+        },
+        "when_to_bring_up": "A customer says someone keeps changing or deleting a shared contact view.",
+        "who_should_get_it": "Customers with large event teams sharing contact views.",
+        "staff_path": "Event → Team → Permissions → role → Contacts",
+        "gotchas": "Speakers page views live on contacts, so the same switches govern them."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5365",
+          "lennd/sessionboard-web-ui-v2#1607"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": null
+      },
+      "ideas": [],
+      "media": [],
+      "product": "platform"
+    },
+    {
+      "id": "field-rules-permission",
+      "title": "Field Rules: a permission to manage rules",
+      "summary": "A new organization permission, **Can manage field rules**, controls who can open, create, edit and delete Field Rules. Without it the **Field Rules** button is hidden on Library → Fields and the API refuses the request. Every organization role has it on.",
+      "article": "/settings/field-rules#open-field-rules",
+      "related": [],
+      "kind": "new",
+      "features": [
+        "field_rules"
+      ],
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Organization Settings → Team → Permissions"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizations can let people manage fields without letting them change the rules that rewrite data on every save.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Granted to every organization role at release."
+        },
+        "when_to_bring_up": "A customer wants to restrict who can change Field Rules.",
+        "who_should_get_it": "Organizations using Field Rules.",
+        "staff_path": "Organization Settings → Team → Permissions → role → Organization Settings → Can manage field rules"
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5365",
+          "lennd/sessionboard-web-ui-v2#1607",
+          "lennd/sessionboard-web-ui-v2#1617"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": null
+      },
+      "ideas": [],
+      "media": [],
+      "product": "platform"
+    },
+    {
+      "id": "bulk-permissions-copy-statuses",
+      "title": "Bulk Permissions: copy statuses and their role restrictions",
+      "summary": "**Bulk Permissions** has a new option, **Copy statuses and their role restrictions**. It creates any custom status a target event is missing (never renaming or deleting one) and gives the selected roles the template role's status restrictions, mapped to each event's statuses. The Admin role is skipped and every change is in History.",
+      "article": "/event-team/bulk-apply-permissions-across-events#copy-permissions-to-other-events",
+      "related": [],
+      "kind": "new",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Organization Settings → Bulk Permissions"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizations running many events with the same review workflow set up statuses and who may set them once, then roll them out to every event.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Available to organization admins on Bulk Permissions."
+        },
+        "when_to_bring_up": "A customer sets up the same custom statuses and status restrictions event by event.",
+        "who_should_get_it": "Organizations with many similar events.",
+        "staff_path": "Organization Settings → Bulk Permissions"
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5365",
+          "lennd/sessionboard-web-ui-v2#1607"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": null
+      },
+      "ideas": [],
+      "media": [],
+      "product": "platform"
+    },
+    {
+      "id": "report-filter-option-pickers",
+      "title": "Reports and widgets: pick filter values from a list",
+      "summary": "Filters on option fields — status, track, format, level, tags and custom dropdowns — offer the event's own values in a dropdown (**=**, **!=**, **CONTAINS**) or a multi-select (**IN**, **NOT IN**) in the Report Builder and the dashboard widget builder, instead of a text box. Lists over 1,000 values stay free text.",
+      "article": "/reporting/report-builder#filters",
+      "related": [
+        "/reporting/dashboards#build-custom"
+      ],
+      "kind": "improved",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Report Builder → Filters; widget builder → Build"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "No more typos in filter values: pick the track or status from the list and the report matches exactly.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Automatic. Saved filters keep their values."
+        },
+        "when_to_bring_up": "A customer's report filter returns nothing because a value was typed differently.",
+        "who_should_get_it": "Anyone building reports or dashboard widgets.",
+        "staff_path": "Reports → Report Builder → Filters; Dashboard → Add Widget → Build custom → Build"
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5368",
+          "lennd/sessionboard-web-ui-v2#1609"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": null
+      },
+      "ideas": [],
+      "media": [],
+      "product": "platform"
+    },
+    {
+      "id": "agenda-embed-card-field-selection",
+      "title": "Agenda embed: choose the fields on the session card",
+      "summary": "An embed's **Agenda** tab has a new switch, **Choose the fields on the session card**. Turn it on and pick the card's own fields — level, speakers, a custom field — and the card shows the title, time and those fields, while the pop-up keeps the Agenda fields. It is off for every existing embed.",
+      "article": "/sessions/embeds#how-to-create-an-embed",
+      "related": [],
+      "kind": "new",
+      "module": "Program",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "setting",
+        "path": "Publish → Embeds → embed → Field Options → Agenda → Choose the fields on the session card"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Embed → Field Options → Agenda tab"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Show attendees the details they choose by — level, speakers, a topic — right on the agenda card, without opening every session.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Off by default; existing embeds render as before."
+        },
+        "when_to_bring_up": "A customer wants speakers or a custom field on the agenda card.",
+        "who_should_get_it": "Customers who embed their agenda on their own website.",
+        "staff_path": "Publish → Embeds → embed → Field Options → Agenda"
+      },
+      "product": "platform",
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5368",
+          "lennd/sessionboard-web-ui-v2#1609",
+          "lennd/sessionboard-embeds#139"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": null
+      },
+      "ideas": [],
       "media": [],
       "gated": null,
-      "product": "platform",
       "platform": false
     },
     {
       "id": "automations-duplicate-copy",
-      "title": "Duplicate automations and copy them to another event",
-      "summary": "Each automation row's menu now offers **Duplicate** and **Copy to another event…**. **Duplicate** creates an identical copy in the same event (turned off). **Copy to another event…** opens a dialog where you pick any other event in the org; after copying, the dialog lists anything that could not be carried over. If a copied automation has unresolved issues, a banner appears in the builder until the automation is saved. Copied automations are always turned off. Both options appear only when the API signals support for copying.",
-      "article": "/automations/overview",
+      "title": "Automations: Duplicate and Copy to another event",
+      "summary": "Each automation's menu has **Duplicate** and **Copy to another event…**. Copies arrive turned off with their own email. Fields, statuses, forms and roles are matched by name in the other event; anything without a match is listed and blocks **Enable** until you fix it and save.",
+      "article": "/automations/overview#duplicate-or-copy-to-another-event",
       "kind": "new",
       "module": "Automations",
       "features": [
@@ -2012,118 +2274,33 @@
       },
       "where": {
         "scope": "event",
-        "path": "Automations → [automation row] → ⋯ menu → Duplicate / Copy to another event…"
+        "path": "Automations → ⋯ menu"
       },
       "permissions": [],
       "audience": [
         "organizer"
       ],
-      "use_case": "An organizer who runs the same automation logic across multiple events can copy a working automation to a new event in seconds instead of rebuilding it from scratch, then review any items that need to be re-mapped before turning it on.",
-      "internal": {
-        "cs_action": {
-          "kind": "review_before_customers_see",
-          "note": "Both options are hidden until the matching web-api branch (fix/cs1113-g10) is deployed. Confirm API is live before telling customers the feature is available."
-        },
-        "when_to_bring_up": "When a customer asks how to reuse automations across events or says they are rebuilding the same automation every year.",
-        "who_should_get_it": "Any organizer who runs recurring events with similar automation workflows.",
-        "staff_path": "Automations → [automation row] → ⋯ menu",
-        "gotchas": "Copied automations are always off; the builder shows a banner listing anything that could not be carried over (e.g. fields or statuses that don't exist in the target event). The controls are hidden until the API returns copySupported.",
-        "talk_track": "You can now copy any automation to another event in one click — pick the event, review what needs attention, then turn it on when you're ready.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "medium",
-          "docs_gap": "The Automations overview guide should add a section explaining how to duplicate an automation and how to copy one to another event, including what the copy dialog shows and what the builder banner means.",
-          "why_use_it": "Automations let you trigger actions — emails, status changes, task assignments and more — whenever something happens in your event. Duplicating an automation lets you iterate on a copy without touching the live version. Copying to another event means the logic you refined for one event travels with you to the next, so you spend time on content rather than configuration.",
-          "at": "2026-11-13T20:42:42.261Z"
-        }
-      },
-      "related": [
-        "/sessions/copy-sessions-from-another-event"
-      ],
-      "product": "platform",
-      "shipped": {
-        "prs": [
-          "lennd/sessionboard-web-ui-v2#1609"
-        ],
-        "docs_only": false,
-        "pending": null,
-        "live": {
-          "us": "2026-11-14",
-          "eu": "2026-11-14",
-          "me": "2026-11-14"
-        },
-        "announced_at": null,
-        "emailed_at": null
-      },
-      "ideas": [],
-      "media": [],
-      "gated": null,
-      "platform": false
-    },
-    {
-      "id": "portal-upload-extended-due-date",
-      "title": "Set a per-submission extended upload deadline in the speaker portal",
-      "summary": "A new **Portal Content Upload Extended Until** date field on each session lets organizers grant individual submissions more time to upload files, independent of the event-wide upload window. Turning the extension switch off clears the date. The extended deadline is respected by the upload guard, upload slots, and the poster builder, and is carried when a session is duplicated or copied.",
-      "article": "/sessions/enable-upload-download-content",
-      "related": [
-        "/portals/portals-101",
-        "/portals/collect-documents"
-      ],
-      "kind": "new",
-      "module": "Portals",
-      "features": [
-        "sessions"
-      ],
-      "availability": "everyone",
-      "enable": {
-        "how": "setting",
-        "path": "Sessions → [open a session] → Portal Content Upload Extended Until"
-      },
-      "where": {
-        "scope": "event",
-        "path": "Sessions → [open a session] → Portal Content Upload Extended Until"
-      },
-      "permissions": [
-        "event.sessions.update"
-      ],
-      "audience": [
-        "organizer"
-      ],
-      "use_case": "When a speaker misses the upload deadline due to travel or technical issues, an organizer can grant that specific session extra time without reopening the upload window for the entire event.",
+      "use_case": "Build an automation once and reuse it in next year's event, or start a variation from a working copy.",
       "internal": {
         "cs_action": {
           "kind": "none",
-          "note": null
+          "note": "Available to anyone who can manage automations. Copying automations as part of an event clone ships in a later release."
         },
-        "when_to_bring_up": "When a customer asks how to give one speaker extra time to upload files after the event-wide window has closed.",
-        "who_should_get_it": "Any organizer running a portal with file uploads who needs to handle exceptions on a per-session basis.",
-        "staff_path": "Sessions → [open a session] → Portal Content Upload Extended Until",
-        "gotchas": "Turning the extension switch off clears the stored date. Sessions with the switch already on (54 in US, 0 in EU at launch) keep their existing behaviour — no date means an open-ended extension.",
-        "talk_track": "Instead of reopening uploads for everyone, you can now give a single session its own extended deadline right on the session record.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "medium",
-          "docs_gap": "The guide should document the new Portal Content Upload Extended Until field on a session, how the switch interacts with the date, and how the extension is enforced in the portal upload guard and poster builder.",
-          "why_use_it": "The portal upload window controls when speakers can submit files for their sessions. Setting a per-submission extended deadline lets you accommodate individual speakers who need more time without affecting every other session in the event. The extension carries through when sessions are duplicated or copied, so your workflow stays consistent across events.",
-          "at": "2026-11-13T21:06:45.027Z"
-        }
+        "when_to_bring_up": "A customer rebuilds the same automations for every event.",
+        "who_should_get_it": "Customers running recurring events.",
+        "staff_path": "Automations → ⋯ on an automation"
       },
+      "related": [],
       "product": "platform",
       "shipped": {
         "prs": [
-          "lennd/sessionboard-web-api#5372"
+          "lennd/sessionboard-web-api#5368",
+          "lennd/sessionboard-web-ui-v2#1609",
+          "lennd/sessionboard-web-ui-v2#1617"
         ],
         "docs_only": false,
         "pending": null,
-        "live": {
-          "us": "2026-11-14",
-          "eu": "2026-11-14",
-          "me": "2026-11-14"
-        },
-        "announced_at": null,
-        "emailed_at": null
+        "live": null
       },
       "ideas": [],
       "media": [],
@@ -2131,17 +2308,15 @@
       "platform": false
     },
     {
-      "id": "transcribe-participant-roles-rail",
-      "title": "Live Transcribe rail shows each participant's role",
-      "summary": "The live-session rail is now labelled **Participants** and displays each person's role beneath their name. The **Tag speakers** dialog and tag picker also show roles and list up to 25 participants before search (previously 8). Events using an older API response are unaffected.",
-      "article": "/marketing/live-transcribe",
-      "related": [
-        "/concepts/participant-roles"
-      ],
-      "kind": "improved",
-      "module": "Marketing",
+      "id": "remove-from-event-interest-form",
+      "title": "Interest forms: remove a submission from an event",
+      "summary": "A submission added to an event can now be taken back: **Remove from event** on the submission's banner unlinks it, keeping the session in the event by default or moving it to the event's trash. The change is audited, and **Add to Event** works again. Deleting the session in the event also clears the link.",
+      "article": "/speaker-crm/speaker-crm-interest-forms#remove-a-submission-from-an-event",
+      "related": [],
+      "kind": "new",
+      "module": "CRM",
       "features": [
-        "marketing_transcribe"
+        "crm"
       ],
       "availability": "everyone",
       "enable": {
@@ -2149,32 +2324,164 @@
         "path": null
       },
       "where": {
-        "scope": "event",
-        "path": "Marketing → Live Transcribe → session rail → Participants"
+        "scope": "org",
+        "path": "Interest Forms → submission banner"
       },
       "permissions": [],
       "audience": [
         "organizer"
       ],
-      "use_case": "AV operators tagging speakers during a live session can now see each person's role (Speaker, Moderator, Chairperson, etc.) directly in the rail and tag picker, so they pick the right person without having to look up roles elsewhere.",
+      "use_case": "Fix a submission sent to the wrong event, or move it to another, without asking support.",
       "internal": {
         "cs_action": {
           "kind": "none",
-          "note": null
+          "note": "Moving the session to the trash needs Sessions delete permission in that event."
         },
-        "when_to_bring_up": "When a customer uses Live Transcribe for multi-speaker or panel sessions and wants cleaner attribution.",
-        "who_should_get_it": "Events using Live Transcribe with sessions that have multiple participant roles.",
-        "staff_path": "Marketing → Live Transcribe",
-        "gotchas": "Roles only appear when the API returns the new `roles` column; older API responses render as before.",
-        "talk_track": "The Participants rail now shows each person's role so your AV crew can tag the right speaker instantly, even in a panel with a moderator and multiple presenters.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The guide should note that the rail is now labelled Participants, that roles appear beneath each name, and that the tag picker lists up to 25 participants before search.",
-          "why_use_it": "Live Transcribe lets your AV team capture and attribute spoken content to the right people in real time. Seeing each participant's role in the rail and tag picker removes guesswork when a session has multiple speakers, moderators, or chairpersons, keeping your transcript attribution accurate from the start.",
-          "at": "2026-11-13T21:13:47.936Z"
-        }
+        "when_to_bring_up": "A customer sees 'This submission cannot be reassigned while it is linked to an event'.",
+        "who_should_get_it": "Customers using Interest Forms across several events.",
+        "staff_path": "Organization → Interest Forms → form → submission → Remove from event"
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5364",
+          "lennd/sessionboard-web-ui-v2#1606"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "product": "platform",
+      "platform": false
+    },
+    {
+      "id": "transcribe-participant-roles-rail",
+      "title": "Transcribe: tag voices to any session participant, with roles",
+      "summary": "On a captured session's transcript page, the **Participants** panel and the speaker-tagging picker list everyone on the session with their role — moderators, chairs, panelists and custom roles, not only speakers.",
+      "article": "/marketing/media-library#tag-speakers",
+      "related": [],
+      "kind": "improved",
+      "module": "Marketing",
+      "features": [
+        "marketing"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Media → session transcript → Participants"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "A moderator's questions and a chair's introduction are credited to the right person in transcripts, recaps and quotes.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Automatic."
+        },
+        "when_to_bring_up": "A customer can't find a moderator to tag in a transcript.",
+        "who_should_get_it": "Customers using Transcribe on panels and moderated sessions.",
+        "staff_path": "Marketing → Media → session → Participants"
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5372",
+          "lennd/sessionboard-web-ui-v2#1612"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "product": "platform",
+      "platform": false
+    },
+    {
+      "id": "form-show-character-count",
+      "title": "Submission forms: hide the character counter on a text question",
+      "summary": "**Customize question** on a short or long text question has a **Show character count** switch. Turn it off and submitters no longer see a counter such as *3/255*; the limit still applies and *Limit of N characters reached* shows when they reach it.",
+      "article": "/sessions/submission-forms#customize-question",
+      "related": [],
+      "kind": "new",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "setting",
+        "path": "Submission form → question ⋯ → Customize question → Show character count"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Submission form → Customize question"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Keep forms calm for questions like a name or a title, where a counter adds noise, without giving up the length limit.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "On by default; existing forms are unchanged."
+        },
+        "when_to_bring_up": "A customer asks to hide the 3/255 counter on a form.",
+        "who_should_get_it": "Customers with submission forms.",
+        "staff_path": "Submission form → question ⋯ → Customize question → Show character count"
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5372",
+          "lennd/sessionboard-web-ui-v2#1612"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": null
+      },
+      "ideas": [],
+      "media": [
+        "/images/kb/form-builder-question-menu.png"
+      ],
+      "product": "platform"
+    },
+    {
+      "id": "attendee-feedback-participant-wording",
+      "title": "Participant Feedback settings say participant, not speaker",
+      "summary": "The Participant Feedback settings and preview now say *participant* — **What participants see**, **Preview as participant** — because feedback reaches everyone on a session, in any role.",
+      "article": "/portals/speaker-feedback#where-the-settings-are",
+      "related": [],
+      "kind": "improved",
+      "features": [
+        "speaker_feedback"
+      ],
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Record Settings → Participant portal"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "The wording matches who actually sees the feedback, so admins aren't left wondering whether moderators and chairs are included.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Copy change only."
+        },
+        "when_to_bring_up": "A customer asks whether chairs or moderators see session feedback.",
+        "who_should_get_it": "Customers using Participant Feedback.",
+        "staff_path": "Event → Settings → Record Settings → Participant portal → Participant Feedback"
       },
       "shipped": {
         "prs": [
@@ -2182,19 +2489,552 @@
         ],
         "docs_only": false,
         "pending": null,
-        "live": {
-          "us": "2026-11-14",
-          "eu": "2026-11-14",
-          "me": "2026-11-14"
+        "live": null
+      },
+      "ideas": [],
+      "media": [],
+      "product": "platform"
+    },
+    {
+      "id": "sponsors-pro-scope-note",
+      "title": "Exhibitors & Sponsors settings show what needs Sponsor Pro or Exhibitor Pro",
+      "summary": "On an event without **Sponsor Pro** or **Exhibitor Pro**, **Event Details → Exhibitors & Sponsors** lists what is included and what needs Pro, with **Ask your account team**. **Add portal** explains why the **Groups** type is locked.",
+      "article": "/events/event-details#event-details",
+      "related": [
+        "/portals/portals-101#create-a-portal"
+      ],
+      "kind": "improved",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event Details → Exhibitors & Sponsors; Add portal"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Admins see why a Groups portal is unavailable and what Pro adds, instead of a locked option with no explanation.",
+      "internal": {
+        "cs_action": {
+          "kind": "reach_out",
+          "note": "The note's button sends customers to their account team; be ready to talk about Sponsor Pro / Exhibitor Pro."
         },
-        "announced_at": null,
-        "emailed_at": null
+        "when_to_bring_up": "A customer asks why the Groups portal type is greyed out.",
+        "who_should_get_it": "Events managing sponsors or exhibitors without Pro.",
+        "staff_path": "Event Settings → Event Details → Exhibitors & Sponsors; Portals → Create Portal"
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1612"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": null
+      },
+      "ideas": [],
+      "media": [],
+      "product": "platform"
+    },
+    {
+      "id": "portal-upload-extended-due-date",
+      "title": "A submission's upload extension now has an end date",
+      "summary": "Turning on **Accept uploads after the deadline** for one submission now asks for a **New upload due date** in the event's timezone. Its participants can upload until then — in every slot and the poster builder — and uploads close after. Extensions turned on before keep no end date until you set one.",
+      "article": "/sessions/enable-upload-download-content#upload-slots",
+      "related": [],
+      "kind": "improved",
+      "module": "Portals",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Session → Files → Portal uploads"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Give one late speaker until Friday without leaving their uploads open forever.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Existing extensions (54 in US at release) stay open with no end date until someone sets one."
+        },
+        "when_to_bring_up": "A customer grants a late speaker more time to upload.",
+        "who_should_get_it": "Customers collecting files through the portal.",
+        "staff_path": "Session → Files → Portal uploads → Accept uploads after the deadline"
+      },
+      "product": "platform",
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5372",
+          "lennd/sessionboard-web-ui-v2#1612"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "platform": false
+    },
+    {
+      "id": "weekly-digest-file-uploads",
+      "title": "Weekly portal summary mentions open file uploads",
+      "summary": "When a participant's portal is taking session files, the Monday **weekly portal summary** adds a **File uploads** block with the event's due date, or each open upload slot their role owes with its own date. It never sends the email on its own.",
+      "article": "/communications/automated-emails#weekly-portal-summary",
+      "related": [],
+      "kind": "improved",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Weekly portal summary email"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Speakers are reminded where and by when to upload in the email they already get every week.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Automatic; shown only while uploads are open for that person."
+        },
+        "when_to_bring_up": "A customer asks whether the digest reminds speakers about uploads.",
+        "who_should_get_it": "Customers collecting files through the portal.",
+        "staff_path": "Settings → Email Templates → System → Weekly Digest Email"
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5372"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": null
+      },
+      "ideas": [],
+      "media": [],
+      "product": "platform"
+    },
+    {
+      "id": "sso-enforce-without-verification",
+      "title": "SSO: enforce login before a sign-in test",
+      "summary": "**Enforce Login Via SSO** can be turned on for a SAML or OIDC configuration at any stage, not only after a successful sign-in test. Organizations whose security policy rules out sharing test credentials can now enforce SSO.",
+      "article": "/integrations/sso#enforced-authentication",
+      "related": [],
+      "kind": "improved",
+      "module": "Settings",
+      "features": [
+        "sso"
+      ],
+      "availability": "on_request",
+      "enable": {
+        "how": "setting",
+        "path": "Organization Settings → SSO → SAML or OIDC configuration → Enforce Login Via SSO"
+      },
+      "where": {
+        "scope": "org",
+        "path": "Organization Settings → SSO"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Customers whose IT team can't hand over test credentials (MFA, company-wide SSO) can still require SSO for their domain.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Enforcing an untested configuration that is wrong stops everyone on that domain from signing in with a password until enforcement is turned off. Make sure an admin outside the domain can turn it off."
+        },
+        "when_to_bring_up": "A customer is stuck on the enforcement step because they can't complete the sign-in test.",
+        "who_should_get_it": "Enterprise customers with strict identity-provider policies.",
+        "staff_path": "Organization Settings → SSO → configuration → Enforce Login Via SSO"
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5358",
+          "lennd/sessionboard-web-ui-v2#1601"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": null
       },
       "ideas": [],
       "media": [],
       "gated": null,
       "product": "platform",
       "platform": false
+    },
+    {
+      "id": "asp-use-session-id-as-client-session-id",
+      "title": "ASP: send the Session ID as Client Session ID",
+      "summary": "The ASP integration's **Event Settings** has **Use Session ID as Client Session ID**. With it on, a session with no **Client Session ID** of its own is sent to ASP with its Session ID (such as `SESS-123`) as the ContentCode, so it syncs instead of being skipped. Sessions that already have a Client Session ID keep it.",
+      "article": "/apps/asp-integration#event-settings",
+      "related": [],
+      "kind": "new",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "setting",
+        "path": "Apps → ASP → Event Settings → Use Session ID as Client Session ID"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Apps → ASP → Event Settings"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Customers who don't keep their own Client Session IDs can sync to ASP without inventing codes or copying fields with a rule.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Opt-in per mapped event. Nothing is written to the session in Sessionboard."
+        },
+        "when_to_bring_up": "An ASP sync skips sessions with 'Client Session ID is missing', or a customer asks to copy the Session ID into Client Session ID.",
+        "who_should_get_it": "ASP Events customers.",
+        "staff_path": "Apps → ASP → Event Settings"
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5380",
+          "lennd/sessionboard-web-ui-v2#1620"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": null
+      },
+      "ideas": [],
+      "media": [],
+      "product": "platform"
+    },
+    {
+      "id": "embed-role-options-for-embed-only-editors",
+      "title": "Embeds: Roles to show loads for embed-only editors",
+      "summary": "The **Roles to show** list on embeds, feeds and Site program views now loads for team members who can manage embeds but don't have Session Settings or Contacts access. They saw an empty list before.",
+      "article": "/sessions/embeds#hide-moderators-or-chairpersons",
+      "related": [],
+      "kind": "fixed",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Embed → Roles to show"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "A web team member who only manages embeds can choose which participant roles the public agenda shows.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Automatic."
+        },
+        "when_to_bring_up": "An embed editor says Roles to show is empty.",
+        "who_should_get_it": "Customers whose embed editors have restricted roles.",
+        "staff_path": "Publish → Embeds → embed → Style Options → Participant Roles"
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5381",
+          "lennd/sessionboard-web-ui-v2#1621"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": null
+      },
+      "ideas": [],
+      "media": [],
+      "product": "platform"
+    },
+    {
+      "id": "connection-sync-log-retry",
+      "title": "Apps: a sync log with the vendor's response, and Retry for one record",
+      "summary": "Each saved connection of an app that writes from Sessionboard — HubSpot, Salesforce, Nimble, iMIS and others — has a **Sync log** listing every write attempt with its result, reason, remote id and the vendor's **Response**. **Retry** re-sends one failed record without running a full sync.",
+      "article": "/integrations/overview#sync-log-and-retrying-one-record",
+      "related": [],
+      "kind": "new",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Apps → app → connection → Sync log"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "When a CRM or AMS rejects a record, admins can read exactly why and send just that record again, without re-pushing every unposted order or payment.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Automatic for connectors that write from Sessionboard."
+        },
+        "when_to_bring_up": "A customer's CRM or AMS write failed and they want to know why or try again.",
+        "who_should_get_it": "Customers with CRM or AMS write connectors.",
+        "staff_path": "Apps → app → Connections → connection → Sync log"
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5363",
+          "lennd/sessionboard-web-api#5377",
+          "lennd/sessionboard-web-ui-v2#1615"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": null
+      },
+      "ideas": [],
+      "media": [],
+      "product": "platform"
+    },
+    {
+      "id": "review-visible-fields-imported-values",
+      "title": "Review plans offer imported session fields to reviewers",
+      "summary": "**Visible Submission Fields to Reviewers** (and the round's filter and card pickers) now also offers custom session fields that hold a value on a session in the event, such as fields filled by an import that are on no submission form. Fields nobody has filled in stay hidden.",
+      "article": "/evaluations/review-plan-scorecard#visible-submission-fields-to-reviewers",
+      "related": [],
+      "kind": "fixed",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Review plan → Scorecard and reviewer view"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Data brought in by an import — a slide link, a co-presenter detail — can be shown to reviewers without adding the field to a form.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Automatic. The public ballot's default fields are unchanged."
+        },
+        "when_to_bring_up": "A customer can't find an imported field in Visible submission fields.",
+        "who_should_get_it": "Events that import session data and review it.",
+        "staff_path": "Program → Review → plan → Edit → Scorecard and reviewer view"
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5374"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": null
+      },
+      "ideas": [],
+      "media": [],
+      "product": "platform"
+    },
+    {
+      "id": "slides-sponsor-logos",
+      "title": "Slides: sponsor logos on title slides",
+      "summary": "The title-slide designer has a **Sponsor logos** section: turn it on, pick the position, logo size and a label such as *Sponsored by*, and each generated slide shows its own session's sponsors in the session's order. Sessions without sponsors show nothing there.",
+      "article": "/marketing/slides#sponsor-logos",
+      "related": [],
+      "kind": "new",
+      "features": [
+        "marketing_slides"
+      ],
+      "enable": {
+        "how": "setting",
+        "path": "Marketing → Slides → template → Sponsor logos"
+      },
+      "where": {
+        "scope": "event",
+        "path": "Slides → template designer"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Give sponsors visibility on every session they back, on the slide the room sees before the talk starts.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Off by default for every template."
+        },
+        "when_to_bring_up": "A customer wants sponsor logos on session title slides.",
+        "who_should_get_it": "Events with session sponsors that generate title slides.",
+        "staff_path": "Marketing → Slides → template → Sponsor logos"
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5378",
+          "lennd/sessionboard-web-ui-v2#1618"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": null
+      },
+      "ideas": [],
+      "media": [],
+      "product": "platform"
+    },
+    {
+      "id": "site-fonts-arial-georgia",
+      "title": "Sites: Arial and Georgia as Site fonts",
+      "summary": "Site branding's **Font Family** now offers **Arial** and **Georgia** alongside Google Fonts. Both are system fonts, so the Site uses them without a font download.",
+      "article": "/awards/setting-up-your-sessionboard-site#site-url--branding",
+      "related": [],
+      "kind": "improved",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Site builder → Branding"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Organizations whose brand guidelines call for Arial or Georgia can match them exactly on their Site.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Available in Site branding."
+        },
+        "when_to_bring_up": "A customer asks for Arial or Georgia on their Site.",
+        "who_should_get_it": "Customers with Sites, especially awards programs.",
+        "staff_path": "Site builder → Site → Branding → Font Family"
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1614",
+          "lennd/sessionboard-web-org-portal#335"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": null
+      },
+      "ideas": [],
+      "media": [],
+      "product": "platform"
+    },
+    {
+      "id": "learning-credits-turn-on-cpe-cle-ceu",
+      "title": "Learning: turning on Credits adds CPE, CLE and CEU",
+      "summary": "When you turn on **Credits**, NASBA CPE Credit, CLE Credit and IACET CEU are added to your credit types if you don't have them, and a line confirms Credits is on. Ask can also rename a page in a course and open a course in the builder.",
+      "article": "/sessionboard-learning/credits/credits-and-certificates#turn-on-credits",
+      "related": [
+        "/sessionboard-learning/ask#build-and-edit-courses"
+      ],
+      "kind": "improved",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Learning → Credits"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Companies offering CPE, CLE or CEU hours can award them right after turning Credits on, without setting up credit types first.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Automatic."
+        },
+        "when_to_bring_up": "A company turns on Credits and doesn't see CPE or CLE.",
+        "who_should_get_it": "Learning customers awarding professional credit.",
+        "staff_path": "Learning → Credits → Turn on Credits"
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5353",
+          "lennd/sessionboard-web-ui-v2#1597"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": null
+      },
+      "ideas": [],
+      "media": [],
+      "product": "learning"
+    },
+    {
+      "id": "learning-import-messages-your-language",
+      "title": "Learning: question import and Draft questions messages in your language",
+      "summary": "The question-bank **Import** preview and the course builder's **Draft questions** now show problems, notes and errors in the admin's language (English, German, French or Spanish), and a short lesson gets a message that says it needs more content rather than none.",
+      "article": "/sessionboard-learning/courses/import-questions",
+      "related": [],
+      "kind": "improved",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Learning → Question bank → Import"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Admins who work in German, French or Spanish can fix import problems without reading half-translated English.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Automatic."
+        },
+        "when_to_bring_up": "A non-English admin reports English or half-translated import messages.",
+        "who_should_get_it": "Learning customers working in German, French or Spanish.",
+        "staff_path": "Learning → Courses → Question bank → Import"
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5352",
+          "lennd/sessionboard-web-ui-v2#1596"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": null
+      },
+      "ideas": [],
+      "media": [],
+      "product": "learning"
     }
   ]
 }
