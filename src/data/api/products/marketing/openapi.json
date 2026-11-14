@@ -39,6 +39,107 @@
     }
   ],
   "paths": {
+    "/v1/organization/{orgId}/marketing/approvals": {
+      "get": {
+        "operationId": "list-approvals",
+        "summary": "What is waiting for your OK",
+        "description": "Every request an AI assistant made that reaches people and is waiting for a person in Sessionboard: sending invitations or emails, launching a campaign, publishing a page or library, approving ad spend, opening nominations, publishing an agenda. Covers Marketing, Learning, Awards and Sessions. Each request says what it is (`title`), the person's own words when the assistant passed them (`asked`), who asked (`assistant`, `requested_by`), when (`created_at`) and the Sessionboard page where a person approves or declines it (`url`). Newest first, 50 at most. Read-only: approving and declining happen only in Sessionboard, never through the API. Requires `read:marketing` and a key that is not restricted to particular events. Also at `GET /v1/marketing/approvals`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "approved",
+                "declined",
+                "failed",
+                "all"
+              ]
+            },
+            "description": "Default `pending`."
+          },
+          {
+            "name": "product",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "marketing",
+                "learning",
+                "awards",
+                "sessions"
+              ]
+            },
+            "description": "Only this product's requests. Default every product."
+          },
+          {
+            "name": "surface",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 32
+            },
+            "description": "Only requests from one area of a product (for example `campaigns`)."
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "One request, whatever its status (the `approval_id` an action answered with)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "approvals": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/AssistantApproval"
+                          }
+                        },
+                        "pending": {
+                          "type": "integer",
+                          "description": "Requests waiting in total (for the `product` asked for)."
+                        },
+                        "note": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          }
+        }
+      }
+    },
     "/v1/organization/{orgId}/marketing/goals/turnout": {
       "get": {
         "operationId": "get-event-turnout",
@@ -4996,6 +5097,132 @@
           "max_window_days": {
             "type": "integer",
             "example": 365
+          }
+        }
+      },
+      "AssistantApproval": {
+        "type": "object",
+        "description": "A request from an AI assistant that waits for a person's OK in Sessionboard.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "approved",
+              "declined",
+              "failed"
+            ]
+          },
+          "product": {
+            "type": "string",
+            "enum": [
+              "marketing",
+              "learning",
+              "awards",
+              "sessions"
+            ]
+          },
+          "surface": {
+            "type": "string",
+            "description": "The area of the product, for example `campaigns`, `pages`, `field_events`."
+          },
+          "action": {
+            "type": "string",
+            "description": "What the assistant asked to do, for example `launch`."
+          },
+          "title": {
+            "type": "string",
+            "description": "The request in a sentence."
+          },
+          "asked": {
+            "type": "string",
+            "nullable": true,
+            "description": "The person's own words, when the assistant passed them."
+          },
+          "assistant": {
+            "type": "object",
+            "properties": {
+              "vendor": {
+                "type": "string",
+                "description": "For example `claude`, `chatgpt`, `mcp`."
+              },
+              "label": {
+                "type": "string"
+              },
+              "client": {
+                "type": "string",
+                "nullable": true
+              },
+              "via": {
+                "type": "string",
+                "nullable": true
+              }
+            }
+          },
+          "requested_by": {
+            "type": "object",
+            "properties": {
+              "user_id": {
+                "type": "integer",
+                "nullable": true
+              },
+              "name": {
+                "type": "string",
+                "nullable": true
+              }
+            }
+          },
+          "event_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "target": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "type": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              }
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "decided_by": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "user_id": {
+                "type": "integer",
+                "nullable": true
+              },
+              "name": {
+                "type": "string",
+                "nullable": true
+              }
+            }
+          },
+          "decided_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "error": {
+            "type": "string",
+            "nullable": true,
+            "description": "Why an approved request could not run."
+          },
+          "url": {
+            "type": "string",
+            "description": "The Sessionboard page where a person approves or declines it."
           }
         }
       },
