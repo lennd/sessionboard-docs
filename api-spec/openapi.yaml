@@ -55,6 +55,8 @@ tags:
     description: Ask a natural-language question about one event and get a cited answer. Requires the `read:ask` scope, granted explicitly.
   - name: Sharing
     description: A webinar's sharing pieces, for your own tools and AI assistants — email signatures for your team, share cards, speakers' personal links and a draft kit of posts for your team. Reads need `read:events`, writes `write:marketing`. Webinars only. Sending email signatures from an AI assistant waits for a person's OK (`202 needs_approval`).
+  - name: Event Emails
+    description: An in-person event's or webinar's lifecycle emails (confirmation, reminders, replay) for your own tools and AI assistants. Reads need `read:events`. Designs an assistant proposes wait for a person to accept them in Sessionboard.
   - name: Metadata Writes
     description: Create, update, and delete session metadata (rooms, tracks, tags, formats, levels, languages, statuses). Requires the `write:metadata` scope.
   - name: Agenda Planning
@@ -5734,6 +5736,93 @@ paths:
         '429':
           $ref: '#/components/responses/RegistrationTooManyRequests'
 
+  /v1/event/{eventId}/emails/{key}/authoring/preview:
+    post:
+      operationId: preview-event-email
+      summary: Preview a lifecycle email
+      description: |
+        Renders one of an in-person event's or webinar's lifecycle emails exactly as Sessionboard's own
+        preview draws it: the event's real name, date, venue and join link, the Brand kit, and the footer the
+        send adds. `version: live` (the default) is what sends today; `version: proposed` is the design an AI
+        assistant proposed, which a person has not accepted yet (`404` when there is none).
+
+        Returns `subject`, `preheader`, `html`, `text`, `design_mode` and `accessibility_warnings`. A read:
+        it stores nothing and emails no one. Requires `read:events`; the organization's AI switch applies, and
+        a key restricted to particular events can preview only those events' emails.
+      tags:
+        - Event Emails
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: The event or webinar
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The email's key, e.g. `gathering-reminder`
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                version:
+                  type: string
+                  enum: [live, proposed]
+                  default: live
+      responses:
+        '200':
+          description: The rendered email.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payload:
+                    type: object
+                    properties:
+                      key:
+                        type: string
+                      version:
+                        type: string
+                        enum: [live, proposed]
+                      proposed_by:
+                        type: object
+                        nullable: true
+                        description: Who proposed the design (`proposed` only)
+                      proposed_at:
+                        type: string
+                        format: date-time
+                        nullable: true
+                      subject:
+                        type: string
+                      preheader:
+                        type: string
+                        nullable: true
+                      html:
+                        type: string
+                      text:
+                        type: string
+                        nullable: true
+                      design_mode:
+                        type: string
+                      accessibility_warnings:
+                        type: array
+                        items:
+                          type: object
+        '401':
+          description: Missing, invalid or expired token.
+        '403':
+          description: The token lacks `read:events`, is restricted to other events, or AI features are off for the organization.
+        '404':
+          description: The event is not in the token's organization, there is no email with that key, or there is no proposed design.
   /v1/event/{eventId}/sharing/signatures:
     get:
       operationId: get-sharing-email-signatures
