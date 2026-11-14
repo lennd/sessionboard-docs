@@ -39,8 +39,8 @@ if (!existsSync(distDir)) {
   process.exit(1);
 }
 
-// The release notes were retired in favour of the Canny changelog, so no page
-// is built for them — but the worker still needs these slugs in the map to
+// The old /release-notes/* pages are not built (release notes live at
+// /help/release-notes) — but the worker still needs these slugs in the map to
 // recognise them and send them onward, or they would fall back to the FAQ hub.
 const routedOffSite = (path) => path.startsWith('/release-notes');
 

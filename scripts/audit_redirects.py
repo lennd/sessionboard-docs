@@ -197,8 +197,8 @@ def check(base: str, path: str) -> dict:
     # redirect. That is the configured behavior, and following it is what tells a
     # normalization apart from a loop.
     if code in ("301", "307", "308") and loc:
-        # Some redirects deliberately leave the Help Center — /release-notes/*
-        # goes to the Canny changelog. Those keep their absolute URL after the
+        # Some redirects deliberately leave the Help Center (e.g. marketing blog
+        # posts go to www). Those keep their absolute URL after the
         # base is stripped, so they must be fetched as-is; prefixing the base
         # would build nonsense like https://learn…/https://feedback… and report
         # a spurious 000.
