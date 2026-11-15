@@ -75,9 +75,9 @@ The server uses the streamable HTTP transport and supports OAuth 2.0 with PKCE a
   </Step>
 </Steps>
 
-## Available Tools (46)
+## Available tools
 
-The MCP server exposes 46 tools in five groups. Write operations use a `manage_*` pattern — one tool per entity with an `action` parameter to pick the operation (e.g., `action: "create"`).
+The MCP server groups its tools as below. Write operations use a `manage_*` pattern — one tool per entity with an `action` parameter to pick the operation (e.g., `action: "create"`).
 
 All tools include [MCP annotations](https://modelcontextprotocol.io/docs/concepts/tools#tool-annotations) for safe AI behavior — read tools are marked `readOnlyHint: true`, every `manage_*` tool is marked `destructiveHint: true` because each can overwrite an existing record through its `update` action (even the ones with no `delete`), and all are `openWorldHint: false` because every tool is bounded to your organization's data. Clients such as Claude and ChatGPT use these hints to ask for confirmation before a write runs.
 
@@ -148,24 +148,6 @@ Each `manage_*` tool handles all operations for an entity — create, update, de
 | `manage_org_widget` | `create`, `update`, `delete` | `write:events` | Org-level dashboard widgets |
 | `manage_org_report` | `list`, `run`, `create`, `create_from_nl`, `update`, `delete` | `write:events` | Org-level saved reports (cross-event) |
 
-### Registration (9 tools)
-
-Read-only answers about an event's registration: the funnel, conversion per form, abandoned checkouts, the waitlist, attendees, orders, payments, membership, capacity and setup. They need the `read:registrations` scope, which is in preview: tick it under **Opt-in** when you create an API token, or name it in your OAuth `scope` request. The event must have Registration turned on (Early Access); otherwise these tools say so instead of answering.
-
-| Tool | Actions | Description |
-|------|---------|-------------|
-| `read_registration_summary` | — | Registrations by status, by day, per ticket type, attendee type and form; member mix; revenue; orders per status; invoices still owed; capacity pools |
-| `find_registrations` | `search`, `get` | Find attendees by a name, email or company fragment, or filter by status, ticket type, attendee type or form; one registration in full |
-| `read_registration_orders` | `list`, `get` | Find an order by number or buyer email, or list orders by status (`awaiting_invoice`, `partially_paid` still owe); one order in full |
-| `read_registration_payments` | `list`, `get` | Payment records: card and bank payments through your payment gateway and offline money, failed attempts with their reason, refunds and the charge they refund. Never card numbers or tokens |
-| `read_registration_members` | `lookup`, `list` | Check one email the way the form does (member, lapsed or none), or list registrations with the membership recorded when they registered |
-| `read_registration_capacity` | — | Every ticket type's capacity, sold and available, plus shared capacity pools |
-| `read_registration_funnel` | — | Conversion per registration form: form views, checkouts started and completed, registrations, the rates between them, abandoned checkouts and what they held, abandonment in the last 7 and 30 days and by ticket type |
-| `read_registration_waitlist` | — | Who is waiting, as counts: per form and ticket type, the event waitlist of closed forms, open / expired / taken offers, and each form's waitlist settings |
-| `read_registration_setup` | `section` | Fee groups and their promo codes, donation funds with raised and pledged totals, workshop picking rules, the badge print queue |
-
-Try: *"How many people registered for Annual Meeting 2026 last week, and how much is still owed on invoices?"* or *"Is ada@example.org a member, and is she registered?"* or *"Which registration form converts best, and how many checkouts were abandoned this week?"*
-
 ### Sharing a webinar (9 tools)
 
 A webinar's sharing pieces, the same ones as on the webinar's After tab in Sessionboard: email signatures for your team (a banner that says "Save your seat" until the start and "Watch the recording" after), share cards, speakers' personal links and a draft kit of LinkedIn posts for your team. Reads need `read:events`, changes `write:marketing`, and the connected user needs the same sharing permissions on the webinar as in Sessionboard. They call the [Sharing](/api/reference/sharing/get-a-webinars-email-signatures) endpoints. Webinars only.
@@ -202,6 +184,39 @@ Try: *"Show me the reminder email you proposed for Thursday's webinar"* or *"Sen
 
 The Marketing tools' descriptions also carry the event rules an assistant should follow: registrations and turnout are different numbers; speakers get their sharing link while there is still time to post before the start, and sharing switches to the recording after; nothing is emailed or posted without your yes; and only your organization's own first-party data is used.
 
+### Sessionboard Sessions (37 tools)
+
+The self-serve Sessions workspace: one call for speakers per event, your own accept and decline decisions, and the agenda for your website. The tools call the Sessions workspace routes (`/v1/sessions-workspace/…`, the organization taken from the token); reads need `read:sessions`, changes `write:sessions`, and a key restricted to particular events cannot use them. Ids come back in every answer: `event_id` from `get_sessions_home`, session ids from `list_submissions` or `get_event_agenda`, room, track and format ids from `get_event_agenda`.
+
+| Tool | Description |
+|------|-------------|
+| `get_sessions_home` | Your plan, every Sessions event with its counts, and whether its call for speakers is open. Start here |
+| `get_sessions_event` | One event: dates, where, its call for speakers (link, title, welcome text, closing date), rooms, tracks, sponsors |
+| `manage_sessions_event` | Create or update an event: name, dates, timezone, where, and the language speakers read |
+| `import_sessions_event_from_url` | Make a Sessions event from its public page. Preview with `dry_run: true` first; a page that redirects says which address to use instead |
+| `set_rooms_and_tracks` | Replace the rooms, tracks and formats, in order (keep one by passing its id) |
+| `manage_call_for_speakers` | Change what speakers see, close the call, or open it. Opening waits for your OK |
+| `get_call_questions` / `manage_call_questions` | The questions on the call; add, create, remove, require or reorder them |
+| `list_submissions` | Submissions with speakers, decision, time, room, track and the team's picks |
+| `get_team_picks` / `set_my_pick` | Each teammate's Yes, Maybe or No; your own pick |
+| `decide_submission` | Accept, waitlist, decline or undecide. Emails no one |
+| `manage_program_session` | Add a session (accepted, or as a submission) or update one: time, room, track, format, sponsor tags. A session can be placed on the agenda in the same call |
+| `list_event_speakers` | Everyone on an accepted session |
+| `get_event_agenda` | The agenda, its conflicts, and the rooms, tracks, formats and sponsors to choose from |
+| `manage_event_sponsors` | Add or remove a sponsor to tag sessions with |
+| `preview_event_import` / `import_event_program` / `import_event_speakers` / `import_event_sponsors` | Preview and import rows of sessions, speakers or sponsors |
+| `publish_event_agenda` | Publish the agenda and speaker wall to your website (embed snippets). Waits for your OK |
+| `get_decision_emails` / `preview_decision_email` / `update_decision_email` | The declined and waitlisted emails: read, preview as a speaker gets it, edit |
+| `send_decision_emails` | Email declined or waitlisted speakers. Waits for your OK |
+| `get_speaker_emails` | The speaker emails plan for accepted speakers: tasks, due date, reminders, each speaker's progress |
+| `update_speaker_emails_plan` / `pause_speaker_emails` | Change the plan; pause or resume every email at once |
+| `approve_speaker_emails` | Approve the plan so the invites and reminders go. Waits for your OK |
+| `list_event_connections` / `link_event_connection` / `preview_event_push` | The apps the agenda can be pushed to, the vendor event it is linked to, and what a push would send (`blocked` says what stops it). A person connects an app with its keys in Sessionboard |
+| `push_event_agenda` / `get_push_history` | Push sessions, speakers and the agenda one way. Waits for your OK |
+| `get_sessions_marketing` / `list_session_media` / `transcribe_session_media` | Speakers' share kits, and a session's recordings and transcripts |
+
+Try: *"Make our 2027 summit from its web page, add a Main Stage and an AI track, and open the call for speakers"* or *"Accept the three highest-rated submissions and draft the speaker emails"*
+
 ### Tasks (2 tools)
 
 Your team's to-dos in Sessionboard Platform: a title, an assignee, a due date with an optional time, a reminder, and the contacts, sessions, sponsors, exhibitors or groups a task is about. See the [Tasks guide](/api/guides/tasks). In an organization that uses a self-serve Sessionboard product, these tools answer "Tasks are part of Sessionboard Platform." instead.
@@ -212,6 +227,29 @@ Your team's to-dos in Sessionboard Platform: a title, an assignee, a due date wi
 | `manage_task` | `create`, `update`, `complete`, `reopen`, `delete` | `write:tasks` | Create a task (assignee by email, records by id, `due_date` `YYYY-MM-DD` plus an optional `due_time` `HH:mm` in the event's time zone, reminder), change it, complete it with a note, reopen or delete it |
 
 Try: *"What's on my plate this week?"*, *"Remind Dana to chase Dr. Okafor's disclosure by Friday"*, *"What's overdue across my events?"* or *"Mark the AV task done: forms received"*.
+
+### Sessionboard CRM
+
+Everything in Sessionboard CRM — People, Groups (companies, sponsors, exhibitors), tags, imports, connected apps, the pipeline, contracts, exports and hand-offs to the other Sessionboard apps — over the Public API CRM routes. Reads need `read:crm`, changes `write:crm`; OAuth clients get both by default. A self-serve CRM account needs a card on file before it imports or adds people: the tools say so and hand you `get_card_link` (product `crm`), a Stripe page the person opens. Deleting, archiving, sending, resending and voiding ask you first.
+
+| Tool | Scope | Description |
+| --- | --- | --- |
+| `get_crm_home` | `read:crm` | Counts by tag, active contacts against the plan's limit, setup steps, newest people |
+| `find_crm_people`, `get_crm_person`, `find_warm_opportunities` | `read:crm` | Everyone the organization knows, one row per email, with tags, companies, pipeline stage and signals |
+| `manage_crm_person`, `tag_crm_people`, `delete_crm_people` | `write:crm` | Add or change a person, add or remove tags on up to 500, delete (after you say yes) |
+| `find_crm_companies`, `manage_crm_company`, `tag_crm_companies`, `link_crm_company_people`, `delete_crm_companies` | `read:crm` / `write:crm` | Groups and the people in them |
+| `import_crm_people` | `write:crm` | Preview, then import people or companies from a spreadsheet's rows; returns each person's key and each company's id for the next step |
+| `list_crm_sources`, `discover_crm_people`, `start_crm_attendee_sync` | `read:crm` / `write:crm` | What a connected CRM, AMS or event platform holds, compared with your People, and bringing an event's attendees in |
+| `find_crm_contacts`, `get_crm_contact`, `add_people_to_crm_contacts` | `read:crm` / `write:crm` | The Contact record behind a speaker or a company's person |
+| `list_crm_tags`, `manage_crm_tag`, `tag_crm_contacts` | `read:crm` / `write:crm` | Your own tags: list, create, rename, delete, and add or remove them on up to 500 Contacts |
+| `add_crm_note` | `write:crm` | A note on a Contact, for anything a standard field doesn't hold |
+| `get_crm_pipeline`, `add_to_crm_pipeline`, `move_crm_pipeline_entry`, `archive_crm_pipeline_entry` | `read:crm` / `write:crm` | Stages and entries; add by Contact id or person key, move with a note, take off (after you say yes) |
+| `list_crm_contract_templates`, `add_crm_contract_starter`, `list_crm_contracts`, `get_crm_contract`, `send_crm_contract`, `void_crm_contract` | `read:crm` / `write:crm` | Templates and starters, contracts and signers; sending, resending and voiding only after you say yes |
+| `export_crm_contacts`, `export_crm_list` | `read:crm` | Contacts, People, Groups, the pipeline or contracts as CSV with the list's own filters (first 1,000 rows) |
+| `hand_off_crm_people` | `write:crm` | Hand a selection to Marketing, Sessions, Learning or Awards as a tag, with the link that opens it there |
+| `get_ams_mapping`, `get_member_snapshot`, `preview_ams_writeback`, `run_ams_writeback` | `read:crm` / `write:crm` | An association management system's field mapping, member snapshot and write-back |
+
+Try: *"Import this sheet of speakers, tag them speaker and put them in the pipeline for our spring summit"*, *"Who came to five of our webinars but isn't in the pipeline?"* or *"Export everyone tagged sponsor at Acme"*.
 
 ## Asking about an event
 
@@ -268,7 +306,7 @@ Pre-built templates that structure the AI's approach to common report types:
 
 ## Actions that wait for your OK
 
-Some Marketing and Learning actions reach people outside your team, spend money or publish something public. When an AI assistant asks for one of these through MCP, Sessionboard does not run it. It records a request and answers with a link where a person on your team approves or declines it:
+Some Marketing, Learning and Sessions actions reach people outside your team, spend money or publish something public. When an AI assistant asks for one of these through MCP, Sessionboard does not run it. It records a request and answers with a link where a person on your team approves or declines it:
 
 ```json
 {
@@ -279,7 +317,7 @@ Some Marketing and Learning actions reach people outside your team, spend money 
 }
 ```
 
-- **What waits:** launching or resuming a campaign, sending invitations, content kits or email signatures, sending a "Keep everyone engaged" round or offer, publishing an event page, gallery, course or on-demand library, approving ads or raising an ad budget, starting live captions, and assigning training.
+- **What waits:** launching or resuming a campaign, sending invitations, content kits or email signatures, sending a "Keep everyone engaged" round or offer, publishing an event page, gallery, course or on-demand library, approving ads or raising an ad budget, starting live captions, assigning training, and in Sessions opening the call for speakers, publishing the agenda, pushing it to an app, sending decision emails and approving the speaker emails plan.
 - **What runs:** drafts, edits to drafts and reads. Credit is never set or granted by an assistant.
 - **Approving** runs the original request as the person who approved it, with their permissions. Declining records the answer and nothing happens. The assistant sees the outcome the next time it reads the record.
 - **Don't retry.** Calling the same tool again creates another request; tell the person where to approve instead.

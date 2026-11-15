@@ -147,3 +147,39 @@ Errors use `{ error, message, details }`. The ones to handle:
 | `409` | `CONFLICT` | The order, status change or check-in is refused; see `details.reason` |
 | `422` | `VALIDATION_ERROR` | The promo code is not valid for the order |
 | `429` | — | Rate limited; wait `Retry-After` seconds. See [Rate Limiting](/api/rate-limiting) |
+
+## Rate limits
+
+Registration and Expo calls count against these buckets (the rest are in [Rate Limiting](/api/rate-limiting)):
+
+| Category | Limit | Window | Endpoints |
+|---|---|---|---|
+| **Entity reads** | 100 | 15 minutes | every Registration and Expo `GET` (`read:registrations`, `read:expo`) |
+| **Registration writes** | 100 | 15 minutes | `POST` / `PUT` ticket types, `POST` / `PATCH` registrations, `POST` check-ins (`write:registrations`) |
+| **Expo writes** | 100 | 15 minutes | `PUT` booths (`write:expo`) |
+
+## In Claude, ChatGPT and other assistants (MCP)
+
+The [MCP server](/api/insights/mcp-server) has nine read-only Registration tools, for events with Registration turned on.
+
+Read-only answers about an event's registration: the funnel, conversion per form, abandoned checkouts, the waitlist, attendees, orders, payments, membership, capacity and setup. They need the `read:registrations` scope, which is in preview: tick it under **Opt-in** when you create an API token, or name it in your OAuth `scope` request. The event must have Registration turned on (Early Access); otherwise these tools say so instead of answering.
+
+| Tool | Actions | Description |
+|------|---------|-------------|
+| `read_registration_summary` | — | Registrations by status, by day, per ticket type, attendee type and form; member mix; revenue; orders per status; invoices still owed; capacity pools |
+| `find_registrations` | `search`, `get` | Find attendees by a name, email or company fragment, or filter by status, ticket type, attendee type or form; one registration in full |
+| `read_registration_orders` | `list`, `get` | Find an order by number or buyer email, or list orders by status (`awaiting_invoice`, `partially_paid` still owe); one order in full |
+| `read_registration_payments` | `list`, `get` | Payment records: card and bank payments through your payment gateway and offline money, failed attempts with their reason, refunds and the charge they refund. Never card numbers or tokens |
+| `read_registration_members` | `lookup`, `list` | Check one email the way the form does (member, lapsed or none), or list registrations with the membership recorded when they registered |
+| `read_registration_capacity` | — | Every ticket type's capacity, sold and available, plus shared capacity pools |
+| `read_registration_funnel` | — | Conversion per registration form: form views, checkouts started and completed, registrations, the rates between them, abandoned checkouts and what they held, abandonment in the last 7 and 30 days and by ticket type |
+| `read_registration_waitlist` | — | Who is waiting, as counts: per form and ticket type, the event waitlist of closed forms, open / expired / taken offers, and each form's waitlist settings |
+| `read_registration_setup` | `section` | Fee groups and their promo codes, donation funds with raised and pledged totals, workshop picking rules, the badge print queue |
+
+Try: *"How many people registered for Annual Meeting 2026 last week, and how much is still owed on invoices?"* or *"Is ada@example.org a member, and is she registered?"* or *"Which registration form converts best, and how many checkouts were abandoned this week?"*
+
+## OAuth clients and webhooks
+
+The four preview scopes are not listed in the OAuth server's `scopes_supported` and are not granted by default: an [OAuth](/api/oauth) client gets them only by naming them in its `scope` request. They answer only for events with Registration (or Expo) turned on.
+
+Events with Registration turned on also send [webhooks](/integrations/webhooks) for **Registrations** (`registration.created`, `registration.confirmed`, `registration.updated`, `registration.waitlisted`, `registration.declined`, `registration.canceled`, `registration.transferred`, `registration.checked_in`) and **Orders** (`order.paid`, `order.refunded`). Each carries the registration or order id; fetch the record from `metadata.resource_url` with an API token that has `read:registrations`.
