@@ -16,8 +16,16 @@ test('staff tier: registration, expo, onsite and attend are staff-only, not sign
   }
 });
 
-test('signed-in tier: registration API guide and reference, field events', () => {
-  for (const p of ['/api/guides/registration-and-expo', '/api/reference/registration/list-ticket-types', '/api/reference/expo/list-booths', '/field-events/checkin', '/og/field-events--checkin.png']) {
+test('staff tier: Registration API reference and recipe are super users only (Josh, 2026-11-15)', () => {
+  for (const p of ['/api/reference/registration/list-ticket-types', '/api/reference/registration', '/api/recipes/push-registrations-in']) {
+    assert.equal(isStaffOnlyPath(p, site), true, p);
+    assert.equal(isStaffTierPath(p, site), true, p);
+    assert.equal(isSignedInOnlyPath(p, site), false, p);
+  }
+});
+
+test('signed-in tier: registration-and-expo guide, Expo reference, field events', () => {
+  for (const p of ['/api/guides/registration-and-expo', '/api/reference/expo/list-booths', '/field-events/checkin', '/og/field-events--checkin.png']) {
     assert.equal(isStaffOnlyPath(p, site), true, p);
     assert.equal(isStaffTierPath(p, site), false, p);
     assert.equal(isSignedInOnlyPath(p, site), true, p);
