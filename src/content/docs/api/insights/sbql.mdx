@@ -130,6 +130,41 @@ Scorecard questions are fields named after their label: `reviews_v2.rubric_label
 
 **One column per reviewer instead:** include the plain answers (`reviews_v2.rubric_label_<label>`, `reviews_v2.reviewer_full_name`) and pivot them with the prefix `Reviewer`. Each review gets a block of columns (`Reviewer 1: …`, `Reviewer 2: …`); abstentions take no block.
 
+## More Conditions, Functions and Columns
+
+```sql
+FIND Session
+INCLUDE title, BLANK AS "Notes", BLANK,
+  LENGTH(title) AS "Title length",
+  COUNT_DISTINCT(speakers.email) AS "Unique speakers",
+  LIST(DISTINCT track.name, room.name) AS "Track and room",
+WHERE title NOT CONTAINS 'Workshop'
+  AND DATE(starts_at) = '2026-11-03'
+  AND LENGTH(title) > 10
+```
+
+- **Bare `BLANK`**: an empty placeholder column without `AS`. Unnamed blanks are called `Blank 1`, `Blank 2`, and so on. `BLANK` is never a field name.
+- **`NOT CONTAINS`**: also written `CONTAINS_NOT` or `NOT_CONTAINS`. It keeps rows whose value does not contain the text.
+- **Format functions in `WHERE`**: `DATE`, `TIME`, `MONTH`, `YEAR`, `DAY_OF_WEEK`, `FORMAT_DATE`, `ROUND`, `UPPER`, `LOWER` and `LENGTH` work on the left of a condition, for example `YEAR(created_at) = 2026`.
+- **`LENGTH(field)`**: the number of characters in a text field, in `INCLUDE` and `WHERE`.
+- **`COUNT(DISTINCT field)`** and **`LIST(DISTINCT field)`**: count or list each value once. `COUNT_DISTINCT` is the same as `COUNT(DISTINCT …)`.
+- **Multi-field `LIST`**: `LIST(field1, field2)` puts several fields in one cell.
+- **Trailing comma**: a comma after the last `INCLUDE` item, before the next clause, is accepted (as after `"Track and room"` above).
+
+### Fields added
+
+| Entity | Field | Notes |
+| --- | --- | --- |
+| `Contact` | `company_name`, `job_title` | Same values as `company` and `title`. |
+| `Event` | `id` | The event's numeric id. |
+| `Session` | `form_name` | The name of the submission form the session came from. Filter on this instead of `submitted_via_form_id`, which takes an id. |
+
+## Errors, Suggestions and Warnings
+
+- **Nearest matches.** An unknown field or relationship error ends with `Closest: a, b, c`, the three nearest names in your schema. When the name looks like a custom field, the message shows the bracket form (`Session["Field Name"]`). A field given as a uuid asks for the field's name, and an Event field `code` points to `id`.
+- **Suggested query for GROUP BY.** When a query that aggregates leaves a column out of `GROUP BY`, validation fails with the usual error plus a `suggested_query`: your query with the missing columns added. The suggestion has already passed validation, so you can run it as it is.
+- **Slow-shape warning.** Validating a query returns `{ "valid": true, "warnings": [{ "type": "slow_query_shape", … }] }` when a query joins three one-to-many lists, or two when one is a review list. The rows multiply, and the query can hit the 30-second limit. Report one list at a time, or add a `WHERE` filter. A query that does time out returns the same advice, and an identical retry within five minutes fails fast instead of running again.
+
 ## Schema Discovery
 
 Use the schema endpoints to discover the entities and fields available for your organization:
