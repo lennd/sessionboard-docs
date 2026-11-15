@@ -156,6 +156,15 @@ export async function isSignedInRequest(request, env) {
   return Boolean(await verifySession(env?.STAFF_SESSION_SECRET, readCookie(request, SESSION_COOKIE)));
 }
 
+/**
+ * Is the reader signed in with a Sessionboard account — not a docs-grant reader (an outsider
+ * holding only a staff grant)? Signed-in-only pages (site.json `signedInOnly`) need this.
+ */
+export async function isAccountRequest(request, env) {
+  const session = await verifySession(env?.STAFF_SESSION_SECRET, readCookie(request, SESSION_COOKIE));
+  return Boolean(session?.userId) && !String(session.userId).startsWith(DOCS_GRANT_READER_PREFIX);
+}
+
 /** Is the reader of this request signed-in Sessionboard staff? */
 export async function isStaffRequest(request, env) {
   return Boolean(await verifySession(env?.STAFF_SESSION_SECRET, readCookie(request, STAFF_COOKIE)));

@@ -19,6 +19,18 @@ The Sessionboard public API lets you read and write event data programmatically.
 
 ## November 2026
 
+### Sessionboard CRM for AI assistants and OAuth clients
+
+**Changed.** `read:crm`, `write:crm`, `read:billing` and `write:billing` are now standard scopes. OAuth clients, including the Claude and ChatGPT connectors, get them by default; reconnect a connector set up before today to pick them up.
+
+**Added.** A CRM import (`POST /v1/crm/import`) returns `people` (each person's `email`, `key` and `contact_id`) or `companies` (`name`, `company_id`, `status`), so the next call can tag, link, add to the pipeline or hand off without searching. The MCP server adds `export_crm_list` (People, Groups, pipeline or contracts as CSV), `add_crm_note` and `tag_crm_contacts` (your own tags on Contacts). `add_to_crm_pipeline` and `send_crm_contract` take person keys as well as Contact ids.
+
+### Sessions for AI assistants: an event from its page, and the speaker emails plan
+
+**Added.** In the Sessions workspace, `POST /v1/sessions-workspace/events/import-url` makes a Sessions event from its public page (`dryRun: true` previews, a page imported before returns that event), and `GET /v1/sessions-workspace/events/{eventId}/coordinator`, `PUT …/coordinator/plan`, `POST …/coordinator/approve` and `PUT …/coordinator/pause` read and run the speaker emails plan that invites and reminds accepted speakers. An AI assistant's approve answers `202 needs_approval` and waits for a person's OK. Both are also under `/v1/organization/{orgId}/sessions-workspace`. A push preview now says what stops a push (`ready`, `blocked`). The MCP server adds `import_sessions_event_from_url`, `get_speaker_emails`, `update_speaker_emails_plan`, `pause_speaker_emails` and `approve_speaker_emails`.
+
+**Fixed.** `manage_program_session` places a session it adds (time, room, track, format, sponsor tags) in the same call; they were ignored before. When an event page redirects, importing it names the address to use instead. Not a breaking change.
+
 ### Coming with the next Sessionboard release — Sponsor and exhibitor intake form payments
 
 **Added.** Two webhook events, `sponsor.payment.status.changed` and `exhibitor.payment.status.changed`, for intake forms that charge a fee. They are sent when a group completes a paid form (`pending_payment`), pays (`paid`) and is refunded (`refunded`). `data` carries the group `id`, `intakeFormId`, `paymentId`, `invoiceNumber`, `paymentStatus`, `previousPaymentStatus`, `amount` and `currency`. Forms with no fee send nothing new. Not a breaking change. See [Webhooks](/api/webhooks).
