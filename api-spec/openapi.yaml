@@ -159,10 +159,11 @@ tags:
       reading people from a connected CRM, AMS or event platform, the pipeline, contracts sent for e-signature, warm
       opportunities and hand-offs to the other Sessionboard apps. Contacts are the platform record behind a speaker or a
       company's person; the pipeline and contracts use them. Standard fields only: custom fields are a platform upgrade.
-      Free up to 1,000 active contacts; nothing is blocked over the limit. Organization-level: paths start at
+      A self-serve CRM account needs a card on file (verified, not charged) before it imports, adds or sends; until then
+      writes answer 403 with `reason: card_required`. Organization-level: paths start at
       `/v1/organization/{orgId}/crm`; the same operations are served under `/v1/org/{orgId}/crm` and, with the
-      organization taken from the token, `/v1/crm`. Requires the preview scopes `read:crm` / `write:crm`, which a token or
-      OAuth client gets only when they are named explicitly. The POSTs that only read (`import/parse`, `import/preview`,
+      organization taken from the token, `/v1/crm`. Requires `read:crm` / `write:crm`, which OAuth clients get by
+      default since November 2026. The POSTs that only read (`import/parse`, `import/preview`,
       `apps/{appId}/discover`) need `read:crm`. Request bodies are camelCase; responses are snake_case. A key restricted
       to particular events cannot use it. Only sending, resending and voiding a contract emails anyone.
   - name: CRM contacts
@@ -22362,6 +22363,34 @@ paths:
                         type: array
                         items:
                           $ref: '#/components/schemas/CrmInvalidRow'
+                      people:
+                        type: array
+                        description: People imports (target people). Each person in the batch with the key the people, pipeline and hand-off operations take, and their Contact id once they are a Contact.
+                        items:
+                          type: object
+                          properties:
+                            email:
+                              type: string
+                            key:
+                              type: string
+                              description: The person key, e.g. p_… or c_…
+                            contact_id:
+                              type: string
+                              nullable: true
+                      companies:
+                        type: array
+                        description: Company imports (target companies). Each company with its id.
+                        items:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                            company_id:
+                              type: string
+                              nullable: true
+                            status:
+                              type: string
+                              enum: [created, updated]
         '400':
           $ref: '#/components/responses/CrmBadRequest'
         '401':

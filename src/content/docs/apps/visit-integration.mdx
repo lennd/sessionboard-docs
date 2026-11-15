@@ -44,7 +44,9 @@ Visit is set up at the **organization**. Open it from **Settings > Integrations*
 
     **Session roles to sync** defaults to every role on accepted sessions. Uncheck chairs, co-authors, or any custom role that should not become a Visit visitor. People in unchecked roles leave the accepted set — the next full or scheduled sync can remove their Visit visitor if **Remove from Visit when un-accepted** is on.
 
-    Turn on **Enable Continuous Sync** if you want Sessionboard to push this event to Visit about every 30 minutes. Leave it off to sync only when you click **Sync**. Continuous sync still requires at least one accepted session that has not ended.
+    **Sessions qualify when** and **Contacts also qualify when** are optional sync rules. Leave both empty to sync people on accepted sessions, as before. See [Choose what qualifies](#choose-what-qualifies).
+
+    Turn on **Enable Continuous Sync** if you want Sessionboard to push this event to Visit about every 30 minutes. Leave it off to sync only when you click **Sync**. Continuous sync waits for at least one accepted session that has not ended, unless a sync rule lets records qualify without one.
 
     Leave **Also push sessions as Visit activities** off unless you also want accepted sessions created as Visit activities. If you turn it on, you can pick a default Visit location and track. Session rooms and tracks match Visit by name — Visit cannot create them. Consent stays optional either way.
 
@@ -93,6 +95,27 @@ A later sync updates the same visitor. Changing the contact's email does not cre
 If a participant leaves the accepted set, Sessionboard asks Visit to remove that visitor unless you turned **Remove from Visit when un-accepted** off. Visit keeps the old registration as deleted (it is not a wipe). Putting that person back on an accepted session creates a **new** Visit visitor — Visit cannot undelete the old one. Session activities that were removed are created again.
 
 Visit allows two API calls at a time, so large speaker lists sync in a steady stream rather than all at once.
+
+### Choose what qualifies
+
+By default a session qualifies when it is accepted, and a person qualifies by being on a qualifying session. Two optional rule lists in each mapping's **Event Settings** change that for one event; other events on the same connection are not affected.
+
+- **Sessions qualify when**: add rules on a session field and the values that qualify, such as **Status is any of Accepted, Confirmed** or a checkbox that is **Checked**. A **Status** rule replaces the default "accepted sessions only". Rules on other fields, such as Track or Format, narrow the qualifying sessions further. People on a qualifying session sync to Visit; sessions also sync as activities when **Also push sessions as Visit activities** is on.
+- **Contacts also qualify when**: add rules on a contact field, such as **Confirmed speaker is Checked** or **Speaker status is Confirmed**. A contact on the event who matches every rule syncs to Visit even without a qualifying session. This lets you run a speaker-led sync.
+
+All rules in a list must match. A dropdown rule matches the selected options. A checkbox rule is **Checked** or **Not checked**, and a contact with no value counts as not checked. The consent field or task still applies to everyone.
+
+With **Remove from Visit when un-accepted** on, a record that no longer qualifies is removed from Visit on the next full or scheduled sync:
+
+- A session that stops matching the session rules is removed.
+- A person is removed only when they qualify through no path: no qualifying session and no match on the contact rules. A person who fails the contact rules but is still on a qualifying session stays.
+- Only records this connection created for this event are removed, never records belonging to another expo on the same connection.
+
+With it off, nothing is removed; records that stop qualifying stay in Visit as last synced and stop updating until they qualify again. A person removed from Visit who qualifies again is created as a new visitor.
+
+When **Enable Continuous Sync** is on, saving changed rules starts a sync of that event straight away. Otherwise the next sync you run applies them.
+
+Selecting contacts and choosing **Sync to Visit** pushes them even before their session is accepted or their consent is given. A selected contact who is on no session syncs only if they match the contact rules.
 
 ### Per-contact registration form and type
 
@@ -199,6 +222,8 @@ Open the event and go to **History > Integrations**.
 The modal opens with the run's outcome — **✅ Completed**, **⚠️ Completed with errors**, **❌ Failed**, or **🕚 Running** — which is the same status the Sync History grid shows for that row. When a run failed before it reached any records, the reason for the failure is the first line of the Errors Summary, so you no longer have to open the Logs tab to find out why a run marked Error reported no errors.
 
 Below the status are the counts of created, updated, skipped, deleted, and failed records. Skipped rows include the reason — for example that the consent field or task is not complete, or that nothing changed since the last sync.
+
+When the mapping has sync rules, each created or updated row also says why the record was included (for example **Included — matches the contact rule "Confirmed speaker is Checked"**). A row skipped or removed because of a sync rule names the rule it did not match. A sync started by saving changed rules is listed with that trigger.
 
 A created or updated row can also carry notes about that one person: a picked dropdown value that had no Visit answer mapped (**Skipped 1 unmapped value on … — map them under Map values**), a radio question that received only the first of several picked values, or a confirmation email Visit could not send. None of these fail the record — the visitor was written — but they are the place to look when an answer or an email did not arrive.
 
