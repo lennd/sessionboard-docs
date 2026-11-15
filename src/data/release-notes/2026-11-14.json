@@ -249,13 +249,11 @@
     },
     {
       "id": "review-round-auto-apply-recommendations",
-      "title": "Review rounds can automatically apply recommendations when a reviewer submits, with a pending-count indicator for unapplied picks",
-      "summary": "A new **Auto-apply recommendations** toggle on a review round applies the majority recommendation to a submission's status the moment a reviewer submits or changes their pick — no separate admin step required. A new **N waiting to apply** count (and list of up to 500 submissions) shows organizers how many recommendations are queued in rounds that still use manual apply. History records each automatic apply as \"&lt;reviewer&gt; via Review recommendation (applied automatically)\".",
-      "article": "/evaluations/review-plan-rounds",
+      "title": "Review recommendations: see what is waiting, and apply automatically",
+      "summary": "A banner on the plan page says how many reviewer recommendations are waiting to apply, with **Review and apply**, and the Submissions tab has **Apply N waiting**. A new round setting, **Apply recommendations automatically when a reviewer submits**, moves each submission to the mapped status as reviews come in, using the same majority rule as Apply recommendations.",
+      "article": "/evaluations/review-plan-rounds#apply-recommendations-automatically",
       "related": [
-        "/evaluations/evaluation-plans",
-        "/evaluations/review-plan-overview",
-        "/evaluations/how-to-evaluate-sessions"
+        "/evaluations/review-plan-rounds#recommendations-waiting-to-apply"
       ],
       "kind": "new",
       "module": "Program",
@@ -265,43 +263,35 @@
       "availability": "everyone",
       "enable": {
         "how": "setting",
-        "path": "Program → Reviews → [Plan] → Rounds → [Round] → Auto-apply recommendations"
+        "path": "Program → Review → plan → round → Reviewer recommendations → Apply recommendations automatically when a reviewer submits"
       },
       "where": {
         "scope": "event",
-        "path": "Program → Reviews → [Plan] → Rounds"
+        "path": "Program → Review → plan"
       },
       "permissions": [
         "event.evaluation_plans.update"
       ],
       "audience": [
-        "organizer",
-        "reviewer"
+        "organizer"
       ],
       "use_case": "Organizers running large review cycles no longer need to remember to click Apply recommendations after each round closes — turning on auto-apply means submission statuses update in real time as reviewers submit, and the pending count makes it easy to spot any rounds where picks are still waiting.",
       "internal": {
         "cs_action": {
           "kind": "reach_out",
-          "note": "Several US events have dozens to hundreds of unapplied recommendations today (e.g. event 6822 has 88 waiting). Proactively flag the new pending count and offer to walk through enabling auto-apply on future rounds."
+          "note": "Several events have unapplied recommendations (event 6638: 80). Point them to the waiting banner; auto-apply is off on every existing round."
         },
         "when_to_bring_up": "When a customer asks why reviewer recommendations aren't changing submission statuses, or when they mention having to manually apply recommendations after every review cycle.",
         "who_should_get_it": "Any customer using reviewer recommendations with a status map — especially those with multi-round reviews or large reviewer pools.",
         "staff_path": "Program → Reviews → [Plan] → Rounds → [Round] → edit",
         "gotchas": "Auto-apply is off by default on all existing rounds; existing unapplied recommendations are not back-filled automatically. The feature uses majority rules (tie goes to Alternate). Status alternate values (e.g. custom status labels) still require the admin to apply via the sheet. Automatic applies stamp applied_by_user_id as null.",
-        "talk_track": "With auto-apply on, the moment the majority of your reviewers submit their pick on a submission, Sessionboard updates that submission's status automatically — no more end-of-round cleanup. And if you prefer manual control, the new pending count tells you exactly how many submissions are waiting for you to act.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The review-plan-rounds guide should add a section on the Auto-apply recommendations toggle — what it does, how majority is calculated, tie-breaking behaviour, the audit trail label, and the new pending count endpoint visible in the Submissions tab.",
-          "why_use_it": "Review rounds let you collect structured recommendations from your reviewers and translate them into submission statuses automatically. When auto-apply is on, the majority recommendation from submitted reviewers is applied to each submission the moment a reviewer submits or changes their pick, keeping your pipeline current without manual intervention. The pending count gives organizers a live view of how many submissions still have unapplied picks in rounds that use manual apply, so nothing falls through the cracks.",
-          "at": "2026-11-14T02:34:32.431Z"
-        }
+        "talk_track": "With auto-apply on, the moment the majority of your reviewers submit their pick on a submission, Sessionboard updates that submission's status automatically — no more end-of-round cleanup. And if you prefer manual control, the new pending count tells you exactly how many submissions are waiting for you to act."
       },
       "product": "platform",
       "shipped": {
         "prs": [
-          "lennd/sessionboard-web-api#5383"
+          "lennd/sessionboard-web-api#5383",
+          "lennd/sessionboard-web-ui-v2#1623"
         ],
         "docs_only": false,
         "pending": null,
@@ -916,9 +906,9 @@
     },
     {
       "id": "advocacy-campaign-language",
-      "title": "Set a language per Advocacy campaign, independent of the event's default language",
-      "summary": "Advocacy campaigns now support a per-campaign **Language** setting (English, German, Spanish, French, or Arabic). When set, it controls the language of the share flow, join page, Companion default post, \"your link\" email, and attendee notifications for that campaign — overriding the event's default language. Leaving it unset keeps the existing behaviour (the event language is used).",
-      "article": "/marketing/advocacy",
+      "title": "Advocacy: choose each campaign's language, including Arabic",
+      "summary": "Each Advocacy campaign has a **Language** setting under **Share console → Advanced settings**: **Event language** (the default, as before), English, German, Spanish, French or Arabic. It sets the join page and share landing page (right to left for Arabic), the Companion and its suggested post, the share-text picker and the link, notify and reminder emails. Advocates can still switch language themselves.",
+      "article": "/marketing/advocacy#languages",
       "related": [
         "/marketing/advocacy-attendees",
         "/marketing/advocacy-embeds"
@@ -930,110 +920,32 @@
       ],
       "availability": "everyone",
       "enable": {
-        "how": "default_on",
-        "path": null
+        "how": "setting",
+        "path": "Marketing → Advocacy → campaign → Share console → Advanced settings → Language"
       },
       "where": {
         "scope": "event",
-        "path": "Marketing → Advocacy → Campaign builder → Share console → Advanced settings → Language"
+        "path": "Marketing → Advocacy → campaign → Share console → Advanced settings"
       },
       "permissions": [],
       "audience": [
         "organizer"
       ],
-      "use_case": "An organizer running a multilingual event can set a campaign's language to Arabic (or any supported language) so that all attendee-facing share flows, emails, and Companion posts for that campaign appear in the correct language — even when the event's default language is English.",
+      "use_case": "Run an Advocacy campaign for an Arabic-, German-, Spanish- or French-speaking audience on an event whose language is English, without changing the event.",
       "internal": {
         "cs_action": {
           "kind": "none",
-          "note": "The new column defaults to NULL, which preserves existing behaviour for all live campaigns. No action needed unless a customer asks to use a non-English share flow."
+          "note": "Every existing campaign stays on Event language, so nothing changes until an organizer picks another."
         },
         "when_to_bring_up": "When a customer runs campaigns for non-English-speaking audiences or multilingual events and wants the share flow to appear in a specific language.",
         "who_should_get_it": "Any customer using Advocacy who has attendees, speakers, or exhibitors whose primary language is German, Spanish, French, or Arabic.",
-        "staff_path": "Marketing → Advocacy → Campaign builder → Share console → Advanced settings → Language",
-        "gotchas": "The UI control (web-ui-v2 PR) must also be deployed before organizers can set the language from the campaign builder. The API supports it now but the setting is not yet surfaced in the UI until that companion PR ships. Supported values are en, de, es, fr, ar only — other values are rejected with a 400.",
-        "talk_track": "If you run campaigns for Arabic-speaking attendees or any non-English audience, you can now pick the language directly on the campaign so every share email, join page, and social post prompt appears in the right language — no need to change the event's default language.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The Advocacy campaigns guide should add a section on the per-campaign Language setting under Advanced settings, listing the supported languages (English, German, Spanish, French, Arabic), explaining the precedence order (campaign language → event language → visitor's own pick), and noting that leaving it unset follows the event default.",
-          "why_use_it": "Advocacy lets you invite speakers, attendees, exhibitors, and sponsors to share your event on social media through personalised cards and posts. Each campaign controls who is invited, what they share, and how the share experience looks. Setting a language at the campaign level means every touchpoint — the join page, the Companion share assistant, notification emails, and the attendee card — appears in the language your audience expects, regardless of the event's platform language.",
-          "at": "2026-11-14T04:35:23.091Z",
-          "permissions_to_confirm": [
-            "event.marketing: advocacy_update"
-          ]
-        }
+        "staff_path": "Marketing → Advocacy → campaign → Edit → Share console → Advanced settings → Language",
+        "gotchas": "Native-speaker review of the Arabic copy is still open. The org default-campaign copy carries the language.",
+        "talk_track": "If you run campaigns for Arabic-speaking attendees or any non-English audience, you can now pick the language directly on the campaign so every share email, join page, and social post prompt appears in the right language — no need to change the event's default language."
       },
       "shipped": {
         "prs": [
-          "lennd/sessionboard-web-api#5393"
-        ],
-        "docs_only": false,
-        "pending": null,
-        "live": {
-          "us": "2026-11-15",
-          "eu": "2026-11-15",
-          "me": "2026-11-15"
-        },
-        "announced_at": null,
-        "emailed_at": null
-      },
-      "ideas": [],
-      "media": [],
-      "gated": null,
-      "product": "platform",
-      "platform": false
-    },
-    {
-      "id": "advocacy-campaign-language-setting",
-      "title": "Set the language of an Advocacy campaign's share flow independently of the event language",
-      "summary": "A new **Advanced settings** section in the Advocacy campaign share console (Quick Launch step 3 and the Advanced wizard's share step) adds a **Language** control. Organizers can choose Event language (default), English, German, Spanish, French, or Arabic to set the language advocates see when they share — without being locked to the event's default language.",
-      "article": "/marketing/advocacy#launch-a-campaign",
-      "related": [
-        "/participants/share-your-event-card"
-      ],
-      "kind": "new",
-      "module": "Marketing",
-      "features": [
-        "marketing_advocacy"
-      ],
-      "availability": "everyone",
-      "enable": {
-        "how": "default_on",
-        "path": null
-      },
-      "where": {
-        "scope": "event",
-        "path": "Marketing → Advocacy → Campaigns → [campaign] → Share → Advanced settings → Language"
-      },
-      "permissions": [
-        "event.marketing.advocacy_update"
-      ],
-      "audience": [
-        "organizer"
-      ],
-      "use_case": "Organizers running international events or targeting Arabic-speaking audiences can now set the Advocacy share flow to Arabic (or any supported language) on a per-campaign basis, even when the event's default language cannot be changed.",
-      "internal": {
-        "cs_action": {
-          "kind": "none",
-          "note": null
-        },
-        "when_to_bring_up": "When a customer asks how to run Advocacy for a multilingual or Arabic-speaking audience, or when they report that the share flow is showing the wrong language.",
-        "who_should_get_it": "Any customer running Advocacy campaigns for international or multilingual events.",
-        "staff_path": "Marketing → Advocacy → Campaigns → [campaign] → Share → Advanced settings → Language",
-        "gotchas": "The Language control is hidden until the API returns the content_language field; customers on older API versions will not see it until the API PR ships. The setting only takes effect when the organizer actively changes it — nothing is sent on mount.",
-        "talk_track": "If your attendees or speakers share in a different language than your event default, you can now pick the exact language for each Advocacy campaign's share flow, including Arabic with full right-to-left support.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The Advocacy guide should add a note under the campaign launch section explaining the Advanced settings → Language control, the supported languages (Event language, English, German, Spanish, French, Arabic), and that Arabic renders the share flow right-to-left.",
-          "why_use_it": "Advocacy lets speakers, sponsors, and attendees share your event on social media through a personalised, branded share flow. Controlling the language of that flow per campaign means you can run simultaneous campaigns in different languages — for example, an English campaign for your global audience and an Arabic campaign for a regional cohort — without creating separate events. The share experience, including right-to-left layout for Arabic, adjusts automatically based on the language you choose.",
-          "at": "2026-11-14T04:45:46.161Z"
-        }
-      },
-      "shipped": {
-        "prs": [
+          "lennd/sessionboard-web-api#5393",
           "lennd/sessionboard-web-ui-v2#1631"
         ],
         "docs_only": false,
@@ -1319,82 +1231,15 @@
       "platform": false
     },
     {
-      "id": "api-event-profile-overrides-headshot-bio",
-      "title": "API speaker, contact, participant and session payloads now return event-specific headshots and bios",
-      "summary": "The `/event/speakers`, `/event/contacts`, `/event/participants` and `/event/sessions` API endpoints now resolve event-level headshot and bio overrides the same way the portal, embeds and integrations do. When an organizer or speaker has set an event-specific **Headshot** or **Bio**, `photo_url` and `about` in the response reflect those values. Two new read-only fields — `photo_url_source` and `about_source` — indicate whether each value came from the event override (`event_override`) or the contact record (`contact`).",
-      "article": "/api/changelog#november-2026",
-      "related": [
-        "/api/reference/overview",
-        "/api/recipes/sync-sessions-and-speakers",
-        "/api/guides/consuming-session-content"
-      ],
-      "kind": "improved",
-      "module": "Platform",
-      "features": [],
-      "availability": "everyone",
-      "enable": {
-        "how": "default_on",
-        "path": null
-      },
-      "where": {
-        "scope": "event",
-        "path": "API → /v1/event/speakers, /v1/event/contacts, /v1/event/participants, /v1/event/sessions"
-      },
-      "permissions": [],
-      "audience": [
-        "organizer"
-      ],
-      "use_case": "Teams syncing speaker data to a website or event app via the API will now automatically receive the event-specific headshot and bio rather than the contact's default, ensuring the published profile matches what appears in the portal and embeds without any extra mapping work.",
-      "internal": {
-        "cs_action": {
-          "kind": "none",
-          "note": "The change is additive and backward-compatible. Existing integrations are unaffected unless an event has event-level profile overrides set, in which case photo_url and about will now return the override values instead of the contact defaults."
-        },
-        "when_to_bring_up": "When a customer reports that their website or event app shows a different headshot or bio than the portal, or when they ask why API speaker data doesn't match what attendees see.",
-        "who_should_get_it": "Any customer using the public API to sync speaker or session data to an external system.",
-        "staff_path": null,
-        "gotchas": "photo_url and about values will silently change for any event that has Event_Contact_Profile_Overrides rows — this is the correct behaviour, but customers who hard-coded the contact-level values should be aware. The table starts empty on all events, so no response changes at deploy.",
-        "talk_track": "If you've set event-specific headshots or bios for your speakers, the API now returns those overrides automatically — the same values your portal and embeds already show. Two new fields tell you whether each value came from the event override or the speaker's contact record.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The API changelog and reference guides should document the new photo_url_source and about_source fields on speaker/contact/participant/session response shapes, and note that photo_url and about now resolve event-level profile overrides.",
-          "why_use_it": "The Sessionboard public API lets you pull sessions, speakers, contacts and participants into any external system — your website, event app, integration partner or custom tooling. Responses include the full speaker profile as it appears in Sessionboard, so downstream systems stay in sync without manual exports. The `photo_url_source` and `about_source` fields let you inspect where each value originated, which is useful when building conditional display logic or auditing data quality.",
-          "at": "2026-11-14T06:10:15.383Z"
-        }
-      },
-      "product": "platform",
-      "shipped": {
-        "prs": [
-          "lennd/sessionboard-public-api#242"
-        ],
-        "docs_only": false,
-        "pending": null,
-        "live": {
-          "us": "2026-11-15",
-          "eu": "2026-11-15",
-          "me": "2026-11-15"
-        },
-        "announced_at": null,
-        "emailed_at": null
-      },
-      "ideas": [],
-      "media": [],
-      "gated": null,
-      "platform": false
-    },
-    {
       "id": "sponsor-exhibitor-intake-form-builder-and-additional-contacts",
-      "title": "Sponsor and exhibitor intake forms get the full submission-form builder experience and support for additional contacts",
-      "summary": "The sponsor and exhibitor intake form editors now match the CFP submission-form builder: **Question rules**, **Rich text** and **Divider** blocks, a **Field lock** toggle, per-form character/word/selection limits, **Welcome**, **Group** and **Contact** step name editing, and a new **Form settings** step covering open/close dates, closed-form notices, a custom success page, over-limit flag text, and a multi-language selector. New forms are seeded with required Name, First Name, Last Name and Email fields. On the **Contact** step, a new **\"Let submitters add more contacts\"** panel lets organizers set a maximum number of additional contacts and choose which group roles to offer. Submitters on the public form see an **\"Add another contact\"** block (first name, last name, email, role) that validates for missing fields, bad email format and duplicate addresses before the form can be completed.",
-      "article": "/sponsors-exhibitors/sponsor-intake-form",
+      "title": "Sponsor and exhibitor intake forms: question rules, form settings and more contacts",
+      "summary": "Intake forms now build like submission forms: question rules on questions, rich-text blocks and dividers, locked fields, per-form limits and step names. A **Form settings** step adds open and close dates, a custom success page, over-limit flagging and a language selector. **Let submitters add more contacts** collects extra people, such as a billing or onsite contact, each with a role, and links them to the group.",
+      "article": "/sponsors-exhibitors/sponsor-intake-form#set-up-the-form",
       "related": [
-        "/sponsors-exhibitors/exhibitor-intake-form",
-        "/sessions/submission-forms",
-        "/faq/does-sessionboard-offer-conditional-logic"
+        "/sponsors-exhibitors/sponsor-intake-form#let-submitters-add-more-contacts",
+        "/sponsors-exhibitors/exhibitor-intake-form"
       ],
-      "kind": "improved",
+      "kind": "new",
       "module": "Program",
       "features": [
         "sponsors",
@@ -1402,107 +1247,34 @@
       ],
       "availability": "everyone",
       "enable": {
-        "how": "default_on",
-        "path": null
+        "how": "setting",
+        "path": "CRM → Sponsors (or Exhibitors) → Intake Form"
       },
       "where": {
         "scope": "event",
-        "path": "Sponsors → Intake Form / Exhibitors → Intake Form"
+        "path": "CRM → Sponsors / Exhibitors → Intake Form"
       },
       "permissions": [],
       "audience": [
         "organizer",
         "participant"
       ],
-      "use_case": "Event teams collecting sponsor and exhibitor information can now apply conditional question rules, add rich-text instructions and visual dividers, lock fields to read-only, set open and close dates with custom notices, and let submitters register multiple contacts in a single form — the same capabilities they already had in the CFP builder, now available for intake forms.",
+      "use_case": "Collect everything you need from a sponsor or exhibitor in one form, only ask what applies to them, close the form on a deadline, and get the billing and onsite contacts at the same time.",
       "internal": {
         "cs_action": {
-          "kind": "review_before_customers_see",
-          "note": "Several new editor capabilities land at once (question rules, rich text/divider blocks, field lock, Form settings step, additional contacts panel). Walk through the updated editor with customers who actively use intake forms before they discover the changes on their own."
+          "kind": "none",
+          "note": "Existing forms are unchanged: no dates, no added contacts until turned on."
         },
         "when_to_bring_up": "When a customer asks why their sponsor or exhibitor intake form can't do what their CFP form does, or when they want to collect billing or onsite contacts alongside the primary submitter.",
         "who_should_get_it": "Any customer using sponsor or exhibitor intake forms, especially those with complex conditional questions or who need to capture multiple contacts per group.",
-        "staff_path": "Sponsors → Intake Form or Exhibitors → Intake Form → edit the form",
+        "staff_path": "CRM → Sponsors → Intake Form",
         "gotchas": "New capabilities (question rules, rich text, field lock, Form settings, additional contacts) are shown only when the API returns `intake_form_features`; older API responses render the editor in its previous restricted state. Payments are not included in this change.",
-        "talk_track": "Your sponsor intake form now works like your CFP form — you can add conditional logic, rich-text instructions, open and close dates, and even let sponsors register their billing and onsite contacts in one go.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "Both the sponsor-intake-form and exhibitor-intake-form guides should be updated to document the full builder feature set now available: question rules, rich text and divider blocks, field lock, per-form limits, step name editing, the Form settings step (open/close dates, closed-form notices, custom success page, over-limit flag text, language selector), and the additional contacts panel on the Contact step.",
-          "why_use_it": "Intake forms let sponsors and exhibitors submit their own information — contacts, booth details, branding assets — directly through a branded form without requiring organizer data entry. Question rules show or hide fields based on earlier answers, keeping the form focused for each submitter. Open and close dates, custom success pages, and multi-language support give organizers control over the full submission experience from a single editor.",
-          "at": "2026-11-14T06:23:30.007Z"
-        }
+        "talk_track": "Your sponsor intake form now works like your CFP form — you can add conditional logic, rich-text instructions, open and close dates, and even let sponsors register their billing and onsite contacts in one go."
       },
       "shipped": {
         "prs": [
-          "lennd/sessionboard-web-ui-v2#1636"
-        ],
-        "docs_only": false,
-        "pending": null,
-        "live": {
-          "us": "2026-11-15",
-          "eu": "2026-11-15",
-          "me": "2026-11-15"
-        },
-        "announced_at": null,
-        "emailed_at": null
-      },
-      "ideas": [],
-      "media": [],
-      "gated": null,
-      "product": "platform",
-      "platform": false
-    },
-    {
-      "id": "default-event-fields-org-library",
-      "title": "Define a field once at org level and provision it into every event automatically",
-      "summary": "**Org Settings → Library → Fields** now supports **Default Event Fields**: org-level field templates that are automatically added to every new event as a standard event-scoped field. When creating a default, enabling **Add to existing events** provisions it into all or upcoming events immediately; a **Preview** shows how many fields will be created, adopted, or skipped before any change is made. Enabling **Lock in events** prevents event teams from editing or deleting the field (archiving is still allowed). Editing a default and choosing **Apply to all events** propagates name and option changes across every linked event field without removing existing answer data. Each provisioned field appears in **Instances** with a **Diverged** indicator when it has drifted from the template.",
-      "article": "/concepts/field-types",
-      "related": [
-        "/faq/how-to-create-and-delete-custom-fields",
-        "/concepts/custom-field-type-reference",
-        "/faq/clone-an-event"
-      ],
-      "kind": "new",
-      "module": "Settings",
-      "features": [],
-      "availability": "everyone",
-      "enable": {
-        "how": "default_on",
-        "path": null
-      },
-      "where": {
-        "scope": "org",
-        "path": "Organization → Settings → Library → Fields"
-      },
-      "permissions": [],
-      "audience": [
-        "organizer"
-      ],
-      "use_case": "Orgs that run many events with the same data requirements — such as \"Dietary restrictions\" or \"AV needs\" — can define those fields once at the org level and have them appear in every new event automatically, with optional locking to prevent event teams from changing the definition.",
-      "internal": {
-        "cs_action": {
-          "kind": "reach_out",
-          "note": "High-value feature for multi-event orgs (MCI, Atlassian, AVIXA, etc.) that currently recreate the same fields per event or rely on cloning. Proactively reach out to orgs with many repeated field names across events."
-        },
-        "when_to_bring_up": "When a customer complains about recreating the same custom fields for every event, or when they ask whether cloning is the only way to carry fields forward.",
-        "who_should_get_it": "Orgs that run five or more events per year with shared data requirements — especially those using cloning primarily to carry fields.",
-        "staff_path": "Organization → Settings → Library → Fields",
-        "gotchas": "The field type cannot be changed after a default is created. An existing event field with the same name but a different type is reported as a conflict and skipped — it is not merged. Cross-org clones drop the link to the source org's defaults. Locked fields return a 403 if an event team tries to edit or delete them via the API or UI, but archiving is still permitted.",
-        "talk_track": "Instead of recreating 'Dietary restrictions' or 'Session format' in every event, define it once in your org library and Sessionboard adds it to every new event for you. You can lock it so no one on an event team can accidentally change the definition, and if you ever rename an option, one click pushes the update across your whole portfolio without touching any stored answers.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The field-types guide should add a section on Default Event Fields covering: how to create a default at org level, the Preview and Add to existing events options, Lock in events behaviour, the Apply to all events propagation flow, the Instances view with the Diverged indicator, and how conflicts (same name, different type) are handled.",
-          "why_use_it": "Default Event Fields let you define a field once at the organization level and have it appear in every event automatically, so your team never has to recreate the same \"Dietary restrictions\" or \"Session format\" field event by event. Fields provisioned this way are ordinary event-scoped fields, so forms, views, exports, and integrations all work without any extra setup. Locking a default keeps the definition consistent across your portfolio while still letting event teams archive the field if it is not relevant to a particular event. When you update the default — renaming it or adding options — you can push that change to all linked events in one step without touching stored answers.",
-          "at": "2026-11-14T06:37:05.323Z"
-        }
-      },
-      "shipped": {
-        "prs": [
-          "lennd/sessionboard-web-api#5396"
+          "lennd/sessionboard-web-ui-v2#1636",
+          "lennd/sessionboard-web-api#5400"
         ],
         "docs_only": false,
         "pending": null,
@@ -1522,16 +1294,13 @@
     },
     {
       "id": "default-event-fields-library",
-      "title": "Define default event fields once at the org level and push them to every event",
-      "summary": "A new **Default Event Fields** section in **Org Settings → Library** lets org admins create event fields once and have them appear automatically in every event. Each default field can be marked **Lock in events** to prevent event-level edits. After creating a field, a preview dialog shows which events will receive a new field, which will adopt a matching existing field, and which have a conflicting field — before anything is written. Editing a default field runs a dry-run first; if linked event fields would change, a dialog offers **Save and apply to N events** or **Save default only**. On the event side, the field editor shows a notice when a field comes from an org default, and locked fields are read-only with **Save** disabled.",
-      "article": "/concepts/field-types",
+      "title": "Default event fields: define a field once for every event",
+      "summary": "**Organization Settings → Library → Default Event Fields** defines a contact, group or session field once, and every new event gets it as its own event field. Add it to existing events after a preview, apply later changes to every event or to the default only, lock it so events cannot edit it, and see which events have it.",
+      "article": "/settings/default-event-fields#add-a-default-field",
       "related": [
-        "/faq/how-to-create-and-delete-custom-fields",
-        "/events/event-details",
-        "/concepts/custom-field-type-reference"
+        "/concepts/field-types"
       ],
       "kind": "new",
-      "module": "Settings",
       "features": [],
       "availability": "everyone",
       "enable": {
@@ -1540,34 +1309,26 @@
       },
       "where": {
         "scope": "org",
-        "path": "Org Settings → Library → Default Event Fields"
+        "path": "Organization Settings → Library → Default Event Fields"
       },
       "permissions": [],
       "audience": [
         "organizer"
       ],
-      "use_case": "Orgs that run many events and need a consistent set of event fields — such as \"Dietary restrictions\" or \"AV requirements\" — can define those fields once at the org level and have them appear in every event automatically, optionally locked so event teams cannot change or remove them.",
+      "use_case": "Teams that rebuild the same custom fields in every event, such as dietary restrictions, set them up once and keep every event in step.",
       "internal": {
         "cs_action": {
-          "kind": "reach_out",
-          "note": "Customers running many events with repeated field sets (e.g. ACU, Tahaluf) are the primary audience. Proactively show them this feature to reduce per-event field setup time."
+          "kind": "none",
+          "note": "Existing events change only when an admin chooses Add to existing events."
         },
-        "when_to_bring_up": "When a customer complains about having to recreate the same event fields across many events, or when they ask how to enforce a standard set of fields org-wide.",
-        "who_should_get_it": "Multi-event orgs that manage a portfolio of events and want consistent, centrally governed event fields — especially those with compliance or data-collection requirements.",
-        "staff_path": "Org Settings → Library → Default Event Fields",
-        "gotchas": "The nav link and Library tile are hidden if the API returns a 404 on the default-event-fields endpoint (i.e. on older API deployments). Formula fields are not available as a type for default event fields. Deleting a default field does not remove existing event fields or their answers.",
-        "talk_track": "Instead of recreating 'Dietary restrictions' or 'Session format' on every new event, define it once in your org Library. Sessionboard will add it to every event automatically. Lock it if you need every event to collect exactly the same data, or leave it editable so event teams can tweak it for their context.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The field-types guide should add a section on Default Event Fields — covering how to create and manage them in Org Settings → Library, the Lock in events switch, the add-to-existing-events preview dialog, the dry-run apply-to-all-events flow on edit, the events sheet, and how locked fields appear read-only at the event level.",
-          "why_use_it": "Default Event Fields let you maintain a single source of truth for the event fields your whole organisation relies on. Define a field once in the Library, choose whether event teams can adapt it or whether it stays locked, and Sessionboard keeps every event in sync. When you update a default, a preview shows exactly which events are affected before any change is written, so you stay in control across a large portfolio of events.",
-          "at": "2026-11-14T06:43:26.860Z"
-        }
+        "when_to_bring_up": "A customer recreates the same custom fields in every event, or asks for org-wide event fields whose answers stay per event.",
+        "who_should_get_it": "Organizations running many events a year (57 US orgs reuse a field name across five or more events).",
+        "staff_path": "Organization Settings → Library → Default Event Fields",
+        "gotchas": "Needs the Manage global fields permission to add or edit. A same-name field of another type in an event is skipped as a conflict. Deleting a default keeps the event fields and answers."
       },
       "shipped": {
         "prs": [
+          "lennd/sessionboard-web-api#5396",
           "lennd/sessionboard-web-ui-v2#1637"
         ],
         "docs_only": false,
@@ -1656,49 +1417,42 @@
       "gated": "availability:beta"
     },
     {
-      "id": "public-api-org-added-countries-resolved",
-      "title": "Custom Countries fields with org-added countries now return a name instead of null in the Public API",
-      "summary": "When an org has added a custom country (outside the standard ISO list) to a **Countries** custom field, the Public API previously returned `null` for that value. It now returns the country name the org defined. ISO countries are unaffected. A failed lookup never blocks the API response.",
-      "article": "/api/changelog#november-2026",
-      "kind": "fixed",
-      "module": "Platform",
+      "id": "org-country-list-add-countries",
+      "title": "Add your own countries to the country list",
+      "summary": "Organization admins can now **add**, rename, hide and remove countries on the organization's country list, which every Countries field uses, standard or custom. Added countries, such as Somaliland, work in every picker, on Sites and call for papers forms, in exports, reports, SbQL, merge tags, PDFs, embeds and the Public API. Removed or hidden countries still show on records that hold them.",
+      "article": "/concepts/custom-field-type-reference#your-organizations-country-list",
+      "kind": "new",
       "features": [],
       "availability": "everyone",
       "enable": {
-        "how": "default_on",
-        "path": null
+        "how": "setting",
+        "path": "Organization Settings → Library → Fields → a Countries field → Edit → Add a country"
       },
       "where": {
         "scope": "org",
-        "path": "Public API → any endpoint returning a custom Countries field value"
+        "path": "Organization Settings → Library → Fields → a Countries field"
       },
       "permissions": [],
       "audience": [
         "organizer"
       ],
-      "use_case": "Orgs that added non-ISO countries to a Countries custom field (for example, a regional territory or a custom grouping) can now read those values correctly via the Public API instead of receiving null, making data exports and integrations accurate.",
+      "use_case": "Organizations whose audience includes places the ISO list leaves out, such as Somaliland, can offer them on every form and report without a free-text workaround.",
       "internal": {
         "cs_action": {
           "kind": "none",
-          "note": null
+          "note": "Nothing changes until an admin adds a country."
         },
-        "when_to_bring_up": "When a customer reports that a Countries custom field value is missing or null in their API integration or data export.",
-        "who_should_get_it": "Customers who have added custom (non-ISO) countries to a Countries field and consume data via the Public API — particularly those with international or regional programs.",
-        "staff_path": null,
-        "gotchas": "The fix is additive only: values that were null for org-added countries now return the org's name. ISO country names are not affected even if the org renamed them in the admin UI — the ISO name is always returned. The address_country field on contacts and accounts still returns the stored id (a 900–999 id for org-added countries); this is a known gap flagged for API docs.",
-        "talk_track": "If you added a custom country to a Countries field and noticed it coming back as null in the API, that is now fixed — the API returns the name you defined.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "medium",
-          "docs_gap": "The API changelog and the custom field type reference should note that org-added countries (ids 900–999) now resolve to their org-defined name in API payloads, and that address_country on contacts and accounts still returns the raw id for org-added countries.",
-          "why_use_it": null,
-          "at": "2026-11-14T07:11:36.396Z"
-        }
+        "when_to_bring_up": "A customer asks for a country that is not in the list, or wants to rename or hide countries.",
+        "who_should_get_it": "Organizations with members or speakers in territories missing from the ISO list (for example Tahaluf).",
+        "staff_path": "Organization Settings → Library → Fields → Country → Edit",
+        "gotchas": "Integrations that need an ISO code (Visit, Cvent, Swapcard) receive no country for an added one, and log why. Importing an added country by name is not matched yet. address_country on the Public API returns its 900–999 id."
       },
       "product": "platform",
       "shipped": {
         "prs": [
+          "lennd/sessionboard-web-api#5397",
+          "lennd/sessionboard-web-ui-v2#1633",
+          "lennd/sessionboard-web-org-portal#337",
           "lennd/sessionboard-public-api#241"
         ],
         "docs_only": false,
@@ -1711,89 +1465,24 @@
         "announced_at": null,
         "emailed_at": null
       },
-      "related": [],
+      "related": [
+        "/api/changelog#november-2026"
+      ],
       "ideas": [],
-      "media": [],
+      "media": [
+        "/images/kb/country-list-overrides.png"
+      ],
       "gated": null,
       "platform": false
     },
     {
-      "id": "event-specific-headshot-bio",
-      "title": "Set a separate headshot and bio for each event a speaker appears in",
-      "summary": "Organizers and speakers can now store a distinct **Event Headshot** and **Event Bio** for each event, independent of the contact's org-level profile. The event-specific values appear on embeds, Sites speaker pages, agenda cards, integration syncs, exports, headshot zips, and the Public API — everywhere the contact's own values previously appeared. Writing an event override never changes the contact record, and writing the contact record never changes an event override.",
-      "article": "/contacts/contact-profile",
-      "related": [
-        "/portals/portals-101",
-        "/sessions/embeds",
-        "/faq/how-to-download-headshots",
-        "/faq/fix-a-speakers-details"
-      ],
-      "kind": "new",
-      "module": "Program",
-      "features": [],
-      "availability": "limited_release",
-      "enable": {
-        "how": "support",
-        "path": "Ask your Customer Success Manager to enable event-specific headshot and bio; then Contacts → [contact] → Profile (admin) or the speaker portal profile page"
-      },
-      "where": {
-        "scope": "event",
-        "path": "Contacts → [contact] → Profile; Speaker portal → Profile"
-      },
-      "permissions": [],
-      "audience": [
-        "organizer",
-        "speaker"
-      ],
-      "use_case": "Organisations that run multiple events with the same speakers — such as a flagship conference and a regional roadshow — can give each speaker a tailored bio and headshot per event without overwriting the speaker's master profile. Speakers can update their own event-specific details from their portal without affecting other events they are part of.",
-      "internal": {
-        "cs_action": {
-          "kind": "must_enable",
-          "note": "This is a limited release targeting Tahaluf initially. Reach out to confirm the customer's use case before enabling; the feature adds a new DB table and new API fields (photo_url_source, headshotSource, bioSource) that downstream integrations may need to handle."
-        },
-        "when_to_bring_up": "When a customer complains that updating a speaker's bio or headshot for one event breaks another event, or when they manage speakers who appear across multiple events with different branding needs.",
-        "who_should_get_it": "Customers who run multiple events per year with overlapping speaker rosters and need per-event speaker profiles — particularly large associations and multi-event organisations like Tahaluf.",
-        "staff_path": "Contacts → [contact] → Profile (admin GET/PUT /contacts/event/:eventId/:recordId/event-profile); Speaker portal → Profile page (event_profile fields)",
-        "gotchas": "The table starts empty — no backfill — so all existing payloads are unchanged until an organizer or speaker sets an override. A cross-org event clone does not copy overrides (contacts are recreated). The bio override replaces the bio in every language for that event. If a Headshot or Bio field is hidden or locked for a role, the admin endpoint returns 403. CFP form field mapping to the override, webhooks, and email merge tags are not yet built.",
-        "talk_track": "If the same speaker presents at your annual summit and your regional workshop, you can now give them a different headshot and bio for each — without touching their master profile. They can even update it themselves from their speaker portal, and it flows straight to your website embeds and event app.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The contact-profile guide should add a section explaining event-specific headshot and bio overrides: how to set them as an admin (via the contact profile for a given event), how speakers set them from their portal, how the resolver picks the event value over the org value, which surfaces display the override, and what happens during event clone and contact merge.",
-          "why_use_it": "A contact in Sessionboard is an org-level record, so a speaker's headshot and bio are shared across every event they appear in. Event-specific overrides let you store a distinct photo and biography for each event independently. The event's values flow automatically to embeds, Sites, agenda cards, integration syncs, headshot downloads, and the Public API, so every surface shows the right version without manual workarounds. Speakers can set their own event overrides from their portal, and organizers can manage them from the contact profile — neither action touches the other event's data.",
-          "at": "2026-11-14T07:33:19.924Z"
-        }
-      },
-      "product": "platform",
-      "shipped": {
-        "prs": [
-          "lennd/sessionboard-web-api#5398"
-        ],
-        "docs_only": false,
-        "pending": null,
-        "live": {
-          "us": "2026-11-15",
-          "eu": "2026-11-15",
-          "me": "2026-11-15"
-        },
-        "announced_at": null,
-        "emailed_at": null
-      },
-      "ideas": [],
-      "media": [],
-      "gated": "availability:limited_release",
-      "platform": false
-    },
-    {
       "id": "sponsor-exhibitor-intake-form-payments",
-      "title": "Collect payments on sponsor and exhibitor intake forms",
-      "summary": "Intake forms for sponsors and exhibitors can now charge a fee at submission. In the form's new **Pricing & payment** step, set a base fee, connect a Spreedly payment gateway, add conditional pricing rules (for example, Tier = Gold → $5,000), VAT rules, and promo codes. Submitters who owe a fee land on a payment step after completing the form; their group shows **Pending Payment** until the card clears. Paid submissions trigger a confirmation email and an **Invoice Receipt** notification. Invoices appear under **Invoices → Sponsor & exhibitor intake forms**, support refunds, and add **Payment status**, **Invoice number**, **Amount**, and **Paid at** columns to Sponsors and Exhibitors exports. New `sponsor.payment.status.changed` and `exhibitor.payment.status.changed` webhooks fire on each status transition.",
-      "article": "/sponsors-exhibitors/sponsor-intake-form",
+      "title": "Sponsor and exhibitor intake forms can charge a fee",
+      "summary": "A **Pricing & payment** step on sponsor and exhibitor intake forms sets a base fee, pricing rules on any answer (for example Tier is Gold), VAT and promo codes. A group that completes a paid form pays on a **Payment** step; the confirmation and receipt are sent once, after payment. Intake invoices are on the event's **Invoices** page.",
+      "article": "/sponsors-exhibitors/sponsor-intake-form#charge-a-fee",
       "related": [
-        "/sponsors-exhibitors/exhibitor-intake-form",
-        "/awards/awards-pricing-payments-invoices",
-        "/integrations/webhooks"
+        "/sponsors-exhibitors/exhibitor-intake-form#charge-a-fee",
+        "/api/webhooks"
       ],
       "kind": "new",
       "module": "Program",
@@ -1805,40 +1494,33 @@
       "availability": "on_request",
       "enable": {
         "how": "setting",
-        "path": "Sponsors (or Exhibitors) → Intake form → Pricing & payment → Upon Submission"
+        "path": "CRM → Sponsors (or Exhibitors) → Intake Form → Pricing & payment → Upon Submission"
       },
       "where": {
         "scope": "event",
-        "path": "Sponsors → Intake form → Pricing & payment; Exhibitors → Intake form → Pricing & payment; Sessions → Invoices → Sponsor & exhibitor intake forms"
+        "path": "CRM → Sponsors / Exhibitors → Intake Form"
       },
       "permissions": [],
       "audience": [
         "organizer"
       ],
-      "use_case": "Event teams that charge sponsors or exhibitors a participation fee can now collect payment directly through the intake form, eliminating the need to invoice separately. Conditional pricing rules let you charge different amounts by tier automatically, and promo codes support discounts or fully waived fees.",
+      "use_case": "Collect sponsorship or exhibitor fees when the company signs up, priced by tier, instead of invoicing each one by hand.",
       "internal": {
         "cs_action": {
-          "kind": "reach_out",
-          "note": "Only 4 US orgs currently have both an intake form and a Spreedly gateway. Proactively reach out to customers who use intake forms and charge sponsors/exhibitors outside Sessionboard today."
+          "kind": "none",
+          "note": "Every existing form stays on Do Not Collect Payment. Needs a payment gateway in the org's Payment Settings."
         },
         "when_to_bring_up": "When a customer asks how to collect sponsor or exhibitor fees, or when they mention invoicing sponsors manually after intake form submissions.",
         "who_should_get_it": "Customers using sponsor or exhibitor intake forms who currently collect fees outside Sessionboard (separate invoice, payment link, etc.).",
-        "staff_path": "Sponsors → Intake form → Pricing & payment (admin config); Sessions → Invoices → Sponsor & exhibitor intake forms (invoice list and refunds)",
+        "staff_path": "CRM → Sponsors → Intake Form → Pricing & payment",
         "gotchas": "Every existing intake form defaults to pricing_type = 'none', so no existing form is affected at deploy. A Spreedly payment gateway must already be connected at the org level (Settings → Payments) before the pricing step can be saved. Refunds are staff-only (superUserOnly). The confirmation email is held until payment clears for paid forms; free forms send it on submission as before.",
-        "talk_track": "If you charge sponsors or exhibitors a fee to participate, you can now collect that payment right inside the intake form. Set your base fee, add tier-based rules so Gold sponsors pay more than Silver automatically, and optionally give certain contacts a promo code for a discount. Sessionboard handles the payment step, sends a receipt, and tracks every invoice so your finance team always knows who has paid.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "Both the sponsor and exhibitor intake form guides should add a section covering the Pricing & payment step: setting a base fee, connecting a gateway, adding pricing rules and VAT rules, creating promo codes, the submitter payment flow, the Pending Payment group status, the Invoice Receipt notification, the Invoices page filter for intake forms, refunds, export columns, and the payment status webhooks.",
-          "why_use_it": "Intake forms let sponsors and exhibitors submit their information and complete payment in a single, unassisted flow. Set a base fee, add tier-based pricing rules, and connect your Spreedly gateway — Sessionboard handles the payment step, tracks invoice status, and sends receipts automatically. All paid and pending invoices are visible in one place alongside your other event invoices, with export columns and webhooks to keep your finance records in sync.",
-          "at": "2026-11-14T09:09:29.633Z"
-        }
+        "talk_track": "If you charge sponsors or exhibitors a fee to participate, you can now collect that payment right inside the intake form. Set your base fee, add tier-based rules so Gold sponsors pay more than Silver automatically, and optionally give certain contacts a promo code for a discount. Sessionboard handles the payment step, sends a receipt, and tracks every invoice so your finance team always knows who has paid."
       },
       "product": "platform",
       "shipped": {
         "prs": [
-          "lennd/sessionboard-web-api#5409"
+          "lennd/sessionboard-web-api#5409",
+          "lennd/sessionboard-web-ui-v2#1644"
         ],
         "docs_only": false,
         "pending": null,
@@ -1857,9 +1539,9 @@
     },
     {
       "id": "campaign-session-field-filters-fixed",
-      "title": "Session field filters in email campaigns now return correct audience counts",
-      "summary": "Filters on session fields — including **Tags**, **Track**, **Format**, **Level**, **Language**, **Location**, **Status**, and custom session fields — now resolve correctly when building a campaign audience. Previously, combining a submission-status filter with a session tag or custom field filter (for example, \"Submission status is Pending\" + \"Tags is Poster Queue\") returned 0 recipients even when matching sessions existed; the correct audience is now shown in previews, scheduled sends, automated emails, and recipient counts.",
-      "article": "/communications/email-campaigns",
+      "title": "Campaign session filters find the right people again",
+      "summary": "Email campaign audiences filtered on session fields, such as **Submission status is Pending** with **Tags is Poster Queue**, returned no one. Standard and custom session fields now match, in previews, sends, schedules, automated emails and Advocacy and Reach audiences. Session fields that can never match are no longer offered.",
+      "article": "/communications/email-campaigns#step-3-recipients",
       "kind": "fixed",
       "module": "Communications",
       "features": [
@@ -1885,25 +1567,18 @@
       "internal": {
         "cs_action": {
           "kind": "reach_out",
-          "note": "9 stored campaigns in US and 4 in EU carry UUID session field rows; all were draft or cancelled so no scheduled send changed, but customers who noticed 0-recipient counts on session-field filters should be told the bug is fixed and invited to rebuild those campaigns."
+          "note": "Customers who saw a 0-recipient campaign on a session filter can retry it now."
         },
         "when_to_bring_up": "When a customer reports that adding a Tags, Track, Format, Level, Language, Location, Status, or custom session field filter to a campaign audience drops the count to 0.",
         "who_should_get_it": "Any customer who uses session-field audience filters in email campaigns, especially those who noticed unexpectedly empty audiences since April 2026.",
         "staff_path": "Communications → Email Campaigns → campaign → Audience",
         "gotchas": "The fix also corrects automated emails, Advocacy dynamic audiences, Reach audiences, and the GenAI recipient count — all share the same filter resolver. Campaigns that were saved with broken filters will now show the correct (higher) count when reopened.",
-        "talk_track": "If you ever filtered a campaign audience by a session tag or custom session field and got 0 recipients, that was a bug — it's now fixed. Rebuild those audience filters and you'll see the correct count.",
-        "draft": {
-          "by": "release-intake",
-          "model": "claude-sonnet-4-6",
-          "confidence": "high",
-          "docs_gap": "The email-campaigns guide should note which session fields are supported as audience filters (Tags, Track, Format, Level, Language, Location, Status, and custom session fields) and explain how combining them with submission-status filters works.",
-          "why_use_it": "null",
-          "at": "2026-11-14T10:41:22.800Z"
-        }
+        "talk_track": "If you ever filtered a campaign audience by a session tag or custom session field and got 0 recipients, that was a bug — it's now fixed. Rebuild those audience filters and you'll see the correct count."
       },
       "shipped": {
         "prs": [
-          "lennd/sessionboard-web-api#5404"
+          "lennd/sessionboard-web-api#5404",
+          "lennd/sessionboard-web-ui-v2#1640"
         ],
         "docs_only": false,
         "pending": null,
@@ -2847,6 +2522,178 @@
       "media": [],
       "gated": null,
       "platform": false
+    },
+    {
+      "related": [
+        "/evaluations/evaluation-plans#reviewer-email-send-log",
+        "/evaluations/evaluation-plans#find-and-select-reviewers"
+      ],
+      "features": [
+        "sessions"
+      ],
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "ideas": [],
+      "media": [],
+      "product": "platform",
+      "id": "reviewer-email-tag-filters-skip-send-log",
+      "title": "Reviewer emails: tag filters, skip who already got it, and a send log",
+      "summary": "The Reviewers list filters tags with **Match any**, **Match all** and **Exclude tags**. **Email** shows who is skipped and why, with **Skip anyone who already received it** on by default, and a **Send log** records every reviewer as sent (with delivery), failed (with the reason) or skipped. One bad address no longer stops the batch.",
+      "article": "/evaluations/evaluation-plans#email-selected-reviewers",
+      "kind": "improved",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Program → Review → Reviewers"
+      },
+      "use_case": "Email exactly the reviewers you mean, never send the same email twice, and prove who got it.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "On by default; nothing to turn on."
+        },
+        "when_to_bring_up": "A customer emailed reviewers more than once by accident, or needs to know which reviewers received an email.",
+        "who_should_get_it": "Events with large reviewer pools and reviewer tags (DesignCon sent one email 227 times to 91 reviewers).",
+        "staff_path": "Program → Review → Reviewers → Send log",
+        "gotchas": "No per-plan email templates. \"Already received\" means the same invitation, or a custom email with the same subject on the same plan."
+      },
+      "prs": [
+        "web-api#5384",
+        "web-ui-v2#1624"
+      ],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5384",
+          "lennd/sessionboard-web-ui-v2#1624"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        }
+      }
+    },
+    {
+      "related": [
+        "/api/changelog#november-2026"
+      ],
+      "features": [
+        "sessions"
+      ],
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "ideas": [],
+      "media": [],
+      "product": "platform",
+      "id": "session-specific-job-title-company",
+      "title": "A participant's job title and company for one session",
+      "summary": "On a session's participant row, **+ Job title & company for this session** sets what that person shows on this session only, for a speaker who is a CEO on one session and a professor on another. It appears on embeds, Program Site session pages, agenda cards, session reports, exports, SbQL and the Public API (`session_affiliation`). Left blank, the contact's own job title and company are used.",
+      "article": "/contacts/add-a-moderator-chairperson#a-different-job-title-and-company-for-one-session",
+      "kind": "new",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Program → Sessions → session → Participants → participant row"
+      },
+      "use_case": "Show each speaker with the affiliation that fits the session, without editing their contact between sessions.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Empty everywhere until an organizer sets it."
+        },
+        "when_to_bring_up": "A speaker appears on several sessions under different affiliations.",
+        "who_should_get_it": "Medical and scientific programs with multi-affiliated faculty.",
+        "staff_path": "Program → Sessions → session → Participants → + Job title & company for this session",
+        "gotchas": "Set by admins only for now. SbQL columns are attr_session_job_title and attr_session_company."
+      },
+      "prs": [
+        "web-api#5384",
+        "web-ui-v2#1624",
+        "public-api#236"
+      ],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5384",
+          "lennd/sessionboard-web-ui-v2#1624",
+          "lennd/sessionboard-public-api#236"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        }
+      }
+    },
+    {
+      "related": [
+        "/sessions/submission-forms"
+      ],
+      "features": [
+        "sessions"
+      ],
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "ideas": [],
+      "media": [],
+      "product": "platform",
+      "id": "parent-session-participants-follow-setting",
+      "title": "Parent sessions follow \"Participants shown on the parent session\" everywhere",
+      "summary": "With **Participants shown on the parent session** set to **None** or **Presenting author only**, sub-session participants were still copied to the parent when added on the sub-session, on the legacy session edit and from submission forms with linked sub-sessions. Every path now follows the setting, and notes beside the setting and in the form builder explain it. The portal, submission PDF and disclosures still list everyone.",
+      "article": "/sessions/program-settings#agenda",
+      "kind": "fixed",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Program → Program Settings → Agenda → Subsessions"
+      },
+      "use_case": "Keep a symposium's parent session free of its presenters when the event says so, whichever way they were added.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Existing wrong copies on EU event 419 are removed by a one-off cleanup."
+        },
+        "when_to_bring_up": "A customer sees sub-session participants on the parent although the setting is None or Presenting author only.",
+        "who_should_get_it": "Events that use sub-sessions with linked submission forms.",
+        "staff_path": "Program → Program Settings → Agenda → Subsessions"
+      },
+      "prs": [
+        "web-api#5376",
+        "web-api#5383",
+        "web-ui-v2#1623"
+      ],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5376",
+          "lennd/sessionboard-web-api#5383",
+          "lennd/sessionboard-web-ui-v2#1623"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        }
+      }
     }
   ]
 }
