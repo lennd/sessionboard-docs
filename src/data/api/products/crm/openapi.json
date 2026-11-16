@@ -54,6 +54,10 @@
       "description": "The pipeline: stages, one entry per contact, moves with a note and the history of every move. The Sessionboard platform's own pipeline, so an upgrade keeps it. Same scopes and paths as CRM."
     },
     {
+      "name": "CRM guest scheduler",
+      "description": "Booking links that check every host's connected Google Calendar together and offer a guest only the times all hosts are free. A booking puts one event on the first host's calendar inviting the other hosts and the guest, with reschedule and cancel links; moves the guest's Contact to Confirmed in the pipeline; and records the release and prep-brief hand-offs. Same scopes and paths as CRM."
+    },
+    {
       "name": "CRM contracts",
       "description": "Contracts sent for signature with Sessionboard e-sign: list, read, send, resend, void, the PDF, templates and the built-in starters. Sending, resending and voiding reach the signer, so confirm them with a person first. Same scopes and paths as CRM."
     },
@@ -3394,6 +3398,759 @@
           },
           "429": {
             "$ref": "#/components/responses/CrmTooManyRequests"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/crm/scheduler": {
+      "get": {
+        "operationId": "crm-scheduler-get",
+        "summary": "Get booking links",
+        "description": "The organization’s booking links: public `url`, hosts and whether each host’s calendar is connected (`bookable` is true only when all are), time zone (`timezone_source` `first_host` or `link`), rules, conferencing, pipeline stage and hand-offs; and `my_calendar` for the key’s user. Reads only. Requires `read:crm`. Refused for a key restricted to particular events. Also under `/v1/org/{orgId}/crm/…` and `/v1/crm/…` with the organization taken from the token.",
+        "tags": [
+          "CRM guest scheduler"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CrmOrgId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key lacks the scope, or is restricted to particular events."
+          },
+          "404": {
+            "description": "Not found in this organization."
+          },
+          "409": {
+            "description": "`code` says why: `slot_taken` (pick another time), `calendar_not_connected` (a host has not connected Google Calendar), `booking_cancelled` or `booking_past`."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/crm/scheduler/links": {
+      "post": {
+        "operationId": "crm-scheduler-create-link",
+        "summary": "Create a booking link",
+        "description": "A new booking link. Hosts default to the key’s user. Every host connects their own Google Calendar before guests can book. Requires `write:crm`. Refused for a key restricted to particular events. Also under `/v1/org/{orgId}/crm/…` and `/v1/crm/…` with the organization taken from the token.",
+        "tags": [
+          "CRM guest scheduler"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CrmOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "description": "What the guest is booking."
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Shown to the guest and put in the invite."
+                  },
+                  "slug": {
+                    "type": "string",
+                    "description": "The link name in its URL (`/book/<slug>`), unique across Sessionboard."
+                  },
+                  "hostUserIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    },
+                    "description": "Sessionboard user ids of the hosts, in order. The first host’s calendar holds the event and sets the default time zone."
+                  },
+                  "timezone": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "IANA zone for the working hours; null uses the first host’s calendar time zone."
+                  },
+                  "durationMinutes": {
+                    "type": "integer",
+                    "description": "5–480."
+                  },
+                  "slotIntervalMinutes": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "description": "Start times every N minutes; default the duration."
+                  },
+                  "bufferBeforeMinutes": {
+                    "type": "integer",
+                    "description": "Kept free before each meeting, 0–240."
+                  },
+                  "bufferAfterMinutes": {
+                    "type": "integer",
+                    "description": "Kept free after each meeting, 0–240."
+                  },
+                  "minNoticeMinutes": {
+                    "type": "integer",
+                    "description": "How soon a guest may book; default 240."
+                  },
+                  "maxDaysAhead": {
+                    "type": "integer",
+                    "description": "How far ahead a guest may book; default 30."
+                  },
+                  "workingHours": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "array",
+                      "items": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "description": "Bookable windows per weekday (`mon`…`sun`) in the link time zone, e.g. `{\"tue\": [[\"14:00\",\"17:00\"]]}`. Empty means weekdays 9–5."
+                  },
+                  "conferencing": {
+                    "type": "string",
+                    "enum": [
+                      "zoom",
+                      "google_meet",
+                      "none"
+                    ],
+                    "description": "`zoom` uses the organization’s connected Zoom app."
+                  },
+                  "pipelineStageKey": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "The pipeline stage a booked guest moves to (default `confirmed`); null moves no one."
+                  },
+                  "eventId": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "description": "The event a new pipeline entry is for."
+                  },
+                  "releaseTemplateId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "A contract template for the guest release. It is never sent automatically: the booking records it as awaiting approval."
+                  },
+                  "prepBrief": {
+                    "type": "boolean",
+                    "description": "Ask for a prep brief after each booking."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key lacks the scope, or is restricted to particular events."
+          },
+          "404": {
+            "description": "Not found in this organization."
+          },
+          "409": {
+            "description": "`code` says why: `slot_taken` (pick another time), `calendar_not_connected` (a host has not connected Google Calendar), `booking_cancelled` or `booking_past`."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/crm/scheduler/links/{linkId}": {
+      "put": {
+        "operationId": "crm-scheduler-update-link",
+        "summary": "Update a booking link",
+        "description": "Change a link’s settings (only the fields sent change), or `archived: true` to turn it off. Existing bookings keep their time. Requires `write:crm`. Refused for a key restricted to particular events. Also under `/v1/org/{orgId}/crm/…` and `/v1/crm/…` with the organization taken from the token.",
+        "tags": [
+          "CRM guest scheduler"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CrmOrgId"
+          },
+          {
+            "name": "linkId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The booking link id."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "description": "What the guest is booking."
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Shown to the guest and put in the invite."
+                  },
+                  "slug": {
+                    "type": "string",
+                    "description": "The link name in its URL (`/book/<slug>`), unique across Sessionboard."
+                  },
+                  "hostUserIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    },
+                    "description": "Sessionboard user ids of the hosts, in order. The first host’s calendar holds the event and sets the default time zone."
+                  },
+                  "timezone": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "IANA zone for the working hours; null uses the first host’s calendar time zone."
+                  },
+                  "durationMinutes": {
+                    "type": "integer",
+                    "description": "5–480."
+                  },
+                  "slotIntervalMinutes": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "description": "Start times every N minutes; default the duration."
+                  },
+                  "bufferBeforeMinutes": {
+                    "type": "integer",
+                    "description": "Kept free before each meeting, 0–240."
+                  },
+                  "bufferAfterMinutes": {
+                    "type": "integer",
+                    "description": "Kept free after each meeting, 0–240."
+                  },
+                  "minNoticeMinutes": {
+                    "type": "integer",
+                    "description": "How soon a guest may book; default 240."
+                  },
+                  "maxDaysAhead": {
+                    "type": "integer",
+                    "description": "How far ahead a guest may book; default 30."
+                  },
+                  "workingHours": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "array",
+                      "items": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "description": "Bookable windows per weekday (`mon`…`sun`) in the link time zone, e.g. `{\"tue\": [[\"14:00\",\"17:00\"]]}`. Empty means weekdays 9–5."
+                  },
+                  "conferencing": {
+                    "type": "string",
+                    "enum": [
+                      "zoom",
+                      "google_meet",
+                      "none"
+                    ],
+                    "description": "`zoom` uses the organization’s connected Zoom app."
+                  },
+                  "pipelineStageKey": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "The pipeline stage a booked guest moves to (default `confirmed`); null moves no one."
+                  },
+                  "eventId": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "description": "The event a new pipeline entry is for."
+                  },
+                  "releaseTemplateId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "A contract template for the guest release. It is never sent automatically: the booking records it as awaiting approval."
+                  },
+                  "prepBrief": {
+                    "type": "boolean",
+                    "description": "Ask for a prep brief after each booking."
+                  },
+                  "archived": {
+                    "type": "boolean",
+                    "description": "true turns the link off; false turns it back on."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key lacks the scope, or is restricted to particular events."
+          },
+          "404": {
+            "description": "Not found in this organization."
+          },
+          "409": {
+            "description": "`code` says why: `slot_taken` (pick another time), `calendar_not_connected` (a host has not connected Google Calendar), `booking_cancelled` or `booking_past`."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/crm/scheduler/links/{linkId}/availability": {
+      "get": {
+        "operationId": "crm-scheduler-availability",
+        "summary": "List open times",
+        "description": "Times when every host is free between `from` and `to` (ISO 8601, default the next two weeks), inside working hours, after the minimum notice and within the window, with buffers kept clear. Returned in UTC with the link’s `timezone`. Reads only. Requires `read:crm`. Refused for a key restricted to particular events. Also under `/v1/org/{orgId}/crm/…` and `/v1/crm/…` with the organization taken from the token.",
+        "tags": [
+          "CRM guest scheduler"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CrmOrgId"
+          },
+          {
+            "name": "linkId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The booking link id."
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Start of the range, ISO 8601."
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "End of the range, ISO 8601."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key lacks the scope, or is restricted to particular events."
+          },
+          "404": {
+            "description": "Not found in this organization."
+          },
+          "409": {
+            "description": "`code` says why: `slot_taken` (pick another time), `calendar_not_connected` (a host has not connected Google Calendar), `booking_cancelled` or `booking_past`."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/crm/scheduler/calendar/connect": {
+      "post": {
+        "operationId": "crm-scheduler-connect-calendar",
+        "summary": "Get a Google Calendar connect link",
+        "description": "The Google consent URL for the key’s user to connect their own calendar (free/busy, events and time zone). The URL expires in 30 minutes. Nothing is connected until the person finishes on Google. Requires `read:crm`. Refused for a key restricted to particular events. Also under `/v1/org/{orgId}/crm/…` and `/v1/crm/…` with the organization taken from the token.",
+        "tags": [
+          "CRM guest scheduler"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CrmOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "returnTo": {
+                    "type": "string",
+                    "description": "Where the finished page links back to."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key lacks the scope, or is restricted to particular events."
+          },
+          "404": {
+            "description": "Not found in this organization."
+          },
+          "409": {
+            "description": "`code` says why: `slot_taken` (pick another time), `calendar_not_connected` (a host has not connected Google Calendar), `booking_cancelled` or `booking_past`."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/crm/scheduler/calendar": {
+      "delete": {
+        "operationId": "crm-scheduler-disconnect-calendar",
+        "summary": "Disconnect your calendar",
+        "description": "Disconnects the key’s user’s Google Calendar and revokes the access. Links that use them as a host stop offering times until they connect again. Requires `write:crm`. Refused for a key restricted to particular events. Also under `/v1/org/{orgId}/crm/…` and `/v1/crm/…` with the organization taken from the token.",
+        "tags": [
+          "CRM guest scheduler"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CrmOrgId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key lacks the scope, or is restricted to particular events."
+          },
+          "404": {
+            "description": "Not found in this organization."
+          },
+          "409": {
+            "description": "`code` says why: `slot_taken` (pick another time), `calendar_not_connected` (a host has not connected Google Calendar), `booking_cancelled` or `booking_past`."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/crm/scheduler/bookings": {
+      "get": {
+        "operationId": "crm-scheduler-list-bookings",
+        "summary": "List bookings",
+        "description": "Bookings with the guest, the time (UTC), the invite (`calendar_event`), `zoom`, `hooks` (`crm`, `release`, `prep_brief`) and `reschedule_url` / `cancel_url`. Upcoming confirmed bookings by default. Reads only. Requires `read:crm`. Refused for a key restricted to particular events. Also under `/v1/org/{orgId}/crm/…` and `/v1/crm/…` with the organization taken from the token.",
+        "tags": [
+          "CRM guest scheduler"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CrmOrgId"
+          },
+          {
+            "name": "link_id",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Only this link."
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "`confirmed` (default), `cancelled` or `all`."
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Start time on or after, ISO 8601."
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Start time before, ISO 8601."
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Search the guest’s name or email."
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Page, from 1."
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Rows per page, up to 100 (default 50)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key lacks the scope, or is restricted to particular events."
+          },
+          "404": {
+            "description": "Not found in this organization."
+          },
+          "409": {
+            "description": "`code` says why: `slot_taken` (pick another time), `calendar_not_connected` (a host has not connected Google Calendar), `booking_cancelled` or `booking_past`."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/crm/scheduler/bookings/{bookingId}": {
+      "get": {
+        "operationId": "crm-scheduler-get-booking",
+        "summary": "Get a booking",
+        "description": "One booking with its history. Reads only. Requires `read:crm`. Refused for a key restricted to particular events. Also under `/v1/org/{orgId}/crm/…` and `/v1/crm/…` with the organization taken from the token.",
+        "tags": [
+          "CRM guest scheduler"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CrmOrgId"
+          },
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The booking id."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key lacks the scope, or is restricted to particular events."
+          },
+          "404": {
+            "description": "Not found in this organization."
+          },
+          "409": {
+            "description": "`code` says why: `slot_taken` (pick another time), `calendar_not_connected` (a host has not connected Google Calendar), `booking_cancelled` or `booking_past`."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/crm/scheduler/bookings/{bookingId}/reschedule": {
+      "post": {
+        "operationId": "crm-scheduler-reschedule",
+        "summary": "Reschedule a booking",
+        "description": "Moves a booking to another open time. The one event moves on every host’s and the guest’s calendar and Google emails the attendees; a Zoom meeting moves too. Confirm with a person first. Requires `write:crm`. Refused for a key restricted to particular events. Also under `/v1/org/{orgId}/crm/…` and `/v1/crm/…` with the organization taken from the token.",
+        "tags": [
+          "CRM guest scheduler"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CrmOrgId"
+          },
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The booking id."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "startAt": {
+                    "type": "string",
+                    "description": "The new start, ISO 8601 with offset; must be an open time."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key lacks the scope, or is restricted to particular events."
+          },
+          "404": {
+            "description": "Not found in this organization."
+          },
+          "409": {
+            "description": "`code` says why: `slot_taken` (pick another time), `calendar_not_connected` (a host has not connected Google Calendar), `booking_cancelled` or `booking_past`."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/crm/scheduler/bookings/{bookingId}/cancel": {
+      "post": {
+        "operationId": "crm-scheduler-cancel",
+        "summary": "Cancel a booking",
+        "description": "Cancels a booking: the event is removed from every calendar (Google emails the cancellation) and a Zoom meeting is deleted. The pipeline entry stays where it is. Confirm with a person first. Requires `write:crm`. Refused for a key restricted to particular events. Also under `/v1/org/{orgId}/crm/…` and `/v1/crm/…` with the organization taken from the token.",
+        "tags": [
+          "CRM guest scheduler"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CrmOrgId"
+          },
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The booking id."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "description": "Kept on the booking."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The key lacks the scope, or is restricted to particular events."
+          },
+          "404": {
+            "description": "Not found in this organization."
+          },
+          "409": {
+            "description": "`code` says why: `slot_taken` (pick another time), `calendar_not_connected` (a host has not connected Google Calendar), `booking_cancelled` or `booking_past`."
           }
         }
       }
