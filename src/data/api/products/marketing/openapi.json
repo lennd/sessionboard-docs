@@ -140,6 +140,98 @@
         }
       }
     },
+    "/v1/organization/{orgId}/marketing/pages/events/{eventId}/redirect": {
+      "post": {
+        "operationId": "set-event-page-redirect",
+        "summary": "Send an event page to the agent page that replaced it",
+        "description": "When an event's page is rebuilt as an agent page (a landing page Site, for example a tour stop at `/p/<tour>/labs/<event-slug>`), sends visitors of its `/e/<slug>` address there with a permanent redirect. `redirect_to` is the agent page's public URL (`https://sites.sessionboard.com/p/<slug>[/path]` or its Site's custom domain). It must be a published agent site of your organization that answers at that path. `redirect_to: null` takes the redirect off and the event page is back. Send `confirmed: true` only after the person said OK. Bind the agent page to the same event so its registration form keeps registering people. From a connected assistant, with Assistant Approvals on, it answers `202 needs_approval`. Also at `POST /v1/marketing/pages/events/{eventId}/redirect`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Event id."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "redirect_to",
+                  "confirmed"
+                ],
+                "properties": {
+                  "redirect_to": {
+                    "type": "string",
+                    "format": "uri",
+                    "nullable": true,
+                    "description": "The agent page URL, or null to take the redirect off."
+                  },
+                  "confirmed": {
+                    "type": "boolean",
+                    "description": "true only after the person said OK."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "event_id": {
+                          "type": "integer"
+                        },
+                        "event_page_url": {
+                          "type": "string"
+                        },
+                        "redirect_to": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "previous_redirect_to": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`confirmed` is not true, or `redirect_to` is not a published agent page of your organization that answers at that path (`details.code`: `not_an_agent_page`, `not_canonical`, `target_not_live`, `target_not_found`, `invalid_url`)."
+          },
+          "403": {
+            "description": "Needs `write:marketing` and the Sites create or update permission."
+          },
+          "404": {
+            "description": "The event has no event page."
+          }
+        }
+      }
+    },
     "/v1/organization/{orgId}/marketing/goals/turnout": {
       "get": {
         "operationId": "get-event-turnout",
@@ -3705,6 +3797,123 @@
           },
           "409": {
             "description": "The Site changed since `baseRevision` (`code: SITE_DRAFT_STALE`)."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/sites/{siteId}/uploads": {
+      "post": {
+        "operationId": "upload-page-images",
+        "summary": "Copy images onto Sessionboard for a page",
+        "description": "Copies public https images onto Sessionboard's content CDN so an agent page (a landing page Site) can use them: a page's images, `srcset` and CSS `url()` must come from `content-cdn.sessionboard.com`. Send `url` or `urls` (up to 25). JPG, PNG, WebP, GIF and AVIF, up to 15 MB each; the file's bytes decide the type, and SVG is refused. The same image always gets the same URL. Nothing on the Site changes: use the URLs in your next page write. Members of the organization only. Also at `POST /v1/sites/{siteId}/uploads`.",
+        "tags": [
+          "Sites"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SitesOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/SiteId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "One public https image URL."
+                  },
+                  "urls": {
+                    "type": "array",
+                    "maxItems": 25,
+                    "items": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "description": "Up to 25 public https image URLs."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "One answer per URL.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "uploaded": {
+                          "type": "integer"
+                        },
+                        "failed": {
+                          "type": "integer"
+                        },
+                        "uploads": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "source_url": {
+                                "type": "string"
+                              },
+                              "ok": {
+                                "type": "boolean"
+                              },
+                              "url": {
+                                "type": "string",
+                                "description": "The content-cdn URL (when ok)."
+                              },
+                              "content_type": {
+                                "type": "string"
+                              },
+                              "bytes": {
+                                "type": "integer"
+                              },
+                              "width": {
+                                "type": "integer",
+                                "nullable": true
+                              },
+                              "height": {
+                                "type": "integer",
+                                "nullable": true
+                              },
+                              "error": {
+                                "type": "string",
+                                "description": "When not ok: e.g. `not_an_image`, `private_url`, `too_large`, `timeout`."
+                              },
+                              "message": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Neither `url` nor `urls`, more than 25, or a URL that is not https."
+          },
+          "403": {
+            "$ref": "#/components/responses/SitesForbidden"
+          },
+          "404": {
+            "description": "Not found in your organization."
           }
         }
       }
