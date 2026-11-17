@@ -21128,8 +21128,8 @@ paths:
         Deletes a Site the person asked to remove. Send `confirm: true` only after they asked for it. A live Site
         (a published event page or landing page, or any Awards or Learning Site) is refused unless
         `unpublish: true`, because visitors lose it. The Site's address and custom domain are freed at once; the
-        domain stays connected under Settings → Domains for another Site. The delete is soft: Sessionboard support
-        can restore the Site. An event's portal is removed from within the event (403). Members of the
+        domain stays connected under Settings → Domains for another Site. Always a soft delete: the Site's pages,
+        versions and draft stay, and `POST .../sites/{siteId}/restore` brings it back. An event's portal is removed from within the event (403). Members of the
         organization only. From a connected assistant, with Assistant Approvals on, it answers `202
         needs_approval`. Also at `POST /v1/sites/{siteId}/delete`.
       tags:
@@ -21187,6 +21187,68 @@ paths:
           $ref: '#/components/responses/SitesForbidden'
         '404':
           description: Not found in your organization (or already deleted).
+  /v1/organization/{orgId}/sites/{siteId}/restore:
+    post:
+      operationId: restore-site
+      x-sb-product: [marketing, learning, awards]
+      summary: Restore a deleted Site
+      description: >-
+        Brings back a Site deleted with `POST .../sites/{siteId}/delete`, with its pages, versions and draft.
+        Send `confirm: true` only after the person asked for it. An event page or landing page comes back as a
+        draft; publish it again to put it live. If another Site took its address in the meantime, it is restored
+        as `<slug>-restored` and `slug_changed` is true. Its custom domain is not re-attached
+        (`previous_custom_domain`). Members of the organization only. Also at `POST /v1/sites/{siteId}/restore`.
+      tags:
+        - Sites
+      parameters:
+        - $ref: '#/components/parameters/SitesOrgId'
+        - $ref: '#/components/parameters/SiteId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [confirm]
+              properties:
+                confirm:
+                  type: boolean
+                  description: true only after the person asked to restore the Site.
+      responses:
+        '200':
+          description: Restored.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    type: object
+                    properties:
+                      restored:
+                        type: boolean
+                      site_id:
+                        type: string
+                        format: uuid
+                      name:
+                        type: string
+                      slug:
+                        type: string
+                      slug_changed:
+                        type: boolean
+                      previous_slug:
+                        type: string
+                      previous_custom_domain:
+                        type: string
+                        nullable: true
+                      note:
+                        type: string
+        '400':
+          description: '`confirm` is not true.'
+        '403':
+          $ref: '#/components/responses/SitesForbidden'
+        '404':
+          description: No deleted Site with this id in your organization.
   /v1/organization/{orgId}/sites/{siteId}/diff:
     get:
       operationId: get-site-diff
