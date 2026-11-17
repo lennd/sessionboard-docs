@@ -67,6 +67,342 @@
       "gated": "availability:limited_release",
       "product": "platform",
       "platform": false
+    },
+    {
+      "id": "signup-check-email-unified-message",
+      "title": "Sign-up page shows a single \"Check your email\" message whether or not the address already has an account",
+      "summary": "The sign-up page no longer reveals whether an email address has an existing account. After entering an email, every visitor sees the same **Check your email** message: \"I sent a message to {address}. If you're new to Sessionboard, it has a sign-in link and a 6-digit code. If you already have an account, it has a link to log in instead.\" Existing account holders receive a login link by email rather than an error on screen.",
+      "article": "/sessionboard-marketing/get-started#sign-up",
+      "kind": "fixed",
+      "module": "Settings",
+      "features": [
+        "marketing"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Sessionboard Marketing sign-up page"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Prevents the sign-up flow from leaking whether a given email address has a Sessionboard account, which is a privacy and security improvement for any visitor who lands on the sign-up page.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "If a customer reports that the sign-up page used to tell them an email was already registered and that message is now gone — this is intentional.",
+        "who_should_get_it": "All users who go through the Sessionboard Marketing self-serve sign-up flow.",
+        "staff_path": null,
+        "gotchas": "The API change (sessionboard-web-api#5497) must also be deployed; before it ships, existing account holders still see the old 409 error message. The account_exists error after a code is verified (verify/link-redeem steps) is unchanged.",
+        "talk_track": null,
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The get-started guide should document the unified \"Check your email\" message and note that existing account holders receive a login link rather than an on-screen error.",
+          "why_use_it": null,
+          "at": "2026-11-17T01:15:50.484Z"
+        }
+      },
+      "product": "marketing",
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1667"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": "feature:marketing (beta)",
+      "platform": false
+    },
+    {
+      "id": "public-api-delete-site",
+      "title": "Delete a Site via the public API or an AI assistant",
+      "summary": "The public API now exposes `POST /v1/sites/:siteId/delete`, letting integrations and AI assistants (including the MCP server's **delete_site** tool) soft-delete a Site. Passing `confirm: true` performs the deletion; a live Site also requires `unpublish: true`. The slug and custom domain are freed on deletion.",
+      "article": "/api/insights/mcp-server#available-tools",
+      "kind": "new",
+      "module": "CMS",
+      "features": [
+        "site_domains"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "API / MCP server — POST /v1/sites/:siteId/delete"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Teams managing Sites programmatically or through an AI assistant can now delete a Site without logging into the admin UI — useful for cleanup scripts, automated teardown after an event, or chat-driven site management via Claude or ChatGPT.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer asks about automating Site lifecycle management or cleaning up Sites via the API or an AI assistant.",
+        "who_should_get_it": "Customers using the public API or MCP server to manage Sites programmatically.",
+        "staff_path": "POST /v1/sites/:siteId/delete — requires confirm: true; live Sites also require unpublish: true.",
+        "gotchas": "Deletion is a soft-delete. A live Site will be refused unless unpublish: true is also passed. The slug and custom domain are freed on deletion, so they become available for reuse immediately.",
+        "talk_track": null,
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The MCP server guide's Available tools section should list the delete_site tool and document the confirm and unpublish parameters, the soft-delete behaviour, and the slug/domain release.",
+          "why_use_it": "The Sessionboard public API and MCP server let you manage Sites from your own scripts, CI pipelines, or AI assistants without touching the admin UI. The delete endpoint completes the Sites write surface, so you can create, update, and remove Sites in the same automated workflow. Passing `unpublish: true` alongside `confirm: true` safely takes a live Site offline and frees its slug and custom domain in one call.",
+          "at": "2026-11-17T01:31:31.776Z",
+          "permissions_to_confirm": [
+            "org.external_sites: delete"
+          ]
+        }
+      },
+      "related": [
+        "/site/site-builder",
+        "/api/authentication",
+        "/integrations/connect-ai-assistants"
+      ],
+      "product": "platform",
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-public-api#267"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "platform": false
+    },
+    {
+      "id": "agent-pages-shareable-review-links-feedback",
+      "title": "Agent pages: share a review link so teammates can annotate copy before publishing",
+      "summary": "Organizers can now generate a **Share link** for any agent-page draft and send it to teammates for review — no account required. Reviewers open the link, pick any element on the page with the mouse or keyboard, or select text and choose **Suggest copy for selection**, then leave a note or proposed replacement in a modal. Feedback is stored per element and surfaced to the AI agent via **list_page_feedback** / **get_page_feedback**, which can apply an accepted suggestion directly to the draft through **resolve_page_feedback**. Links can be scoped to org members only, set to expire (10 minutes to 30 days, 7-day default), and revoked at any time.",
+      "article": "/site/site-builder",
+      "related": [
+        "/agents/agent-window",
+        "/skills/sites"
+      ],
+      "kind": "new",
+      "module": "CMS",
+      "features": [
+        "marketing"
+      ],
+      "availability": "limited_release",
+      "enable": {
+        "how": "support",
+        "path": "Ask your Customer Success Manager to enable agent sites; then share a review link from the agent (Ask) or API: share_page_preview { site_id, … }"
+      },
+      "where": {
+        "scope": "org",
+        "path": "Agent-built pages on sites.sessionboard.com — share a review link via Ask or the API"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "A content or marketing team can circulate a draft agent page to colleagues or stakeholders before it goes live, collect pinned copy suggestions on specific elements, and let the AI agent apply approved edits directly to the draft — all without giving reviewers admin access or publishing anything prematurely.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Agent sites are limited release. Pages written before this change have no element anchors until they are re-saved; share_page_preview returns a note warning about this. Confirm the customer has agent sites enabled before surfacing the feature."
+        },
+        "when_to_bring_up": "When a customer with agent sites asks how to get stakeholder sign-off on a draft page before publishing, or when they want a structured copy-review process without granting admin access.",
+        "who_should_get_it": "Customers who use agent-built pages (sites.sessionboard.com) and have a team or external stakeholders who need to review copy before it goes live.",
+        "staff_path": "Invoke share_page_preview via Ask or the MCP API; the returned review_url is the shareable link. Manage links with list_page_shares and revoke_page_share.",
+        "gotchas": "Pages must be re-saved after this release to stamp element anchors; without anchors the agent cannot reliably locate and apply suggestions. The review overlay is only injected on share-link renders, not on ordinary previews. Feedback from the overlay posts to a public endpoint (CORS *, no credentials) authenticated only by the link token — revoking the link immediately cuts off further submissions. The admin-app has no UI for feedback; it is accessible only through Ask / MCP.",
+        "talk_track": "Instead of emailing a screenshot and hoping someone reads it, you send one link. Your reviewer clicks the exact sentence they want changed, types the new copy, and your AI agent picks it up and applies it to the draft — nothing goes live until you approve.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The site-builder guide should document how to generate and revoke share links (share_page_preview / revoke_page_share / list_page_shares), the review overlay UX for recipients, how feedback is stored and surfaced (list_page_feedback / get_page_feedback / resolve_page_feedback), the anchor-stamping requirement (pages must be re-saved to get anchors), and link expiry and audience-scoping options.",
+          "why_use_it": "Agent pages let you publish a fully branded public presence on sites.sessionboard.com without writing code, with an AI agent that writes, edits and publishes pages on your behalf. The review workflow lets your whole team — including people without a Sessionboard account — annotate a draft by clicking elements or selecting text, so copy feedback is tied to the exact spot on the page rather than scattered across emails or documents. The agent reads every open suggestion, can apply accepted copy to the draft in one step, and never publishes until you say so, keeping the review loop fast and the live site clean.",
+          "at": "2026-11-17T01:38:17.289Z"
+        }
+      },
+      "product": "platform",
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5498"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:limited_release",
+      "platform": false
+    },
+    {
+      "id": "restore-deleted-site",
+      "title": "Restore a deleted Site via the API",
+      "summary": "A new `POST /v1/sites/:siteId/restore` endpoint brings back a Site that was deleted with `delete_site`. The restore recovers the site's pages, versions and draft. If another site has claimed the original slug in the meantime, that slug is automatically renamed to `-restored` so the original slug is returned to the recovered site. The restored site is left not-live, giving you a chance to review before republishing.",
+      "article": "/api/changelog#november-2026",
+      "related": [
+        "/site/site-builder"
+      ],
+      "kind": "new",
+      "module": "CMS",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Public API → POST /v1/sites/:siteId/restore"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Teams that accidentally delete a site through the API can recover it — including all pages, versions and draft content — without rebuilding from scratch. The slug conflict resolution means restoring a site won't silently break another live site.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer using the public API reports accidentally deleting a site and asks whether the content can be recovered.",
+        "who_should_get_it": "Any customer using the Sites endpoints of the public API.",
+        "staff_path": "POST /v1/sites/:siteId/restore — requires a valid API token with site write scope.",
+        "gotchas": "The restored site is always left not-live; the customer must republish it manually. If another site had taken the original slug, that site's slug is renamed to '<slug>-restored' — worth flagging if the customer has a live site at that slug.",
+        "talk_track": null,
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The API changelog and site-builder guide should document the restore endpoint, its behaviour when a slug conflict exists, and the fact that the restored site is left not-live.",
+          "why_use_it": "The Sites API lets you create, update, publish and delete program sites programmatically, making it straightforward to manage sites as part of automated workflows or CI/CD pipelines. The restore endpoint means a deletion is never permanent: you can recover a site and all its content at any time, and the platform handles slug conflicts automatically so nothing else breaks when you do.",
+          "at": "2026-11-17T01:44:50.539Z",
+          "permissions_to_confirm": [
+            "org.external_sites: update"
+          ]
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-public-api#268"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "product": "platform",
+      "platform": false
+    },
+    {
+      "id": "sites-delete-restore-api-mcp",
+      "title": "Delete and restore Sites via the API and AI assistants; archived events' Sites hidden from list",
+      "summary": "A new **delete_site** tool and API endpoint lets org members soft-delete any Site — freeing its slug and custom domain immediately so they can be reused. A matching **restore_site** tool reverses the deletion. Live Sites (published event pages, landing pages, or any Awards, Learning or portal Site) require an explicit **unpublish** flag before deletion is accepted. **list_sites** now omits Sites belonging to archived events by default; pass **include_archived=true** to bring them back.",
+      "article": "/site/site-builder",
+      "related": [
+        "/api/insights/mcp-server",
+        "/skills/sites"
+      ],
+      "kind": "new",
+      "module": "CMS",
+      "features": [
+        "site_domains"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "API / MCP: delete_site and restore_site tools; list_sites ?include_archived=true"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Teams using AI assistants or the API to manage Sites can now clean up test or stale Sites programmatically — including reclaiming the slug or custom domain for a new Site — without having to log in to the UI. Archived events no longer clutter the Sites list returned to assistants and integrations.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer uses the MCP server or public API to manage Sites and asks how to remove a test or stale Site, or when they report that archived events' Sites are cluttering their list_sites results.",
+        "who_should_get_it": "Any customer using the Sessionboard API or an AI assistant (Claude, ChatGPT, Copilot) to manage Sites programmatically.",
+        "staff_path": "POST /site-builder/org/:orgId/:siteId/delete — requires confirm: true; add unpublish: true for live Sites. GET /site-builder/org/:orgId/sites?include_archived=true to include archived events' Sites.",
+        "gotchas": "Only org members can delete a Site — event-scoped users cannot. An event_portal Site returns 403 (same rule as Awards Sites). A KV failure when clearing a custom domain blocks the delete entirely. The delete is soft (paranoid), so slug and domain are freed immediately but the record is recoverable via restore_site.",
+        "talk_track": "If you're building automations or using an AI assistant to spin up and tear down Sites, you can now delete and restore them through the same API or MCP tools you use to create them. Archived events' Sites are also filtered out of list results by default, keeping your workspace tidy.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The site-builder guide should document the delete_site and restore_site API/MCP tools, the confirm and unpublish flags, which Site types are refused (event_portal, live Sites without unpublish), and the include_archived query parameter for list_sites.",
+          "why_use_it": "The Site builder lets you publish event pages, landing pages, portals and award sites directly from Sessionboard. When you manage Sites through the API or an AI assistant, you have the same full lifecycle control you get in the UI — create, edit, delete and restore — so automated workflows and AI agents stay in sync with your actual program without manual cleanup steps.",
+          "at": "2026-11-17T02:03:16.986Z"
+        }
+      },
+      "product": "platform",
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5514"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "platform": false
     }
   ]
 }
