@@ -1721,7 +1721,7 @@
       "get": {
         "operationId": "list-sites",
         "summary": "List Sites",
-        "description": "The organization's Sites in Marketing, Learning and Awards, most recently changed first (up to 200). Each carries its `revision` (send it back on your next write) and whether it has unpublished changes. Also at `GET /v1/sites`.",
+        "description": "The organization's Sites in Marketing, Learning and Awards, most recently changed first (up to 200). Each carries its `revision` (send it back on your next write) and whether it has unpublished changes. Sites whose event is archived are left out unless `include_archived=true`. Also at `GET /v1/sites`.",
         "tags": [
           "Sites"
         ],
@@ -1752,6 +1752,19 @@
               "pattern": "^\\d+$"
             },
             "description": "Only this event's Sites (Marketing event pages)."
+          },
+          {
+            "name": "include_archived",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            "description": "Also list Sites whose event is archived. They are left out by default."
           }
         ],
         "responses": {
@@ -2118,6 +2131,103 @@
           },
           "409": {
             "description": "The Site changed since `baseRevision` (`code: SITE_DRAFT_STALE`)."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/sites/{siteId}/delete": {
+      "post": {
+        "operationId": "delete-site",
+        "summary": "Delete a Site",
+        "description": "Deletes a Site the person asked to remove. Send `confirm: true` only after they asked for it. A live Site (a published event page or landing page, or any Awards or Learning Site) is refused unless `unpublish: true`, because visitors lose it. The Site's address and custom domain are freed at once; the domain stays connected under Settings → Domains for another Site. The delete is soft: Sessionboard support can restore the Site. An event's portal is removed from within the event (403). Members of the organization only. From a connected assistant, with Assistant Approvals on, it answers `202 needs_approval`. Also at `POST /v1/sites/{siteId}/delete`.",
+        "tags": [
+          "Sites"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SitesOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/SiteId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "confirm"
+                ],
+                "properties": {
+                  "confirm": {
+                    "type": "boolean",
+                    "description": "true only after the person asked to delete the Site."
+                  },
+                  "unpublish": {
+                    "type": "boolean",
+                    "description": "true to take a live Site offline as part of the delete."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Deleted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "deleted": {
+                          "type": "boolean"
+                        },
+                        "site_id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "was_live": {
+                          "type": "boolean"
+                        },
+                        "freed": {
+                          "type": "object",
+                          "properties": {
+                            "slug": {
+                              "type": "string"
+                            },
+                            "custom_domain": {
+                              "type": "string",
+                              "nullable": true
+                            }
+                          }
+                        },
+                        "restorable": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`confirm` is not true, or the Site is live and `unpublish` is not true."
+          },
+          "403": {
+            "$ref": "#/components/responses/SitesForbidden"
+          },
+          "404": {
+            "description": "Not found in your organization (or already deleted)."
           }
         }
       }
