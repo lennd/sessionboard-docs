@@ -5258,6 +5258,123 @@
         }
       }
     },
+    "/v1/organization/{orgId}/sites/{siteId}/uploads": {
+      "post": {
+        "operationId": "upload-page-images",
+        "summary": "Copy images onto Sessionboard for a page",
+        "description": "Copies public https images onto Sessionboard's content CDN so an agent page (a landing page Site) can use them: a page's images, `srcset` and CSS `url()` must come from `content-cdn.sessionboard.com`. Send `url` or `urls` (up to 25). JPG, PNG, WebP, GIF and AVIF, up to 15 MB each; the file's bytes decide the type, and SVG is refused. The same image always gets the same URL. Nothing on the Site changes: use the URLs in your next page write. Members of the organization only. Also at `POST /v1/sites/{siteId}/uploads`.",
+        "tags": [
+          "Sites"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SitesOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/SiteId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "One public https image URL."
+                  },
+                  "urls": {
+                    "type": "array",
+                    "maxItems": 25,
+                    "items": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "description": "Up to 25 public https image URLs."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "One answer per URL.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "uploaded": {
+                          "type": "integer"
+                        },
+                        "failed": {
+                          "type": "integer"
+                        },
+                        "uploads": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "source_url": {
+                                "type": "string"
+                              },
+                              "ok": {
+                                "type": "boolean"
+                              },
+                              "url": {
+                                "type": "string",
+                                "description": "The content-cdn URL (when ok)."
+                              },
+                              "content_type": {
+                                "type": "string"
+                              },
+                              "bytes": {
+                                "type": "integer"
+                              },
+                              "width": {
+                                "type": "integer",
+                                "nullable": true
+                              },
+                              "height": {
+                                "type": "integer",
+                                "nullable": true
+                              },
+                              "error": {
+                                "type": "string",
+                                "description": "When not ok: e.g. `not_an_image`, `private_url`, `too_large`, `timeout`."
+                              },
+                              "message": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Neither `url` nor `urls`, more than 25, or a URL that is not https."
+          },
+          "403": {
+            "$ref": "#/components/responses/SitesForbidden"
+          },
+          "404": {
+            "description": "Not found in your organization."
+          }
+        }
+      }
+    },
     "/v1/organization/{orgId}/sites/{siteId}/delete": {
       "post": {
         "operationId": "delete-site",
