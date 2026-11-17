@@ -2540,6 +2540,73 @@
         }
       }
     },
+    "/v1/organization/{orgId}/sites/{siteId}/refresh-live-page": {
+      "post": {
+        "operationId": "refresh-site-live-page",
+        "summary": "Refresh a Site's live page",
+        "description": "Makes the live Site show what is published right now. Public event pages and the data they load are cached for up to a minute, and every publish already clears that cache, so call this only when the live page still looks old. Nothing on the Site changes. Limited to 6 calls a minute per Site. Also at `POST /v1/sites/{siteId}/refresh-live-page`.",
+        "tags": [
+          "Sites"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SitesOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/SiteId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`refreshed: true` when the cached copies were dropped. `refreshed: false` with `reason: not_live` for a Site that was never published.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "refreshed": {
+                          "type": "boolean"
+                        },
+                        "reason": {
+                          "type": "string",
+                          "enum": [
+                            "not_live",
+                            "not_configured"
+                          ]
+                        },
+                        "url": {
+                          "type": "string",
+                          "description": "The live page's address."
+                        },
+                        "cached": {
+                          "type": "boolean",
+                          "description": "False when the page itself is never cached (a custom domain); its data still is."
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/SitesForbidden"
+          },
+          "404": {
+            "description": "No Site with this id in the organization."
+          },
+          "429": {
+            "description": "More than 6 refreshes of this Site in a minute."
+          },
+          "502": {
+            "description": "The cache could not be cleared (`code: SITE_EDGE_PURGE_FAILED`). Try again in a minute."
+          }
+        }
+      }
+    },
     "/v1/organization/{orgId}/sites/{siteId}/versions": {
       "get": {
         "operationId": "list-site-versions",
