@@ -25,7 +25,27 @@ const UNLISTED = new Set([
   ...(academyOpen(site) ? [] : [`https://${site.canonicalHost}/${ACADEMY_SLUG}`]),
 ]);
 
+/**
+ * starlight-llms-txt only applies its `exclude` option to llms-small.txt: its /llms-full.txt (and
+ * llms-custom) routes call generateLlmsTxt() without it, so every restricted page (site.json
+ * staffOnly / signedInOnly) was published to the public and to crawlers. Make the generator fall
+ * back to the plugin's configured `exclude` (set below to staffOnlyGlobs). Fails the build if a
+ * plugin upgrade changes the line we rewrite, so the guard can never silently stop working.
+ * scripts/check-public-exports.mjs verifies the result in dist/.
+ */
+const llmsExcludeFix = {
+  name: 'sessionboard-llms-exclude',
+  enforce: 'pre',
+  transform(code, id) {
+    if (!/starlight-llms-txt[\\/]generator\.ts$/.test(id.split('?')[0])) return null;
+    const needle = 'if (exclude) {';
+    if (!code.includes(needle)) throw new Error('starlight-llms-txt generator changed: update llmsExcludeFix in astro.config.mjs');
+    return code.replace(needle, 'exclude = [...(exclude ?? []), ...starlightLllmsTxtContext.exclude];\n\tif (exclude.length) {');
+  },
+};
+
 export default defineConfig({
+  vite: { plugins: [llmsExcludeFix] },
   site: `https://${site.canonicalHost}`,
   trailingSlash: 'never',
   // Emit /path.html instead of /path/index.html so Workers assets serve
