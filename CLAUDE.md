@@ -38,6 +38,7 @@ Every video in an article (or in the product) is a chapter in `sessionboard-tam/
 
 UI chrome is 1x JPEG-compressed in the article if you capture it wrong — text goes muddy and tabpanels look like a tall empty card. Do this every time:
 
+0. **Northwind Health Summit 2027 only. Never customer data** (Josh, 2026-11-17). Every screenshot, GIF, release-note thumbnail and video frame comes from the Northwind fixture (`sessionboard-tam/training-videos/fixture`), logged in as the render user. Never capture a customer's org, a sandbox copy of one, a local database restored from prod, or a real person's name, email, logo or session title. This covers staff emails too. An example email or message is written as text with Northwind names, not pasted as a screenshot. If the fixture lacks the data a shot needs, extend the fixture. A 2026-11-17 audit removed 20 images that showed real customers' events; do not restore them from git history.
 1. **PNG, `deviceScaleFactor: 2`.** Never JPEG for product UI. Never html2canvas (garbles text).
 2. **Clip the control the sentence is about**, not `main` / `[role=tabpanel]` / the viewport. Tabpanels are often `min-height: remaining viewport`, so a locator screenshot of the panel is a short table plus a huge blank.
 3. Persist with **Playwright** `page.screenshot({ type: 'png', clip, animations: 'disabled' })` into `public/images/kb/`. Chrome DevTools is fine for finding the UI; its `filePath` cannot write into this repo.
