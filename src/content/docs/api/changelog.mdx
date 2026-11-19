@@ -19,6 +19,14 @@ The Sessionboard public API lets you read and write event data programmatically.
 
 ## November 2026
 
+### November 19 — Updating a tour: every stop, undo, a details-updated email and review links
+
+**Added.** Site versions: `GET /v1/organization/{orgId}/sites/{siteId}/versions/diff` compares any two versions (or live and the draft), and `GET …/versions/{versionId}/preview` returns a preview link for any saved version. Versions now carry `created_by_name`, a plain `label` and `live`, and a new `draft` source keeps each step of an API or assistant's draft edits (the newest 20). Review links: `POST`/`GET …/sites/{siteId}/shares`, `POST …/shares/{shareId}/revoke` and the feedback routes, now on event pages and every Site type, with an optional Approve (`ask_approval`, `approver_email`) that records who approved which draft revision. Marketing: `GET /v1/marketing/pages/events/{eventId}/history` and `POST …/history/{changeId}/restore` list and undo changes to an event's basics and registration form, and every such change now answers with `kept.restore`; `POST /v1/marketing/events/{eventId}/details-update/preview` and `…/send` (needs `confirmed: true`) tell people already signed up that the details changed, with a new `gathering-details-updated` email you can design. `POST …/registration-form/questions` takes `shared: true` for an organization question other events can reuse. The MCP server adds `list_event_history`, `restore_event_setting`, `preview_details_update`, `send_details_update`, `preview_site_version`, `compare_site_versions`, `share_page_preview`, `list_page_shares`, `revoke_page_share`, `list_page_feedback` and `resolve_page_feedback`, and `also_event_ids` / `apply_to_tour` on `update_event_page_draft`, `edit_event_page`, `add_registration_question` and `update_registration_form`.
+
+**Fixed.** The AI activity log now counts the changes in a page or Site edit; it showed 0.
+
+New endpoints and fields only; nothing existing changes.
+
 ### November 17 — Refresh a Site's live page
 
 **Added.** `POST /v1/organization/{orgId}/sites/{siteId}/refresh-live-page` (also `POST /v1/sites/{siteId}/refresh-live-page` with the organization from the token; `write:sites` or the Site's product write scope) makes the live Site show what is published right now. Public event pages and their data are cached for up to a minute, and every publish now clears that cache on its own, so this is for when the live page still looks old. Nothing on the Site changes. The MCP server adds `refresh_live_page`. New endpoint only; nothing existing changes.

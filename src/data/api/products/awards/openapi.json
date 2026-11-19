@@ -2770,6 +2770,358 @@
         }
       }
     },
+    "/v1/organization/{orgId}/sites/{siteId}/versions/diff": {
+      "get": {
+        "operationId": "compare-site-versions",
+        "summary": "Compare two versions of a Site",
+        "description": "What changed between two saved states of a Site, in plain words. `from` and `to` are version ids, or `live` / `draft` (default `live` → `draft`, the same as the diff). Changes nothing. Also at `GET /v1/sites/{siteId}/versions/diff`.",
+        "tags": [
+          "Sites"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SitesOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/SiteId"
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "A version id, `live` or `draft` (default `live`)."
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "A version id, `live` or `draft` (default `draft`)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The two states compared, with `same` when nothing differs.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "allOf": [
+                        {
+                          "$ref": "#/components/schemas/SiteDiff"
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "same": {
+                              "type": "boolean"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/SitesForbidden"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/sites/{siteId}/versions/{versionId}/preview": {
+      "get": {
+        "operationId": "preview-site-version",
+        "summary": "Preview a version of a Site",
+        "description": "A two-hour `preview_url` that shows one saved version in the real renderer exactly as it was saved, not the current draft. Takes the same `role`, `device`, `page` and `path` as the draft preview. Changes nothing. Also at `GET /v1/sites/{siteId}/versions/{versionId}/preview`.",
+        "tags": [
+          "Sites"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SitesOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/SiteId"
+          },
+          {
+            "$ref": "#/components/parameters/SiteVersionId"
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "device",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "desktop",
+                "tablet",
+                "mobile"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "path",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The preview link, when it expires, and the version it shows.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "preview_url": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "expires_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "version": {
+                          "type": "object"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/SitesForbidden"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/sites/{siteId}/shares": {
+      "post": {
+        "operationId": "share-site-draft",
+        "summary": "Share a review link on the draft",
+        "description": "A revocable review link on the Site's draft for teammates (7 days by default, 10 minutes to 30 days). It follows later draft edits, is not indexed and never publishes. `ask_approval` adds an Approve button that records who approved and which draft revision they saw; `approver_email` lets only that person approve. Also at `POST /v1/sites/{siteId}/shares`.",
+        "tags": [
+          "Sites"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SitesOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/SiteId"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "maxLength": 300
+                  },
+                  "expires_in": {
+                    "type": "integer",
+                    "minimum": 600,
+                    "maximum": 2592000
+                  },
+                  "audience": {
+                    "type": "string",
+                    "enum": [
+                      "link",
+                      "team"
+                    ]
+                  },
+                  "label": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "ask_approval": {
+                    "type": "boolean"
+                  },
+                  "approver_email": {
+                    "type": "string",
+                    "format": "email"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The link. Send `review_url`; `approve_url` is there when approval was asked for.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "allOf": [
+                        {
+                          "$ref": "#/components/schemas/SiteReviewShare"
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "review_url": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "page_url": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "approve_url": {
+                              "type": "string"
+                            },
+                            "revision": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/SitesForbidden"
+          }
+        }
+      },
+      "get": {
+        "operationId": "list-site-shares",
+        "summary": "List a Site's review links",
+        "description": "Every review link, newest first, with the latest approval on each and whether the draft has changed since. Also at `GET /v1/sites/{siteId}/shares`.",
+        "tags": [
+          "Sites"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SitesOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/SiteId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "revision": {
+                          "type": "string"
+                        },
+                        "shares": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/SiteReviewShare"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/SitesForbidden"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/sites/{siteId}/shares/{shareId}/revoke": {
+      "post": {
+        "operationId": "revoke-site-share",
+        "summary": "Close a review link",
+        "description": "Closes the link now; feedback and approvals already sent stay. Also at `POST /v1/sites/{siteId}/shares/{shareId}/revoke`.",
+        "tags": [
+          "Sites"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SitesOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/SiteId"
+          },
+          {
+            "name": "shareId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The closed link.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "$ref": "#/components/schemas/SiteReviewShare"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/SitesForbidden"
+          }
+        }
+      }
+    },
     "/v1/organization/{orgId}/sites/{siteId}/versions/{versionId}/restore": {
       "post": {
         "operationId": "restore-site-version",
@@ -4626,8 +4978,18 @@
             "enum": [
               "publish",
               "baseline",
-              "checkpoint"
-            ]
+              "checkpoint",
+              "draft"
+            ],
+            "description": "`draft` is one step of an API or assistant's draft edits (the newest 20 per Site are kept), so a single edit can be undone."
+          },
+          "label": {
+            "type": "string",
+            "description": "The source in plain words (Published, Kept draft, Draft step, …)."
+          },
+          "live": {
+            "type": "boolean",
+            "description": "Whether this version went live."
           },
           "summary": {
             "type": "array",
@@ -4641,9 +5003,86 @@
               "null"
             ]
           },
+          "created_by_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The name of the person who made it."
+          },
           "created_at": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "SiteReviewShare": {
+        "type": "object",
+        "properties": {
+          "share_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "path": {
+            "type": "string"
+          },
+          "audience": {
+            "type": "string",
+            "enum": [
+              "link",
+              "team"
+            ]
+          },
+          "label": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "revoked_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "approval": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "The latest approval on this link.",
+            "properties": {
+              "by": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string"
+                  }
+                }
+              },
+              "at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "revision": {
+                "type": "string"
+              },
+              "current": {
+                "type": "boolean",
+                "description": "False once the draft has changed since it was approved."
+              }
+            }
           }
         }
       }
