@@ -3122,6 +3122,194 @@
         }
       }
     },
+    "/v1/organization/{orgId}/sites/{siteId}/feedback": {
+      "get": {
+        "operationId": "list-site-feedback",
+        "summary": "List feedback from review links",
+        "description": "What reviewers sent through the Site's review links: notes, copy suggestions and approvals, with who, where and when, plus counts by status. `status` is open (default), accepted, rejected, applied or all. Also at `GET /v1/sites/{siteId}/feedback`.",
+        "tags": [
+          "Sites"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SitesOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/SiteId"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "open",
+                "accepted",
+                "rejected",
+                "applied",
+                "all"
+              ]
+            }
+          },
+          {
+            "name": "path",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The items and counts.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "counts": {
+                          "type": "object"
+                        },
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/SitesForbidden"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/sites/{siteId}/feedback/{feedbackId}": {
+      "get": {
+        "operationId": "get-site-feedback",
+        "summary": "Get one feedback item",
+        "description": "One item with where it points on the current draft and whether an accepted copy suggestion can be applied. Also at `GET /v1/sites/{siteId}/feedback/{feedbackId}`.",
+        "tags": [
+          "Sites"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SitesOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/SiteId"
+          },
+          {
+            "name": "feedbackId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/SitesForbidden"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/sites/{siteId}/feedback/{feedbackId}/resolve": {
+      "post": {
+        "operationId": "resolve-site-feedback",
+        "summary": "Accept or reject a feedback item",
+        "description": "`action` accept or reject. On an agent site, `apply: true` with accept writes an accepted copy suggestion into the draft. Nothing is published. Also at `POST /v1/sites/{siteId}/feedback/{feedbackId}/resolve`.",
+        "tags": [
+          "Sites"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SitesOrgId"
+          },
+          {
+            "$ref": "#/components/parameters/SiteId"
+          },
+          {
+            "name": "feedbackId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "action"
+                ],
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "accept",
+                      "reject"
+                    ]
+                  },
+                  "apply": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The item as resolved, and the new draft's `what_changed` when applied.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/SitesForbidden"
+          }
+        }
+      }
+    },
     "/v1/organization/{orgId}/sites/{siteId}/versions/{versionId}/restore": {
       "post": {
         "operationId": "restore-site-version",
