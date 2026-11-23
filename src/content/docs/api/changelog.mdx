@@ -19,6 +19,12 @@ The Sessionboard public API lets you read and write event data programmatically.
 
 ## November 2026
 
+### November 23 — Redirects on your own domains
+
+**Added.** `GET`, `PUT /v1/marketing/pages/domains/{domainId}/redirects` and `DELETE /v1/marketing/pages/domains/{domainId}/redirects/{redirectId}` (also under `/v1/organization/{orgId}/marketing/pages/...`): a list of redirect rules per custom domain, answered before any page on that domain, `/` included. A rule has `id`, `from` (an exact path, or a prefix ending in `/*`; `/*` is the whole domain), `to` (an `https` URL or a path on the same domain; a `to` ending in `/*` keeps the rest of a prefix path), `status` (`301`, the default, or `302`) and `enabled`. Exact paths win over prefixes and the longest prefix wins; the visitor's query string is kept unless `to` has one. `PUT` takes exactly one of `ops` (`add`, `update`, `remove` by `id` or `from`), `redirects` (the whole list) or `restore_version`, and an optional `if_version` that answers `409` when the list changed since it was read. Writes refuse loops and chains on the same domain, non-`https` targets, duplicate paths and more than 200 rules (`400` with a `code`). Every change bumps `version` and is kept with who made it and when: `GET ?history=true` adds `versions`, and every write returns a `summary` and `undo.restore_version`. Changes are live within about a minute. Same scopes as the other pages routes (`read:marketing` / `write:marketing`); not available to keys restricted to particular events. The MCP server adds `list_domain_redirects`, `set_domain_redirects` and `remove_domain_redirect`.
+
+New endpoints only; nothing existing changes.
+
 ### November 23 — Breaking: an unset checkbox custom field reads `"No"`, not `null` (takes effect December 23, 2026)
 
 **Breaking — takes effect December 23, 2026.** On every read that returns custom fields (sessions, contacts, speakers, sponsors, exhibitors), a `checkbox` custom field that was never set, or whose stored value is `null`, now returns `"No"` instead of `null`. A checked box still returns `"Yes"`, an unchecked box still returns `"No"`, and empty fields of every other type still return `null`. The values stay strings; they are not changing to booleans. Writes are unchanged (`true` / `false`).

@@ -3,7 +3,7 @@ title: "Send email from your own domain"
 description: "Set up the address your Sessionboard emails come from and connect web addresses for your Sites in Settings > Domains: get the DNS records to whoever runs your domain, see when it is verified, and choose which Site uses each domain."
 sidebar:
   label: "Domains"
-reviewed: "2026-10-21"
+reviewed: "2026-11-23"
 features: ["custom_sending_domain", "site_domains"]
 enable_path: "Ask your Customer Success Manager to enable Custom Sending Domain, then Settings → Domains"
 permissions: ["org.settings.update", "event.settings.update"]
@@ -199,6 +199,27 @@ An organization domain can also serve every public page your organization has, t
 Once it is on, every public link Sessionboard builds for your organization uses your domain: emails such as **View details**, event page redirects, share links and page addresses. Another organization's pages never answer on your domain, and an address that is not one of your pages shows a "Page not found" page. A Site that has a domain of its own keeps it.
 
 One domain per organization can do this, and it must be one of the organization's domains, not an event's. Turn it on through your AI assistant or the API: ask your assistant to make the domain serve every page and to set its home page, or call `PUT /v1/marketing/pages/domains/{domainId}/home` with `serves_org_pages: true` and the home page's `site_id`. `GET` on the same address shows what the domain serves. Turning it on for one domain turns it off on the previous one, which then serves only its home page.
+
+### Redirects
+
+Each of your organization's domains keeps its own list of redirects, like the 301 redirects in Webflow. A redirect sends visitors from a path on your domain to another address before any page answers there, the home page at `/` included. Use it when a page moves, when an old link is already in emails and search results, or to send a whole domain somewhere else.
+
+In **Settings → Domains**, open **Redirects** on a domain. Each rule has:
+
+| Field | What to enter |
+| --- | --- |
+| **From** | A path on this domain, such as `/old-agenda`. End it in `/*` to cover everything under a path: `/2026/*` matches `/2026` and every page below it. `/*` on its own is the whole domain. Letters are matched without regard to case, and a trailing `/` makes no difference. |
+| **To** | Where visitors go: an `https://` address, or a path on the same domain such as `/p/season/agenda`. When **From** ends in `/*`, end **To** in `/*` to keep the rest of the path: `/2026/*` → `https://archive.example.com/*` sends `/2026/labs/dc` to `https://archive.example.com/labs/dc`. |
+| **Type** | **301 Permanent** (the default; search engines move the old address to the new one) or **302 Temporary**. |
+| **On / Off** | Off keeps the rule without using it. |
+
+A visitor's query string, such as `?utm_source=newsletter`, is passed on unless **To** has one of its own. An exact path wins over a `/*` rule, and among `/*` rules the longest one wins.
+
+Changes answer on your domain within about a minute. Sessionboard refuses a rule that would send visitors in a loop or through a second redirect (point it straight at the final address), a **To** that is not `https`, two rules for the same path, and more than 200 rules on one domain. A rule for `/` or `/*` sends your home page, or every page, away, so the screen asks you to confirm it.
+
+The list can be sorted, filtered and exported as a CSV file. Deleting a rule asks for confirmation. Every change is kept under **History** with who made it and when, and **Restore** puts any earlier list back; the restore is kept as a new change, so it can be undone too.
+
+Your AI assistant can do the same: ask it to list, add, change or remove redirects on a domain (`list_domain_redirects`, `set_domain_redirects`, `remove_domain_redirect`), or use `GET`, `PUT` and `DELETE /v1/marketing/pages/domains/{domainId}/redirects` in the API.
 
 ### Remove a domain
 
