@@ -1864,6 +1864,273 @@
       "media": [],
       "gated": null,
       "platform": false
+    },
+    {
+      "id": "self-serve-access-hold-screen",
+      "title": "New sign-ups land on a holding screen until staff grant access",
+      "summary": "After completing sign-up for a self-serve product, users who are placed on an access hold see a **\"Thanks, you're on the list\"** holding screen instead of entering the product. Any later sign-in attempt while the hold is active returns the same screen. Staff can review held accounts and click **Grant access** in the **Waiting for access** section of the self-serve funnel admin page.",
+      "article": "/get-started/early-access",
+      "kind": "new",
+      "module": "Settings",
+      "features": [],
+      "availability": "limited_release",
+      "enable": {
+        "how": "support",
+        "path": "Ask your Customer Success Manager to enable the self-serve access hold; then /admin/self-serve-funnel → Waiting for access"
+      },
+      "where": {
+        "scope": "org",
+        "path": "/signup/hold (holding screen for new sign-ups) and /admin/self-serve-funnel → Waiting for access (staff grant)"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "When Sessionboard wants to review new self-serve sign-ups before granting product access, the holding screen keeps users in a clear waiting state and staff can grant access one row at a time from the funnel admin page — no manual token work or support tickets needed.",
+      "internal": {
+        "cs_action": {
+          "kind": "must_enable",
+          "note": "The access hold is a staff-controlled feature toggled at the API level. CS must coordinate with engineering to enable it for a product; the staff grant UI is at /admin/self-serve-funnel."
+        },
+        "when_to_bring_up": "When the team is rolling out a new self-serve product and wants a manual approval step before users get in.",
+        "who_should_get_it": "Internal Sessionboard staff managing self-serve product launches that require a controlled rollout.",
+        "staff_path": "/admin/self-serve-funnel → Waiting for access",
+        "gotchas": "The ?new=1 bypass in the sign-up URL lets staff test the full sign-up flow without hitting the hold. The holding screen is public and requires no authentication. A 403 with code access_held on any API call also drops the user's tokens and redirects them to the holding screen.",
+        "talk_track": "If a new sign-up contacts support saying they finished sign-up but can't get in, check /admin/self-serve-funnel — they are likely in the Waiting for access queue and just need a Grant access click.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The Early Access guide does not cover the self-serve access hold flow; a new section or guide should explain what the holding screen means for users and how staff grant access from the funnel admin page.",
+          "why_use_it": "The access hold gives Sessionboard staff a controlled gate between sign-up and first use of a self-serve product. New sign-ups receive a clear, branded confirmation that their request is received, while staff review each account and grant access when ready. The flow works across all sign-in methods — email code, magic link, Google and Microsoft — so no one slips through to the product before approval.",
+          "at": "2026-11-20T20:26:43.104Z"
+        }
+      },
+      "product": "platform",
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1712"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": "availability:limited_release",
+      "platform": false
+    },
+    {
+      "id": "free-batch-send-notices",
+      "title": "Free-batch notices on reviewer invite and contact campaign send screens",
+      "summary": "When a free-trial batch is running low or exhausted, send screens in Awards (invite reviewers) and Marketing (contact campaign **Notify** dialog) now show how many invitations remain in the batch and how many would be left out. If more recipients are chosen than the batch allows, two explicit choices appear: **Invite the first N now** or **Add a card and invite all M**. After sending, the confirmation states what went out and what remains. The **Billing** page for both Awards and Marketing shows the remaining batch count per product.",
+      "article": "/sessionboard-awards/plan-and-billing",
+      "related": [
+        "/sessionboard-marketing/plan-and-billing",
+        "/sessionboard-awards/review/invite-and-assign-reviewers",
+        "/marketing/advocacy"
+      ],
+      "kind": "new",
+      "module": "Awards",
+      "features": [
+        "awards",
+        "marketing"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Awards → Review → Reviewers (invite dialog) · Marketing → Campaigns → Notify dialog · Awards Billing · Marketing Billing"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Trial customers who are approaching or have hit their free send limit will never experience a silent partial send. They see exactly how many invitations remain, can choose to send within the batch now, or add a card to send to everyone at once — keeping them in control and reducing support tickets about missing invitations.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Notices only appear when the free batch is nearly exhausted or used up and no card is on file. Customers with a card on file see no change. The underlying batch rule ships in web-api #5609; both PRs must be live for the notices to appear."
+        },
+        "when_to_bring_up": "When a trial customer asks why some reviewers or campaign recipients did not receive an invitation, or when a trial customer is approaching their send limit.",
+        "who_should_get_it": "All trial customers using Awards reviewer invites or Marketing contact campaigns who have not yet added a payment card.",
+        "staff_path": "Awards → Review → Reviewers → Invite · Marketing → Campaigns → Notify · Awards Billing · Marketing Billing",
+        "gotchas": "The Marketing campaign draft still shows the API refusal message with numbers but has no dedicated notice yet. The Awards reviewer file import also has no notice — a file larger than the remaining batch triggers the Add a card dialog instead. Learning and live captions are not covered in this batch.",
+        "talk_track": "During your trial you get a free batch of sends. When you get close to the limit, the invite and notify screens will tell you exactly how many are left and give you the choice to send within the batch now or add a card to send to everyone. Nothing goes out silently.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should add a section explaining the free-batch limit, what the notices look like on the invite and notify screens, the two choices when the batch is exceeded, and where to find the remaining count on the Billing page.",
+          "why_use_it": "The free-batch notices give trial organizers full visibility into how many sends remain before a card is required. Rather than silently dropping recipients, the platform surfaces the shortfall at the moment of sending and offers a clear path forward — send within the batch or add a card to cover everyone. The Billing page shows the remaining batch count for each product so organizers always know where they stand.",
+          "at": "2026-11-20T20:32:43.531Z"
+        }
+      },
+      "product": "awards",
+      "platform": false,
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1724"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "feature:marketing (beta)"
+    },
+    {
+      "id": "signup-bring-your-own-awards-learning",
+      "title": "Paste or upload last year's categories and criteria (Awards) or a question bank (Learning) during sign-up",
+      "summary": "During the **Awards** sign-up flow (`/signup/awards`), the **\"What are you awarding?\"** step now accepts a paste or file (text, CSV, Word .docx, PDF) containing last year's categories and judging criteria — the draft program preview shows the category names and a scorecard built from those criteria. During the **Learning** sign-up flow (`/signup/learning`), the **\"first course\"** step now accepts a question bank in GIFT, Aiken or CSV format — the preview shows how many questions were read and the first three. After the account is created, Awards programs are created with up to 50 categories and a scorecard of up to 12 criteria; Learning question banks are imported through the existing bank importer.",
+      "article": "/sessionboard-awards/get-started",
+      "related": [
+        "/sessionboard-learning/get-started",
+        "/sessionboard-awards/programs/draft-a-program",
+        "/sessionboard-learning/courses/question-bank",
+        "/sessionboard-learning/courses/import-questions"
+      ],
+      "kind": "improved",
+      "module": "Awards",
+      "features": [
+        "awards",
+        "lessons"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Sign-up → Awards (/signup/awards) or Learning (/signup/learning)"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "An organizer signing up for Awards or Learning can bring in their existing materials — last year's award categories and judging criteria, or an existing question bank — before they even create an account, so their first program or course is pre-populated with real content rather than placeholder data.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Default-on at sign-up; no configuration needed."
+        },
+        "when_to_bring_up": "When a prospect or new customer mentions they are migrating from another awards or LMS platform and already have categories, criteria, or question banks they want to reuse.",
+        "who_should_get_it": "New sign-ups for Sessionboard Awards or Sessionboard Learning who have existing program materials.",
+        "staff_path": "/signup/awards or /signup/learning",
+        "gotchas": "File parsing is browser-side only; files are not uploaded to any server before account creation. Awards carries up to 50 categories and 12 scorecard criteria; Learning carries up to 40 KB of the bank (cut at a whole question) — the preview and post-import messaging tell the user when additional questions must be imported inside the product. PDF support is limited to 40 pages; Word files are unpacked up to 8 MB. Learning accepts text and CSV only (not Word or PDF). Binary files renamed to .txt are refused.",
+        "talk_track": "When you sign up for Awards or Learning, you can paste or upload your existing categories, criteria, or question bank right in the sign-up flow — before you even create an account. Your first program or course is built from your real content, not a blank template.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The get-started guides for Awards and Learning should document the file-upload step in the sign-up conversation, including supported formats, size limits, and what is pre-populated in the first program or question bank after account creation.",
+          "why_use_it": "Sessionboard Awards and Learning let you go from sign-up to a working program or course in minutes. Bringing in what you already have — award categories, scoring criteria, or a question bank — means your first draft reflects your real program rather than generic starter content. Awards builds the category list and scorecard from your file; Learning imports your questions directly into the bank so they are ready to add to any course.",
+          "at": "2026-11-20T20:41:06.474Z"
+        }
+      },
+      "product": "awards",
+      "platform": false,
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1714"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "feature:lessons (limited_release)"
+    },
+    {
+      "id": "captions-signup-glossary",
+      "title": "Bring a captions glossary when signing up for Sessionboard Marketing",
+      "summary": "During sign-up, a new **Words to spell right** step lets you paste or upload the names, product terms and acronyms that live captions should spell correctly. After the account is created, those words are pre-loaded into **Words to spell right** when you open Live Captions for the first time.",
+      "article": "/sessionboard-marketing/content/make-content-from-a-recording",
+      "related": [
+        "/marketing/live-transcribe"
+      ],
+      "kind": "new",
+      "module": "Marketing",
+      "features": [
+        "marketing_transcribe"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Sign-up → Words to spell right step (reached via /signup/marketing?bring=glossary)"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "When a prospect already knows which product names or acronyms their captions get wrong, they can hand those terms over at sign-up so captions are accurate from the very first session — no manual entry after the workspace opens.",
+      "internal": {
+        "cs_action": {
+          "kind": "reach_out",
+          "note": "The sign-up step is only reachable via the allow-listed URL parameter ?bring=glossary. Share that link with prospects who mention captions accuracy as a pain point."
+        },
+        "when_to_bring_up": "When a prospect or new customer mentions that live captions mis-spell their brand names, speaker names or technical terms.",
+        "who_should_get_it": "Any customer or prospect planning to use Live Captions who has a known list of terms to spell correctly.",
+        "staff_path": "/signup/marketing?bring=glossary — the Words to spell right step appears after the event is identified and before the preview.",
+        "gotchas": "The step is only accessible via ?bring=glossary; it does not appear on the standard sign-up flow. Words are carried in localStorage for that browser only — a person who finishes sign-up on a different device will need to paste the words again in Live Captions. The captions engine reads the first 100 terms; the UI warns when more than 100 are supplied. Terms longer than 60 characters or containing more than six words are silently dropped.",
+        "talk_track": "If you already have a list of product names or acronyms that trip up auto-captions, you can paste them right at sign-up and they will be waiting in Live Captions when you run your first session.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The guide should document the Words to spell right glossary feature in Live Captions: how to add terms, the 100-term limit that is sent per session, and how terms supplied at sign-up are pre-loaded into the first workspace.",
+          "why_use_it": "Live captions are more useful when they spell your organisation's specific names, acronyms and product terms correctly. The **Words to spell right** glossary lets you supply those terms once; they are sent to the captions engine each time a session starts, so every room benefits without any per-session setup.",
+          "at": "2026-11-20T20:56:51.923Z"
+        }
+      },
+      "product": "marketing",
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1720"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "platform": false
     }
   ]
 }
