@@ -19,6 +19,12 @@ The Sessionboard public API lets you read and write event data programmatically.
 
 ## November 2026
 
+### November 20 — One domain for every page; details-updated email per guest status
+
+**Added.** `GET` and `PUT /v1/marketing/pages/domains/{domainId}/home`: an organization domain's home page (`site_id`) and `serves_org_pages`. With `serves_org_pages: true` the domain serves every public page of the organization at the same paths as `sites.sessionboard.com` (`/p/<slug>`, `/e/<slug>`, `/s/<slug>`), and every public URL the API returns for the organization (page addresses, event page redirects, links in emails) uses it. One per organization. `GET /v1/marketing/pages/domains` shows `serves_org_pages` on each domain. The MCP server adds `get_domain_home_page` and `set_domain_home_page`.
+
+**Changed.** The details-updated email (`gathering-details-updated`) words itself for each guest's status: confirmed guests get the calendar link, guests whose seat request is pending or who are waitlisted are told where they stand and get no calendar link. It names only what changed and links **View details** to the event's real public page. `POST /v1/marketing/events/{eventId}/details-update/preview` takes `as_status` (`confirmed`, `pending`, `waitlisted`) and `changed` (`date`, `time`, `venue`); `…/send` takes `changed`.
+
 ### November 20 — Edit a registration question
 
 **Added.** `PATCH /v1/marketing/pages/events/{eventId}/registration-form/questions/{questionId}` changes one question on an event's registration form: `label`, `options` (the whole list of choices, in order) and `required`. Answers already given are kept, also for a choice that is taken out. Each change answers with `kept.restore` and shows in the event's history. The MCP server adds `update_registration_question`, which takes `also_event_ids` / `apply_to_tour: true` to make the same change on a tour's other stops.

@@ -1,7 +1,7 @@
 ---
 title: "Invite & manage event team members"
 description: "Invite teammates to an event, give them a default or custom role (Admin User vs Admin Lite vs Evaluator compared), scope session managers with a filter, and control which fields and statuses each role can use."
-reviewed: "2026-10-21"
+reviewed: "2026-11-20"
 ---
 
 import { Accordion, AccordionGroup, Note, Tip, TrainingVideo } from '@compat';
@@ -119,11 +119,17 @@ If your organization's data is hosted in Europe or the Middle East, tell new tea
 
 ### Roles with a session filter
 
-If the role is **Session Manager**, **Evaluator Session Manager**, or a custom role that has session filters turned on, the button reads **Next** instead and a second step, **Set Session Filters**, asks which sessions the person is responsible for. The filter is required for these roles: if you click **Invite User** before any row has a value, the step says *Add at least one filter value* and nothing is sent.
+If the role is **Session Manager**, **Evaluator Session Manager**, or a custom role with **Restrict records** switched on (see [Create custom roles](#create-custom-roles)), the button reads **Next** instead and a second step, **Set Session Filters**, asks which sessions the person is responsible for. The step also holds [Contact access](#contact-access). Give them at least one session filter value or one Contact access rule: if you click **Invite User** with neither, the step says *Add at least one filter value* and nothing is sent.
 
 ![The Set Session Filters step — a filter row, Add filter row, and the count of sessions that match](/images/kb/event-team-invite-filter.png)
 
 A filter can use **Status**, **Formats**, **Tracks**, **Levels**, **Languages**, **Tags**, any custom dropdown session field, or **Source**. **Source** limits the team member to sessions by where they came from — the submission form they were submitted through, or **Manual** for sessions added by hand or imported without a form. Pick several values on one row to match any of them; add rows with **Add filter row** to require all of them. The preview under the filter counts how many sessions match. The team member then sees only those sessions and the speakers on them.
+
+### Contact access
+
+On the same second step, **Contact access** limits which contacts the person can see, on top of the session filters. Pick **Contacts must match** *all rules* or *any rule*, then use **Add rule** to choose a contact field (standard or custom, plus **Contact type** and **Contact lists**), a condition and a value. Only contacts that match the rules are visible. If you set session filters too, a contact must also be on a visible session. Other people on a visible session show as *Restricted*.
+
+Every event admin who can manage the team sees Contact access, both when inviting someone and when choosing **Edit** on their row. A person scoped only by Contact access, with no session filter, is valid.
 
 ---
 
@@ -133,7 +139,7 @@ The **⋯** menu at the end of each row holds the actions for that team member:
 
 ![The row menu for a team member — Edit, Impersonate, Remove from event](/images/kb/event-team-row-actions.png)
 
-- **Edit** — change the person's name, role, tags, or session filter. Changing your own role to one with fewer permissions shows a warning first, because you may lose the ability to manage the team.
+- **Edit** — change the person's name, role, tags, session filter, or Contact access. Changing your own role to one with fewer permissions shows a warning first, because you may lose the ability to manage the team.
 - **Copy invite URL** and **Resend invite** — shown only while the person has never logged in. The URL is unique to that invitation; resending sends the same invitation email again.
 - **Impersonate** — open the event as that person to check what their role shows. It needs the **Impersonate User** permission and is not available for portal users.
 - **Remove from event** — takes away their access to this event only. Their account, and their access to other events, stays.
@@ -181,6 +187,8 @@ So Admin Lite runs the program day to day, while inviting people, changing roles
 ### Create custom roles
 
 If none of the default roles fit, select **Create new role** under the custom roles list, give it a **Role Name** and an optional **Description**, and select **Create**. The new role opens with every permission off; switch on what it needs, or use **All On** / **All Off** as a starting point. Changes save as you make them.
+
+The dialog also has a **Restrict records** switch. Switch it on when members of the role should only see the sessions and contacts that match the filters you set when you add them to the team. Members of that role then get the session filters and [Contact access](#contact-access) when you invite or edit them. It is off by default, and you can change it later with **Edit** on the role. Default roles don't show the switch.
 
 ![The Create New Role dialog — Role Name and Description](/images/kb/event-team-create-role.png)
 
@@ -230,8 +238,8 @@ Hover over a role in the left-hand list and select the **⋮** menu next to its 
 
 ![The role menu for a custom role — Edit, Duplicate, Delete](/images/kb/event-team-role-menu.png)
 
-- **Duplicate** creates a new custom role with the same permissions, which is usually the fastest way to build one — a Session Manager who can also export, for example. A copy of **Session Manager** or **Evaluator Session Manager** keeps the session filter step when you invite people into it.
-- **Edit** changes the role's name and description. Its permissions, fields and statuses are edited directly on the tabs.
+- **Duplicate** creates a new custom role with the same permissions, which is usually the fastest way to build one — a Session Manager who can also export, for example. A copy of **Session Manager** or **Evaluator Session Manager** keeps the session filter step when you invite people into it, because the copy has **Restrict records** on.
+- **Edit** changes the role's name, description and **Restrict records** switch. Changing **Restrict records** on a role that already has members applies to all of them as soon as you save. Its permissions, fields and statuses are edited directly on the tabs.
 - **Delete** opens **Delete Role**, which asks for a **Replacement Role** for every team member currently assigned to it before the role is removed.
 
 Creating, renaming, deleting and editing an event's custom roles takes the event-level **Manage permissions** permission (Admin User has it). It does not depend on the person's organization role, so an event admin whose organization role is Program Manager can still manage the roles of their own event. Roles created under **Organization Settings → Team → Permissions** are managed by organization admins only.
@@ -322,10 +330,10 @@ Things to know:
 
 An AV company, a printer or an agency often needs a handful of sessions and a few fields, not the whole event. Build a role for them:
 
-1. On the **Permissions** tab, **Duplicate** **Session Manager**. The copy keeps the session filter step. A role made with **Create new role** has no session filter.
+1. On the **Permissions** tab, **Duplicate** **Session Manager**. The copy keeps the session filter step. A role made with **Create new role** has no session filter until you switch on **Restrict records** in its dialog.
 2. In the copy, switch off any permission the vendor doesn't need, such as exporting.
 3. On **Fields**, **Hide** the fields they shouldn't see and **Lock** the ones they may see but not change.
-4. Invite the vendor with the new role and, under **Set Session Filters**, pick their sessions, for example by **Tracks** or **Tags**.
+4. Invite the vendor with the new role and, under **Set Session Filters**, pick their sessions, for example by **Tracks** or **Tags**. Add **Contact access** rules if they should only see certain contacts.
 5. Use **Impersonate** from their row menu to check exactly what they see, then click **End** on the banner.
 
 ## Apply roles to many events at once

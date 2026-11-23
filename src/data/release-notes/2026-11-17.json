@@ -403,6 +403,1594 @@
       "media": [],
       "gated": null,
       "platform": false
+    },
+    {
+      "id": "review-limits",
+      "title": "Review limits: close submissions after N reviews and stop reviewers at M",
+      "summary": "Review rounds have a new **Review limits** setting with two optional limits. **Close a submission after N completed reviews** (1 to 500) hides a submission from reviewers who haven't started it once it has N completed reviews. **Each reviewer can complete up to M reviews** (1 to 5000) hides a reviewer's remaining unstarted submissions once they have completed M. Reviewers who already started can finish. Removing a completed review reopens the submission, and changing a limit mid-round applies immediately. Rounds that leave both off work as before. Not available for public rounds.",
+      "article": "/evaluations/review-plan-assignments#review-limits",
+      "related": [
+        "/evaluations/setting-up-round-based-evaluations",
+        "/evaluations/review-plan-rounds"
+      ],
+      "kind": "new",
+      "module": "Program",
+      "features": [
+        "sessions"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Review plan > round settings > Review limits"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Let reviewers pick what to review while capping each submission at N reviews and each reviewer at M.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer wants reviewers to choose what to review, or wants to stop reviewing a submission once enough reviews are in.",
+        "who_should_get_it": "Customers running Review Plan 2.0 rounds with many reviewers.",
+        "staff_path": "Review plan > Rounds > round settings > Review limits",
+        "gotchas": "Assign without the up-front caps and let the limits cap. A submission nobody picks can finish below N.",
+        "talk_track": null,
+        "draft": {
+          "by": "claude",
+          "model": "claude-opus-5-5",
+          "confidence": "high",
+          "docs_gap": null,
+          "why_use_it": "Review limits let reviewers choose what to review while you cap how many reviews each submission and each reviewer takes on, so effort goes where it is needed and nobody over-reviews.",
+          "at": "2026-11-17T12:00:00.000Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5531",
+          "lennd/sessionboard-web-ui-v2#1682",
+          "lennd/sessionboard-web-org-portal#348"
+        ],
+        "docs_only": false,
+        "live": {
+          "us": "2026-11-18",
+          "eu": "2026-11-18",
+          "me": "2026-11-18"
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "product": "platform",
+      "platform": false
+    },
+    {
+      "id": "event-page-redirect-to-agent-page",
+      "title": "Event pages automatically redirect visitors to the agent page that replaced them",
+      "summary": "When an org retires an event's `/e/{slug}` page in favour of an agent site page, visitors are now automatically sent to the replacement page. The redirect works on custom-domain event pages and cached shells where the Cloudflare Worker 308 is not in play, using `window.location.replace` so the old URL does not appear in browser history. Organizers and builders previewing the old page in the site canvas are never redirected.",
+      "article": "/site/site-builder",
+      "kind": "new",
+      "module": "CMS",
+      "features": [
+        "sessions"
+      ],
+      "availability": "on_request",
+      "enable": {
+        "how": "support",
+        "path": "Ask your Customer Success Manager to enable set_event_page_redirect; then the /e/{slug} page will forward visitors to the configured agent page"
+      },
+      "where": {
+        "scope": "event",
+        "path": "/e/{event-slug} — the public event page"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "When an org migrates an event's public page from the legacy `/e/{slug}` URL to a new agent site page, visitors who land on the old URL are seamlessly forwarded to the new page without seeing a broken or outdated page. This is especially useful for custom-domain event pages where the Cloudflare-level redirect is not active.",
+      "internal": {
+        "cs_action": {
+          "kind": "must_enable",
+          "note": "The redirect target is set via the web-api set_event_page_redirect endpoint. Coordinate with engineering or use the staff console to configure the redirectTo value on the event's site-info. Only https targets are followed; the redirect is suppressed in the builder canvas and preview mode."
+        },
+        "when_to_bring_up": "When a customer is migrating a legacy /e/{slug} event page to a new agent site page and wants visitors to be forwarded automatically, especially on custom domains.",
+        "who_should_get_it": "Customers who have agent sites enabled and are retiring a legacy event page URL in favour of a new agent site page.",
+        "staff_path": "web-api set_event_page_redirect (lennd/sessionboard-web-api#5521) — sets the redirectTo field returned by site-info for the event slug.",
+        "gotchas": "Only https targets are redirected; http targets are ignored. The redirect does not fire inside the site builder canvas or preview, so organizers can still inspect the old page. The Cloudflare Worker 308 handles sites hosts natively; this SPA fallback covers custom-domain pages and cached shells only.",
+        "talk_track": null,
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The site-builder guide should document the set_event_page_redirect API call, explain when the SPA fallback redirect fires versus the Cloudflare 308, and note that the redirect is suppressed in the builder canvas and preview.",
+          "why_use_it": "The site builder lets you publish a fully branded public presence for your event on an agent site. When you move an event's public page to a new agent site URL, the redirect ensures visitors who bookmarked or linked to the old address always reach the current page — no broken links, no stale content, and no manual cleanup of every place the old URL was shared.",
+          "at": "2026-11-17T03:20:39.908Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-org-portal#346"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": "2026-11-20",
+          "eu": "2026-11-20",
+          "me": "2026-11-20"
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "product": "platform",
+      "platform": false
+    },
+    {
+      "id": "agent-page-form-pass",
+      "title": "Agent page forms: seat requests and capture forms now submit successfully in production",
+      "summary": "Forms embedded on agent pages (such as **Request a seat** on approval events) previously failed with a `turnstile_failed` error because the sandbox environment used by agent pages prevents Cloudflare Turnstile from running. A server-issued, single-use form pass now replaces Turnstile for agent-page submissions. The pass is IP-bound, expires after 30 minutes, and is rate-limited per visitor; all other spam protections remain in place.",
+      "article": "/site/site-builder",
+      "related": [
+        "/registration/forms",
+        "/registration/approvals"
+      ],
+      "kind": "fixed",
+      "module": "CMS",
+      "features": [
+        "attend"
+      ],
+      "availability": "limited_release",
+      "enable": {
+        "how": "support",
+        "path": "Ask your Customer Success Manager to enable agent sites; then sites.sessionboard.com/p/<your-slug>"
+      },
+      "where": {
+        "scope": "org",
+        "path": "sites.sessionboard.com/p/<slug> — any <sb-form> block on an agent page"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Any organizer using an agent page to collect seat requests or audience capture submissions can now accept those form submissions without error. Visitors who clicked **Request a seat** on an Event Content Lab stop page (or any approval-gated event) were previously blocked; they can now complete the form normally.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Fix is automatic for all agent pages with embedded sb-form blocks. No configuration required."
+        },
+        "when_to_bring_up": "When a customer reports that a form on their agent site returns an error or fails to submit, especially on approval events.",
+        "who_should_get_it": "Any customer with agent sites enabled who has an sb-form (seat request, audience capture) on a published page.",
+        "staff_path": "sites.sessionboard.com/p/<slug> — the form on the agent page",
+        "gotchas": "The form pass is weaker than Turnstile against determined scripted bots, but it is IP-bound, single-use, rate-limited (20 per 10 min / 60 per hour per IP), and requires at least 2 seconds between pass issuance and submission. Registrations on approval events still land as pending_approval. Turnstile remains in place on all non-agent-page surfaces.",
+        "talk_track": "Forms on agent pages were silently failing in production because the sandbox CSP used by agent pages blocks Turnstile. This fix issues a server-signed, single-use pass instead, so visitors can submit seat requests and capture forms without any change to their experience.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The site-builder guide should document that sb-form blocks on agent pages use a server-issued form pass instead of Turnstile, and note the per-IP rate limits that apply.",
+          "why_use_it": null,
+          "at": "2026-11-17T03:28:38.519Z"
+        }
+      },
+      "product": "platform",
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5523"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": "2026-11-20",
+          "eu": "2026-11-20",
+          "me": "2026-11-20"
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:limited_release",
+      "platform": false
+    },
+    {
+      "id": "agent-sites-image-upload-and-event-page-redirect",
+      "title": "Agent sites: upload images to pages and redirect an event page to a published agent site",
+      "summary": "Two new agent-page capabilities for organizers using AI-assisted site building. First, the AI agent can now upload images (JPG, PNG, WebP, GIF, AVIF) directly to a site page via a content-addressed CDN — the same image always resolves to the same URL, and SVG files are refused for security. Second, an event's public page can be redirected to a **published agent site** of the same organisation: set a redirect target (or clear it) via the agent, and the sites worker returns a 308 to the canonical agent-site URL; the org-portal SPA follows it as a fallback. Both actions are gated and audited.",
+      "article": "/site/site-builder",
+      "related": [
+        "/skills/sites",
+        "/sessionboard-marketing/pages/publish-an-event-page"
+      ],
+      "kind": "new",
+      "module": "CMS",
+      "features": [
+        "marketing"
+      ],
+      "availability": "limited_release",
+      "enable": {
+        "how": "support",
+        "path": "Ask your Customer Success Manager to enable agent sites; then use the AI assistant to build or update pages on sites.sessionboard.com"
+      },
+      "where": {
+        "scope": "org",
+        "path": "sites.sessionboard.com — agent site pages and event page redirect settings"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Teams rebuilding field-event or conference pages as agent sites can now have the AI assistant upload images directly to the page (no manual CDN step) and then point the existing event URL at the new agent site with a single redirect — visitors land on the right page without any DNS change.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Agent sites are limited-release. Both new tools (request_page_upload and set_event_page_redirect) require the agent-sites gate. The redirect is destructive-tier and requires confirmed:true plus a gated approval; the target must be a published agent site of the same org that renders 200 at the path. SVG uploads are refused by design."
+        },
+        "when_to_bring_up": "When a customer with agent sites enabled asks how to get images onto a page without leaving the chat, or when they want to cut over an existing event URL to a new agent site.",
+        "who_should_get_it": "Customers who have agent sites enabled and are rebuilding field-event or conference pages as agent pages.",
+        "staff_path": "sites.sessionboard.com — use the AI assistant (Claude, ChatGPT, etc.) connected via MCP to call request_page_upload or set_event_page_redirect on an org's agent site.",
+        "gotchas": "SVG files are refused at upload time (security). The event-page redirect target must be a published agent site of the same org on its canonical host that returns 200 at the given path — unpublished sites, other orgs, event pages and HTTP targets are all refused. The redirect shows in site-info only when not previewing. A companion Cloudflare Workers PR is required for the 308 response on the sites host.",
+        "talk_track": null,
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The site-builder guide should document the request_page_upload tool (supported image types, SVG refusal, content-addressed CDN behaviour, per-URL response shape) and the set_event_page_redirect tool (target requirements, how the 308 redirect works, how to clear a redirect).",
+          "why_use_it": "Agent sites let you publish a fully branded public presence on sites.sessionboard.com by chatting with an AI assistant instead of writing code. The assistant handles page layout, content, images and redirects — including pointing an existing event URL at a new agent site — so your team can iterate on a live site without touching a CMS or waiting on a developer. Images uploaded through the assistant are content-addressed, meaning the same file always resolves to the same URL and is served from the CDN with immutable caching.",
+          "at": "2026-11-17T03:36:42.354Z",
+          "permissions_to_confirm": [
+            "org.external_sites: update"
+          ]
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5521"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": "2026-11-20",
+          "eu": "2026-11-20",
+          "me": "2026-11-20"
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:limited_release",
+      "product": "platform",
+      "platform": false
+    },
+    {
+      "id": "hubspot-timeline-exact-timestamp",
+      "title": "HubSpot timeline events now show the exact time an activity occurred",
+      "summary": "HubSpot timeline events for credit claims, check-ins and other activities now carry the exact date and time the action happened, rather than a made-up noon UTC on the activity date. Activities completed during US evening hours no longer appear a day late on the HubSpot contact timeline.",
+      "article": "/sessionboard-crm/ams/write-back",
+      "product": "crm",
+      "platform": true,
+      "platform_article": "/integrations/overview",
+      "kind": "fixed",
+      "module": "Apps",
+      "features": [
+        "crm"
+      ],
+      "availability": "add_on",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Apps → HubSpot → Timeline events on a HubSpot contact record"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizations using the HubSpot write-back to track member engagement can now trust that timeline events reflect the precise moment a credit was claimed or a check-in occurred — important for any workflow or report that filters by time of day or relies on accurate chronological ordering in HubSpot.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Fix is automatic; no action needed. Events already written to HubSpot keep their old (noon UTC) timestamp — only new write-backs carry the exact time."
+        },
+        "when_to_bring_up": "When a customer reports that HubSpot timeline events for evening activities appear dated the following day.",
+        "who_should_get_it": "Customers using the HubSpot app with Activity write-back enabled (credit claiming or check-in).",
+        "staff_path": null,
+        "gotchas": "Previously written events are not retroactively corrected — only new write-backs will carry the exact timestamp. Salesforce and Dynamics write-backs are unaffected.",
+        "talk_track": null,
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The write-back guide should note that HubSpot timeline event timestamps reflect the exact local time of the activity, and that Salesforce and Dynamics write-backs are unaffected by this change.",
+          "why_use_it": null,
+          "at": "2026-11-17T03:44:47.562Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5509"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": "2026-11-20",
+          "eu": "2026-11-20",
+          "me": "2026-11-20"
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": null
+    },
+    {
+      "id": "awards-site-link-preview-title",
+      "title": "Set a custom link preview title for your Awards site",
+      "summary": "A **Link preview title** field is now available in **Site settings → Link preview**, alongside the existing description. Leave it blank to fall back to the site title. The title is capped at 120 characters and appears in the preview card as you type.",
+      "article": "/sessionboard-awards/get-started",
+      "kind": "new",
+      "module": "Awards",
+      "features": [
+        "awards"
+      ],
+      "availability": "add_on",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Awards → Site → Site settings → Link preview"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who share their awards site on LinkedIn or Slack can now control the title that appears in the link preview card, making it distinct from the site title — useful when the site title is short or branded differently from the message they want to lead with.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer asks how to control what appears when their awards site link is shared on LinkedIn or in Slack.",
+        "who_should_get_it": "Any Awards customer who shares their site URL externally.",
+        "staff_path": "Awards → Site → Site settings → Link preview → Link preview title",
+        "gotchas": "Leaving the field blank falls back to the site title. The field is capped at 120 characters. The value is stored as shareTitle in the site draft.",
+        "talk_track": null,
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The Awards get-started guide (or a dedicated site-settings guide in the Awards suite) should document the Link preview title field, its 120-character cap, and the blank-falls-back-to-site-title behaviour.",
+          "why_use_it": "Your Awards site's link preview is the first thing people see when you share the URL on social media, in email, or in chat. Setting a dedicated preview title lets you craft a compelling headline for that moment — separate from the site's display title — so the link stands out and drives more clicks to your nominations page.",
+          "at": "2026-11-17T04:16:01.484Z"
+        }
+      },
+      "product": "awards",
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1677"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": "2026-11-20",
+          "eu": "2026-11-20",
+          "me": "2026-11-20"
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "platform": false
+    },
+    {
+      "id": "surveys-public-page-redesign-light-dark",
+      "title": "Surveys: redesigned public rating page with session-first layout, progress tracking and light/dark toggle",
+      "summary": "The public survey page (`/surveys/:token`) has been redesigned for clarity and ease of use. **Sessions** are now the top-level rows, with their speakers nested underneath; sticky day and time-slot headers keep context while scrolling. A progress bar shows **\"0 of N rated\"**, two-step instructions guide first-time raters, and **All / My rated (N)** tabs let attendees focus on what they have already completed. Search covers session titles, speakers and rooms; a room filter and sort control sit in one prominent block. The **Submit rating** button (formerly **Mark done**) advances to the next unrated speaker within that session, then returns to the list at that session's row with a confirmation. A **Dark mode** toggle remembers the attendee's preference per device; it follows the OS by default. Body text, tap targets and rating buttons are all larger for readability.",
+      "article": "/evaluations/surveys",
+      "kind": "improved",
+      "module": "Program",
+      "features": [
+        "surveys"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Public survey link (/surveys/:token) shared with attendees"
+      },
+      "permissions": [],
+      "audience": [
+        "participant"
+      ],
+      "use_case": "Events with many sessions and speakers — like a large conference — can now share a survey link that attendees can actually navigate: sessions are clearly grouped, progress is visible at a glance, and the flow automatically moves to the next unrated speaker so nothing gets missed. The light/dark toggle means the page is comfortable to use in any lighting environment.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer asks how attendees experience the survey link, or when they report low survey completion rates on events with many sessions and speakers.",
+        "who_should_get_it": "Any customer using Surveys on events with multiple sessions and speakers per session.",
+        "staff_path": null,
+        "gotchas": "The redesign is live for all public /surveys/:token pages — no opt-in needed. The ?embed=1 and ?language= parameters are unchanged. The admin survey builder and results pages are not affected.",
+        "talk_track": "The public survey page now shows sessions as the main rows with speakers nested inside, a progress bar, and a light/dark toggle. Attendees are guided speaker by speaker after each rating, so completion rates should improve on large programs.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The surveys guide should document the new session-first layout, the progress bar, the All / My rated tabs, the Submit rating flow (next-speaker advancement), the ?session= deep-link parameter, and the Dark mode toggle with its localStorage persistence.",
+          "why_use_it": "Surveys let attendees rate sessions and speakers directly from a shared link, with no login required. The page organises every session and its speakers in one place, tracks how many ratings are complete, and guides attendees through each speaker in turn so feedback is thorough and easy to give. Organisers get richer, more complete data because the flow removes friction at every step.",
+          "at": "2026-11-17T04:31:13.347Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1673"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": "2026-11-20",
+          "eu": "2026-11-20",
+          "me": "2026-11-20"
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "product": "platform",
+      "platform": false
+    },
+    {
+      "id": "task-dock-dismiss-fixed",
+      "title": "Task dock: the × button now reliably dismisses finished tasks",
+      "summary": "The **×** on the task dock (the **\"N tasks complete\"** bar that appears during imports and media processing) now correctly hides all finished tasks. Dismissed tasks stay hidden across page changes and background polls; a task reappears only if it runs again. A **Clear finished tasks** option has also been added to the **…** menu on the dock.",
+      "article": "/settings/importing-data",
+      "kind": "fixed",
+      "module": "Settings",
+      "features": [
+        "sessionboard_imports"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Task dock (bottom of screen) → × or … → Clear finished tasks"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers running imports or media processing no longer need to tolerate a stuck \"tasks complete\" bar — clicking × or choosing Clear finished tasks from the menu removes it immediately and keeps it gone until new work starts.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "If a customer reports that the × on the task dock does nothing after an import or media render completes.",
+        "who_should_get_it": "All customers — this is a default-on bug fix.",
+        "staff_path": null,
+        "gotchas": "Dismissed task IDs are stored in sessionStorage, so clearing browser storage will make previously dismissed tasks reappear until they are dismissed again.",
+        "talk_track": null,
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The importing-data guide should mention the task dock, its × dismiss button, and the Clear finished tasks option in the … menu.",
+          "why_use_it": null,
+          "at": "2026-11-17T04:37:55.035Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1679"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": "2026-11-20",
+          "eu": "2026-11-20",
+          "me": "2026-11-20"
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": "feature:sessionboard_imports (limited_release)",
+      "product": "platform",
+      "platform": false
+    },
+    {
+      "id": "sites-refresh-live-page-api",
+      "title": "API: force-refresh a published Site's edge cache",
+      "summary": "A new `POST /v1/sites/:siteId/refresh-live-page` endpoint (also available as `/v1/organization/:orgId/sites/:siteId/refresh-live-page`) drops the edge-cached copies of a published Site so the next visitor sees the current published content immediately. Requires the `write:sites` scope or the product's write scope. The `refresh_live_page` MCP tool calls this endpoint, so AI assistants connected to Sessionboard can trigger a cache flush on your behalf.",
+      "article": "/api/insights/mcp-server",
+      "related": [
+        "/site/site-builder",
+        "/api/authentication"
+      ],
+      "kind": "new",
+      "module": "CMS",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "API: POST /v1/sites/:siteId/refresh-live-page"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Teams using the public API or an AI assistant (Claude, ChatGPT, etc.) to manage their program Site can immediately flush stale edge-cached pages after a publish, ensuring visitors see the latest content without waiting for the cache to expire naturally.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer using the public API or MCP integration asks why their published Site changes are not immediately visible to visitors, or when they want to automate cache invalidation after publishing.",
+        "who_should_get_it": "Customers using the Sessionboard public API or MCP server to manage program Sites.",
+        "staff_path": null,
+        "gotchas": "Every publish already triggers a cache flush automatically; this endpoint is only needed when a customer wants to force a flush independently of a publish action (e.g. from a script or AI assistant).",
+        "talk_track": null,
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The MCP Server guide should list the new `refresh_live_page` tool and note that the Sites API reference will document the POST /v1/sites/:siteId/refresh-live-page endpoint once released.",
+          "why_use_it": "The MCP server lets you manage Sessionboard from any AI assistant that supports the Model Context Protocol. Connect Claude, ChatGPT or another assistant and ask it to build pages, publish content, or flush a Site's cache — the assistant calls the right API endpoints and waits for your approval before making changes. It is useful when you want to automate or script event-site workflows without leaving your AI tool.",
+          "at": "2026-11-17T04:45:57.874Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-public-api#271"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": "2026-11-20",
+          "eu": "2026-11-20",
+          "me": "2026-11-20"
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "product": "platform",
+      "platform": false
+    },
+    {
+      "id": "site-publish-cache-purge-and-refresh",
+      "title": "Sites: live page updates immediately on publish, plus a manual refresh action",
+      "summary": "Public event and awards sites now reflect changes within seconds of publishing — edge-cached copies are automatically purged on every publish, slug rename, brand-kit apply, and delete. A new **Refresh live page** action lets organizers and AI agents force an immediate cache clear at any time (rate-limited to 6 times per minute per site).",
+      "article": "/site/site-builder",
+      "related": [
+        "/awards/setting-up-your-sessionboard-site",
+        "/marketing/brand-kits"
+      ],
+      "kind": "improved",
+      "module": "CMS",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Site builder → Publish (automatic); Site builder → Refresh live page (manual)"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "When an organizer publishes a change to a public event or awards site — updating the agenda, venue, branding or a page — visitors see the updated page immediately instead of waiting up to a minute for the edge cache to expire. The manual refresh is useful after applying a brand kit or renaming a slug to confirm the live page is current.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer reports that their published site changes are not showing up immediately, or when they ask how quickly updates go live after publishing.",
+        "who_should_get_it": "All customers using the site builder for event pages or awards sites — this is automatic and requires no enablement.",
+        "staff_path": "POST /awards/organizations/:orgId/sites/:siteId/refresh-live-page or POST /site-builder/org/:orgId/:siteId/refresh-live-page (also exposed as the MCP refresh_live_page tool)",
+        "gotchas": "Only sessionboard.com-hosted sites are purged — custom domains are not edge-cached and are unaffected. Registration changes (seats, questions) are intentionally not hooked; public-summary can remain up to 60 s stale for those. The refresh endpoint is rate-limited to 6 calls per minute per caller per site; a Cloudflare failure returns a 502 with code SITE_EDGE_PURGE_FAILED. Draft-only autosaves do not trigger a purge.",
+        "talk_track": "Your site now goes live the moment you hit Publish — no more waiting for the cache to catch up. And if you ever need to force a refresh, there is a Refresh live page action right in the builder.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The site-builder guide should document the Refresh live page action (where it appears, the rate limit, and what it does), and note that published changes are reflected immediately on sessionboard.com-hosted sites.",
+          "why_use_it": "The site builder lets you design and publish a fully branded public presence for your event or awards program without writing code. Changes you make in the builder — page content, navigation, branding, session details — are reflected on the live site as soon as you publish, so visitors always see accurate information. Use the manual Refresh live page action any time you want to confirm the live site matches your latest edits.",
+          "at": "2026-11-17T05:09:58.931Z"
+        }
+      },
+      "product": "platform",
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5529"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": "2026-11-20",
+          "eu": "2026-11-20",
+          "me": "2026-11-20"
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "platform": false
+    },
+    {
+      "id": "media-library-search-bar-paged-restore",
+      "title": "Media library: search bar and header restored on paginated libraries",
+      "summary": "A regression caused the **Media** library search bar and page header to disappear when the first page contained only imported recordings (such as Google Drive imports) and no live-session cards. The library now correctly determines whether it is empty using server-side totals, so the search bar and **N items** count remain visible whenever media exists.",
+      "article": "/marketing/media-library",
+      "kind": "fixed",
+      "module": "Marketing",
+      "features": [
+        "marketing_media"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Marketing → Media"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who imported recordings (for example, from Google Drive) into a paginated Media library can now search and see the item count without the header disappearing.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "If a customer reports that the Media library search bar or header is missing after importing recordings.",
+        "who_should_get_it": "Any customer using the Media library with imported recordings (e.g. Drive imports) on a paginated library.",
+        "staff_path": "Marketing → Media",
+        "gotchas": "The bug only manifested when page 1 of a paged library contained exclusively imported media (no live-session cards) and stats.total_media returned 0 for those rows. The fix uses server-side per-platform counts instead.",
+        "talk_track": null,
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": null,
+          "why_use_it": null,
+          "at": "2026-11-17T05:24:00.959Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1681"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": "2026-11-20",
+          "eu": "2026-11-20",
+          "me": "2026-11-20"
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "product": "platform",
+      "platform": false
+    },
+    {
+      "id": "site-builder-refresh-live-page",
+      "title": "Site builder: manually refresh the live page cache",
+      "summary": "A **Refresh live page** (↻) button now appears next to **Publish** in the Site builder top bar for any published site. Clicking it drops the edge-cached copies of the live page and shows a toast confirming success or failure. The button is available in the event page builder (**Marketing › Pages**) and in the Site builder for Awards, Learning and portal sites.",
+      "article": "/site/site-builder#drafts-and-publishing",
+      "related": [
+        "/awards/setting-up-your-sessionboard-site",
+        "/sessionboard-learning/site",
+        "/sessionboard-marketing/pages/publish-an-event-page"
+      ],
+      "kind": "new",
+      "module": "CMS",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "both",
+        "path": "Site builder → top bar → Refresh live page (↻) button, next to Publish"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "When a published site still shows stale content after an update, an organizer can click **Refresh live page** to immediately clear the edge cache without waiting for it to expire on its own.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer reports that their live site looks out of date after publishing changes.",
+        "who_should_get_it": "Any organizer using the Site builder for event pages, Awards, Learning or portal sites.",
+        "staff_path": "Site builder top bar → ↻ button (visible only when the site is live/published)",
+        "gotchas": "The button only appears for a live (published) site — it is hidden when the site has never been published. The underlying API route (POST /site-builder/org/:orgId/:siteId/refresh-live-page) requires web-api #5529 to be deployed; the button will not work until that is live.",
+        "talk_track": "If your live page still looks old after publishing, hit the Refresh live page button next to Publish — it clears the cached copies instantly and a toast confirms it worked.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The site-builder guide should document the Refresh live page button under the Drafts and publishing section, including when to use it and what the success/failure toast means.",
+          "why_use_it": "The Site builder lets you design and publish public-facing pages for your event, awards program, learning site or speaker portal — all without writing code. Publishing automatically clears the cache, but if visitors still see an older version of your page, the **Refresh live page** button gives you a one-click way to force the live site to reflect your latest changes right away.",
+          "at": "2026-11-17T05:38:45.006Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1680"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": "2026-11-20",
+          "eu": "2026-11-20",
+          "me": "2026-11-20"
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "product": "platform",
+      "platform": false
+    },
+    {
+      "id": "media-library-paging-search-as-you-type",
+      "title": "Media Library: paged grid, Discover paging, and search-as-you-type suggestions",
+      "summary": "The org **Media Library** now loads as a paged grid (24 / 48 / 96 items per page) instead of a fixed 60-item cap, mixing media files and live-session cards in one list with accurate server-side counts on platform chips. **Discover** also pages its file list at 50 per page. The **Library** search bar now shows grouped suggestions — recordings, clips, quotes, transcript lines, speakers, sponsors and exhibitors — after a short pause, navigable by keyboard (↑ / ↓ to move, Enter to open or run the full search, Escape to close).",
+      "article": "/marketing/media-library",
+      "kind": "improved",
+      "module": "Marketing",
+      "features": [
+        "marketing_media"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Marketing → Media"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Teams with large recording libraries no longer hit the 60-item cap — every file is reachable through pagination. The search-as-you-type suggestions let anyone jump straight to a recording, speaker or quote without running a full search first.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer reports missing recordings or complains that the library only shows 60 items, or when they ask for faster ways to find specific content.",
+        "who_should_get_it": "Any customer using the org Media Library with more than 60 recordings or a large content library.",
+        "staff_path": "Marketing → Media (org level)",
+        "gotchas": "The Discover tab drops the 'copies already in your library' group — those files are now excluded server-side. Strings are English-only for now, consistent with the rest of CorpusView.",
+        "talk_track": "The library now pages through all your content and the search bar surfaces suggestions as you type — recordings, speakers, quotes and more — so your team can find anything in seconds.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The media-library guide should document the new pagination controls (24/48/96 per page), the search-as-you-type combobox behaviour (keyboard navigation, result groups, deep-link to a moment via ?t=), and the updated Discover tab paging.",
+          "why_use_it": "The Media Library is the central place to find, review and share every recording, clip, quote and transcript your events produce. Paging through the full library and jumping to any item from the search bar keeps your content accessible as your library grows, without scrolling through a single long list or losing items to an arbitrary cap.",
+          "at": "2026-11-17T14:09:24.761Z"
+        }
+      },
+      "related": [
+        "/marketing/clips",
+        "/marketing/quotes"
+      ],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1678"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": "2026-11-20",
+          "eu": "2026-11-20",
+          "me": "2026-11-20"
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "product": "platform",
+      "platform": false
+    },
+    {
+      "id": "media-library-paging-search-personal-drive",
+      "title": "Media Library: search-as-you-type, paged gallery with accurate filter counts, personal Google Drive connections, and cleaner Discover results",
+      "summary": "A new **Search** bar in the Media Library returns up to five matching recordings, clips, quotes, transcript lines, speakers, sponsors and exhibitors as you type. The paged gallery's platform filter chips now show accurate per-platform counts regardless of which filter is active. **Discover** no longer lists files that are already imported or whose import is in progress. Google Drive connections in **Discover**, the folder picker and folder import now resolve to each team member's own connected Drive account — someone without a connection sees a **not connected** prompt and can add their own under **Apps**.",
+      "article": "/marketing/media-library",
+      "related": [
+        "/integrations/overview"
+      ],
+      "kind": "improved",
+      "module": "Marketing",
+      "features": [
+        "marketing_media"
+      ],
+      "availability": "add_on",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Marketing → Media → Library / Discover"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Teams with large recording libraries can now find any clip, quote, transcript line or speaker instantly without scrolling. Organisations where multiple team members each have their own Google Drive account can connect and browse their own Drive without sharing credentials or seeing each other's files.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer with a large media library asks how to find a specific clip or quote quickly, or when a team reports confusion about duplicate files appearing in Discover, or when multiple team members share a single Google Drive connection.",
+        "who_should_get_it": "Any customer using Media (add-on) with Google Drive connected or a growing library of recordings and clips.",
+        "staff_path": "Marketing → Media → Library (search bar at top); Marketing → Media → Discover (Discover tab, Google Drive folder picker)",
+        "gotchas": "Per-person Drive: a legacy connection with no owner still works as a shared fallback. A team member with no personal connection will see 'not connected' and must add their own under Apps → Google Drive. Queued/in-progress imports are hidden from Discover but shown in the in-progress strip in the UI — they are not lost.",
+        "talk_track": "Your team can now search across every recording, clip, quote and transcript line in your library as they type — no more scrolling through hundreds of assets. And if your team each has their own Google Drive, they can connect their own account so everyone browses and imports from their own files.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The media-library guide should document the new search-as-you-type bar (what it searches, the five-result groups, event-scoped search), the per-platform filter counts on the paged gallery, the per-person Google Drive connection model, and the updated Discover behaviour (in-progress and duplicate files are hidden).",
+          "why_use_it": "The Media Library is where your team stores, organises and distributes every recording, clip and quote produced from your events. Search-as-you-type lets anyone on the team surface the exact asset they need in seconds, whether they remember a speaker's name, a sponsor, or a phrase from a transcript. Per-person Google Drive connections mean each team member browses and imports from their own account, keeping access clean and auditable. Accurate filter counts and a clutter-free Discover tab make it easy to see what is available to import without second-guessing what has already come in.",
+          "at": "2026-11-17T14:09:51.423Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5526"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": "2026-11-20",
+          "eu": "2026-11-20",
+          "me": "2026-11-20"
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "product": "platform",
+      "platform": false
+    },
+    {
+      "id": "media-google-drive-folder-picker-polish",
+      "title": "Google Drive folder picker: recent folders, imported badges, parent navigation, and smarter event defaulting",
+      "summary": "The **Google Drive** folder picker now shows a **Recent folders** row (folders from previous imports), an **Imported · date** badge on folders already brought in, and an **Up to &lt;parent&gt;** row for navigating up the folder tree. The event picker defaults to the org's single live or upcoming event and no longer resets after a deliberate **No event** choice. On the **Discover** tab, **Import all** is now a secondary action and opens a confirmation dialog showing the total count and per-folder breakdown before importing.",
+      "article": "/marketing/media-library",
+      "kind": "improved",
+      "module": "Marketing",
+      "features": [
+        "marketing_media"
+      ],
+      "availability": "add_on",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Marketing → Media → Discover → Google Drive"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who regularly import recordings from Google Drive can now spot previously imported folders at a glance, navigate up to parent folders without starting over, and confirm bulk imports before they run — reducing accidental duplicate imports and saving time when working across multiple events.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer using Media asks about importing from Google Drive, especially if they manage recordings across multiple events or folders.",
+        "who_should_get_it": "Customers with the Media add-on who import recordings from Google Drive.",
+        "staff_path": "Marketing → Media → Discover → Google Drive",
+        "gotchas": "Per-folder counts in the Import all confirmation dialog group unresolved items as 'folder not listed' until the API sends a folder field — customers may see that label on some items.",
+        "talk_track": null,
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The media-library guide should document the Recent folders row, the Imported badge, the Up to parent navigation, and the Import all confirmation dialog in the Google Drive Discover flow.",
+          "why_use_it": "The Media library lets you pull recordings and other video assets directly from Google Drive into Sessionboard, where they can be transcribed, clipped, shared with advocates, and published to on-demand galleries. Connecting Drive means your production team's raw recordings flow into your content workflow without manual uploads. The folder picker keeps your import history visible so you always know what has already come in and what is still waiting.",
+          "at": "2026-11-17T14:10:11.314Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1674"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": "2026-11-20",
+          "eu": "2026-11-20",
+          "me": "2026-11-20"
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "product": "platform",
+      "platform": false
+    },
+    {
+      "id": "sites-share-image-favicon-title-description",
+      "title": "Set a share image, favicon, share title and share description on agent and event pages",
+      "summary": "Agent pages (`sites.sessionboard.com/p/<slug>`) and event pages (`/e/<slug>`) now support a **Share Title**, **Share Description**, **Share Image** and **Favicon**. When set, these control the `og:title`, `og:description`, `og:image`, `twitter:*` tags and `<link rel=\"icon\">` rendered on the live page. Ask (Claude) can set all four fields and can also generate and host a branded share image or favicon directly from a chat prompt using the site's brand tokens.",
+      "article": "/sessionboard-marketing/pages/publish-an-event-page",
+      "related": [
+        "/site/site-builder",
+        "/marketing/brand-kits",
+        "/agents/team-lead"
+      ],
+      "kind": "new",
+      "module": "CMS",
+      "features": [
+        "marketing"
+      ],
+      "availability": "limited_release",
+      "enable": {
+        "how": "support",
+        "path": "Ask your Customer Success Manager to enable agent sites; then sites.sessionboard.com/p/<your-slug> → Site Settings"
+      },
+      "where": {
+        "scope": "org",
+        "path": "sites.sessionboard.com/p/<slug> — Site Settings → Share Title / Share Description / Share Image / Favicon"
+      },
+      "permissions": [
+        "org.external_sites.update"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "An organizer publishing an agent page or event landing page can now control exactly what appears when someone shares the link on LinkedIn, Slack or iMessage — a custom headline, description, branded card image and browser tab icon — without relying on whatever image happens to appear first on the page. Ask can generate an on-brand share image in one prompt, host it automatically and apply it to the site draft.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Agent sites are limited-release. Confirm the customer has an agent site enabled before surfacing this. Share image and favicon are written to the DRAFT only — the customer must Publish for changes to go live. HTTP (non-HTTPS) image URLs are silently dropped; remind customers to use HTTPS CDN URLs."
+        },
+        "when_to_bring_up": "When a customer asks why their agent-page link preview looks wrong on LinkedIn or Slack, or when they want a branded favicon on their event page.",
+        "who_should_get_it": "Customers with agent sites or Marketing event pages who care about social sharing and link previews.",
+        "staff_path": "sites.sessionboard.com/p/<slug> → Site Settings → Share Title / Share Description / Share Image / Favicon; or via Ask: 'Set the share image for my site to …' / 'Generate a share image for my site'.",
+        "gotchas": "Changes are draft-only until published. Non-HTTPS image URLs are rejected with a warning. The companion og-meta Worker deploy (for /e/ and /s/ share titles) must also be deployed for event-page share titles to appear in link previews.",
+        "talk_track": "Your event page link now shows a custom headline, description and branded image every time someone shares it — and Ask can generate the image for you in seconds.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The publish-an-event-page guide should document the Share Title, Share Description, Share Image and Favicon fields in Site Settings, explain the draft-only write behaviour, note the HTTPS requirement for image URLs, and describe how Ask can generate and apply a share image or favicon.",
+          "why_use_it": "Agent sites and event pages on sites.sessionboard.com are your public face for a show, event or content hub. Controlling the share title, description, image and favicon means every link preview — on LinkedIn, in Slack, in a browser tab — reflects your brand rather than a generic fallback. Ask can generate and apply a branded share image or favicon from a single prompt, so you get polished social cards without leaving the chat.",
+          "at": "2026-11-17T14:10:54.781Z"
+        }
+      },
+      "product": "marketing",
+      "platform": true,
+      "platform_article": "/site/site-builder",
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5524"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": "2026-11-20",
+          "eu": "2026-11-20",
+          "me": "2026-11-20"
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:limited_release"
+    },
+    {
+      "id": "notification-preview-test-send-token-fix",
+      "title": "Notification previews and test sends now show realistic sample content instead of token names",
+      "summary": "**Send test** and email previews for system notifications (including **New message**, task reminders and community idea updates) now display realistic sample values — such as \"Session\" for the record type and **Manage notification preferences** for the footer link — instead of raw token names like \"Record type label\" or \"Content preview\".",
+      "article": "/communications/automated-emails#email-previews",
+      "kind": "fixed",
+      "module": "Communications",
+      "features": [
+        "notifications"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event → Settings → Notifications → [any notification] → Send test"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "When an organizer sends a test notification to check how it will look before it goes to speakers, the preview now reads like a real email — making it easy to spot layout or copy issues without being confused by placeholder token names.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "If a customer reports that test notification emails show phrases like 'Record type label' or 'Content preview' instead of real content — this is fixed.",
+        "who_should_get_it": "All customers who use the Send test or preview feature on system notifications.",
+        "staff_path": "Event → Settings → Notifications → New message (or any notification) → Send test",
+        "gotchas": "Fix applies to previews and test sends only; live notification sends were never affected.",
+        "talk_track": null,
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The automated-emails guide should document the Email previews section and note that Send test uses curated sample values so the preview reads like a real notification.",
+          "why_use_it": "null",
+          "at": "2026-11-17T14:11:16.167Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5512"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": "2026-11-20",
+          "eu": "2026-11-20",
+          "me": "2026-11-20"
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "product": "platform",
+      "platform": false
+    },
+    {
+      "id": "media-render-these-first",
+      "title": "Media: prioritise clip renders with \"Render these first\"",
+      "summary": "A **Render these first** button now appears next to **Render N suggested clips** on the import status page and the recording **Suggested clips** card. Clicking it queues the clips at the front of the render pipeline; a toast confirms how many were queued and how many existing renders were bumped up. The button is visible whenever there are clips to render or renders already waiting, and is disabled while a render is actively running.",
+      "article": "/marketing/media-library",
+      "kind": "new",
+      "module": "Marketing",
+      "features": [
+        "marketing_clips",
+        "marketing_media",
+        "media"
+      ],
+      "availability": "add_on",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Marketing → Media → [recording] → Suggested clips card; Marketing → Media → Import status page"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "When a recording has time-sensitive clips — such as a keynote highlight needed for same-day social posts — an organiser can jump those renders to the front of the queue without waiting for other recordings to finish processing.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer complains that high-priority clips are stuck behind a long render queue, especially around live event days.",
+        "who_should_get_it": "Customers using Media (add-on) who regularly import multiple recordings and need certain clips rendered urgently.",
+        "staff_path": "Marketing → Media → open a recording → Suggested clips card → Render these first",
+        "gotchas": "Depends on the web-api priority PR being deployed; the button is disabled while a render is actively running, so customers cannot re-prioritise mid-render.",
+        "talk_track": "If you need a keynote clip live on social before the afternoon break, hit 'Render these first' and those clips jump the queue instantly — no support ticket needed.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The media-library guide should document the Render these first button, when it appears, and what the queued/bumped toast counts mean.",
+          "why_use_it": "The Media library lets you turn session recordings into ready-to-share clips without manual editing. When you have multiple recordings in the queue, the ability to prioritise specific clips means your most important content reaches advocates and social channels first, regardless of the order recordings were imported.",
+          "at": "2026-11-17T14:11:36.879Z"
+        }
+      },
+      "related": [
+        "/marketing/clips"
+      ],
+      "product": "platform",
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1676"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": "2026-11-20",
+          "eu": "2026-11-20",
+          "me": "2026-11-20"
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "feature:marketing_clips (limited_release)",
+      "platform": false
+    },
+    {
+      "id": "agent-page-form-pass-and-friendly-errors",
+      "title": "Agent page forms: bot-check pass and plain-language error messages",
+      "summary": "Forms embedded on agent pages now obtain a one-time human-verification pass automatically on first focus, so submissions no longer fail with a bot-check error. When a post does fail, the form shows a plain sentence describing the problem — such as \"the event is full\", \"already registered\", or \"check your email\" — instead of raw API text. The form and its status element also receive `data-state=\"error\"` so the page's CSS can style errors distinctly from successes.",
+      "article": "/site/site-builder",
+      "kind": "fixed",
+      "module": "CMS",
+      "features": [],
+      "availability": "limited_release",
+      "enable": {
+        "how": "support",
+        "path": "Ask your Customer Success Manager to enable agent sites; then sites.sessionboard.com/p/<your-slug>"
+      },
+      "where": {
+        "scope": "org",
+        "path": "sites.sessionboard.com/p/<slug> — any <sb-form> on an agent page"
+      },
+      "permissions": [],
+      "audience": [
+        "participant"
+      ],
+      "use_case": "Visitors filling out a form on an agent page — such as a registration or sign-up form — will no longer hit a silent bot-check failure. If something does go wrong, they see a clear sentence explaining why instead of a raw error code, so they know exactly what to do next.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Fix is automatic for all agent pages using <sb-form> with data-sb-pass. No action needed."
+        },
+        "when_to_bring_up": "If a customer reports that forms on their agent site were failing silently or showing raw API error text — this is now resolved.",
+        "who_should_get_it": "Any customer with agent sites enabled who uses <sb-form> on a page.",
+        "staff_path": "sites.sessionboard.com/p/<slug> — forms with data-sb-pass attribute",
+        "gotchas": "The pass is fetched on first focus; if a visitor submits before focusing any field the form waits out the pass's minimum age before posting. Each submission attempt fetches a fresh pass. The server-side counterpart is in lennd/sessionboard-web-api#5523.",
+        "talk_track": null,
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The site-builder guide should document the data-sb-pass attribute on <sb-form>, the automatic human-verification pass behaviour, and the full set of plain-language error messages visitors may see.",
+          "why_use_it": "Agent sites let you publish a fully branded public presence on sites.sessionboard.com without writing code. Forms on agent pages handle human verification automatically so visitors can register or sign up without friction. When something prevents a submission, the form surfaces a plain sentence — not a raw error code — so visitors understand what to do and organisers spend less time fielding confused support requests.",
+          "at": "2026-11-17T14:12:07.892Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-embeds#145"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": "2026-11-20",
+          "eu": "2026-11-20",
+          "me": "2026-11-20"
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": "availability:limited_release",
+      "product": "platform",
+      "platform": false
+    },
+    {
+      "id": "marketing-results-email-per-product-switch",
+      "title": "Turn off the Marketing results email without unsubscribing from all Sessionboard emails",
+      "summary": "The **Email preferences** setting on your account now includes a per-product toggle for the **Marketing** results digest. Turning it off stops the post-webinar results email for Marketing without affecting other Sessionboard email notifications. The general email switch and any house unsubscribes continue to apply as before.",
+      "article": "/sessionboard-marketing/events/results-email-after-your-webinar",
+      "kind": "improved",
+      "module": "Marketing",
+      "features": [
+        "marketing"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Account menu → Email preferences → Marketing results"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "A team member who wants the general Sessionboard digest but finds the post-webinar results email noisy can now opt out of just that email without losing other notifications.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer asks how to stop the post-webinar results email for one person without turning off all Sessionboard emails.",
+        "who_should_get_it": "Any Marketing user who receives the post-webinar results digest.",
+        "staff_path": "PUT /user/me/sessionboard-emails with { results: { marketing: false } } to opt a user out programmatically.",
+        "gotchas": "No migration needed — absence of a preference row is treated as opted in, so existing users continue to receive the email by default.",
+        "talk_track": null,
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The results-email guide should document the per-product opt-out toggle and explain that turning it off affects only the Marketing results digest, not other Sessionboard emails.",
+          "why_use_it": "The results email arrives after each webinar with a summary of registrations, attendance and engagement so you can act on the numbers without opening the platform. Granular opt-out controls let each team member choose which digest emails are useful to them, keeping inboxes tidy while ensuring the people who want the data still get it automatically.",
+          "at": "2026-11-17T14:12:26.237Z"
+        }
+      },
+      "product": "marketing",
+      "platform": false,
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5506"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": "2026-11-20",
+          "eu": "2026-11-20",
+          "me": "2026-11-20"
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta"
+    },
+    {
+      "id": "similar-orgs-comparison",
+      "title": "Discover and compare similar organizations from Home and the Prospects page",
+      "summary": "A new **Similar Organizations** comparison page lets organizers see organizations that match their own profile side by side. A **Similar Orgs** teaser on the **Home** page surfaces the feature at a glance and links directly to the full comparison view.",
+      "article": "/speaker-crm/overview",
+      "kind": "new",
+      "module": "CRM",
+      "features": [
+        "speaker_prospects"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Home → Similar Orgs teaser; Prospects → Similar Organizations"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "An organizer looking to benchmark their program or find peer organizations can open the Similar Organizations page to see comparable organizations at a glance, without leaving Sessionboard. The Home teaser surfaces this immediately on sign-in so teams notice it without hunting through menus.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Feature is in the Prospects area (speaker_prospects, beta). Confirm the org has Prospects enabled before pointing customers here. The comparison page and Home teaser are new surfaces with no prior documentation."
+        },
+        "when_to_bring_up": "When a customer asks how their program compares to peers, or when they are doing competitive research ahead of a new event cycle.",
+        "who_should_get_it": "Customers with the Speaker Prospects feature enabled who are actively building or benchmarking their speaker pipeline.",
+        "staff_path": "Home → Similar Orgs teaser; Prospects → Similar Organizations",
+        "gotchas": "The feature lives under the Prospects module (speaker_prospects, beta). If a customer does not see the teaser or comparison page, confirm Prospects is enabled for their org.",
+        "talk_track": "You can now see organizations similar to yours directly from Home — click through to compare them side by side and use that context when planning your speaker outreach.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The Speaker CRM overview guide should document the Similar Organizations comparison page and the Home teaser, including what criteria are used to surface similar organizations and what data points appear in the comparison view.",
+          "why_use_it": "The Similar Organizations feature helps you understand how your program compares to peer organizations and surfaces potential partners, competitors or benchmarks in one place. From the Home teaser you get an instant preview, and the full comparison page lets you explore the details side by side. Use it when you are planning a new event cycle and want to see what similar programs look like, or when your team is researching the landscape for a sponsorship or speaker outreach campaign.",
+          "at": "2026-11-17T16:17:06.341Z",
+          "permissions_to_confirm": [
+            "org.prospects: read"
+          ]
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1683"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": "2026-11-20",
+          "eu": "2026-11-20",
+          "me": "2026-11-20"
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta",
+      "product": "platform",
+      "platform": false
+    },
+    {
+      "id": "market-radar-similar-orgs-events",
+      "title": "Market Radar: discover similar organizations and events, and track their agendas in Recon",
+      "summary": "**Market Radar** automatically finds organizations and events similar to yours each week, compares their topic coverage and dates against your own program, and surfaces gaps, exclusive topics and calendar clashes. From any similar event, you can open its official agenda and click **Track** to add it as a Recon external event and start monitoring it. AI-generated profiles of your events and organization power the matching; profiles are rebuilt whenever your event data changes.",
+      "article": "/speaker-crm/overview",
+      "related": [
+        "/speaker-crm/crm-advanced-search",
+        "/speaker-crm/crm-segments"
+      ],
+      "kind": "new",
+      "module": "Agents",
+      "features": [
+        "speaker_prospects"
+      ],
+      "availability": "limited_release",
+      "enable": {
+        "how": "csm",
+        "path": "Ask your Customer Success Manager to enable Market Radar (requires Speaker Prospects and AI features); then Organization → Market Radar"
+      },
+      "where": {
+        "scope": "org",
+        "path": "Organization → Market Radar → Similar Organizations / Similar Events"
+      },
+      "permissions": [
+        "org.prospects.create"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Program teams can see which peer organizations and events are covering topics they are not, spot scheduling conflicts before they finalize dates, and pull a competitor's published agenda directly into Recon for ongoing monitoring — without manual research.",
+      "internal": {
+        "cs_action": {
+          "kind": "must_enable",
+          "note": "Requires both Speaker Prospects and flag_enable_ai_features to be on for the org. TypeSafe API key must NOT be set in production until the subprocessor is confirmed — leave it empty so the system falls back to metered Claude."
+        },
+        "when_to_bring_up": "When a customer asks how to benchmark their program topics against peer events, avoid scheduling conflicts with similar conferences, or monitor competitor agendas.",
+        "who_should_get_it": "Customers with Speaker Prospects enabled who run recurring events and want competitive program intelligence.",
+        "staff_path": "GET /market-analysis/organization/:orgId/similar-orgs and /similar-events; POST …/similar-events/:candidateId/track to create the Recon external event.",
+        "gotchas": "Weekly cron runs Mondays 08:00 UTC; set MARKET_ANALYSIS_WEEKLY_CRON empty to disable. Similar events without a discoverable official agenda are not shown. The track action starts one Recon crawl immediately; subsequent crawls are manual or staff-initiated. AI spend is capped per profiles pass (PROFILES_REFRESH_MAX_USD, default $5). TypeSafe API key must remain empty in deployed environments until subprocessor is confirmed.",
+        "talk_track": "Market Radar gives your program team a weekly briefing on what peer organizations are covering and when — so you can fill topic gaps, avoid date clashes, and track competitor agendas in Recon without any manual research.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "No existing guide covers Market Radar, similar-organization discovery, event/organization AI profiles, or the Track-in-Recon workflow; a new guide should document how profiles are built, how the weekly run works, how to read the topic matrix and clash report, and how to track a similar event's agenda.",
+          "why_use_it": "Market Radar keeps you aware of the competitive landscape for your events without manual research. It builds AI profiles of your organization and events, finds peers with similar focus areas, and compares their topic coverage and calendar against yours — highlighting gaps you could fill and clashes you might want to avoid. When a similar event publishes its agenda, you can track it in Recon so your team always knows what the field is programming.",
+          "at": "2026-11-17T16:25:22.174Z"
+        }
+      },
+      "product": "platform",
+      "platform": false,
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5343"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": "2026-11-20",
+          "eu": "2026-11-20",
+          "me": "2026-11-20"
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:limited_release"
+    },
+    {
+      "id": "sync-history-view-report-from-job",
+      "title": "Sync History: view a structured sync report from the job detail view",
+      "summary": "A new API endpoint (`GET …/integrations-v2/syncs/report?syncId=`) returns a structured sync report — including status, metadata, sections, errors/warnings, and HTTP stats — for any sync job in **Sync History**. The report is built from the same data that renders the HTML summary, so counts are always consistent. This is the API half; the **Sync History** modal in the web UI (the follow-up PR) will surface the report directly on the job detail view.",
+      "article": "/integrations/integration-readiness#reading-the-sync-history",
+      "kind": "new",
+      "module": "Apps",
+      "features": [
+        "integration_reporting"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Apps → [Integration] → Sync History → job detail"
+      },
+      "permissions": [
+        "event.integrations.sync"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "When a sync completes or fails, an organizer can open the job in Sync History and read a structured breakdown of what happened — counts, errors, warnings and HTTP stats — without having to parse raw HTML or contact support to interpret the results.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "The API is live but the web-UI modal (lennd/sessionboard-web-ui-v2#1684) must be merged after this API is deployed to prod-us, prod-eu and prod-me. Do not promote the feature to customers until the UI PR ships. Integration_Syncs rows with a NULL or foreign org_id return 404 on the report endpoint by design; a per-region data-population query should run before the UI ships."
+        },
+        "when_to_bring_up": "When a customer asks why a sync produced unexpected results or wants to audit what was sent to their integration partner.",
+        "who_should_get_it": "Any customer using a v2 integration (Cvent, Swoogo, Bizzabo, Grip, ASP, Stova, Swapcard, Gleanin, ExpoPlatform, apps-engine) who runs syncs and wants to review the outcome.",
+        "staff_path": "Apps → [Integration] → Sync History → open a job row",
+        "gotchas": "Deploy order is critical: API must be live in prod-us, prod-eu and prod-me before the web-ui-v2 PR is merged. Legacy sync rows written before the framework update fall back to log markers; very old rows for unknown vendors return a raw <pre> dump rather than a structured report. NULL org_id rows appear in the sync list but return 404 on the report endpoint.",
+        "talk_track": "You can now open any sync job in Sync History and see a structured report — status, record counts by section, errors and warnings — all in one place, so you know exactly what synced and what needs attention.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The integration-readiness guide should document the new job detail / sync report view: what fields appear (status, metadata, sections, errors, warnings, HTTP stats), how to open it from Sync History, and what the raw fallback looks like for legacy or unknown-vendor rows.",
+          "why_use_it": "Sync History lets you see exactly what happened during every integration sync — which records were created, updated or skipped, and which errors or warnings were raised. Opening a job gives you a structured report with status, metadata, per-section counts and a filtered list of issues, so you can diagnose problems and confirm successful runs without leaving Sessionboard.",
+          "at": "2026-11-17T16:52:40.673Z"
+        }
+      },
+      "product": "platform",
+      "related": [
+        "/integrations/overview",
+        "/integrations/what-syncs"
+      ],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5482"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": "2026-11-20",
+          "eu": "2026-11-20",
+          "me": "2026-11-20"
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "feature:integration_reporting (limited_release)",
+      "platform": false
+    },
+    {
+      "id": "sync-history-report-modal-and-lifecycle",
+      "title": "Sync History: native sync report modal and real sync lifecycle states",
+      "summary": "The **Sync History** tab now shows a full sync report in a native modal — opened via **Explore sync → View report** for recent syncs, or **View report** directly on legacy rows. The report includes a status badge with copyable Sync ID, per-entity result cards with failed counts, error and warning tables, HTTP stats (API calls, retries, status-code breakdown, endpoint table), and a raw JSON view for unknown vendors. The sync lifecycle now reflects real API states: **Queued → Started → Running → Finalizing → Completed / Completed with warnings / Failed / Cancelled**; phases without timestamps show **Not recorded**. Syncs that completed with record errors show **Completed with errors** (yellow); the list uses **Warning** with the full text as a tooltip.",
+      "article": "/communications/email-sms-history#integrations",
+      "related": [
+        "/integrations/integration-readiness",
+        "/integrations/overview"
+      ],
+      "kind": "improved",
+      "module": "Settings",
+      "features": [
+        "integration_reporting"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "History → Integrations → Sync History → Explore sync → View report"
+      },
+      "permissions": [
+        "event.history.read"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "When a sync with Cvent, Swapcard, or another integration produces unexpected results or errors, an organizer can open the sync report to see exactly which records failed, what HTTP calls were made, and where in the lifecycle the sync stopped — without leaving Sessionboard or parsing raw logs.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer reports that a sync produced unexpected results, missing sessions or contacts, or an unclear error state — point them to Sync History → Explore sync → View report.",
+        "who_should_get_it": "Any customer using a third-party integration (Cvent, Swapcard, Stova, etc.) who needs to diagnose sync failures or verify sync completeness.",
+        "staff_path": "History → Integrations → Sync History → Explore sync → View report",
+        "gotchas": "Depends on API PR lennd/sessionboard-web-api#5482 being deployed to prod-us, prod-eu and prod-me first. Legacy pre-2026 sync rows skip the status screen and open the report modal directly via 'View report'. A 404 on the report endpoint makes exactly one request and raises no toast — the modal shows an inline error with a Retry button. The Running tab and RunningSyncsPanel have been removed; the sub-tabs are now Sync History and Logs only.",
+        "talk_track": "Instead of asking your integration partner to pull logs, you can now open the sync report right inside Sessionboard — it shows every failed record, the HTTP calls made, and the exact lifecycle phase where the sync stopped.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The History guide's Integrations section should document the new Sync History sub-tab navigation (replacing the Running tab), the Explore sync → View report flow, the lifecycle states (Queued through Cancelled, Not recorded for missing timestamps), the Completed with warnings / Completed with errors distinction, and the sections of the sync report modal (entity cards, error table, HTTP stats, raw JSON view).",
+          "why_use_it": "The Sync History report gives you a detailed breakdown of every integration sync run directly inside Sessionboard. You can see which entity types succeeded or failed, read the specific error messages and HTTP status codes that caused problems, and follow the sync through each lifecycle phase — from Queued to Completed — with real timestamps. This makes it faster to diagnose integration issues, share findings with your integration partner, and confirm that a re-run resolved the problem.",
+          "at": "2026-11-17T17:01:22.016Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1684"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": "2026-11-20",
+          "eu": "2026-11-20",
+          "me": "2026-11-20"
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "feature:integration_reporting (limited_release)",
+      "product": "platform",
+      "platform": false
     }
   ]
 }
