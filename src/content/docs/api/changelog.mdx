@@ -19,6 +19,12 @@ The Sessionboard public API lets you read and write event data programmatically.
 
 ## November 2026
 
+### November 23 — Breaking: an unset checkbox custom field reads `"No"`, not `null` (takes effect December 23, 2026)
+
+**Breaking — takes effect December 23, 2026.** On every read that returns custom fields (sessions, contacts, speakers, sponsors, exhibitors), a `checkbox` custom field that was never set, or whose stored value is `null`, now returns `"No"` instead of `null`. A checked box still returns `"Yes"`, an unchecked box still returns `"No"`, and empty fields of every other type still return `null`. The values stay strings; they are not changing to booleans. Writes are unchanged (`true` / `false`).
+
+If your integration treats `null` as "never answered" and `"No"` as "answered no", treat both as unchecked before December 23, 2026. This notice is published 30 days ahead, as the [Breaking Changes](/api/breaking-changes) policy requires. Nothing changes before that date.
+
 ### November 20 — One domain for every page; details-updated email per guest status
 
 **Added.** `GET` and `PUT /v1/marketing/pages/domains/{domainId}/home`: an organization domain's home page (`site_id`) and `serves_org_pages`. With `serves_org_pages: true` the domain serves every public page of the organization at the same paths as `sites.sessionboard.com` (`/p/<slug>`, `/e/<slug>`, `/s/<slug>`), and every public URL the API returns for the organization (page addresses, event page redirects, links in emails) uses it. One per organization. `GET /v1/marketing/pages/domains` shows `serves_org_pages` on each domain. The MCP server adds `get_domain_home_page` and `set_domain_home_page`.
