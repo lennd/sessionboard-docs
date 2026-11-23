@@ -25,6 +25,12 @@ The Sessionboard public API lets you read and write event data programmatically.
 
 **Changed.** The details-updated email (`gathering-details-updated`) words itself for each guest's status: confirmed guests get the calendar link, guests whose seat request is pending or who are waitlisted are told where they stand and get no calendar link. It names only what changed and links **View details** to the event's real public page. `POST /v1/marketing/events/{eventId}/details-update/preview` takes `as_status` (`confirmed`, `pending`, `waitlisted`) and `changed` (`date`, `time`, `venue`); `…/send` takes `changed`.
 
+### November 20 — Edit a registration question
+
+**Added.** `PATCH /v1/marketing/pages/events/{eventId}/registration-form/questions/{questionId}` changes one question on an event's registration form: `label`, `options` (the whole list of choices, in order) and `required`. Answers already given are kept, also for a choice that is taken out. Each change answers with `kept.restore` and shows in the event's history. The MCP server adds `update_registration_question`, which takes `also_event_ids` / `apply_to_tour: true` to make the same change on a tour's other stops.
+
+New endpoint only; nothing existing changes.
+
 ### November 19 — In-person events: approvals by organization and in Slack, city invites, sign-up sources, the packet, moments and follow-up
 
 **Added.** Marketing, under `/v1/marketing/events/{eventId}`: `GET guests/organizations`, `POST guests/organizations/status` (approve, waitlist or decline one organization's requests; emails each guest) and `POST guests/org-seat-cap`; `GET`/`POST slack-approvals` and `POST slack-approvals/post-pending` (seat requests in a Slack channel with Approve, Waitlist and Decline buttons; each decision records who, when and where), plus `GET /v1/marketing/events/slack-channels`; `GET`/`POST know-before` and `POST know-before/packet/presign` (the packet and Getting there in the confirmation, promoted, reminder and details-updated emails, with new merge tags `{{packet_url}}`, `{{packet_name}}` and `{{#getting_there}}`); `GET`/`POST moments`; `GET after-event` and `POST after-event/send` (needs `confirmed: true`); `GET signup-sources` and `POST tracked-links`; and `POST /v1/marketing/events/tours/{tourId}/city-invites`. Guests now carry `org_type` and `source`. The MCP server adds 17 tools for these. Reading or writing an event page that redirects to another Site now answers with `redirect` and a warning.
