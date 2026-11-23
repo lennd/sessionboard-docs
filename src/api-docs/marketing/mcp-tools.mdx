@@ -119,6 +119,49 @@ The same scopes and the same organization-wide rule apply. Tools that publish, s
 
 Try: *"Turn the summit into a podcast"*, *"Draft this month's newsletter from the summit"*, *"Who watched the keynote?"* or *"Who from our target accounts looked at the pricing page this week?"*
 
+## Webinar library, recording pages, tracking and after-webinar plan
+
+Tools for the webinar loop: choose what an on-demand library holds, build gated recording pages, turn on analytics by id, set what happens after a webinar, and read what is outstanding. Library, plan and outstanding tools need `read:marketing` / `write:marketing`; the tracking tools need `read:sites` / `write:sites`. Anything that reaches people or the public still waits for a person's OK.
+
+| Tool | Hints | Description |
+|------|-------|-------------|
+| `list_gallery_items` | read | What an on-demand library holds, in order: `item_id`, `media_id` or `content_id`, title, kind, `event_id`, `featured`, `hidden` and `added_by` (`rule` or `chosen`), plus the library's `rules` and `only_chosen`. Pages with `limit` and `offset`; `truncated` says there is more |
+| `set_gallery_items` | write · destructive | Choose exactly what a library holds. In order, all or nothing: `only_chosen: true` (rules off, an event library's one-event limit lifted), `add` by `media_id` or `content_id`, `remove`, `order`, `featured` (`null` clears). An organization-wide rule never adds Zoom meeting or call recordings; add one by id on request. On a published library visitors see it at once, so the assistant asks first |
+| `update_recording` | write · destructive | After import: put a recording in an event, move it or take it out (`event_id: null`; its clips and transcript move with it), and set `title`, `description` and `tags` (replacing the old ones, at most 20). `import_recording` can't do this: importing again answers `already_imported` |
+| `get_page_kit` | read | The page kit for agent pages. Pass `kind` (for example `webinar_recording`) for that kind's worked, compiling example. Documents `<sb-portal kind="video">` and gallery routes (`bind` `gallery:<gallery id>`, one page per public recording at `/webinars/{slug}`) |
+| `get_site_tracking` | read | A Site's analytics: the tag `ids`, the `org_default`, the `effective` set that renders, tag ids already in admin-only header code, the `events` pages push, and `missing` |
+| `set_site_tracking` | write · destructive | Set `gtm_container_id`, `ga4_measurement_id`, `hubspot_portal_id` (with `hubspot_region` `na1` or `eu1`), `linkedin_partner_id` and `meta_pixel_id`; send only what changes, `null` clears. Without `site_id` it sets the org default every Site inherits. Live at once; ids only, never script or HTML |
+| `get_after_webinar_plan` | read | The plan a webinar runs when it ends: `plan` (its own, else the org defaults), `approval`, `sends_automatically`, `approval_note`, `run` (each step's status) and `results` (sent, opened, clicked per audience, gate unlocks, viewers) |
+| `set_after_webinar_plan` | write | Merge changes onto the plan: `import_recording`, `make_content` kinds, `library`, `gate`, `emails` (`attended`, `no_shows`), `kits`, `delays`, `wait_hours`. `approve: true` is the OK for its emails and kits; it counts only before the webinar starts and only for this exact plan, and is gated like a send |
+| `get_after_webinar_defaults` | read | The organization's plan for webinars without their own, the built-in starting point and the merge fields |
+| `set_after_webinar_defaults` | write | Set that plan. Defaults never send by themselves |
+| `get_outstanding` | read | Everything outstanding across every event or one (`event_id`), most important first. `product: all` adds Platform tasks. Each item has `title`, `why`, `urgency`, `ask` (question and choices), `do` (tool calls per choice, in order) and `needs_person_ok`; `gaps` lists what no tool can do |
+
+Try: *"Make the library hold only these 24 recordings, with the keynote first"*, *"Build a recording page for every recording in it"*, *"Turn on GA4 and Tag Manager for all my pages"*, *"After the December webinar, import the recording, gate it and email attendees and no-shows"* or *"What do I need to do?"*
+
+### REST routes
+
+Each route is also served as `/v1/organization/{orgId}/...`.
+
+| Route | Scope | Tool |
+|-------|-------|------|
+| `GET /v1/marketing/pages/galleries/{galleryId}/items` | `read:marketing` | `list_gallery_items` |
+| `PUT /v1/marketing/pages/galleries/{galleryId}/items` | `write:marketing` | `set_gallery_items` (body `add`, `remove`, `order`, `featured`, `onlyChosen`) |
+| `PUT /v1/marketing/content/recordings/{mediaId}` | `write:marketing` | `update_recording` (body `eventId`, `title`, `description`, `tags`) |
+| `GET`, `PUT /v1/sites/tracking` | `read:sites`, `write:sites` | `get_site_tracking`, `set_site_tracking` for the org default |
+| `GET`, `PUT /v1/sites/{siteId}/tracking` | `read:sites`, `write:sites` | The same for one Site |
+| `GET`, `POST /v1/marketing/events/{eventId}/after-webinar` | `read:marketing`, `write:marketing` | `get_after_webinar_plan`, `set_after_webinar_plan` |
+| `GET`, `POST /v1/marketing/events/after-webinar-defaults` | `read:marketing`, `write:marketing` | `get_after_webinar_defaults`, `set_after_webinar_defaults` |
+| `GET /v1/marketing/outstanding` | `read:marketing` | `get_outstanding` (query `event_id`, `product`, `limit`) |
+
+### What's outstanding
+
+`get_outstanding` is read-only and needs an organization-wide token, like approvals. The assistant leads with the first item's question, puts its choices to the person, and calls the steps listed for the choice they pick. A value written `<like this>` in a step comes from the step before it or from the person's answer. When `needs_person_ok` is true, the step reaches people or the public and the assistant waits for a clear yes. A list returns at most 50 items; `truncated` and `total_count` say when there are more.
+
+### Tracking events and attribution
+
+Pages push `sb_form_submit`, `sb_cta_click`, `sb_video_gate_unlocked`, `sb_video_play` and `sb_video_progress` to the `dataLayer`, with no personal data. Sign-ups, recording gates, library gates and registrations are saved with their source: `utm_*`, `gclid`, `li_fat_id`, `fbclid`, `msclkid`, the HubSpot cookie, `landing_page`, `referrer`, `entry_source` and `conversion_page`. Page addresses are stored without their query or hash. Sending sign-ups to the organization's own HubSpot form is an admin setting that no assistant can change.
+
 ## Your event page
 
 Edits land in the event page's draft; nothing goes live until `publish_site`, which an assistant calls only after the person has seen the changes and said OK. Reading needs `read:sites` or `read:marketing`; changing needs `write:sites` or `write:marketing`.
