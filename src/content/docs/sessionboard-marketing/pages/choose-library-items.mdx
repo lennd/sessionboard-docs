@@ -1,0 +1,74 @@
+---
+title: "Choose what your library holds"
+description: "Pick the exact recordings and clips an on-demand library shows, in the order you want, and set a recording's event, title and tags after you import it, all from Claude or ChatGPT."
+sidebar:
+  label: "Choose library items"
+  order: 4
+audience: ["organizer"]
+jtbd: "show only the recordings I picked in my on-demand library, in my order"
+---
+
+import { Note, Steps, Step } from '@compat';
+
+A new [on-demand library](/sessionboard-marketing/pages/content-gallery) fills itself from rules: everything in your workspace, or everything from one event. You can switch the rules off and hold exactly the recordings you choose, in the order you choose.
+
+You do this from Claude, ChatGPT or another assistant connected to Sessionboard, or through the API.
+
+## Why use it
+
+A webinar library is rarely "everything we ever recorded". It is the 24 sessions you are proud of, with the best one first. Choosing items keeps internal calls and test recordings out, and it lets one library mix recordings from several events and recordings that belong to no event.
+
+## What a rule-filled library never includes
+
+A library that draws from your whole organization never adds recordings of Zoom meetings and calls, or clips cut from them. Zoom webinars are included. If you want a meeting recording in a library, name it and your assistant adds it by its id.
+
+## Hold exactly the recordings you pick
+
+<Steps>
+<Step title="Find the library and the recordings">
+Ask: *"Which libraries do I have, and which recordings could go in the Sessionboard webinars library?"* Your assistant lists your libraries (`list_marketing_pages`) and your recordings (`list_recordings`).
+</Step>
+<Step title="See what it holds now">
+Ask: *"What is in the library today?"* Your assistant reads it with `list_gallery_items`. Each item shows whether its rules put it there (`rule`) or someone picked it (`chosen`), whether it is featured, and whether it is hidden.
+</Step>
+<Step title="Choose">
+Ask: *"Make the library hold only these recordings, in this order, and feature the keynote first."* Your assistant calls `set_gallery_items` once. It turns the rules off, adds what you named, removes what you did not, sets the order and the featured item. The change is all or nothing.
+</Step>
+<Step title="Check it">
+Ask: *"Show me the library as it is now."* Anything the rules had already put in stays until it is removed, so your assistant reads every page of the list and takes out what is not in your pick.
+</Step>
+</Steps>
+
+If the library is published, visitors see the change at once. Your assistant tells you what will change and waits for your OK first. A draft stays a draft.
+
+### What you can change
+
+| You ask for | What happens |
+| --- | --- |
+| Hold only what I choose | The library's rules switch off, so nothing joins on its own. What the rules already put in stays as chosen items until you remove it. An event library can now hold recordings from any event. |
+| Add a recording, clip or piece of made content | It joins the library as a chosen item. |
+| Remove an item | It leaves the library. While a rule is still on, removing an item the rule added hides it, so the next sync does not bring it back. |
+| Put these first, in this order | They are listed first in that order, and the library sorts by that order from then on. |
+| Feature one item | It is shown up front. Ask to clear it to remove the feature. |
+
+<Note>
+A library that is limited to registrants, or built from an event's own template, keeps its one-event limit. Choosing items can't lift it.
+</Note>
+
+## Put a recording in an event after you import it
+
+Importing a recording again returns `already_imported` and leaves its event as it was. To change it, ask: *"Put the Cloud costs recording in the December launch webinar."* Your assistant calls `update_recording`.
+
+- **Event.** Put the recording in an event, move it to another, or take it out of its event. Its clips and transcript move with it. You need access to both events.
+- **Title and description.** Rename or describe it.
+- **Tags.** Tags replace the old ones, up to 20. A library uses them for search and topics.
+
+Moving a recording out of an event also removes a session link it had to the old event.
+
+## Questions
+
+**Why is a Zoom recording missing from my library?** It is probably a meeting or a call, which an organization-wide library skips. Ask your assistant to add it by name.
+
+**Can a library hold recordings from several events?** Yes, once you hold only what you choose.
+
+**Can I undo a change?** Ask your assistant to add the item back, or to list what the library held and restore the order.

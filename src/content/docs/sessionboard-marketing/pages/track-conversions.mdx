@@ -1,0 +1,75 @@
+---
+title: "Track conversions on your pages"
+description: "Turn on Google Tag Manager, GA4, HubSpot, LinkedIn and Meta tracking on your pages by id from your assistant, and see where every sign-up came from."
+sidebar:
+  label: "Track conversions"
+  order: 5
+audience: ["organizer"]
+jtbd: "see which pages and campaigns bring sign-ups, in the analytics tools we already use"
+---
+
+import { Note, Steps, Step } from '@compat';
+
+Pages your assistant builds report sign-ups, recording unlocks and button clicks to the analytics tools you already use, and they keep where each person came from. You turn it on by giving your assistant your tag ids. You never open Sessionboard and never paste a script.
+
+## Why use it
+
+You can answer "which campaign brought the people who unlocked the webinar recording?" in Google Analytics, Tag Manager or HubSpot, and each person in [People](/sessionboard-marketing/people) keeps the source of their sign-up.
+
+## Turn on analytics by id
+
+<Steps>
+<Step title="Check what is set">
+Ask: *"What analytics does my Sessionboard site have?"* Your assistant calls `get_site_tracking`. It shows the ids each page set, the default every page inherits, what renders, and what is missing.
+</Step>
+<Step title="Give it your ids">
+Ask: *"Set Google Tag Manager to GTM-ABC1234 and GA4 to G-1A2B3C4D5E for all my pages."* Your assistant calls `set_site_tracking`. Name one Site to set it for that Site only. A Site's own id wins over the default.
+</Step>
+<Step title="Check it">
+Ask for the tracking again. The tags are live at once, with no publish. Open one page and check it in Tag Manager preview or your GA4 realtime report.
+</Step>
+</Steps>
+
+| Tag | What you give your assistant | Looks like |
+| --- | --- | --- |
+| Google Tag Manager | Container id | `GTM-ABC1234` |
+| Google Analytics 4 | Measurement id | `G-1A2B3C4D5E` |
+| HubSpot tracking | Hub id, and `eu1` if your HubSpot is in the EU | `1234567` |
+| LinkedIn Insight Tag | Partner id | `123456` |
+| Meta pixel | Pixel id | `123456789012345` |
+
+Send only the ids that change. To remove one, ask your assistant to clear it. Ids are checked against these patterns, and Sessionboard adds each vendor's own snippet to your public pages. Your assistant can't add scripts or HTML, and pages shared by a personal link never carry tags.
+
+<Note>
+If you already paste tracking code into a Site's header yourself, `get_site_tracking` lists the tag ids it finds there, so you don't count a visit twice.
+</Note>
+
+## Events your pages send
+
+Pages push these events to the `dataLayer`. Every event carries `page_path`. They never carry a person's email, name, company or HubSpot cookie, and any value that contains an `@` is dropped.
+
+| Event | When | Details |
+| --- | --- | --- |
+| `sb_form_submit` | Someone submits a sign-up or registration form | `form_kind`, `form_id`, `form_element_id`, `registration_status` |
+| `sb_cta_click` | Someone clicks a button or link | `cta_text`, `link_url` without its query, `link_type`, `cta_section` |
+| `sb_video_gate_unlocked` | Someone unlocks a gated recording | `video_id`, `video_title`, `gate` |
+| `sb_video_play` | A video or audio starts | `video_id`, `video_title` |
+| `sb_video_progress` | A video reaches 25, 50, 75 or 100 percent | the same, plus `percent` |
+
+When a page has gtag.js and no Tag Manager container, the events are also sent to GA4. With a container, they are sent once, through the container.
+
+## Where each sign-up came from
+
+Every sign-up, recording gate, library gate and registration is saved with its source: the `utm_source`, `utm_medium`, `utm_campaign`, `utm_term`, `utm_content` and `utm_id` values, ad click ids (Google, LinkedIn, Facebook, Microsoft), the first page and referrer from the last 30 days, and the page where they converted. Page addresses are saved without their query or hash, so a personal link is never kept.
+
+If your HubSpot tracking is on, the person's HubSpot cookie is saved too, so a form sent to HubSpot ties to their visit.
+
+## Send sign-ups to a HubSpot form
+
+An organization admin sets a HubSpot Hub id and form GUID to send each sign-up, recording gate and library gate to a form in your own HubSpot, with the visitor's cookie and the converting page. It is off until it is set up. If HubSpot refuses the extra fields, Sessionboard retries with the email alone, and a slow or failed send never stops the visitor.
+
+An assistant can't change this setting, because it decides where people's details go.
+
+## Still having issues?
+
+If a tag doesn't show up, ask your assistant for the tracking and check `missing`. Still stuck? Email [support@sessionboard.com](mailto:support@sessionboard.com) with the page address and the tag id.
