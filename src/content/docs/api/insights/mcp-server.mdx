@@ -87,12 +87,30 @@ All tools include [MCP annotations](https://modelcontextprotocol.io/docs/concept
 
 ### How agents find tools
 
-Sessionboard has about 500 MCP tools. Every tool can be called by name, and two tools let an assistant reach any of them without loading the whole catalogue:
+Sessionboard has about 500 MCP tools. Every tool can be called by name, and two tools let an assistant reach any of them without loading the whole catalogue: `find_tools` (also callable as `search_tools`) and `call_tool`.
 
-| Tool | What it does |
+**`find_tools`** answers in four ways:
+
+| Pass | You get |
 |---|---|
-| `find_tools` | Takes a short `query` in plain words (for example `"gate a recording"`, `"gallery"`, `"award nominations"`) and returns the best-matching tools, each with its description, whether it is read-only or destructive, and its `input_schema`. Pass `names` to describe exact tools, `product` to narrow to one area (`marketing`, `learning`, `awards`, `crm`, `sessions`, `sites`), and `limit` for up to 25 results (8 by default). `search_tools` is the same tool under another name. |
-| `call_tool` | Takes `name` and `arguments` and runs that tool. The arguments are checked against the tool's own schema, and the call runs with your sign-in, your organization and your scopes, exactly as a direct call would. A tool that waits for a person's OK answers the same way through `call_tool`. `call_tool` is marked destructive, so assistants ask before running it. |
+| `query`: the job in plain words, such as `"gate a recording"`, `"send after-webinar emails"` or `"award nominations"` | The best-matching tools, ranked. Everyday words work ("lock a video" finds `gate_video`), and each result says which of its words `matched`. 8 results by default, `limit` up to 25, `offset` for the next page. |
+| `product`: `Platform`, `Marketing`, `Sessions`, `Learning`, `Awards`, `CRM` or `Sites` | With a query, only that product's tools. On its own, that product's tools from A to Z, 25 at a time. |
+| `categories: true` | Every product with how many tools it has, what they cover, and whether your workspace has it. |
+| Nothing, or `recent: true` | The tools your connected account used most recently and most often. A new connection gets the tools to start with. |
+
+Each result is short: `name`, `title`, a one-line `summary`, `product`, the `required` arguments, `read_only` and `destructive`, and `access`. Add `detail: true`, or pass exact tool `names`, to get each tool's full description and `input_schema`.
+
+**`access`** says whether you can use the tool now:
+
+| `access` | Meaning | What comes with it |
+|---|---|---|
+| `available` | Your workspace has the tool's product. | |
+| `not_in_plan` | The tool belongs to a product your workspace doesn't have yet, such as Learning, Awards or CRM. These results come after the ones you can use. | `why`, `learn_more_url` (the product's page on sessionboard.com) and, for products you can start on your own, `start_url` (where to add it to your workspace in Sessionboard) |
+| `needs_permission` | Your workspace has the product, but Sessionboard turned down your sign-in for this tool recently, for example because your role or your connection's permissions don't cover it. | `why` and `how_to_get`: ask an admin of your workspace, or reconnect Sessionboard in your assistant and approve the permissions it asks for |
+
+If a result has no `access` field, Sessionboard couldn't tell, and nothing is held back. Assistants should pass the `why` and the links on to you rather than run a tool you can't use.
+
+**`call_tool`** takes `name` and `arguments` and runs that tool. The arguments are checked against the tool's own schema, and a mistake comes back with the schema so the assistant can fix it. The call runs with your sign-in, your organization and your permissions, exactly as a direct call would, and a tool that waits for a person's OK answers the same way. If Sessionboard turns the call down, `call_tool` answers with the same `access`, `why` and links as `find_tools` instead of a bare error. `call_tool` is marked destructive, so assistants ask before running it.
 
 **Short tool list.** Add `?tools=slim` to the server URL (for example `https://mcp.sessionboard.com/mcp?tools=slim`), or send the header `X-Sessionboard-Tools: slim`, and the server lists only a small core: `search`, `fetch`, `get_outstanding`, `get_marketing_home`, `list_events`, `find_event`, `get_event_overview`, `query_data`, `get_schema`, `find_tools` and `call_tool`. The assistant finds everything else with `find_tools` and runs it with `call_tool`. Without the parameter the server lists every tool, `find_tools` and `call_tool` included. Use the short list when your client limits how many tools or how large a tool list it loads. Tools that are not listed can still be called directly by name.
 
