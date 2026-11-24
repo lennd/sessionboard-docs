@@ -1591,6 +1591,186 @@
       "gated": null,
       "product": "platform",
       "platform": false
+    },
+    {
+      "id": "merge-keeps-event-field-answers-trash-shows-sess-ids",
+      "title": "Contact merge preserves event-field answers; Trash rows for sessions show SESS- IDs",
+      "summary": "Two data-integrity fixes for contacts and sessions. **Merge duplicate contacts** now copies a duplicate's event-specific contact-field answers to the surviving record when the survivor has no value for that field, so event-level data (custom session-name fields, formats, descriptions, etc.) is no longer silently dropped. **Trash** rows for sessions now display **SESS-&lt;id&gt; · title** instead of the title alone, and searching by the SESS- ID finds the correct record — preventing the wrong session from being restored when two sessions share a title.",
+      "article": "/contacts/merge-duplicates#what-the-merge-keeps",
+      "related": [
+        "/sessions/create-a-session"
+      ],
+      "kind": "fixed",
+      "module": "CRM",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Contacts → Duplicates → Merge; Trash"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who merge duplicate contacts no longer lose event-specific field data collected on the duplicate. When restoring a deleted session, the SESS- ID in the Trash row lets organizers confidently pick the right record even when two sessions share the same title.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Both fixes are default-on. Data repair for the two known affected events (LDOE event 6788 and event 6733) is handled separately by engineering — no CS action needed."
+        },
+        "when_to_bring_up": "A customer reports that merging contacts dropped field values, or that they restored the wrong session from Trash.",
+        "who_should_get_it": "Any customer who uses Merge Duplicates or who has trashed sessions with duplicate titles.",
+        "staff_path": "Contacts → Duplicates → Merge; Trash",
+        "gotchas": "The merge fix applies only where the survivor has no value for the field — it never overwrites an admin-picked or existing survivor value. The Trash SESS-ID label is display-only; it does not change how restore works.",
+        "talk_track": "Merging contacts now carries over every event-level field answer from the duplicate, and Trash shows the SESS- ID so you always restore the right session."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5629"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "product": "platform",
+      "platform": false
+    },
+    {
+      "id": "ssf-submission-limit-additional-contacts-existing-contact-names",
+      "title": "Submission forms: submission limit now saves correctly, additional contacts stay visible for existing contacts, and existing contact names are no longer overwritten",
+      "summary": "Three fixes to session submission forms. (1) Enabling **Set Submission Limit** now seeds the stepper at 1 and saves that cap — previously the limit was displayed but saved as null, so no cap was enforced. (2) The **Additional contacts** section stays visible when a submitter types an existing contact's email, as long as the event has unique-contact editing on. (3) When a row is matched to an existing contact, any first/last name typed before the email is cleared so the row shows the contact's saved name (or \"Provided by existing contact profile\"), and the Review step falls back to the email rather than showing stale typed names.",
+      "article": "/sessions/submission-forms",
+      "related": [
+        "/faq/can-end-users-submit-more-than-one-submission",
+        "/contacts/additional-contacts"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "sessions",
+        "unique_contacts"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Sessions → Submission Forms → Form Settings"
+      },
+      "permissions": [
+        "event.session_forms.update"
+      ],
+      "audience": [
+        "organizer",
+        "speaker"
+      ],
+      "use_case": "Organizers who set a per-person submission cap can now trust it will be enforced. Submitters adding co-presenters who are already in the system will see the correct saved names and keep access to the additional contacts section.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "23 forms (21 US, 2 EU) had the submission limit toggled on but saved as null — meaning no cap was actually applied. Those forms will pick up a limit of 1 on their next save. Reach out to affected customers before they save if a limit of 1 is not what they intended."
+        },
+        "when_to_bring_up": "A customer reports that their submission limit setting isn't working, that additional contacts disappear when an existing email is entered, or that wrong names appear on the review step for co-presenters.",
+        "who_should_get_it": "Any customer using submission limits or the unique-contact / additional-contacts feature on their submission forms.",
+        "staff_path": "Sessions → Submission Forms → Form Settings → Set Submission Limit",
+        "gotchas": "The 23 affected forms will silently inherit a limit of 1 on next save. CS should proactively check with those event owners before they save their form settings again.",
+        "talk_track": "The submission limit toggle now actually enforces the cap you set. And when a submitter enters a co-presenter who's already in your system, their existing profile name shows correctly instead of whatever was typed."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1740"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "product": "platform",
+      "platform": false
+    },
+    {
+      "id": "ssf-subsession-fixes-wave2",
+      "title": "Submission forms: subsession limit counting, subsession field prefill, and admin editing another user's draft all fixed",
+      "summary": "Three bugs in session submission forms with subsessions are resolved. Editing a submitted session no longer incorrectly triggers a **\"Submission limit reached\"** error caused by the session's own child rows being counted as separate submissions. Re-opening a submitted session now correctly prefills subsession **Format**, **Language**, **Track**, **Level**, and **Tags** fields that were previously shown empty. An event team member opening another user's draft now saves and submits into the original owner's draft, keeping the original submitter attached and sending the confirmation email to them.",
+      "article": "/sessions/submission-forms",
+      "related": [
+        "/sessions/create-a-subsession",
+        "/sessions/draft-submissions",
+        "/faq/can-end-users-submit-more-than-one-submission"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "sessions"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Sessions → Submission Forms"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "speaker"
+      ],
+      "use_case": "Any event using subsessions on a submission form with a per-submitter limit was silently blocking submitters from editing their own accepted sessions. These fixes unblock those submitters, restore subsession field data when a form is re-opened, and let event team members complete a speaker's draft without reassigning ownership.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Two known customer events were actively blocking submitters: form 9a4f4459 (event 7009) had 2 submitters blocked by their own subsessions. Confirm those submitters can now edit successfully after this release."
+        },
+        "when_to_bring_up": "A customer reports that speakers with subsessions get a 'Submission limit reached' error when editing, that subsession format/language/track/level/tags are blank when a form is re-opened, or that an admin editing a speaker's draft changed the submission owner.",
+        "who_should_get_it": "Any customer using submission forms with subsessions and a per-submitter submission limit, or whose event team opens speaker drafts.",
+        "staff_path": "Sessions → Submission Forms → open a form with subsessions and a limit of 1",
+        "gotchas": "Child subsessions submitted into another user's parent session (allow_parent_session_selection) still count as separate submissions — that behaviour is intentional and unchanged. SB-11632 (draft participants) is a separate issue deferred to a future PR.",
+        "talk_track": "Speakers with subsessions can now edit their submissions without hitting a false limit, all their subsession details come back correctly when the form reopens, and your team can finish a speaker's draft for them without taking over the submission."
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5627"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "product": "platform",
+      "platform": false
     }
   ]
 }
