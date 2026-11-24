@@ -19,6 +19,12 @@ The Sessionboard public API lets you read and write event data programmatically.
 
 ## November 2026
 
+### November 23 — MCP: find any tool, and a short tool list
+
+**Added.** Two MCP tools reach the whole catalogue: `find_tools` (also `search_tools`) returns the tools that match a plain-words query, with their descriptions, safety hints and input schemas, and `call_tool` runs any tool by `name` and `arguments` with the same validation, sign-in, scopes and approvals as a direct call. Add `?tools=slim` to the MCP server URL (or send `X-Sessionboard-Tools: slim`) to list only a small core plus these two. See [How agents find tools](/api/insights/mcp-server#how-agents-find-tools).
+
+The default tool list is unchanged, and every tool can still be called by name.
+
 ### November 23 — Redirects on your own domains
 
 **Added.** `GET`, `PUT /v1/marketing/pages/domains/{domainId}/redirects` and `DELETE /v1/marketing/pages/domains/{domainId}/redirects/{redirectId}` (also under `/v1/organization/{orgId}/marketing/pages/...`): a list of redirect rules per custom domain, answered before any page on that domain, `/` included. A rule has `id`, `from` (an exact path, or a prefix ending in `/*`; `/*` is the whole domain), `to` (an `https` URL or a path on the same domain; a `to` ending in `/*` keeps the rest of a prefix path), `status` (`301`, the default, or `302`) and `enabled`. Exact paths win over prefixes and the longest prefix wins; the visitor's query string is kept unless `to` has one. `PUT` takes exactly one of `ops` (`add`, `update`, `remove` by `id` or `from`), `redirects` (the whole list) or `restore_version`, and an optional `if_version` that answers `409` when the list changed since it was read. Writes refuse loops and chains on the same domain, non-`https` targets, duplicate paths and more than 200 rules (`400` with a `code`). Every change bumps `version` and is kept with who made it and when: `GET ?history=true` adds `versions`, and every write returns a `summary` and `undo.restore_version`. Changes are live within about a minute. Same scopes as the other pages routes (`read:marketing` / `write:marketing`); not available to keys restricted to particular events. The MCP server adds `list_domain_redirects`, `set_domain_redirects` and `remove_domain_redirect`.

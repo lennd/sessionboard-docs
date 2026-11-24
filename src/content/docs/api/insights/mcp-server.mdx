@@ -85,6 +85,17 @@ The MCP server groups its tools as below. Write operations use a `manage_*` patt
 
 All tools include [MCP annotations](https://modelcontextprotocol.io/docs/concepts/tools#tool-annotations) for safe AI behavior — read tools are marked `readOnlyHint: true`, every `manage_*` tool is marked `destructiveHint: true` because each can overwrite an existing record through its `update` action (even the ones with no `delete`), and all are `openWorldHint: false` because every tool is bounded to your organization's data. Clients such as Claude and ChatGPT use these hints to ask for confirmation before a write runs.
 
+### How agents find tools
+
+Sessionboard has about 500 MCP tools. Every tool can be called by name, and two tools let an assistant reach any of them without loading the whole catalogue:
+
+| Tool | What it does |
+|---|---|
+| `find_tools` | Takes a short `query` in plain words (for example `"gate a recording"`, `"gallery"`, `"award nominations"`) and returns the best-matching tools, each with its description, whether it is read-only or destructive, and its `input_schema`. Pass `names` to describe exact tools, `product` to narrow to one area (`marketing`, `learning`, `awards`, `crm`, `sessions`, `sites`), and `limit` for up to 25 results (8 by default). `search_tools` is the same tool under another name. |
+| `call_tool` | Takes `name` and `arguments` and runs that tool. The arguments are checked against the tool's own schema, and the call runs with your sign-in, your organization and your scopes, exactly as a direct call would. A tool that waits for a person's OK answers the same way through `call_tool`. `call_tool` is marked destructive, so assistants ask before running it. |
+
+**Short tool list.** Add `?tools=slim` to the server URL (for example `https://mcp.sessionboard.com/mcp?tools=slim`), or send the header `X-Sessionboard-Tools: slim`, and the server lists only a small core: `search`, `fetch`, `get_outstanding`, `get_marketing_home`, `list_events`, `find_event`, `get_event_overview`, `query_data`, `get_schema`, `find_tools` and `call_tool`. The assistant finds everything else with `find_tools` and runs it with `call_tool`. Without the parameter the server lists every tool, `find_tools` and `call_tool` included. Use the short list when your client limits how many tools or how large a tool list it loads. Tools that are not listed can still be called directly by name.
+
 ### Search & Discovery (11 tools)
 
 Find events, search your data, ask questions in plain English, and explore your schema.
