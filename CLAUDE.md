@@ -4,6 +4,13 @@ Starlight Help Center. Canonical host is `site.json` — never hardcode `learn.`
 
 Read `STYLE.md` before editing a page.
 
+## US English, always
+
+Josh, 2026-11-24: everything Claude writes here uses US English, never British: articles, release
+notes, API docs, commit messages and PRs. organization, color, center,
+catalog, license, program, labeled, canceled; not organisation, colour, centre, catalogue, licence,
+programme, labelled, cancelled. Leave quotes, customer names and other proper nouns as written.
+
 ## Public, crawled — except what Cvent would find competitive
 
 Since 2026-11-14 the Help Center, API docs and skills are open to everyone and every crawler (Josh: "ungate it all… crawled, agent friendly, indexed"). Two exceptions, both in `site.json`:
