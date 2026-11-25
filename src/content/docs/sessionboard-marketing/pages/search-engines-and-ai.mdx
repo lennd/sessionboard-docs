@@ -1,0 +1,104 @@
+---
+title: "Search engines and AI assistants"
+description: "Choose whether search engines and AI assistants can find and read each of your sites, set a canonical address for a site served under your own domain, and find its sitemap and llms.txt."
+sidebar:
+  label: "Search engines and AI"
+  order: 3
+audience: ["organizer"]
+jtbd: "make sure our pages show up in Google and in AI assistants' answers"
+---
+
+import { Steps, Step } from '@compat';
+
+Every site you publish with Sessionboard Marketing is open to search engines and AI assistants unless you turn that off. You choose this per site, and you can hide a single page.
+
+Every site has the search engine switch. Sites your AI assistant builds (pages at an address like `/p/webinars`) also have the AI crawler switch, the canonical address, `llms.txt` and the per-page switch.
+
+## Why use it
+
+People find events and recordings by searching Google or by asking an assistant such as ChatGPT, Claude or Perplexity. When those tools can read your pages, your events and recordings show up in their results and answers, with a link back to you.
+
+## The defaults
+
+Everything is on for a new site:
+
+| Setting | Default | What it does |
+|---|---|---|
+| **Let search engines index this site** | On | Google, Bing and answer engines such as ChatGPT search and Perplexity can list your pages. |
+| **Let AI assistants and AI training crawlers read it** | On | Crawlers that collect content for AI models, such as GPTBot, ClaudeBot and Google-Extended, can read the site too, so assistants already know your content. |
+| **Canonical address** | Empty | The site's own address is the one search engines credit. |
+| **Publish llms.txt** | On | Your site serves an `llms.txt` file: a plain-text list of your pages with a one-line summary each, for AI assistants. |
+
+Pages that only make sense to one person are never indexed, whatever you choose: sign-in pages, personal links, previews and portal pages.
+
+## Change the settings
+
+<Steps>
+<Step title="Open Pages">
+In Marketing, open **Pages** and scroll to the **Search engines & AI** card.
+</Step>
+<Step title="Choose the site">
+If you have more than one site, choose it under **Site**.
+</Step>
+<Step title="Turn a setting on or off">
+Each switch saves as soon as you change it and applies to the live site right away. You don't need to publish again.
+</Step>
+</Steps>
+
+### What each switch does when you turn it off
+
+- **Let search engines index this site** off: every page tells search engines not to index it (`noindex`), and the site is left out of sitemaps. Its `llms.txt` is not served either. Pages already in Google drop out the next time Google visits them.
+- **Let AI assistants and AI training crawlers read it** off: crawlers that collect content to train AI models are blocked. Assistants that search the web when someone asks them a question can still read and cite your pages, as long as search engines can index the site.
+- **Publish llms.txt** off: the site stops serving `llms.txt`. Your pages stay indexed.
+
+## Hide one page
+
+On a site your assistant built, under **Pages** in the same card, turn on **Hide this page from search engines** next to the page, for example a thank-you page. The page is then marked `noindex` and left out of the sitemap and `llms.txt`. This change is saved to your draft and goes live the next time you publish the site.
+
+## A site served under your own domain
+
+If you [connect your own domain](/sessionboard-marketing/pages/publish-an-event-page#use-your-own-domain) to a site, its address changes to your domain and there is nothing more to do.
+
+Some teams serve a Sessionboard site inside their main website instead, for example at `https://www.yourcompany.com/webinars`, through a proxy their web team sets up. Then search engines should credit your website's address, not the Sessionboard one:
+
+<Steps>
+<Step title="Enter the canonical address">
+Under **Canonical address (optional)**, enter the address your visitors see, for example `https://www.yourcompany.com/webinars`. It must start with `https://` and can't include anything after `?` or `#`.
+</Step>
+<Step title="Save it">
+Select **Save address**. Every page now names that address as its canonical address, and the sitemap and `llms.txt` list your website's addresses.
+</Step>
+</Steps>
+
+Leave the address empty when visitors open the site at its own address. To go back, clear the field and select **Save address**.
+
+## Your sitemap and llms.txt
+
+The card links to both files for the selected site. For a site at `https://events.yourcompany.com/p/webinars`, they are:
+
+- `https://events.yourcompany.com/p/webinars/sitemap.xml`: every page search engines may index. It is also listed in the `robots.txt` of the domain, so search engines find it without your help. You can submit it in Google Search Console too.
+- `https://events.yourcompany.com/p/webinars/llms.txt`: the plain-text list for AI assistants.
+
+For a site with its own domain, such as `https://webinars.yourcompany.com`, they are at `https://webinars.yourcompany.com/sitemap.xml` and `https://webinars.yourcompany.com/llms.txt`.
+
+## Do it from Claude or ChatGPT
+
+Your assistant can read and change the same settings. Ask in plain words, for example "Keep AI training crawlers off my webinars site" or "Our webinars site is served at https://www.yourcompany.com/webinars; make that its canonical address."
+
+If you build with the Sessionboard connector directly, the setting is the site's `seo`, changed with `edit_site` and the op `site.update`:
+
+```json
+{
+  "op": "site.update",
+  "seo": {
+    "index": true,
+    "ai_crawlers": false,
+    "canonical_base": "https://www.yourcompany.com/webinars",
+    "llms_txt": true
+  }
+}
+```
+
+Send only the keys you want to change; the others keep their values. A change made this way is saved to the site's draft and goes live when you publish the site, like any other edit from your assistant. `get_site` returns the site's current `seo`. Set `canonical_base` to `null` to clear it.
+
+To hide one page, your assistant sends `seo: { index: false }` when it writes the page with `write_page_html`, and `seo: null` to let the page follow the site again.
