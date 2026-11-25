@@ -18,7 +18,7 @@ This page is the technical reference. If you just want to connect an assistant, 
 - [Connect Microsoft Copilot](https://learn.sessionboard.com/integrations/connect-microsoft-copilot) — via a Copilot Studio agent
 - [Connect Google Gemini](https://learn.sessionboard.com/integrations/connect-google-gemini) — Gemini app, Gemini Enterprise, or the Gemini CLI
 
-Workflows built on these tools (Agent Skills, one `SKILL.md` per job, plus a Claude Code plugin) are in the [Skills](/skills) tab.
+Workflows built on these tools (Agent Skills, one `SKILL.md` per job, plus a Claude Code plugin) are in the [Skills](/skills) tab. The server also hands the Program, CRM and Marketing skills to assistants that support [Skills over MCP](#skills-over-mcp), so there is nothing to install.
 
 ## Why use it
 
@@ -78,6 +78,64 @@ The server uses the streamable HTTP transport and supports OAuth 2.0 with PKCE a
     Ask your AI assistant questions about your event data in natural language. The assistant uses the MCP tools to query Sessionboard and return results.
   </Step>
 </Steps>
+
+## Skills over MCP
+
+The server serves skills alongside its tools, using the [Skills extension](https://modelcontextprotocol.io/extensions/skills/overview) of MCP (`io.modelcontextprotocol/skills`). An assistant that supports it lists the skills when it connects and loads one only when a job needs it, so skills cost no context until they are used. Skills update with the server. When we add or improve a skill, connected assistants get it with nothing to install.
+
+**Where it works today:** Claude and Claude Code, where Skills over MCP is in public beta. It is on by default for Pro, Max and Ultra plans. On a Team plan, an Owner turns it on in **Organization settings → Connectors**. Enterprise support is coming. In Claude Code, a connector's skills appear in the `/` menu as `claude_ai_Sessionboard:<skill>` (or `<server>:<skill>` for a server you added yourself), and you can also just ask for the job.
+
+**Other assistants:** ChatGPT, Microsoft Copilot and Google Gemini don't support Skills over MCP yet. We'll serve skills to each one as it adds support. Until then, download the skills from the [Skills](/skills) tab, or let the assistant find tools on its own (see [How agents find tools](#how-agents-find-tools)).
+
+For integrators, the server declares the extension in its capabilities and answers:
+
+- `skills/list`: every served skill with its `skill://` URI, its frontmatter and a manifest of its files, each with a SHA-256 digest and size.
+- `skills/get`: one skill by URI. An unknown URI returns `-32602`.
+- `resources/read` on `skill://<name>/SKILL.md`: the skill itself.
+
+### Skills served today (31)
+
+These are the staff skills for Program, CRM and Marketing. Learning, Awards, Registration, Insights and Sites skills are still in the [Skills](/skills) tab as downloads, and will be served the same way next.
+
+**Program**
+
+- [Build your agenda and put it on your website](/skills/build-the-agenda) (`build-the-agenda`)
+- [Decide on submissions and tell your speakers](/skills/review-and-decide-submissions) (`review-and-decide-submissions`)
+- [Get speakers ready and promoting](/skills/promote-sessions-and-speakers) (`promote-sessions-and-speakers`)
+- [Import your program, speakers and sponsors](/skills/import-an-event-program) (`import-an-event-program`)
+- [Open your call for speakers and watch it fill](/skills/run-a-call-for-speakers) (`run-a-call-for-speakers`)
+- [Push your agenda to your event app](/skills/push-the-agenda-to-your-event-app) (`push-the-agenda-to-your-event-app`)
+- [See what's missing for every speaker and fix it](/skills/get-speakers-ready) (`get-speakers-ready`)
+- [Set up your program event](/skills/set-up-your-program) (`set-up-your-program`)
+- [Track your event budgets](/skills/track-event-budgets) (`track-event-budgets`)
+
+**CRM**
+
+- [Check your members against your AMS](/skills/check-members-against-your-ams) (`check-members-against-your-ams`)
+- [Keep your people and companies tidy](/skills/tidy-your-people-and-companies) (`tidy-your-people-and-companies`)
+- [Work your pipeline and send contracts](/skills/work-the-pipeline-and-contracts) (`work-the-pipeline-and-contracts`)
+
+**Marketing**
+
+- [Brand, gate and review your recordings](/skills/brand-and-gate-your-recordings) (`brand-and-gate-your-recordings`)
+- [Bring events and apps into Marketing](/skills/marketing-events-and-apps) (`marketing-events-and-apps`)
+- [Configure an event or webinar](/skills/configure-an-event-or-webinar) (`configure-an-event-or-webinar`)
+- [Design your event emails and page](/skills/design-event-emails-and-page) (`design-event-emails-and-page`)
+- [Get speakers and your team sharing your event](/skills/marketing-campaigns) (`marketing-campaigns`)
+- [Get your team and speakers sharing a webinar](/skills/share-a-webinar-with-your-team-and-speakers) (`share-a-webinar-with-your-team-and-speakers`)
+- [Hit your registration number by a date](/skills/marketing-goals) (`marketing-goals`)
+- [Publish an event page in your brand](/skills/marketing-pages) (`marketing-pages`)
+- [Report what an event's marketing achieved](/skills/marketing-results) (`marketing-results`)
+- [Run a recording as a premiere](/skills/run-a-premiere) (`run-a-premiere`)
+- [Run ads and get found by AI assistants](/skills/run-ads-and-get-found-by-ai) (`run-ads-and-get-found-by-ai`)
+- [Run field events and multi-city tours](/skills/run-field-events-and-tours) (`run-field-events-and-tours`)
+- [Run your newsletter and sign-ups](/skills/run-your-newsletter-and-sign-ups) (`run-your-newsletter-and-sign-ups`)
+- [Run your weekly show](/skills/run-show-week) (`run-show-week`)
+- [See who promoted, registered and watched](/skills/marketing-people) (`marketing-people`)
+- [Send a sponsor their results](/skills/send-a-sponsor-their-results) (`send-a-sponsor-their-results`)
+- [Set up your sender, domains and site tracking](/skills/set-up-sending-and-site-tracking) (`set-up-sending-and-site-tracking`)
+- [Turn an event into a podcast](/skills/turn-an-event-into-a-podcast) (`turn-an-event-into-a-podcast`)
+- [Turn recordings into clips, posts and recaps](/skills/marketing-content) (`marketing-content`)
 
 ## Available tools
 

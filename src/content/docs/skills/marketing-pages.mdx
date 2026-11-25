@@ -33,7 +33,7 @@ These wait for a person to approve them in Sessionboard, even after you say yes 
 ## What you need
 
 - Any organization member can read; building and publishing pages needs an organization admin.
-- The Sessionboard connector, signed in as you. It needs `read:marketing`, `write:marketing`; the write scopes only for the steps that change something. [Install skills](/skills/install) covers connecting.
+- The Sessionboard connector, signed in as you. It needs `read:marketing`, `read:crm`, `write:marketing`; the write scopes only for the steps that change something. [Install skills](/skills/install) covers connecting.
 - Everything runs as you: the assistant sees and changes only what your role allows. See [Permissions and control](/skills/permissions).
 
 ## Try asking
@@ -44,25 +44,38 @@ These wait for a person to approve them in Sessionboard, even after you say yes 
 
 ## Tools it uses
 
+- `add_recording_transcript`: Add a recording's transcript (changes data)
 - `ask_gallery`: Ask the library (reads)
 - `check_custom_domain`: Check your own domain (changes data)
 - `connect_custom_domain`: Connect your own domain (changes data)
 - `create_gathering`: Create field event (changes data)
 - `create_webinar`: Create webinar (changes data)
+- `delete_site`: Delete Site (changes data)
+- `discard_site_draft`: Discard Site draft (changes data)
 - `edit_event_page`: Edit event page (changes data)
+- `find_crm_contacts`: Find Contacts (reads)
 - `find_event`: Find event (reads)
 - `get_brand_kit`: Get brand kit (reads)
 - `get_custom_domain_instructions`: Custom domain DNS record (reads)
 - `get_embed_code`: Get embed code (changes data)
 - `get_event_page`: Get event page (reads)
+- `get_speaker_profile`: Get a speaker profile (reads)
 - `list_events`: List events (reads)
+- `list_gallery_items`: List library items (reads)
 - `list_marketing_pages`: List marketing pages (reads)
 - `make_event_page`: Make event page (changes data)
 - `make_gallery`: Make on-demand library (changes data)
 - `publish_event_page`: Publish event page (changes data)
 - `publish_gallery`: Publish on-demand library (changes data)
+- `request_page_upload`: Upload page images (changes data)
+- `restore_site`: Restore deleted Site (changes data)
+- `restore_site_version`: Restore Site version to draft (changes data)
+- `set_event_page_redirect`: Redirect event page (changes data)
+- `set_gallery_items`: Choose library items (changes data)
+- `set_speaker_profile`: Set a speaker profile (changes data)
 - `update_brand_kit`: Update brand kit (changes data)
 - `update_event_page_draft`: Update event page draft (changes data)
+- `update_recording`: Update a recording (changes data)
 
 ## The full instructions
 
@@ -92,7 +105,9 @@ Make, change and publish Sessionboard event and webinar pages (registration, spe
 | Exact block edits (rare) | `get_event_page`, `update_event_page_draft` |
 | Publish the page | `publish_event_page` — **only after an explicit OK** |
 | Make the on-demand library | `make_gallery` |
+| See or choose what the library holds | `list_gallery_items`, `set_gallery_items` |
 | Ask the library | `ask_gallery` |
+| Say who is on a recording; speaker profiles | `update_recording` (`speakers`), `get_speaker_profile`, `set_speaker_profile` |
 | Publish the library | `publish_gallery` — **only after an explicit OK** |
 | Snippets for their website | `get_embed_code` |
 | Their own domain for a page or library | `connect_custom_domain`, `get_custom_domain_instructions`, `check_custom_domain` |
@@ -104,15 +119,19 @@ Make, change and publish Sessionboard event and webinar pages (registration, spe
 2. **Check the brand once.** If `make_event_page` returns `brand_kit: null`, or the person says the colours are wrong, offer to fill the Brand kit first (`get_brand_kit` → `update_brand_kit`); a page in the wrong colours is the first thing they will notice.
 3. **Make the draft.** `make_event_page { event_id, brief }`. Put what they told you about the topic and audience in `brief`, in their words. Speakers, agenda, date, place and price come from the event itself — never write them into the brief or the page.
 4. **Show it.** Give them the `preview_url` and a three-line summary: headline, which blocks are on the page, anything missing (no speakers yet, no sessions on the agenda). Say it is a draft.
-5. **Edit in plain words.** For each change they ask for, `edit_event_page { event_id, instruction, revision }` with the latest `page.revision`. Report the one-line `summary`. On a 409, someone else edited the page: read it again (`get_event_page` → `site.revision`), show them, and retry.
-6. **Publish only on an explicit OK.** "Looks good, publish it", "yes, go live" — then `publish_event_page { event_id, revision, confirmed: true }` with the revision of the preview they approved. "Looks good" about one section is not an OK to publish; ask "Shall I publish it now?" From a connected assistant it can answer `needs_approval`: tell them "Waiting for your OK in Sessionboard: <url>" and stop; do not publish again. Give the live `public_url` only when the call returns it or a later `get_event_page` shows the page published.
+5. **Edit in plain words.** For each change they ask for, `edit_event_page { event_id, instruction, revision }` with the latest `page.revision`. Report `what_changed.summary` (each change, before → after, in plain words) — not just the one-line `summary`. If the person did not mean a change, put the earlier draft back with what `kept.restore` names (`restore_site_version` or `discard_site_draft`). On a 409, someone else edited the page: read it again (`get_event_page` → `site.revision`), show them, and retry.
+6. **Publish only on an explicit OK.** "Looks good, publish it", "yes, go live" — then `publish_event_page { event_id, revision, confirmed: true }` with the revision of the preview they approved. "Looks good" about one section is not an OK to publish; ask "Shall I publish it now?" Then give them the live `public_url`.
 
 ## Flow: the on-demand library
 
 1. `list_marketing_pages` — reuse an existing library rather than making a second one.
 2. `make_gallery { name, event_id? }` — the whole organization by default, one event when they say so. Report `items`; if it is 0, say there are no recordings yet and that the library fills itself as recordings arrive.
+   - **Only some recordings** ("our webinars", "these five talks"): if the library is **published**, say what will change and wait for an explicit OK first — visitors see it at once. Then `set_gallery_items { gallery_id, only_chosen: true, add: [{ media_id }, …] }`: rules off, any event or none. What the rules had already put in stays, so read `list_gallery_items` page by page (`offset` while `truncated`) and `remove` everything outside the pick before you say the library holds exactly those recordings. Set the running order with `order`, put one up front with `featured`. Only when the person asks to move a recording's event: `update_recording { media_id, event_id }`.
+   - A whole-organization library never adds call recordings (Zoom meetings). Add one only if the person names it.
 3. **Ask it.** `ask_gallery { gallery_id, question }`. Quote the `answer` with its `[n]` sources (title and link). If `answered_by` is `search` or the answer says the library does not cover it, say so plainly; do not fill the gap from your own knowledge. `searched.not_searchable` counts gated or embargoed items it was not allowed to read — mention it when the answer is thin.
-4. Publish with `publish_gallery { gallery_id, confirmed: true }` only on an explicit OK. On `needs_approval`: "Waiting for your OK in Sessionboard: <url>", and stop.
+4. Publish with `publish_gallery { gallery_id, confirmed: true }` only on an explicit OK.
+5. **Speakers and their profiles.** Recording pages show each recording's speakers with photo and a link to their profile page (`/speakers/{slug}`, page kind `speaker_profile`, bind `speakers:<gallery id>`). Transcripts say "Speaker 1" until you say who that is: `find_crm_contacts` for the contact (needs `read:crm`), then `update_recording { media_id, speakers: [{ contact_id, label: "Speaker 1" }] }` (no label = on the whole recording; `role: "moderator"` for a non-presenter). Fill a profile with `set_speaker_profile` only from what the person or organizer gave you, and ask before publishing a bio you wrote. If someone does not want a public profile, `set_speaker_profile { contact_id, hidden: true }`.
+   **Summary, takeaways and FAQ.** Every transcribed recording gets an AI summary and key takeaways from what was said; render `summary_paragraphs` (a 2–3 sentence overview), `key_takeaways` (4–6), `sections` (subheaded detail, lower on the page) and `faq` from the page source inside `sb-if` sections, never one long paragraph (the webinar_recording page kit has the snippet), never the transcript's opening. Write your own with `update_recording { summary, key_takeaways, sections, faq, seo_title, meta_description }` (yours wins), or `regenerate_summary: true`. A recording whose download failed but whose transcript you have: `add_recording_transcript`.
 
 ## Flow: embeds for their website
 
@@ -130,7 +149,7 @@ If `list_marketing_pages` says `custom_domain.available`, `connect_custom_domain
 **"Make the headline about AI in radiology and drop the FAQ."**
 → `edit_event_page { instruction: "make the headline about AI in radiology", revision }` → `edit_event_page { instruction: "hide the FAQ", revision: <new> }` → "Done: new headline, FAQ hidden. Preview: …"
 
-**"Ship it."** (after they saw the preview) → `publish_event_page { confirmed: true, revision }` → on `needs_approval`, "Waiting for your OK in Sessionboard: <url>"; once it is live, "Live at <public_url>."
+**"Ship it."** (after they saw the preview) → `publish_event_page { confirmed: true, revision }` → "Live at <public_url>."
 
 **"Put all our webinar recordings in one place and tell me what our speakers said about prior authorization."**
 → `make_gallery { name: "Webinar library" }` → `ask_gallery { question: "What did speakers say about prior authorization?" }` → answer with sources → "The library is a draft; publish it?"
@@ -145,7 +164,7 @@ If `list_marketing_pages` says `custom_domain.available`, `connect_custom_domain
 - Never paste a share, preview or admin link anywhere but this conversation.
 - Never use or mention EventSites; pages are Sessionboard event pages and Content Galleries.
 - Say **Advocacy**, **speakers**, **on-demand library**; never "Amplify".
-- If a tool returns 403, the connector's key lacks a scope (`write:marketing` for drafts and publishing, `read:marketing` for reads) — tell them which, plainly.
+- If a tool returns 403, the connector's key lacks a scope (`write:marketing` for drafts, publishing and speaker profiles, `read:marketing` for reads, `read:crm` for `find_crm_contacts` when you look up a speaker) — tell them which, plainly. Without `read:crm`, ask the organizer for the person's contact id instead.
 
 ## Tools used
 
@@ -154,20 +173,33 @@ If `list_marketing_pages` says `custom_domain.available`, `connect_custom_domain
 - `connect_custom_domain` — Connect your own domain (write)
 - `create_gathering` — Create field event (write)
 - `create_webinar` — Create webinar (write)
+- `delete_site` — Delete Site (write)
+- `discard_site_draft` — Discard Site draft (write)
 - `edit_event_page` — Edit event page (write)
+- `find_crm_contacts` — Find CRM contacts (read)
 - `find_event` — Find event (read)
 - `get_brand_kit` — Get brand kit (read)
 - `get_custom_domain_instructions` — Custom domain DNS record (read)
 - `get_embed_code` — Get embed code (write)
 - `get_event_page` — Get event page (read)
 - `list_events` — List events (read)
+- `list_gallery_items` — List library items (read)
 - `list_marketing_pages` — List marketing pages (read)
 - `make_event_page` — Make event page (write)
 - `make_gallery` — Make on-demand library (write)
 - `publish_event_page` — Publish event page (write)
 - `publish_gallery` — Publish on-demand library (write)
+- `request_page_upload` — Upload page images (write)
+- `restore_site` — Restore deleted Site (write)
+- `restore_site_version` — Restore Site version to draft (write)
+- `set_event_page_redirect` — Redirect event page (write)
+- `set_gallery_items` — Choose library items (write)
 - `update_brand_kit` — Update brand kit (write)
 - `update_event_page_draft` — Update event page draft (write)
+- `get_speaker_profile` — Get a speaker profile (read)
+- `set_speaker_profile` — Set a speaker profile (write)
+- `update_recording` — Update a recording (write)
+- `add_recording_transcript` — Add a recording's transcript (write)
 ~~~~
 
 </div>
