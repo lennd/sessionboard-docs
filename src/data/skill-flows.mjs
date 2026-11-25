@@ -326,4 +326,145 @@ export const SKILL_FLOWS = {
         <rect class="fac" x="122" y="20" width="32" height="30" rx="3"/><path stroke="var(--sb-flow-bg)" stroke-width="1.6" d="M128 40c4-6 6 4 10-2s5 2 10-2"/>`,
     },
   },
+  'brand-and-gate-your-recordings': {
+    works: [d('Find the recording or clip'), d('Preview the branded overlay'), W, n('Render, gate or change the button')],
+    get: {
+      label: 'A branded, gated recording',
+      svg: `<rect class="ink" x="18" y="16" width="112" height="70" rx="6"/>
+        <rect class="mut" x="26" y="66" width="60" height="12" rx="2"/>
+        <path class="mut" d="M66 40l18 11-18 11z"/>
+        <rect class="fac" x="112" y="56" width="38" height="40" rx="5"/><path stroke="var(--sb-flow-bg)" stroke-width="2" d="M123 74v-5a8 8 0 0 1 16 0v5M121 74h20v14h-20z"/>`,
+    },
+  },
+  'configure-an-event-or-webinar': {
+    works: [d('Read the whole configuration'), d('Show each change as a diff'), W, n('Save the change')],
+    get: {
+      label: 'An event set the way you want',
+      svg: `<g class="ln"><path d="M24 30h120M24 56h120M24 82h120"/></g>
+        <circle class="ink" cx="52" cy="30" r="8" ${P}/><circle class="ink" cx="112" cy="56" r="8" ${P}/>
+        <circle class="fac" cx="76" cy="82" r="10"/>`,
+    },
+  },
+  'design-event-emails-and-page': {
+    works: [d('Read the emails, page and brand'), d('Propose a design and preview it'), W, n('Put it live or publish the page')],
+    get: {
+      label: 'On-brand emails and event page',
+      svg: `<rect class="ink" x="16" y="20" width="62" height="74" rx="5"/>
+        <path class="mut" d="M26 34h42M26 46h30M26 58h38"/><rect class="fac" x="26" y="70" width="30" height="12" rx="3"/>
+        <rect class="ink" x="92" y="30" width="60" height="44" rx="4"/><path class="mut" d="m92 32 30 22 30-22"/>`,
+    },
+  },
+  'promote-sessions-and-speakers': {
+    works: [d('Read the speaker emails plan'), d('Change tasks, due date, reminders'), W, n('Approve the speaker emails')],
+    get: {
+      label: 'Speakers ready and promoting',
+      svg: `<circle class="ink" cx="40" cy="40" r="13"/><path class="ink" d="M18 88c2-14 10-22 22-22s20 8 22 22"/>
+        <path class="mut" d="M74 38h34M74 52h26"/>
+        <path class="ln" d="M112 66l20-14M112 66l20 4M112 66l20 20"/>
+        <circle class="fac" cx="140" cy="50" r="7"/><circle class="mut" cx="140" cy="70" r="6"/><circle class="mut" cx="140" cy="90" r="6"/>`,
+    },
+  },
+  'run-a-premiere': {
+    works: [d('Schedule it on the page draft'), d('Say the time back'), W, n('Publish, then polls and questions')],
+    get: {
+      label: 'A premiere everyone watches live',
+      svg: `<rect class="ink" x="16" y="18" width="92" height="62" rx="6"/><path class="mut" d="M54 38l16 11-16 11z"/>
+        <circle class="fac" cx="130" cy="34" r="16"/><path stroke="var(--sb-flow-bg)" stroke-width="2" d="M130 25v9l6 4"/>
+        <path class="mut" d="M118 62h28M118 74h20M118 86h24"/>`,
+    },
+  },
+  'run-ads-and-get-found-by-ai': {
+    works: [d('Suggest a goal and draft ads'), d('Read what AI assistants say'), W, n('Approve spend within the cap')],
+    get: {
+      label: 'Ads on a cap, found by AI',
+      svg: `<path class="ln" d="M20 92h128"/>
+        <rect class="mut" x="30" y="60" width="16" height="32"/><rect class="mut" x="58" y="46" width="16" height="46"/><rect class="ink" x="86" y="34" width="16" height="58"/>
+        <path class="ln" stroke-dasharray="4 4" d="M20 28h128"/>
+        <circle class="fac" cx="132" cy="44" r="12"/><path stroke="var(--sb-flow-bg)" stroke-width="2" d="m126 44 4 4 8-8"/>`,
+    },
+  },
+  'run-field-events-and-tours': {
+    works: [d('Add stops and the guest list'), d('Match guests to their host'), W, n('Send host-signed invitations')],
+    get: {
+      label: 'A tour, city by city',
+      svg: `<path class="ln" stroke-dasharray="4 4" d="M26 80C50 40 74 90 98 50s40-20 46-24"/>
+        <circle class="ink" cx="26" cy="80" r="8" ${P}/><circle class="ink" cx="62" cy="64" r="8" ${P}/><circle class="ink" cx="98" cy="50" r="8" ${P}/>
+        <circle class="fac" cx="144" cy="26" r="11"/>`,
+    },
+  },
+  'run-show-week': {
+    works: [d('Plan the episode and guests'), d('Draft episode, clips and issue'), W, n('Publish, schedule and send')],
+    get: {
+      label: 'One show, everything drafted',
+      svg: `<rect class="ink" x="18" y="18" width="50" height="50" rx="25"/><path class="mut" d="M43 32v20M35 44a8 8 0 0 0 16 0"/>
+        <path class="ln" d="M68 43h18"/>
+        <rect class="mut" x="88" y="16" width="62" height="18" rx="3"/><rect class="mut" x="88" y="40" width="62" height="18" rx="3"/><rect class="fac" x="88" y="64" width="62" height="18" rx="3"/>`,
+    },
+  },
+  'run-your-newsletter-and-sign-ups': {
+    works: [d('Count who signed up'), d('Draft the issue, test to you'), W, n('Schedule it')],
+    get: {
+      label: 'A consented list and an issue sent',
+      svg: `<rect class="ink" x="20" y="24" width="72" height="54" rx="5"/><path class="mut" d="m20 26 36 26 36-26"/>
+        <circle class="mut" cx="118" cy="32" r="7"/><circle class="mut" cx="118" cy="56" r="7"/><circle class="fac" cx="118" cy="80" r="9"/>
+        <path class="ln" d="M132 32h16M132 56h16M132 80h16"/>`,
+    },
+  },
+  'set-up-sending-and-site-tracking': {
+    works: [d('Check the From address'), d('Give you the DNS records'), W, n('Check DNS and switch the sender')],
+    get: {
+      label: 'Email from your own domain',
+      svg: `<rect class="ink" x="18" y="22" width="64" height="66" rx="5"/>
+        <path class="mut" d="M28 38h44M28 52h44M28 66h30"/>
+        <path class="ln" d="M82 55h26"/>
+        <circle class="fac" cx="128" cy="55" r="18"/><path stroke="var(--sb-flow-bg)" stroke-width="2" d="M118 55h20M128 45c-6 6-6 14 0 20M128 45c6 6 6 14 0 20"/>`,
+    },
+  },
+  'set-up-your-program': {
+    works: [d('Preview the event from its page'), d('Read rooms, tracks and statuses'), W, n('Create the event and metadata')],
+    get: {
+      label: 'A program ready for its call',
+      svg: `<rect class="ink" x="18" y="18" width="132" height="76" rx="6"/>
+        <path class="ln" d="M18 40h132M62 40v54M106 40v54"/>
+        <rect class="mut" x="26" y="50" width="28" height="12" rx="2"/><rect class="mut" x="70" y="66" width="28" height="12" rx="2"/>
+        <rect class="fac" x="114" y="50" width="28" height="12" rx="2"/>`,
+    },
+  },
+  'share-a-webinar-with-your-team-and-speakers': {
+    works: [d('Make signatures and share cards'), d('Give speakers their links'), W, n('Email teammates their signature')],
+    get: {
+      label: 'Everyone sharing, every share credited',
+      svg: `<circle class="ink" cx="84" cy="56" r="14"/>
+        <g class="ln"><path d="M84 42V20M84 70v22M70 56H30M98 56h40"/></g>
+        <circle class="mut" cx="84" cy="16" r="7" ${P}/><circle class="mut" cx="84" cy="96" r="7" ${P}/><circle class="mut" cx="26" cy="56" r="7" ${P}/>
+        ${link(140, 56)}`,
+    },
+  },
+  'sites': {
+    works: [d('Edit the draft in plain words'), d('Preview by role and device'), W, n('Publish the Site')],
+    get: {
+      label: 'A Site previewed, then published',
+      svg: `<rect class="ink" x="16" y="18" width="96" height="70" rx="5"/><path class="ln" d="M16 32h96"/>
+        <rect class="mut" x="24" y="40" width="40" height="22" rx="2"/><path class="mut" d="M72 42h32M72 52h24M24 72h80"/>
+        <rect class="fac" x="122" y="40" width="30" height="48" rx="5"/><path stroke="var(--sb-flow-bg)" stroke-width="2" d="M132 80h10"/>`,
+    },
+  },
+  'track-event-budgets': {
+    works: [d('Read used, remaining, status'), d('List the biggest costs'), W, n('Create or copy a budget')],
+    get: {
+      label: 'Budgets against live costs',
+      svg: `<rect class="ln" x="20" y="30" width="128" height="14" rx="7"/><rect class="ink" x="20" y="30" width="90" height="14" rx="7"/>
+        <rect class="ln" x="20" y="58" width="128" height="14" rx="7"/><rect class="fac" x="20" y="58" width="122" height="14" rx="7"/>
+        <path class="mut" d="M20 88h60"/>`,
+    },
+  },
+  'turn-an-event-into-a-podcast': {
+    works: [d('Make the show and draft episodes'), d('Show which episodes are ready'), W, n('Publish the ones you pick')],
+    get: {
+      label: 'An event, as a podcast',
+      svg: `<rect class="ink" x="64" y="14" width="40" height="56" rx="20"/>
+        <path class="mut" d="M52 54a32 32 0 0 0 64 0M84 86v12M68 98h32"/>
+        <circle class="fac" cx="134" cy="30" r="10"/><path class="ln" d="M20 40h30M20 52h22"/>`,
+    },
+  },
 };

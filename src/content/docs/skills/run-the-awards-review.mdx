@@ -17,8 +17,8 @@ Reviewers invited and assigned, scoring chased to the finish, and your Winners a
 1. Give it your Reviewers' names and emails; it shows the list and asks before inviting them, and you approve the invitations in Sessionboard.
 2. Once Reviewers are on the program and Submissions are in, it gives every Submission its Reviewers (three each by default, never more than you have) after you say yes; nobody is emailed.
 3. It shows who has scorecards to finish and, on your OK, asks Sessionboard to send a reminder you approve there.
-4. It reads how scoring is going and how Submissions stand; you pick the Winners and Finalists yourself in Sessionboard.
-5. When you say so, it asks Sessionboard to announce them; you approve the emails in Sessionboard.
+4. It reads how scoring is going and how Submissions stand, and can summarize the Reviewers' comments; you choose the Winners and Finalists, and on your word it records them for you to approve in Sessionboard.
+5. It previews who gets which announcement email, then, when you say so, asks Sessionboard to announce them; you approve the emails in Sessionboard.
 
 ## Where it stops for you
 
@@ -28,17 +28,21 @@ It stops and asks you in the conversation:
 - Before turning on blind review
 - Before assigning reviews
 - Before reminding Reviewers
+- Before removing a Reviewer or a Submission
+- Before recording the Winners
 - Before announcing the Winners
 
 These wait for a person to approve them in Sessionboard, even after you say yes in the chat. The assistant gives you the link and stops:
 
 - Inviting Reviewers
 - Sending a reminder to Reviewers
+- Removing a Reviewer or a Submission
+- Recording the Winners and Finalists
 - Announcing the Winners and Finalists
 
 ## What you need
 
-- Sessionboard checks read Awards to see programs and update Awards plus being a manager of the program to invite, assign, remind or announce. Picking Winners is always done by a person in Sessionboard.
+- Sessionboard checks read Awards to see programs and update Awards plus being a manager of the program to invite, assign, remind or announce. You choose the Winners; recording them waits for your OK in Sessionboard.
 - The Sessionboard connector, signed in as you. It needs `read:awards`, `write:awards`; the write scopes only for the steps that change something. [Install skills](/skills/install) covers connecting.
 - Everything runs as you: the assistant sees and changes only what your role allows. See [Permissions and control](/skills/permissions).
 
@@ -50,23 +54,28 @@ These wait for a person to approve them in Sessionboard, even after you say yes 
 
 ## Tools it uses
 
+- `add_awards_nomination`: Add an Awards nomination (changes data)
 - `announce_awards_winners`: Announce Awards Winners (changes data)
 - `assign_awards_reviews`: Assign Awards reviews (changes data)
 - `get_awards_program`: Get an Awards program (reads)
+- `get_awards_reminder`: Get an Awards reminder (reads)
 - `get_awards_results`: Get Awards results (reads)
 - `invite_awards_reviewers`: Invite Awards Reviewers (changes data)
 - `list_awards_programs`: List Awards programs (reads)
+- `preview_awards_announcement`: Preview the Awards announcement (reads)
 - `remind_awards`: Remind Awards reviewers or nominators (changes data)
+- `remove_awards_nomination`: Remove or restore an Awards nomination (changes data)
+- `remove_awards_reviewer`: Remove an Awards Reviewer (changes data)
+- `set_awards_winners`: Record Awards Winners (changes data)
+- `summarize_awards_reviews`: Summarize Awards reviews (reads)
 - `update_awards_program`: Update an Awards program (changes data)
 
 ## What it does not do yet
 
-- Picking or changing Winners (a person does it in Sessionboard)
-- Previewing exactly who receives the announcement before it is approved
-- Removing a Reviewer or moving an assignment
+- Choosing the Winners for you (you choose; it records your choice)
+- Moving an assignment from one Reviewer to another
 - Reading one Reviewer's individual scorecard answers
-- More than one review Round, public voting or a Call for Reviewers
-- Delivery progress of a reminder or announcement
+- More than one review Round or a Call for Reviewers
 
 ## The full instructions
 
@@ -93,9 +102,9 @@ Use this when someone wants to run the review of an Awards program - invite Revi
 
 ## Guardrails (read first)
 
-- **Confirm before every write or send.** Before `invite_awards_reviewers`, `assign_awards_reviews`, `update_awards_program`, `remind_awards` with `preview: false` or `announce_awards_winners`, show exactly what will happen (names and emails, how many Reviewers per Submission, who gets which email) and get a clear yes in this conversation. Never infer a yes from an earlier answer or a plan. Reads need no confirmation.
+- **Confirm before every write or send.** Before `invite_awards_reviewers`, `assign_awards_reviews`, `add_awards_nomination`, `update_awards_program`, `remind_awards` with `preview: false` or `announce_awards_winners`, show exactly what will happen (names and emails, how many Reviewers per Submission, who gets which email) and get a clear yes in this conversation. Never infer a yes from an earlier answer or a plan. Reads need no confirmation.
 - **Some actions wait for a person in Sessionboard.** Inviting Reviewers, sending reminders and announcing answer `needs_approval` with a URL. Say "Waiting for your OK in Sessionboard: <url>" and stop. Do not call it again for the same program.
-- **Choosing Winners is a person's job in Sessionboard** (Awards → the program → Winners). There is no tool for it and Sessionboard refuses an assistant. You may help compare Submissions with their scores; never say who won, and never mark anyone.
+- **The person chooses the Winners.** Help them compare Submissions (scores, `summarize_awards_reviews`), but never pick for them. Once they name the Winners and Finalists, `set_awards_winners` records exactly that list; it waits for their OK in Sessionboard and emails no one.
 - Pass the person's request in their own words as `asked` on the invite, reminder and announcement.
 - Words: Reviewer, Round, Scorecard, Submission (nomination), Nominee, Winner, Finalist. Never "judge", "jury", "entry" or "evaluation".
 
@@ -113,12 +122,16 @@ Use this when someone wants to run the review of an Awards program - invite Revi
    - Each Submission can get at most as many Reviewers as the program has. With fewer Reviewers than `per_submission` (2 Reviewers and the default 3), say so and propose `per_submission` equal to the Reviewer count, or inviting more Reviewers first.
    **Pause:** say how many Submissions and Reviewers there are and how many Reviewers each Submission gets. Ask for a yes.
    `assign_awards_reviews { program_id, per_submission? }`.
+   To add a nomination someone sent in another way (an email, a paper form) or a test nomination to rehearse on, `add_awards_nomination { program_id, nominee, nominator?, category_id?, answers? }` after a yes here: it is submitted like a Site nomination once every required question is answered (else `missing_fields` says what is left), works on any program state and emails no one. Question ids are in `get_awards_program`'s form.
+   To take a Reviewer off (`user_id` from `review.reviewers`), `remove_awards_reviewer`; to move a duplicate or spam Submission to the Trash, `remove_awards_nomination` (`undo: true` brings it back). Both need a yes here and wait for a person's OK in Sessionboard.
 5. **Chase unfinished scorecards** (while the review Round is open). `remind_awards { program_id, audience: "reviewers", preview: true }` lists who would get it and who is skipped (nobody gets the same reminder twice in 24 hours). Nothing is sent.
    **Pause:** show the count, the names and who is skipped. Ask "Send this reminder?"
    On yes: `remind_awards { program_id, audience: "reviewers", preview: false, asked? }`. It answers `needs_approval`: give the URL and stop.
 6. **Read how it is going.** `get_awards_results` for every program: Submissions submitted and still in draft, Reviewers, Scorecards filled in, Winners and the completion rate. `get_awards_program` for one program's Reviewer progress and Submissions by average score. Present scores as information for the person's decision, not a recommendation of Winners.
-7. **Hand the choice to the person.** When scoring is done, say: "Pick the Winners and Finalists in Sessionboard: Awards → <program> → Winners." Do not continue until they say they have.
-8. **Announce.** Check `get_awards_program` shows Winners. Whoever submitted each Winner's and Finalist's nomination (the Nominee, when people nominate themselves) gets the news by email; everyone else who submitted gets a thank-you unless `notify_others` is false. It is sent once per program.
+7. **Record the person's choice.** When scoring is done, show the Submissions by score (and `summarize_awards_reviews` for any they ask about). Ask who the Winners and Finalists are; they may also pick them in Sessionboard (Awards → <program> → Winners).
+   **Pause:** list each Submission with Winner or Finalist (ids from `winner_types`). Ask "Record these?"
+   On yes: `set_awards_winners { program_id, winners: [{ submission_id, winner_type_id }], asked? }`. It answers `needs_approval`: give the URL and stop.
+8. **Announce.** Check `get_awards_program` shows Winners, then `preview_awards_announcement { program_id }` for who gets what and anything blocking. Whoever submitted each Winner's and Finalist's nomination (the Nominee, when people nominate themselves) gets the news by email; everyone else who submitted gets a thank-you unless `notify_others` is false. It is sent once per program.
    **Pause:** say which program, how many Winners and Finalists, whether the thank-you goes out, and any `note` line. Ask "Announce now?"
    On yes: `announce_awards_winners { program_id, note?, notify_others?, asked? }`. It answers `needs_approval`: give the URL and stop.
 
@@ -129,19 +142,18 @@ Use this when someone wants to run the review of an Awards program - invite Revi
 - **`choose_plan`** on announce: the organization is past the trial's 50 nominations (counted across all its programs). A person chooses a plan in Sessionboard; nothing was sent; nominations still come in.
 - **`enterprise_only`** (`review_rounds`): a second review Round is Enterprise Awards. An admin upgrades in Sessionboard (Awards → Enterprise). Nothing changed.
 - **"A person does this in Sessionboard, not an assistant."** (`HUMAN_ONLY`): say so and point to the page.
-- **Announce errors mentioning `no_winners` or `reviews_incomplete`**: no Winners are picked yet, or scorecards are unfinished. Say which, and offer step 5 or step 7.
+- **`no_winners` or `reviews_incomplete`** (announce or `set_awards_winners`): no Winners are recorded yet, or scorecards are unfinished. Say which, and offer step 5 or step 7.
 - **Reminder errors mentioning `review_not_open` / `review_closed` / `no_site`**: the review Round is not open now, or the program is not on an Awards Site. Say so.
 - **404**: check the id with `list_awards_programs`.
+- Report the delivery progress of a reminder (`get_awards_reminder`) or announcement (`preview_awards_announcement`) after it is sent.
 - **429 "Too many requests"**: Sessionboard is rate-limiting this connection. Nothing changed. Wait a minute and retry once; if it happens again, tell the person and try later.
 
 ## What this skill does not do
 
-- Pick, change or remove Winners or Finalists. A person does that in Sessionboard.
-- Preview exactly who gets the announcement email before asking. Say who receives it in general terms instead.
-- Remove a Reviewer, move an assignment from one Reviewer to another, or set Reviewer tags.
+- Choose the Winners or Finalists for the person. It records only the list they give, and that waits for their OK.
+- Move an assignment from one Reviewer to another, or set Reviewer tags.
 - Show one Reviewer's individual scorecard answers.
-- Run more than one review Round, public voting or a Call for Reviewers.
-- Report the delivery progress of a reminder or announcement after it is sent.
+- Run more than one review Round or a Call for Reviewers.
 
 ## Tools used
 
@@ -152,6 +164,13 @@ Use this when someone wants to run the review of an Awards program - invite Revi
 - `update_awards_program` — turn blind review on or off (write)
 - `assign_awards_reviews` — give each Submission its Reviewers; emails no one (write)
 - `remind_awards` — preview, then remind Reviewers with scorecards to finish; the send waits for a person's OK (read / sends)
+- `summarize_awards_reviews` — the Reviewers' comments on one Submission, summarized (read)
+- `set_awards_winners` — record the person's Winners and Finalists; waits for their OK; emails no one (write)
+- `preview_awards_announcement` — who gets which email and what blocks it (read)
+- `get_awards_reminder` — a sent reminder's delivery progress (read)
+- `remove_awards_reviewer` — take a Reviewer off; waits for a person's OK (write)
+- `add_awards_nomination` — a nomination on someone's behalf, submitted like the Site's; emails no one (write)
+- `remove_awards_nomination` — move a Submission to the Trash or back; removing waits for a person's OK (write)
 - `announce_awards_winners` — email the Winners and Finalists and thank the rest; waits for a person's OK (sends)
 ~~~~
 

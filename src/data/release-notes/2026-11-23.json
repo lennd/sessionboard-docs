@@ -1771,6 +1771,533 @@
       "gated": null,
       "product": "platform",
       "platform": false
+    },
+    {
+      "id": "interest-form-speaker-contact-deduplication",
+      "title": "Interest form submissions no longer overwrite contacts when speakers share an email address",
+      "summary": "When two different speakers submit with the same email address, each now gets their own contact record instead of one person's name and headshot being written over the other's. A speaker is linked to an existing contact only when both the email **and** the name match (accounting for case, accents, punctuation, word order, and common short forms such as Chris / Christopher). When the names differ, the new speaker gets a separate contact and the pair is flagged automatically in **Contacts > Duplicates** so an admin can resolve the shared address.",
+      "article": "/contacts/merge-duplicates",
+      "related": [
+        "/speaker-crm/speaker-crm-interest-forms",
+        "/contacts/add-delete-a-contact"
+      ],
+      "kind": "fixed",
+      "module": "CRM",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Contacts → Duplicates"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers running interest forms with multiple co-speakers on a submission, or speakers who reuse a shared team inbox, no longer risk having one speaker's profile silently replaced by another's. Each person keeps their own contact, and any shared-email pairs surface in Duplicates for a quick admin review.",
+      "internal": {
+        "cs_action": {
+          "kind": "reach_out",
+          "note": "Customers affected by the Informa / AI Summit NY data corruption (Krishna Shah → Natasha Singh; Courtney Counts chain) need a manual SQL repair — see the sb-11674 handoff. Reach out proactively to those accounts."
+        },
+        "when_to_bring_up": "A customer reports that a speaker's name or headshot was replaced after an interest form submission, or asks why two speakers collapsed onto one contact.",
+        "who_should_get_it": "Any customer using interest forms where multiple speakers submit with the same or a shared email address.",
+        "staff_path": "Contacts → Duplicates",
+        "gotchas": "The data repair for Informa (part 1 done, part 2 pending Asif's real email) is NOT in this PR — it is in the workspace handoff at .claude/handoffs/sb-11674/informa-repair.sql. The fix is retroactive for new submissions only; historical corrupted records need manual repair.",
+        "talk_track": "If two speakers share an email, they each get their own contact now, and the pair shows up in Contacts > Duplicates so you can fix the address at your convenience — no more one speaker accidentally becoming another.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that interest form submissions automatically flag shared-email speaker pairs as duplicate suggestions, and explain what the name-matching logic considers equivalent (case, accents, punctuation, word order, and common short forms).",
+          "why_use_it": "The Duplicates view collects contact pairs that Sessionboard has identified as likely the same person, so you can review and merge them in one place rather than hunting through the contacts list. Use it after interest form submissions close to clean up any shared-email situations before sending portal invitations or running reports.",
+          "at": "2026-11-23T20:39:22.519Z"
+        }
+      },
+      "product": "platform",
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5622"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": "2026-11-25",
+          "eu": "2026-11-25",
+          "me": "2026-11-25"
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "platform": false
+    },
+    {
+      "id": "interest-form-duplicate-speaker-email-validation",
+      "title": "Interest forms block duplicate email addresses across speakers on the same submission",
+      "summary": "When a submitter adds multiple speakers to an interest form, each speaker must now have a unique email address. If the same address is entered for more than one speaker, the form blocks submission and shows the message **\"[email] is already used for another speaker. Enter this speaker's own email address.\"** next to the duplicate **Email** field and in the error summary at the top of the form. The check ignores letter case and surrounding spaces.",
+      "article": "/speaker-crm/speaker-crm-interest-forms",
+      "related": [
+        "/contacts/merge-duplicates"
+      ],
+      "kind": "fixed",
+      "module": "CRM",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Speaker CRM → Interest Forms → [form link]"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "speaker"
+      ],
+      "use_case": "Prevents a submitter from accidentally entering their own email address for every speaker on a multi-speaker submission, which previously caused those speakers to be merged into a single contact record.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Default on; no action needed. The companion API change (sessionboard-web-api#5622) also blocks merges server-side across submissions."
+        },
+        "when_to_bring_up": "A customer reports that multiple speakers were merged into one contact after an interest form submission, or asks how to prevent submitters from reusing their own email for co-speakers.",
+        "who_should_get_it": "Any customer using interest forms with multi-speaker submissions.",
+        "staff_path": "Speaker CRM → Interest Forms → [form link] → add two speakers with the same email",
+        "gotchas": "The client-side check covers duplicates within a single submission. The server-side fix (separate PR) covers duplicates across submissions. Both must be deployed for full protection.",
+        "talk_track": "If a submitter accidentally puts their own email on every speaker slot, the form now stops them immediately and tells them exactly which field to fix — no more merged contacts to untangle after the fact.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The interest forms guide should note that each speaker on a submission must have a unique email address, and describe the duplicate-email error message that appears in the summary and next to the Email field.",
+          "why_use_it": null,
+          "at": "2026-11-23T20:50:10.943Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-org-portal#358"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": "2026-11-25",
+          "eu": "2026-11-25",
+          "me": "2026-11-25"
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "product": "platform",
+      "platform": false
+    },
+    {
+      "id": "org-domain-links-and-email-redirect",
+      "title": "Event stop links and details-update emails now use the org's custom domain",
+      "summary": "When an organization uses a custom domain (e.g. `events.acme.org`), links to event pages on the home page tour listing and the **View details** link in details-updated emails now resolve to that custom domain instead of the default `sites.sessionboard.com` address. The `/e/` short-link redirect also follows the same rule.",
+      "article": "/faq/custom-domains-and-login-links",
+      "kind": "fixed",
+      "module": "Settings",
+      "features": [
+        "site_domains",
+        "gatherings"
+      ],
+      "availability": "on_request",
+      "enable": {
+        "how": "support",
+        "path": "Ask your Customer Success Manager to enable Site Domains; then Settings → Domains"
+      },
+      "where": {
+        "scope": "org",
+        "path": "Organization home page event listing and details-update email"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Organizers who have set up a custom domain expect every link they share — including event stop links on the org home page and the \"View details\" button in notification emails — to stay on their branded domain rather than falling back to the Sessionboard default URL.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Fix is automatic for any org already using a custom domain; no action needed."
+        },
+        "when_to_bring_up": "A customer with a custom domain reports that links on their org home page or in details-update emails still point to sites.sessionboard.com.",
+        "who_should_get_it": "Any organization using the Site Domains add-on.",
+        "staff_path": null,
+        "gotchas": "Only affects orgs that have an org domain configured; orgs without one are unchanged.",
+        "talk_track": "Every link your attendees and speakers see — including the event listing on your home page and the email we send when event details change — now stays on your branded domain.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that event stop links on the org home page and the View details link in details-update emails automatically use the org's custom domain when one is configured.",
+          "why_use_it": "null",
+          "at": "2026-11-23T21:18:39.389Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5628"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": "2026-11-25",
+          "eu": "2026-11-25",
+          "me": "2026-11-25"
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": "feature:gatherings (beta)",
+      "product": "platform",
+      "platform": false
+    },
+    {
+      "id": "home-past-webinar-shows-as-recording",
+      "title": "Past webinars on Home show as recordings, not \"Live now\"",
+      "summary": "The **From Sessionboard** card on Home now shows a past webinar as **Recording · [date]** with a play badge and a **Watch the recording** link, instead of incorrectly labelling it **Live now** with **Save a seat**. A webinar is treated as ended once its `ends_at` time passes; if no end time is set, it is counted as ended one day after it started.",
+      "article": "/events/event-home",
+      "kind": "fixed",
+      "module": "Event team",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Home → From Sessionboard card"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who visit Home after a Sessionboard webinar has ended will no longer see a misleading \"Live now\" prompt asking them to register for an event that already ran; the card correctly surfaces the recording instead.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Default on; no action needed."
+        },
+        "when_to_bring_up": "A customer reports that the Home page showed a past Sessionboard webinar as live or asked them to register after the event had already run.",
+        "who_should_get_it": "All customers who see the From Sessionboard card on Home.",
+        "staff_path": "Home → From Sessionboard card",
+        "gotchas": "Webinars with no ends_at are treated as ended 24 hours after starts_at; if a webinar runs longer than a day and has no end time set, it may flip to recording state prematurely.",
+        "talk_track": "After a Sessionboard webinar ends, the card on Home now shows the recording link automatically — no stale 'register now' prompts.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The Event Home guide should note that the From Sessionboard card switches from a live-registration state to a recording state once the webinar's end time passes.",
+          "why_use_it": null,
+          "at": "2026-11-23T21:50:20.923Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1739"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": "2026-11-25",
+          "eu": "2026-11-25",
+          "me": "2026-11-25"
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "product": "platform",
+      "platform": false
+    },
+    {
+      "id": "marketing-conversion-attribution-hubspot-site-tracking",
+      "title": "Marketing: conversion attribution on sign-up forms, optional HubSpot form forwarding, and analytics tags settable from an AI assistant",
+      "summary": "Sign-ups on agent pages and gated players now record where a visitor came from — UTM parameters, `gclid`, `fbclid`, `li_fat_id`, `msclkid`, the landing page and the converting page — so you can see which campaigns drove form completions. Org admins can optionally forward each sign-up to their own HubSpot form via **Settings → HubSpot Forms** (API only for now; no admin UI yet). Site analytics tags (**GTM**, **GA4**, **HubSpot**, **LinkedIn** and **Meta Pixel**) can now be read and set per-Site or as an org default through the MCP tools `get_site_tracking` and `set_site_tracking`, without logging into the UI.",
+      "article": "/site/site-builder",
+      "related": [
+        "/marketing/advocacy-conversion-tracking",
+        "/sessionboard-marketing/pages/publish-an-event-page",
+        "/api/insights/mcp-server"
+      ],
+      "kind": "new",
+      "module": "Marketing",
+      "features": [
+        "marketing"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Site Builder → Site → Tracking (via MCP or API)"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who run paid campaigns can see which UTM source, medium or ad click drove each sign-up or recording gate completion, and optionally push those leads straight into their HubSpot form so HubSpot sees the visit context. Teams managing many Sites can set GTM, GA4, LinkedIn or Meta Pixel IDs from Claude or ChatGPT without opening the admin UI.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "HubSpot form forwarding is API-only (GET/PUT /marketing/org/:orgId/hubspot-forms); no admin UI exists yet. Attribution is default-on for all Marketing sign-up forms and recording gates. Site tracking-id routes are live but the UI surface is MCP/API only for now."
+        },
+        "when_to_bring_up": "When a customer asks how to connect their ad spend to sign-ups, wants HubSpot to receive form submissions from Sessionboard pages, or needs to set GTM/GA4/pixel IDs across many Sites without logging in.",
+        "who_should_get_it": "Customers running paid campaigns (Google, LinkedIn, Meta) who use Marketing agent pages or gated players, and any customer using Sites who wants analytics tags managed via AI assistant.",
+        "staff_path": "Site Builder → /:orgId/:siteId/tracking (API); /marketing/org/:orgId/hubspot-forms (API)",
+        "gotchas": "HubSpot form forwarding is fire-and-forget with a 4 s timeout and never blocks the visitor. The route is JWT-only — not available through MCP, Public API or Ask — because it controls where visitor PII is sent. Personal/token pages remain tag-free. The browser half (sessionboard-embeds feature/marketing-conversion-tracking) must ship after this API PR.",
+        "talk_track": "Every sign-up on your Marketing pages now records the full UTM chain and ad-click IDs. You can forward those leads to your HubSpot form automatically, and set your GTM or GA4 tag once from your AI assistant and it renders on every page.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The site-builder guide should add a section on analytics tracking IDs (GTM, GA4, HubSpot, LinkedIn, Meta Pixel) — how to set them per-Site or as an org default via MCP tools get_site_tracking and set_site_tracking, and how they are rendered server-side. The advocacy-conversion-tracking guide should note that UTM and ad-click attribution is now also captured on agent-page sign-up forms and recording gates, not only on Advocacy embeds.",
+          "why_use_it": "Sessionboard Marketing pages and gated players capture the full attribution chain — UTM parameters, ad-click IDs and the pages a visitor landed on and converted from — so you always know which campaigns are producing sign-ups. Analytics tags (GTM, GA4, HubSpot, LinkedIn Partner and Meta Pixel) are stored per-Site and rendered server-side, keeping your tracking consistent across every page without manual code edits. An optional HubSpot form integration forwards each sign-up to your own HubSpot form so your CRM sees the visit alongside the contact. AI assistants connected via MCP can read and update all of these settings on your behalf.",
+          "at": "2026-11-23T22:23:33.294Z"
+        }
+      },
+      "product": "platform",
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5632"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": "2026-11-25",
+          "eu": "2026-11-25",
+          "me": "2026-11-25"
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta",
+      "platform": false
+    },
+    {
+      "id": "agent-page-form-validation-and-states",
+      "title": "Agent gathering page forms now validate inline and show sending and success states",
+      "summary": "The **Request a seat** form on agent gathering pages (such as Event Content Lab pages) now validates required fields, email format, selects, checkboxes and radio groups before submitting. Each error appears directly after its field with an error summary at the top that links to each problem; focus moves to the first invalid field and clears as the visitor corrects it. While the request is in flight, fields are replaced by a **Sending your request…** panel that blocks a second submit. On success the panel shows the appropriate confirmation — pending, waitlist or registered — with a **Request another seat** button that resets the form. On failure, a plain error message appears without exposing API text; requests that take longer than 20 seconds are aborted with their own message.",
+      "article": "/field-events/registration-form",
+      "kind": "improved",
+      "module": "Agents",
+      "features": [
+        "gatherings",
+        "coordinators"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Agent gathering page → Request a seat form"
+      },
+      "permissions": [],
+      "audience": [
+        "participant"
+      ],
+      "use_case": "Visitors filling out a seat-request form on an agent gathering page now get clear, field-level feedback before anything is sent, and a confirmation screen that tells them exactly what happens next — reducing abandoned or duplicate submissions.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Ships automatically with the updated embed script; no configuration needed."
+        },
+        "when_to_bring_up": "A customer using Field Events or the Event Content Lab asks about the quality of seat-request submissions or reports visitors submitting twice.",
+        "who_should_get_it": "Customers using agent gathering pages (e.g. Event Content Lab) with the sb-page embed.",
+        "staff_path": null,
+        "gotchas": "Styles are injected by the web-api agent page renderer (PR #5637); both PRs must be deployed together for the full experience. The form size grew from 2.5 KB to ~5 KB gzipped.",
+        "talk_track": "The form now catches mistakes before they reach you, shows a spinner while the request goes through, and confirms the outcome — pending, waitlist or registered — so visitors know exactly where they stand.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The field-events registration-form guide does not cover agent gathering pages or the sb-page embed; a note explaining the seat-request form's validation and state behaviour on agent pages should be added.",
+          "why_use_it": "Agent gathering pages let organizers collect seat requests for field events directly from a branded page. The form guides visitors through required information, confirms their request in real time, and handles edge cases like slow connections or duplicate submissions — so organizers receive complete, accurate requests without manual follow-up.",
+          "at": "2026-11-23T22:35:21.225Z"
+        }
+      },
+      "related": [
+        "/field-events/overview",
+        "/field-events/checkin"
+      ],
+      "product": "platform",
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-embeds#151"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": "2026-11-25",
+          "eu": "2026-11-25",
+          "me": "2026-11-25"
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta",
+      "platform": false
+    },
+    {
+      "id": "custom-domain-redirects-manager",
+      "title": "Manage URL redirects for custom site domains",
+      "summary": "A **Redirects** button on each org-scoped domain row in **Settings → Domains → Site domains** opens a manager with two tabs. The **Rules** tab lists every redirect with **From**, **To**, **Type** (301 Permanent or 302 Temporary), and on/off toggle; supports sorting, filtering, and **Export CSV**; enforces a 200-rule cap; and shows an empty state with an example. The **History** tab records every change with a summary, author, and timestamp, and lets you **Restore** any previous version. Every write shows a toast with **Undo**. Read-only users see the list without edit controls.",
+      "article": "/settings/domains#site-domain",
+      "related": [
+        "/faq/custom-domains-and-login-links"
+      ],
+      "kind": "new",
+      "module": "Settings",
+      "features": [
+        "site_domains"
+      ],
+      "availability": "on_request",
+      "enable": {
+        "how": "support",
+        "path": "Ask your Customer Success Manager to enable Site Domains; then Settings → Domains → Site domains → Redirects"
+      },
+      "where": {
+        "scope": "org",
+        "path": "Settings → Domains → Site domains → Redirects"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who have moved to a custom domain can set up 301 or 302 redirects directly in Sessionboard — no DNS or server access needed — so old URLs keep working after a site restructure or rebrand.",
+      "internal": {
+        "cs_action": {
+          "kind": "must_enable",
+          "note": "Site Domains is on_request; the Redirects manager is part of that feature. Requires the matching web-api (#5634) and Cloudflare Workers (#58) releases to be live before customers can use it. PR notes it has not yet been verified in a browser."
+        },
+        "when_to_bring_up": "A customer asks how to handle old URLs after relaunching or restructuring their event site on a custom domain.",
+        "who_should_get_it": "Any customer already using Site Domains who needs to preserve inbound links or redirect legacy paths.",
+        "staff_path": "Settings → Domains → Site domains → Redirects",
+        "gotchas": "Depends on lennd/sessionboard-web-api#5634 and lennd/cloudlfare-workers#58; do not promote until both are confirmed live. Rules for `/` or `/*` require an explicit confirmation tick before saving.",
+        "talk_track": "You can now manage all your URL redirects from inside Sessionboard — add a rule, flip it on or off, and roll back to any previous state with one click.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The /settings/domains guide should add a section documenting the Redirects manager: how to open it, add and edit rules, use the History tab, and the 200-rule cap.",
+          "why_use_it": "Custom domain redirects let you control how visitors reach your event pages without touching DNS or server configuration. Define permanent or temporary redirects for any path, toggle rules on and off without deleting them, and restore any previous configuration from the built-in history. The 200-rule cap and conflict checks keep your redirect table clean and loop-free.",
+          "at": "2026-11-23T23:21:26.112Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1743"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": "2026-11-25",
+          "eu": "2026-11-25",
+          "me": "2026-11-25"
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "product": "platform",
+      "platform": false
+    },
+    {
+      "id": "attend-seat-request-faster-response",
+      "title": "Seat request and registration forms respond immediately instead of waiting for confirmation emails",
+      "summary": "Submitting a **Request a seat** form on a gathering page (or any registration checkout) now returns a response in about one second. Confirmation, pending-approval, and waitlist emails still arrive shortly after, but the form no longer waits for them to finish sending before showing the result.",
+      "article": "/field-events/registration-form",
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "gatherings",
+        "gatherings_registration",
+        "approvals"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Field Events → Registration → Request a seat form"
+      },
+      "permissions": [],
+      "audience": [
+        "participant",
+        "organizer"
+      ],
+      "use_case": "Attendees submitting a seat request or registration on a gathering page no longer see a long \"Sending…\" spinner; the form confirms their submission in about a second, reducing confusion and drop-off at the point of registration.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": "Default on; no action needed. Emails still send — just detached from the HTTP response."
+        },
+        "when_to_bring_up": "A customer reports that their gathering registration form hangs or shows a long spinner before confirming.",
+        "who_should_get_it": "Any customer using Field Events with seat requests or approval-gated registration.",
+        "staff_path": "Field Events → Registration → gathering page with Request a seat",
+        "gotchas": "Emails (confirmation, pending-approval, waitlist) still send correctly — they just arrive a moment after the form response rather than before it. Waitlist autopay and other server-side flows that must complete before responding are unchanged.",
+        "talk_track": "The form now answers in about a second; the confirmation email follows right behind it.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that registration checkout responds immediately and that confirmation emails arrive a moment later, separately from the form response.",
+          "why_use_it": "null",
+          "at": "2026-11-23T23:27:07.076Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5637"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": "2026-11-25",
+          "eu": "2026-11-25",
+          "me": "2026-11-25"
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta",
+      "product": "platform",
+      "platform": false
     }
   ]
 }

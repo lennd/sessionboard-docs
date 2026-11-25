@@ -51,13 +51,16 @@ These wait for a person to approve them in Sessionboard, even after you say yes 
 - `draft_newsletter_issue`: Draft a newsletter issue (changes data)
 - `export_audience`: Export audience (changes data)
 - `get_goal`: Get goal status (reads)
+- `get_marketing_home`: Marketing Home (reads)
 - `get_sponsored_reach`: Sponsored reach (reads)
 - `get_turnout`: How an event is doing (reads)
 - `launch_ads`: Draft ads (no spend) (changes data)
+- `list_approvals`: What is waiting for your OK (reads)
 - `list_goals`: List goals (reads)
 - `manage_goal`: Manage goal (changes data)
 - `plan_goal`: Plan a goal (changes data)
 - `set_turnout_goal`: Set an event's goal (changes data)
+- `suggest_goal`: Suggest a goal (reads)
 - `update_journey`: Update a journey (changes data)
 
 ## What it does not do yet
@@ -92,6 +95,12 @@ Use this when someone wants to hit a number for an event (registrations, abstrac
 - **People stay private.** Audiences come back as counts only. Sponsored reach is aggregate only: sponsors get results, never names.
 - **Numbers are a plan, not a forecast.** The split across channels is a starting point. An ads budget without a figure from the person is labelled as an assumption ($40 per registration). Say so.
 
+## Start here
+
+- "How's marketing going?" → `get_marketing_home`: the next event and its pace, active goals, what is waiting for a person's OK, sign-ups this week and one next move. Lead with the next move; say "about" for estimates.
+- "What's waiting for me?" or "did my invitations go out?" → `list_approvals`: each request with what it is, who asked and the Sessionboard link where a person approves it. It approves nothing. Check it before asking for the same thing again.
+- No goal yet → `suggest_goal { event_id }` gives the three starters (fill the event, win back past attendees, ads) and a suggested number with its reason. Offer them, then job 1 with the number and date the person confirms.
+
 ## Jobs, and the tools for each, in order
 
 ### 1. "600 registrations by March 14": plan a goal
@@ -109,7 +118,7 @@ Use this when someone wants to hit a number for an event (registrations, abstrac
    - `card_on_file`: add a card in Billing. During the trial, ads stay off until a card is on file.
    - `creative_approved`: speakers approve their clips in their Creator console.
    - `audience_ready`: build a bigger audience.
-5. If `can_approve` is true, ask: "Approve up to $X on your Meta account?" Only on a clear yes: `approve_ads { ad_id, draft_version, approved: true }`. From a connected assistant it usually answers `needs_approval`: tell them "Waiting for your OK in Sessionboard: <url>" and stop; do not call it again. That is a pending approval, not an approved ad. Only after a person approves it in Sessionboard (read it again with `get_goal`) is the ad approved, and it then waits at `launch.state: "waiting_for_account"`.
+5. If `can_approve` is true, ask: "Approve up to $X on your Meta account?" Only on a clear yes: `approve_ads { ad_id, draft_version, approved: true }`.
 6. On 409, the draft changed. Read it again (`get_goal`), show the new version, and ask again.
 
 ### 3. "How is my goal doing?"
@@ -147,7 +156,7 @@ Use this when someone wants to hit a number for an event (registrations, abstrac
 |---|---|---|
 | "Get 600 registrations for Summit 2027 by March 14" | `plan_goal`, show the steps, ask, then `manage_goal approve` | A goal, active, with a plan across sharing, email and (if asked) ads |
 | "Run $3k of Meta ads for it" | `launch_ads { goal_id, platform: "meta", total_cap_cents: 300000 }`, show the checklist | A draft; nothing spends |
-| "Yes, approve the $3,000" | `approve_ads` with `approval.approve_with` | `needs_approval`: "Waiting for your OK in Sessionboard: <url>" (stop). Once approved there: waiting for the ad account (say so) |
+| "Yes, approve the $3,000" | `approve_ads` with `approval.approve_with` | Approved; waiting for the ad account (say so) |
 | "Are we on pace?" | `get_goal` | The pace line, the number needed per day, and the channels |
 | "How's the Austin field lab doing?" | `get_turnout { event_id }` | The summary, the estimate with range and confidence, how it was estimated, 2–3 suggestions |
 | "Make the goal 300" | Ask, then `set_turnout_goal { event_id, registrations_goal: 300 }` | The goal is saved; pace is shown against it |
@@ -169,6 +178,9 @@ Use this when someone wants to hit a number for an event (registrations, abstrac
 - `plan_goal` — Plan a goal (write)
 - `set_turnout_goal` — Set an event's goal (write)
 - `update_journey` — Update a journey (write)
+- `get_marketing_home` — Marketing Home (read)
+- `list_approvals` — What is waiting for your OK (read)
+- `suggest_goal` — Suggest a goal (read)
 ~~~~
 
 </div>

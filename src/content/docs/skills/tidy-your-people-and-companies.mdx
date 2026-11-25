@@ -46,14 +46,19 @@ It stops and asks you in the conversation:
 
 ## Tools it uses
 
+- `add_crm_note`: Add a note to a Contact (changes data)
+- `add_people_to_crm_contacts`: Add people to Contacts (changes data)
 - `delete_crm_companies`: Delete companies (changes data)
 - `delete_crm_people`: Delete people (changes data)
 - `discover_crm_people`: Discover people to import (reads)
 - `export_crm_contacts`: Export Contacts (reads)
+- `export_crm_list`: Export a CRM list (reads)
 - `find_crm_companies`: Find groups (reads)
 - `find_crm_people`: Find people (reads)
+- `get_crm_contact`: Get a Contact (reads)
 - `get_crm_home`: Get CRM Home (reads)
 - `get_crm_person`: Get a person (reads)
+- `hand_off_crm_people`: Hand people to another app (changes data)
 - `import_crm_people`: Preview or import people or companies (changes data)
 - `link_crm_company_people`: Link people to a company (changes data)
 - `list_crm_sources`: List CRM sources (reads)
@@ -65,6 +70,7 @@ It stops and asks you in the conversation:
 - `manage_sponsor`: Manage sponsor (changes data)
 - `start_crm_attendee_sync`: Bring in attendees or keep a source in sync (changes data)
 - `tag_crm_companies`: Tag groups (changes data)
+- `tag_crm_contacts`: Tag Contacts (changes data)
 - `tag_crm_people`: Tag people (changes data)
 
 ## What it does not do yet
@@ -138,6 +144,11 @@ Use this when someone wants to clean up the people and companies (Groups) in Ses
 11. **Export.** `export_crm_contacts { q?, type?, tag_id?, source?, event_id?, active? }` returns the Contacts as CSV, up to 1,000 rows. If `truncated`, say the full list exports from the Contacts page in Sessionboard CRM (up to 25,000).
 12. **Delete.** Name every record first. **Pause:** "Delete these 3 people? Their Contacts, contracts and pipeline entries stay." Then `delete_crm_people { keys, confirmed: true }` or `delete_crm_companies { company_ids, confirmed: true }`.
 13. **Put a company on an event's sponsor or exhibitor list.** Ask first, then `manage_sponsor { action: "create", event_id, name, level?, website?, contact_email?, description? }` or `manage_exhibitor { action: "create", event_id, name, booth_number?, website?, contact_email?, description? }`.
+14. **Notes.** `add_crm_note { contact_id, text }` (or a `key` that starts with `c_`) records what was agreed on a call or a preference; the whole team sees it on the Contact (`get_crm_contact`). A person who is not a Contact yet: `add_people_to_crm_contacts` first. Read the note back to the person before you add it.
+15. **Contacts on the organization's own lists.** `tag_crm_contacts { contact_ids, add_tag_ids, remove_tag_ids, add_types, remove_types }` (up to 500; tag ids from `list_crm_tags`). Other tags and types stay.
+   **Pause:** name the count, the list and a few names.
+16. **Export any list.** `export_crm_list { list: "people" | "companies" | "pipeline" | "contracts", filters }` returns CSV with the same filters as the list tool, up to 1,000 rows. For more, the person exports from that page in Sessionboard CRM.
+17. **Hand people to another app.** `hand_off_crm_people { app, keys | contact_ids | filter }`: invite to a webinar (marketing), put on a call for speakers (sessions), turn their talks into a course (learning) or nominate (awards). It saves the selection as a tag and returns the link that opens that app with it (a trial page if the organization doesn't have the app yet: say so). It emails no one.
 
 ## When something goes wrong
 
@@ -150,8 +161,7 @@ Use this when someone wants to clean up the people and companies (Groups) in Ses
 
 ## What this skill does not do
 
-- It cannot add a Contact to one of the organization's own lists (tags from `list_crm_tags`); that is done in Sessionboard.
-- No People or Groups export (only the Contacts export, 1,000 rows); no custom fields; no notes on a person.
+- No custom fields (those are part of the Sessionboard platform; a note holds the rest).
 - It cannot connect an app or change an existing event sponsor's or exhibitor's details (an update needs a version these tools do not read); do those in Sessionboard.
 - It does not merge two people into one.
 
@@ -177,6 +187,12 @@ Use this when someone wants to clean up the people and companies (Groups) in Ses
 - `delete_crm_companies` — delete companies to Trash, `confirmed: true` (write)
 - `manage_sponsor` — add a sponsor to an event (write)
 - `manage_exhibitor` — add an exhibitor to an event (write)
+- `add_crm_note` — Add a note to a Contact (write)
+- `add_people_to_crm_contacts` — Add people to Contacts (write)
+- `export_crm_list` — Export a CRM list (read)
+- `get_crm_contact` — Get a Contact (read)
+- `hand_off_crm_people` — Hand people to another app (write)
+- `tag_crm_contacts` — Tag Contacts (write)
 ~~~~
 
 </div>
