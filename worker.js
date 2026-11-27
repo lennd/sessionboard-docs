@@ -19,17 +19,17 @@ import apiProducts from './src/data/api/products.json';
 import mintlifyRedirects from './src/data/api/mintlify-redirects.json';
 import { retiredApiDocsTarget } from './src/lib/api-docs/retired-host.mjs';
 import { ACCOUNT_PREFIX, accountResponse, isAccountRequest, isSignedInRequest, isStaffRequest, recheckStaff } from './src/lib/account-session.mjs';
+import { articlesToKnowledgeBase } from './src/lib/legacy-articles.mjs';
 
 // `/en/migrated/knowledge-base/…` is a live path prefix left over from an
 // earlier HubSpot migration; Google still has URLs under it.
 const KB_PREFIX = /^\/(?:en\/)?(?:migrated\/)?knowledge-base(?:\/(.*))?$/;
 const FALLBACK = '/faq/who-can-i-contact-for-additional-assistance';
 
-// The Help Center lives on help.sessionboard.com. `learn` is the old HubSpot
-// hostname: HubSpot still holds it as a Cloudflare-for-SaaS custom hostname, so
-// we cannot serve it yet (Cloudflare answers 1034). Once a HubSpot admin detaches
-// it and it is routed here, every request 301s to the same path on the canonical
-// host in a single hop — so the cutover needs DNS only, no code change.
+// Canonical host is site.canonicalHost. Every legacyHosts hostname 301s to the
+// same path there: help is the old HubSpot knowledge base, support is the old
+// Intercom help center. Intercom's /en/articles/<slug> is rewritten to the
+// HubSpot /en/knowledge-base/<slug> shape below so both resolve in one hop.
 const PROD_HOST = site.canonicalHost;
 const LEGACY_HOSTS = new Set(site.legacyHosts);
 // The retired feedback portal (Canny, gone since 2026-11). Ideas and the roadmap
@@ -469,7 +469,19 @@ export default {
     // canonical host in one hop, rather than chaining two 301s.
     const targetOrigin = isLegacyHost ? `https://${PROD_HOST}` : url.origin;
 
-    const match = url.pathname.match(KB_PREFIX);
+    // One sitemap index. /sitemap.xml is the address HubSpot used and the one
+    // Search Console already has submitted; robots.txt names sitemap-index.xml.
+    // Serving the same index body at both URLs made GSC track two copies. A 301
+    // keeps the old submission working and leaves a single index.
+    if (url.pathname === '/sitemap.xml') {
+      return Response.redirect(`${targetOrigin}/sitemap-index.xml`, 301);
+    }
+
+    // Intercom articles (/en/articles/<slug>) resolve through the same map as
+    // HubSpot /en/knowledge-base/<slug>. Every other path is unchanged, so a
+    // legacy host keeps /get-started/overview on the way to the canonical host.
+    const kbPath = articlesToKnowledgeBase(url.pathname) ?? url.pathname;
+    const match = kbPath.match(KB_PREFIX);
 
     if (match) {
       const slug = decodeURIComponent(match[1] ?? '').replace(/\/$/, '');
@@ -539,12 +551,6 @@ export default {
         headers.append('Vary', 'Cookie');
         return new Response(variant.body, { status: variant.status, headers });
       }
-    }
-
-    // HubSpot KB sitemap path → Starlight sitemap
-    if (url.pathname === '/sitemap.xml') {
-      const asset = await env.ASSETS.fetch(new Request(`${url.origin}/sitemap-index.xml`, request));
-      if (asset.ok) return asset;
     }
 
     let staff = await isStaffRequest(request, env);

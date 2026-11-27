@@ -19,6 +19,8 @@ import { headScript, scopeCss, scopePaths } from '../lib/help-scope.mjs';
 import suitesConfig from '../data/suites.json';
 import { SUITE_COOKIE, anySelfServeBuilt, builtSuites, deployedSuites, suiteForPath, suiteHeadScript } from '../lib/suites.mjs';
 import { isSkillsPath, skillsCss, skillsHeadScript } from '../lib/skills.mjs';
+import { ga4LinkerDomains } from '../lib/ga4.mjs';
+import { faqPageNode } from '../lib/faq-schema.mjs';
 
 const SITE = `https://${site.canonicalHost}`;
 const WWW = 'https://www.sessionboard.com';
@@ -131,6 +133,23 @@ const jsonLd = {
   ],
 };
 
+// /faq/* only. Staff-only and signed-in pages take the branch below and emit
+// no JSON-LD at all. The answer is the page's own opening paragraph, plus any
+// Accordion or question headings on the page.
+if (slug.startsWith('faq/')) {
+  const faqBody = (() => {
+    const filePath = (entry as { filePath?: string }).filePath;
+    if (!filePath) return '';
+    try {
+      return readFileSync(filePath, 'utf8').replace(/^---\r?\n[\s\S]*?\r?\n---/, '');
+    } catch {
+      return '';
+    }
+  })();
+  const faq = faqPageNode({ slug, title, description, body: faqBody, canonical });
+  if (faq) (jsonLd['@graph'] as unknown[]).push(faq);
+}
+
 // Self-serve product scope (src/lib/help-scope.mjs): an inline script that
 // stamps <html data-sb-scope> from `?via=` or the cookie before first paint,
 // and the CSS that hides out-of-scope sidebar entries. Inert without a scope.
@@ -174,7 +193,7 @@ const marketingJs = `
     function gtag(){dataLayer.push(arguments);}
     window.gtag=gtag;
     gtag('js', new Date());
-    gtag('config', '${GA4_ID}', {send_page_view:true,linker:{domains:${JSON.stringify(['sessionboard.com','www.sessionboard.com',site.canonicalHost,...site.legacyHosts])}}});
+    gtag('config', '${GA4_ID}', {send_page_view:true,linker:{domains:${JSON.stringify(ga4LinkerDomains(site))}}});
     if(/[?&]ga_debug=1(?:&|$)/.test(location.search)){gtag('config','${GA4_ID}',{debug_mode:true});}
   }
   if(document.readyState==='complete'){setTimeout(loadMarketing,0);}
@@ -208,7 +227,7 @@ const marketingJs = `
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImage} />
     <meta name="twitter:image:alt" content={ogAlt} />
-    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd).replace(/</g, '\\u003c')} />
     <script set:html={marketingJs} />
   </>
 )}
