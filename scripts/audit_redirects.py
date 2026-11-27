@@ -44,7 +44,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 TAM = ROOT.parent / "sessionboard-tam"
-LIVE_SITEMAP = "https://learn.sessionboard.com/sitemap.xml"
+# robots.txt names sitemap-index.xml. /sitemap.xml 301s there (worker.js) so an
+# old Search Console submission still resolves; follow the redirect either way.
+LIVE_SITEMAP = "https://learn.sessionboard.com/sitemap-index.xml"
 DEFAULT_BASE = "https://learn.sessionboard.com"
 FALLBACK = "/faq/who-can-i-contact-for-additional-assistance"
 UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/126"
@@ -96,15 +98,15 @@ def sitemap_paths(url: str, _depth: int = 0) -> set[str]:
     Every page the live sitemap advertises, following the index down to the
     child sitemaps that hold the actual URLs.
 
-    Astro emits `/sitemap.xml` as a <sitemapindex> whose only entry is
-    `/sitemap-0.xml`, so a parser that reads one level sees a single URL — the
-    child sitemap — and calls it the live corpus. That is what this source used
-    to report: 1 URL instead of the 226 articles behind it, which meant a newly
-    published article was only ever checked if it also happened to appear in the
-    redirect CSV, Search Console, or an in-app link. The audit passed while
-    covering almost none of what the site serves.
+    Astro writes `sitemap-index.xml` plus `sitemap-0.xml` (the URLs). Reading only
+    the index sees a single URL — the child sitemap — and calls that the live
+    corpus. That is what this source used to report: 1 URL instead of the
+    articles behind it, which meant a newly published article was only ever
+    checked if it also happened to appear in the redirect CSV, Search Console,
+    or an in-app link. The audit passed while covering almost none of what the
+    site serves. `-L` follows the /sitemap.xml 301 onto the index.
     """
-    xml = subprocess.run(["curl", "-s", "-A", UA, url], capture_output=True, text=True).stdout
+    xml = subprocess.run(["curl", "-sL", "-A", UA, url], capture_output=True, text=True).stdout
     locs = [loc for loc in re.findall(r"<loc>(.*?)</loc>", xml)
             if "learn.sessionboard.com" in loc]
     if "<sitemapindex" in xml:

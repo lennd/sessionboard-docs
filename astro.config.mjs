@@ -12,6 +12,7 @@ import suitesConfig from './src/data/suites.json' with { type: 'json' };
 import { suiteStaticFiles } from './src/lib/suites-build.mjs';
 import { restrictedCards } from './src/lib/restricted-cards.mjs';
 import { ACADEMY_SLUG, academyOpen } from './src/lib/academy.mjs';
+import { createLastmodLookup } from './src/lib/sitemap-lastmod.mjs';
 
 // The staff-only enablement section (src/pages/<internalPrefix>/) is unlisted.
 // Starlight adds @astrojs/sitemap itself unless one is configured here, so
@@ -19,6 +20,10 @@ import { ACADEMY_SLUG, academyOpen } from './src/lib/academy.mjs';
 const INTERNAL = `https://${site.canonicalHost}/${site.internalPrefix}`;
 // Pages with `unlisted: true` in frontmatter (src/content.config.ts) — reached
 // only from a link we email, so kept out of the sitemap as well as noindexed.
+// Git commit date when history is available, otherwise frontmatter `reviewed`.
+// Pages with neither are omitted rather than stamped with the build time.
+const lastmodFor = createLastmodLookup();
+
 const UNLISTED = new Set([
   `https://${site.canonicalHost}/help/release-notes/email`,
   // The Academy until it opens (site.json `academy.open`, src/lib/academy.mjs).
@@ -69,6 +74,11 @@ export default defineConfig({
         !page.startsWith(`${INTERNAL}/`) &&
         !UNLISTED.has(page.replace(/\.html$/, '')) &&
         !isStaffOnlyHref(page, site),
+      serialize(item) {
+        const lastmod = lastmodFor(item.url);
+        if (lastmod) item.lastmod = lastmod;
+        return item;
+      },
     }),
     starlight({
       title: 'Sessionboard Help Center',
