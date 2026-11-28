@@ -774,6 +774,396 @@
         }
       }
     },
+    "/v1/organization/{orgId}/marketing/events/{eventId}/assets": {
+      "get": {
+        "operationId": "list-event-assets",
+        "summary": "List an event's takeaways",
+        "description": "The webinar's (or any event's) takeaways in page order, each with `downloads` (`clicks`, `people`). `gate_form_id` is the event's takeaways sign-up form (placement `asset_gate`), when one exists. Requires `read:marketing`. Also at `GET /v1/marketing/events/{eventId}/assets`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`payload`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "event": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "integer"
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "assets": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/EventAsset"
+                          }
+                        },
+                        "gate_form_id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "nullable": true
+                        },
+                        "count": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "Event not found in this organization"
+          }
+        }
+      },
+      "post": {
+        "operationId": "attach-event-asset",
+        "summary": "Attach a takeaway",
+        "description": "Attach one takeaway from exactly one source: `key` (after the presigned upload), `from_url` (an https file Sessionboard downloads and checks), `content_base64` with `filename` (up to 10 MB) or `link_url` (a link; nothing stored). Files are PDFs, slides, documents, spreadsheets, PNG or JPG, up to 100 MB, and pass the virus and file-type checks. Gated by default: the event's agent page asks for an email once per page view, and each download is recorded as a `content.downloaded` signal on the person and event. The first gated takeaway also creates the event's takeaways sign-up form (`gate_form_id`). Up to 50 per event. Requires `write:marketing`. Also at `POST /v1/marketing/events/{eventId}/assets`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/EventAssetInput"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "key": {
+                        "type": "string",
+                        "description": "From the presign response, after the PUT"
+                      },
+                      "from_url": {
+                        "type": "string",
+                        "format": "uri",
+                        "description": "An https file to copy"
+                      },
+                      "content_base64": {
+                        "type": "string",
+                        "description": "The file, base64 (up to 10 MB). Send `filename` too"
+                      },
+                      "filename": {
+                        "type": "string"
+                      },
+                      "link_url": {
+                        "type": "string",
+                        "format": "uri",
+                        "description": "An https link instead of a file"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "`payload.asset`, `payload.gate_form_id` for a gated takeaway, and a `message`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "asset": {
+                          "$ref": "#/components/schemas/EventAsset"
+                        },
+                        "gate_form_id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Not exactly one source, a file type that can't be attached, a failed check, or the per-event limit"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "Event not found in this organization"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/events/{eventId}/assets/presign": {
+      "post": {
+        "operationId": "presign-event-asset-upload",
+        "summary": "Get an upload URL for a takeaway",
+        "description": "A presigned `PUT` to Sessionboard's content storage (15 minutes). Send the bytes with exactly the returned `headers`, then attach with `{ \"key\": \"…\" }`. Requires `write:marketing`. Also at `POST /v1/marketing/events/{eventId}/assets/presign`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "filename",
+                  "content_type",
+                  "size_bytes"
+                ],
+                "properties": {
+                  "filename": {
+                    "type": "string",
+                    "description": "With its extension (pdf, ppt, pptx, doc, docx, xls, xlsx, csv, txt, rtf, odt, ods, odp, png, jpg)"
+                  },
+                  "content_type": {
+                    "type": "string"
+                  },
+                  "size_bytes": {
+                    "type": "integer",
+                    "maximum": 104857600
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "`payload`: where and how to upload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "key": {
+                          "type": "string"
+                        },
+                        "url": {
+                          "type": "string",
+                          "format": "uri"
+                        },
+                        "method": {
+                          "type": "string",
+                          "enum": [
+                            "PUT"
+                          ]
+                        },
+                        "headers": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          }
+                        },
+                        "max_bytes": {
+                          "type": "integer"
+                        },
+                        "next": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A file type that can't be attached, or too large"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "Event not found in this organization"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/events/{eventId}/assets/{assetId}": {
+      "put": {
+        "operationId": "update-event-asset",
+        "summary": "Change a takeaway",
+        "description": "Change a takeaway's title, description, kind, cover image, gate or position. Requires `write:marketing`. Also at `PUT /v1/marketing/events/{eventId}/assets/{assetId}`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "assetId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EventAssetInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "`payload.asset`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "asset": {
+                          "$ref": "#/components/schemas/EventAsset"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (for example two sources, a file type that can't be attached, or a link that is not https)"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "Event or takeaway not found in this organization"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "remove-event-asset",
+        "summary": "Remove a takeaway",
+        "description": "Takes the takeaway off the event's page. Its download history stays on each person. Requires `write:marketing`. Also at `DELETE /v1/marketing/events/{eventId}/assets/{assetId}`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "assetId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`payload.removed` and the takeaway's `id` and `title`"
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "Event or takeaway not found in this organization"
+          }
+        }
+      }
+    },
     "/v1/organization/{orgId}/marketing/audience/forms": {
       "get": {
         "operationId": "list-signup-forms",
@@ -804,7 +1194,8 @@
                 "event_page",
                 "gallery",
                 "clip",
-                "recording_gate"
+                "recording_gate",
+                "asset_gate"
               ]
             }
           },
@@ -1096,6 +1487,7 @@
               "enum": [
                 "form",
                 "recording_gate",
+                "asset_gate",
                 "gallery",
                 "webinar",
                 "attendee_import",
@@ -5154,6 +5546,143 @@
       }
     },
     "schemas": {
+      "EventAssetInput": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2000,
+            "nullable": true
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "pdf",
+              "slides",
+              "worksheet",
+              "document",
+              "spreadsheet",
+              "image",
+              "file",
+              "link"
+            ]
+          },
+          "image_url": {
+            "type": "string",
+            "format": "uri",
+            "nullable": true,
+            "description": "A cover image (https)"
+          },
+          "gated": {
+            "type": "boolean",
+            "default": true,
+            "description": "Behind the page's email gate"
+          },
+          "sort_order": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          }
+        }
+      },
+      "EventAsset": {
+        "type": "object",
+        "description": "A takeaway attached to a webinar or event.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "event_id": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "pdf",
+              "slides",
+              "worksheet",
+              "document",
+              "spreadsheet",
+              "image",
+              "file",
+              "link"
+            ]
+          },
+          "type": {
+            "type": "string",
+            "description": "The kind as a label (PDF, Slides…)"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "file",
+              "link"
+            ]
+          },
+          "filename": {
+            "type": "string",
+            "nullable": true
+          },
+          "size_bytes": {
+            "type": "integer",
+            "nullable": true
+          },
+          "size": {
+            "type": "string",
+            "nullable": true,
+            "description": "For example \"2.4 MB\""
+          },
+          "image_url": {
+            "type": "string",
+            "format": "uri",
+            "nullable": true
+          },
+          "gated": {
+            "type": "boolean"
+          },
+          "sort_order": {
+            "type": "integer"
+          },
+          "file_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "The stored file or the link. Pages link `open_url` instead."
+          },
+          "open_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "What a page links; it checks the gate and records the download"
+          },
+          "downloads": {
+            "type": "object",
+            "description": "In list responses",
+            "properties": {
+              "clicks": {
+                "type": "integer"
+              },
+              "people": {
+                "type": "integer"
+              }
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "SignupForm": {
         "type": "object",
         "description": "A sign-up form on the organization's own pages.",
@@ -5174,7 +5703,8 @@
               "event_page",
               "gallery",
               "clip",
-              "recording_gate"
+              "recording_gate",
+              "asset_gate"
             ]
           },
           "target_kind": {
@@ -5429,7 +5959,8 @@
               "event_page",
               "gallery",
               "clip",
-              "recording_gate"
+              "recording_gate",
+              "asset_gate"
             ]
           },
           "targetKind": {
