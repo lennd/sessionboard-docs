@@ -774,6 +774,356 @@
         }
       }
     },
+    "/v1/organization/{orgId}/marketing/content/clips/public-links": {
+      "post": {
+        "operationId": "copy-clip-public-links",
+        "summary": "Make clip pages public and get their links",
+        "description": "Makes a public page for each clip (`/clip/{id}`) and returns its link, to post or paste anywhere. Anyone with the link can watch the clip. Clips in no event use the organization's own link. Clips you cannot share come back in `skipped` with the reason: not a clip, archived, or an event your account does not work on (clips in no event need organization-wide access to media). Asking again for a clip that already has a link returns the same link. Called by an AI assistant, this waits for a person's OK (`202 needs_approval`). Requires `write:marketing`. Also at `POST /v1/marketing/content/clips/public-links`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "mediaIds"
+                ],
+                "properties": {
+                  "mediaIds": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 50,
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "description": "The clips. Each clip size is its own item."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "links": {
+                          "type": "array",
+                          "description": "One per clip shared, in the order asked.",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "media_id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "url": {
+                                "type": "string",
+                                "description": "The clip's public page."
+                              }
+                            }
+                          }
+                        },
+                        "skipped": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "media_id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "reason": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "202": {
+            "$ref": "#/components/responses/MarketingNeedsApproval"
+          },
+          "400": {
+            "description": "`mediaIds` missing, empty or longer than 50."
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/content/clips/share/plan": {
+      "post": {
+        "operationId": "plan-clip-share",
+        "summary": "Plan sharing clips with the people in them",
+        "description": "The dry run of sharing an event's clips with the people in them. For each audience (`speakers`; `sponsors`, which covers sponsors and exhibitors; `team`) it says who would get how many clips, who is skipped and why (no email, no clips, already sent), and which clips nobody is tagged in yet. Sends nothing and changes nothing. Call it before `POST /v1/organization/{orgId}/marketing/content/clips/share/send` and show the result to the person. Requires `read:marketing`. Also at `POST /v1/marketing/content/clips/share/plan`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClipShareSelection"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK. Per audience, who gets which clips and who is skipped.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`eventId` missing or not a whole number."
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "The event is not in your organization."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/content/clips/share/send": {
+      "post": {
+        "operationId": "share-clip-galleries",
+        "summary": "Share clips with the people in them",
+        "description": "Emails each person in the chosen audiences a link to their own gallery of the event's clips they appear in. Sending again adds nobody twice; pass `resend: true` to email people who already got theirs. Plan first with `POST /v1/organization/{orgId}/marketing/content/clips/share/plan`. An account that works only on some events can share clips of those events only. Called by an AI assistant, this waits for a person's OK (`202 needs_approval`). Requires `write:marketing`. Also at `POST /v1/marketing/content/clips/share/send`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/ClipShareSelection"
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "audiences"
+                    ],
+                    "properties": {
+                      "audiences": {
+                        "type": "array",
+                        "minItems": 1,
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "speakers",
+                            "sponsors",
+                            "team"
+                          ]
+                        },
+                        "description": "Who gets their galleries. `sponsors` covers sponsors and exhibitors."
+                      },
+                      "resend": {
+                        "type": "boolean",
+                        "description": "Email people who already got their gallery."
+                      },
+                      "message": {
+                        "type": "string",
+                        "maxLength": 2000,
+                        "description": "A short note in the email."
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "sent": {
+                          "type": "integer"
+                        },
+                        "failed": {
+                          "type": "integer"
+                        },
+                        "skipped": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": true
+                          }
+                        },
+                        "plan": {
+                          "type": "object",
+                          "additionalProperties": true,
+                          "description": "The plan the send used, as the plan route returns it."
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "202": {
+            "$ref": "#/components/responses/MarketingNeedsApproval"
+          },
+          "400": {
+            "description": "`eventId` or `audiences` missing, or an unknown audience."
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          },
+          "404": {
+            "description": "The event is not in your organization."
+          }
+        }
+      }
+    },
+    "/v1/organization/{orgId}/marketing/content/clips/share/results": {
+      "get": {
+        "operationId": "get-clip-share-results",
+        "summary": "How shared clips did",
+        "description": "Views, plays and shares of shared clips, by person (who shared and how far it went) or by clip, for one event or the whole organization. An account that works only on some events sees those events only. `format=csv` downloads the same rows. Requires `read:marketing`. Also at `GET /v1/marketing/content/clips/share/results`.",
+        "tags": [
+          "Marketing"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketingOrgId"
+          },
+          {
+            "name": "eventId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Only this event. Leave it out for the whole organization."
+          },
+          {
+            "name": "by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "person",
+                "clip"
+              ],
+              "default": "person"
+            },
+            "description": "One row per person or per clip."
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "json",
+                "csv"
+              ],
+              "default": "json"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payload": {
+                      "type": "object",
+                      "properties": {
+                        "summary": {
+                          "type": "object",
+                          "additionalProperties": true,
+                          "description": "Totals across the rows."
+                        },
+                        "rows": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": true
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/MarketingForbidden"
+          }
+        }
+      }
+    },
     "/v1/organization/{orgId}/marketing/audience/forms": {
       "get": {
         "operationId": "list-signup-forms",
@@ -6243,6 +6593,36 @@
           }
         }
       },
+      "ClipShareSelection": {
+        "type": "object",
+        "required": [
+          "eventId"
+        ],
+        "properties": {
+          "eventId": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "The event whose clips are shared."
+          },
+          "mediaIds": {
+            "type": "array",
+            "maxItems": 500,
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "A recording or a clip selection. Leave it out for every finished clip of the event."
+          },
+          "teamUserIds": {
+            "type": "array",
+            "maxItems": 200,
+            "items": {
+              "type": "integer"
+            },
+            "description": "For the `team` audience, only these teammates (user ids)."
+          }
+        }
+      },
       "EventTurnout": {
         "type": "object",
         "description": "How one event is doing. Every number under `prediction` is an estimate.",
@@ -7528,6 +7908,42 @@
     "responses": {
       "MarketingForbidden": {
         "description": "- `SCOPE_REQUIRED` — the token lacks `read:marketing` (reads) or `write:marketing` (writes).\n- `ORG_WIDE_TOKEN_REQUIRED` — the token is restricted to particular events; this operation reads the whole organization.\n- `FORBIDDEN` — the organization's plan does not include Marketing, or the token's user cannot change goals (writes need an organization admin or the organization settings permission).\n"
+      },
+      "MarketingNeedsApproval": {
+        "description": "An AI assistant asked; it waits for a person's OK in Sessionboard and nothing has happened yet.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {
+                  "type": "boolean"
+                },
+                "payload": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "needs_approval"
+                      ]
+                    },
+                    "approval_id": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string",
+                      "description": "Where a person approves it."
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       },
       "SitesForbidden": {
         "description": "- `SCOPE_REQUIRED` — the token lacks `read:sites` (or `read:marketing`, `read:learning`, `read:awards`) for reads, or the matching `write:` scope for writes.\n- `FORBIDDEN` — the token's user cannot edit this Site.\n"
