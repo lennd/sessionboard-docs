@@ -57,6 +57,1008 @@
       },
       "media": [],
       "ideas": []
+    },
+    {
+      "id": "sponsor-scout-plan-target",
+      "title": "Scout Plans can now discover and score sponsors, not just speakers",
+      "summary": "A **Scout Plan** round can now target **sponsors** in addition to (or instead of) speakers. When a sponsor target is enabled, the plan searches the global sponsors catalog using the plan's description, topics, must-haves, and location criteria; runs the Sponsor Scout agents if the catalog pool is thin; materializes candidates as sponsor prospects; and scores each one with an LLM against the round's frozen questions. The **Rounds** detail view gains a **targets** section showing per-target status (`completed` or `failed`) and the number of candidates found.",
+      "article": "/speaker-crm/overview",
+      "related": [
+        "/speaker-crm/pipeline",
+        "/speaker-crm/crm-advanced-search"
+      ],
+      "kind": "new",
+      "module": "Agents",
+      "features": [
+        "speaker_prospects"
+      ],
+      "availability": "beta",
+      "enable": {
+        "how": "support",
+        "path": "Ask your Customer Success Manager to enable the sponsor target on your Scout Plan; then Prospects → Scouting → Plans → [Plan] → Run"
+      },
+      "where": {
+        "scope": "org",
+        "path": "Prospects → Scouting → Plans → [Plan] → Run / Rounds"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Event teams that use Scout Plans to surface speaker candidates can now run the same automated discovery and scoring workflow against potential sponsors — finding companies that match their event's topics, regions, and must-have criteria without manual research. A single plan round can scout both speakers and sponsors simultaneously, and each target's outcome is reported separately so the team knows exactly what was found.",
+      "internal": {
+        "cs_action": {
+          "kind": "must_enable",
+          "note": "The sponsor target must be set on the plan's agentConfig (config.targets.sponsor) and the org must have the speaker_prospects feature flag. The UI wizard (web-ui-v2 PR #1696) must also be deployed before customers can configure sponsor-only plans from the UI. Confirm all three companion PRs are deployed before telling customers the feature is live."
+        },
+        "when_to_bring_up": "When a customer asks how to find sponsors for their event, or when they are already using Scout Plans for speakers and want to extend the same workflow to sponsorship prospecting.",
+        "who_should_get_it": "Orgs with the speaker_prospects feature that run multi-track events and need to build a sponsor pipeline alongside their speaker program.",
+        "staff_path": "Prospects → Scouting → Plans → [Plan] → config.targets.sponsor (set via API or staff tooling until the UI wizard ships)",
+        "gotchas": "Three PRs must be deployed in order: this API PR first, then sessionboard-agents #206, then web-ui-v2 #1696. Until the agents PR ships, concurrent plan jobs may get a 409 on source reservation. Until the UI PR ships, sponsor-only plans can only be created via the API. The round is marked 'completed' if at least one target succeeds; a sponsor failure with a speaker success still closes as completed with per-target detail.",
+        "talk_track": "You already use Scout Plans to find speakers — now the same plan can find sponsors too. Set your topics, regions, and must-haves once, run the plan, and get a scored shortlist of sponsor candidates alongside your speaker candidates. Each target reports its own result so you always know what was found and why.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The Speaker CRM overview and pipeline guides do not cover Scout Plans or the sponsor scouting target; a dedicated guide for Scout Plans should be created explaining how to configure speaker and sponsor targets, how rounds work, how to read per-target results, and what the scoring output looks like.",
+          "why_use_it": "Scout Plans let you define the profile of the speakers and sponsors you want, then let Sessionboard's agents do the research. The plan searches a continuously updated catalog of companies and people, runs enrichment agents when the catalog needs more depth, and scores every candidate against your own questions — so your team reviews a ranked shortlist instead of a raw list. Because one plan can target both speakers and sponsors, you build your program and your sponsorship pipeline from a single set of criteria.",
+          "at": "2026-11-27T14:09:58.117Z",
+          "permissions_to_confirm": [
+            "org.prospects: create, update"
+          ]
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5564"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta",
+      "product": "platform",
+      "platform": false
+    },
+    {
+      "id": "reviewer-landing-and-event-team-readonly",
+      "title": "Reviewers land directly on My Reviews; Event Team shows read-only rows for Evaluators",
+      "summary": "Users whose only event role is Evaluator now land directly on **My Reviews** when they open an event — no admin pages mount or load in the background. The **Event Header** no longer shows **Ask**, **Create**, or **Needs Attention** controls for reviewers. On the **Event Team** page, Evaluator rows display **\"Managed in Review Plans\"** instead of edit/remove actions, and the **Reviewers** tab shows a note explaining that reviewers come from Review Plans with a direct link to **Review Plans › Reviewers**.",
+      "article": "/faq/will-evaluators-have-the-same-access-to-my-event-that-i-do-as-an-admin",
+      "related": [
+        "/evaluations/evaluation-plans",
+        "/evaluations/review-plan-reviewers",
+        "/event-team/invite-manage-event-team-members"
+      ],
+      "kind": "fixed",
+      "module": "Event team",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event Team → Reviewers tab; Sessions → Evaluation → My Reviews"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "reviewer"
+      ],
+      "use_case": "Reviewers who sign in to an event no longer briefly see the admin dashboard or admin controls before being redirected — they go straight to their review queue. Organizers viewing the Event Team page can clearly see which members are managed through Review Plans rather than being confused by missing action menus on Evaluator rows.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer reports that reviewers were seeing the event dashboard or admin controls, or when an organizer asks why Evaluator rows on the Event Team page have no edit/remove actions.",
+        "who_should_get_it": "All customers using Review Plans with Evaluator-only team members.",
+        "staff_path": "Event Team → Reviewers tab",
+        "gotchas": "This is a security/access fix — reviewers with only the Evaluator role previously saw the full admin dashboard on first load. The backend lockdown (web-api #5559) is required alongside this PR for the navigation API to return only My Reviews for a reviewer.",
+        "talk_track": "Reviewers now go straight to their review queue the moment they sign in — no accidental glimpse of admin data. And on the Event Team page, Evaluator rows clearly say they're managed through Review Plans, so there's no confusion about missing controls.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should clarify that Evaluator-only users land on My Reviews (not the event dashboard), that admin header controls are hidden for them, and that their rows on the Event Team page show \"Managed in Review Plans\" instead of edit/remove actions.",
+          "why_use_it": null,
+          "at": "2026-11-27T14:10:20.763Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1694"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "product": "platform",
+      "platform": false
+    },
+    {
+      "id": "evaluator-role-lockdown",
+      "title": "Reviewers are now locked out of admin data they should never have seen",
+      "summary": "The **Evaluator**, **Portal User**, and org **Evaluator** roles now have access limited strictly to review work. Reviewers can no longer reach email history, the audit trail, the sessions dashboard, Review Plans they are not assigned to, or any of the ~660 admin-only event routes that were previously reachable through a membership loophole. Org admins who also review retain their full admin access.",
+      "article": "/faq/will-evaluators-have-the-same-access-to-my-event-that-i-do-as-an-admin",
+      "related": [
+        "/evaluations/evaluation-plans",
+        "/evaluations/review-plan-reviewers",
+        "/event-team/permissions-matrix"
+      ],
+      "kind": "fixed",
+      "module": "Program",
+      "features": [
+        "sessions"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Review Plans → Reviewers"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "reviewer"
+      ],
+      "use_case": "Any organization running blind or committee reviews can now invite external reviewers without worrying that those reviewers can read email history, the audit trail, or other events' Review Plans. Reviewers see only their assigned evaluations and the navigation items relevant to their work.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "The seed (20261118120000-lock-down-reviewer-roles) runs on boot and removes previously granted permissions from the Evaluator, Portal User, and org Evaluator roles in all regions. Verify the seed has run in US, EU, and ME before telling customers the fix is live. Any customer who deliberately gave reviewers broader access via a custom role is unaffected — only the built-in Evaluator/Portal User roles are changed."
+        },
+        "when_to_bring_up": "When a customer asks about reviewer data privacy, audit trail exposure, or why reviewers previously landed on the dashboard instead of My Reviews.",
+        "who_should_get_it": "All customers using Review Plans 2.0 or any event with external reviewers — especially those in regulated industries or running blind reviews.",
+        "staff_path": "Event → Review Plans → Reviewers (to confirm reviewer role assignments)",
+        "gotchas": "Org admins who hold the Evaluator role as a secondary role keep full admin access — only reviewer-only members are locked down. The 48 event routes with no caller check at all are not fixed in this PR (baselined). GET /virtual/event/:id/details remains open to reviewers temporarily until PR 2 ships.",
+        "talk_track": "Before this fix, anyone added as a reviewer to a Review Plans 2.0 event was silently granted access to email history, the audit trail, and the sessions dashboard. That is now closed — reviewers see only their assigned evaluations, exactly as documented.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should be updated to reflect the current, accurate list of what reviewers can and cannot access after this lockdown — specifically confirming that email history, the audit trail, the sessions dashboard, and unassigned Review Plans are not visible to reviewer-only members.",
+          "why_use_it": "Sessionboard's reviewer access model is designed so that external evaluators — judges, peer reviewers, program committee members — can score submissions without gaining visibility into organizer-only data such as email history, the audit trail, or the full sessions dashboard. Reviewers sign in through the same portal as speakers but land directly on **My Reviews**, where they see only the submissions assigned to them and the scorecard fields the organizer configured. Org admins who also serve as reviewers keep their full admin access.",
+          "at": "2026-11-27T14:10:53.261Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5559"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "product": "platform",
+      "platform": false
+    },
+    {
+      "id": "headshot-original-upload-resilience",
+      "title": "Headshot saves reliably even when the original file is too large or in an unsupported format",
+      "summary": "Uploading a headshot no longer fails silently when the uncropped original exceeds 15 MB or is a **.jfif** or **.avif** file. The cropped headshot is always saved; only the re-crop source is skipped in those edge cases.",
+      "article": "/faq/what-is-the-recommended-size-for-contact-headshots",
+      "kind": "fixed",
+      "module": "Portals",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Portal → Headshot field (Interest Form, guest forms, Awards submission, speaker headshot)"
+      },
+      "permissions": [],
+      "audience": [
+        "speaker",
+        "participant"
+      ],
+      "use_case": "Speakers and submitters who upload large or less-common image formats (such as photos straight from a camera or downloaded from social media) will no longer lose their headshot entirely — the cropped version is always kept, so organizers don't have to chase re-uploads.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "If a customer reports that headshots uploaded by EU-based speakers went missing between June and November 2026, this fix resolves the root cause; no action needed going forward.",
+        "who_should_get_it": "All customers using headshot fields on portals, Interest Forms, guest forms, or Awards submissions.",
+        "staff_path": null,
+        "gotchas": "About 8 EU headshot originals (out of 297 since June) were affected by the old bug. The cropped headshot was lost in those cases; the fix is forward-looking only — lost headshots are not recovered automatically.",
+        "talk_track": "Headshot uploads are now resilient to oversized or unusual file formats. The crop always saves, so speakers won't hit a silent failure when uploading a large camera photo or a .jfif file.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that originals over 15 MB or in .jfif/.avif format are skipped silently (the crop is still saved) and explain what \"re-crop source\" means so organizers understand why the re-crop option may occasionally be unavailable.",
+          "why_use_it": "null",
+          "at": "2026-11-27T14:11:12.431Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-org-portal#343"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "product": "platform",
+      "platform": false
+    },
+    {
+      "id": "awards-site-stale-builder-copy",
+      "title": "Stale site builder now explains that a teammate (or another tab) may have published",
+      "summary": "When the Awards site builder detects that the site was changed or published elsewhere, the stale pill, the greyed-out **Publish** tooltip, and the stale toast now read \"Changed by someone else, or you in another tab — **Reload**\" instead of the previous \"Changed in another tab\" message. The **Reload** action is unchanged.",
+      "article": "/awards/setting-up-your-sessionboard-site#publishing",
+      "kind": "fixed",
+      "module": "Awards",
+      "features": [
+        "awards"
+      ],
+      "availability": "add_on",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Awards → [Program] → Site → Builder"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "When two admins have the same Awards site open at the same time and one publishes a change, the other admin's builder goes stale. The updated message makes it immediately clear that a teammate (not just another browser tab) may have published, so admins know to reload rather than assume the site is broken.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "If a customer reports that the Awards site builder appears stuck on Publish or shows a confusing stale message.",
+        "who_should_get_it": "Any Awards customer with multiple admins editing the same site simultaneously.",
+        "staff_path": "Awards → [Program] → Site → Builder (stale pill and Publish tooltip)",
+        "gotchas": "The Arabic (ar) locale was not updated — those keys have no copy for these strings.",
+        "talk_track": "If you and a teammate both have the site open and one of you publishes, the other will see a clear message explaining that someone else (or another tab) made a change, with a Reload button to pick up the latest version.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that the builder detects concurrent edits and shows a stale state with a Reload prompt when another admin or another browser tab has published the site.",
+          "why_use_it": "null",
+          "at": "2026-11-27T14:11:32.726Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1656"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "product": "platform",
+      "platform": false
+    },
+    {
+      "id": "clip-export-logo-preserved-on-caption-failure",
+      "title": "Clip exports keep the logo when caption burn-in fails",
+      "summary": "When a clip export cannot burn in captions (for example, because the server's ffmpeg build lacks libass), the export now retries without captions but keeps the **brand logo** and any other image overlays. Previously the fallback dropped the logo and all overlays along with the captions. A plain render (no overlays) is used only if the overlay step itself fails.",
+      "article": "/marketing/clips",
+      "kind": "fixed",
+      "module": "Marketing",
+      "features": [
+        "marketing_clips"
+      ],
+      "availability": "add_on",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Marketing → Clips → [clip] → Export"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who export branded clips from HEVC or other re-encoded sources will now reliably see their logo on the exported file even when caption burn-in is unavailable, avoiding the need to re-export or manually add branding.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "If a customer reports that exported clips are missing the logo or brand overlays, especially on events with HEVC source recordings.",
+        "who_should_get_it": "Any customer using Clips with a brand kit that includes a logo overlay.",
+        "staff_path": "Marketing → Clips → [clip] → Export",
+        "gotchas": "Captions will still not be burned in when the server's ffmpeg lacks libass — only the logo is preserved. The burned_captions flag remains false on those renders.",
+        "talk_track": "Clip exports now hold on to your logo even when caption burn-in hits a server-side limitation, so your branding is always present in the final file.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "medium",
+          "docs_gap": "The guide should note that if caption burn-in is unavailable, the export falls back to a logo-only overlay rather than a plain render, and that burned_captions will be false in that case.",
+          "why_use_it": "Clips let you cut branded, shareable video segments from session recordings and export them with your logo, captions, and other overlays baked in. Use Clips to create social-ready highlights, speaker spotlights, or promotional snippets without leaving Sessionboard — every export reflects your brand kit automatically.",
+          "at": "2026-11-27T14:11:54.170Z"
+        }
+      },
+      "related": [
+        "/marketing/brand-kits",
+        "/marketing/share-clips"
+      ],
+      "product": "platform",
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5464"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "feature:marketing_clips (limited_release)",
+      "platform": false
+    },
+    {
+      "id": "clips-library-card-actions-menu",
+      "title": "Clips library card now has a full \"…\" actions menu",
+      "summary": "Each card in the Clips library now shows a **\"…\"** menu with the same actions available on the clip detail page: **Download** (per size), **Share with advocates**, **Add to gallery**, **Send to team campaign**, **Change look or re-render**, **Re-assign session or speaker**, **Copy link**, **Create a course**, and **Delete**. The menu is keyboard-accessible and appears on hover, focus, or while open; on touch screens it is always visible.",
+      "article": "/marketing/clips#the-clips-library",
+      "related": [
+        "/marketing/share-clips",
+        "/marketing/clip-pages",
+        "/marketing/advocacy-media"
+      ],
+      "kind": "improved",
+      "module": "Marketing",
+      "features": [
+        "marketing_clips"
+      ],
+      "availability": "limited_release",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Marketing → Clips → Clips library"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who manage many clips no longer need to open each clip's detail page to download, share, or delete it — every action is reachable directly from the library card, saving time when working across a large batch of clips.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer mentions that managing clips in bulk is slow or that they have to open each clip page to take action.",
+        "who_should_get_it": "Any customer using Clips (limited_release) who produces multiple clips per event and wants to distribute or manage them efficiently from the library.",
+        "staff_path": "Marketing → Clips → Clips library (hover or focus a card to see the … button)",
+        "gotchas": "The Download option is disabled (with a tooltip) while a clip is still rendering. The 'Add to gallery' dialog loads lazily, so there may be a brief delay on first open.",
+        "talk_track": "You can now download, share, delete, or change the look of any clip right from the library card — no need to open each clip's page. It's the same full menu you'd find on the clip page itself, just one click from the library.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The Clips guide should document the \"…\" card menu and list each action available from it, including the disabled-download state during rendering and the keyboard/touch behaviour.",
+          "why_use_it": "The Clips library gives you a single place to see every clip produced from your event recordings. From each card you can download in any aspect ratio, share with advocates or your team, add the clip to a gallery, kick off a course, or adjust the look — without leaving the library view. Actions that previously required navigating to the clip's own page are now one click away, so you can move through your content quickly and keep your post-event distribution on schedule.",
+          "at": "2026-11-27T14:12:17.817Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1653"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:limited_release",
+      "product": "platform",
+      "platform": false
+    },
+    {
+      "id": "agent-page-sb-portal",
+      "title": "Embed live Sessionboard flows in agent-written pages with `<sb-portal>`",
+      "summary": "When an AI assistant (Ask, Claude, ChatGPT, etc.) writes or edits an agent page, it can now place a **`<sb-portal>`** slot anywhere on the page to mount a real Sessionboard flow — registration checkout, CFP submission, speaker portal, exhibitor portal, awards nomination, review portal, learner portal, preference center, or contract signing — styled automatically by the page's **Brand Kit** tokens. Framed flows (registration checkout, CFP, awards nomination) render inline; flows that require a signed-in session (speaker, exhibitor, review, learner, preferences, contract) render as a styled link-out. WCAG 2.2 AA contrast is checked on Brand Kit token pairs before the page can be published.",
+      "article": "/skills/sites",
+      "related": [
+        "/marketing/brand-kits",
+        "/sessionboard-marketing/pages/publish-an-event-page",
+        "/site/site-builder",
+        "/api/insights/mcp-server"
+      ],
+      "kind": "new",
+      "module": "Agents",
+      "features": [
+        "marketing"
+      ],
+      "availability": "beta",
+      "product": "platform",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Ask / Claude / ChatGPT → build or edit an agent page → insert <sb-portal kind=\"…\">"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who want a single branded landing page that both markets an event and lets visitors register, submit a proposal, or nominate an award entry can now ask their AI assistant to add the relevant portal directly to the page — no separate link or redirect needed. The flow inherits the page's brand colors automatically, and the page won't publish if the contrast fails accessibility standards.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "Companion PRs (embeds /v0/sb-portal.js and org-portal sb_theme in embed mode) must be deployed and the SITES_DENY_FRAMING flag must remain off before registration checkout embeds are fully functional. Confirm all three pieces are live before promoting to customers."
+        },
+        "when_to_bring_up": "When a customer asks how to combine a marketing landing page with a registration form, CFP, or awards nomination in one place, or when they want their portal flows to match their brand without a separate page.",
+        "who_should_get_it": "Any organizer using agent pages (Marketing beta) who runs registration, a CFP, or an awards program and wants those flows embedded directly in a custom-designed page.",
+        "staff_path": "Ask / Claude / ChatGPT → build or edit an agent page → insert <sb-portal kind=\"registration_checkout\"> (or other kind)",
+        "gotchas": "Max 4 portals per page, one per kind. Flows requiring login (speaker, exhibitor, review, learner, preferences, contract) link out rather than embed — they cannot be framed due to storage partitioning and magic-link constraints. The SITES_DENY_FRAMING flag is currently off; if it is turned on before the registration embed exemption is in place, checkout embeds will break. WCAG contrast failures block publish — customers may need to adjust Brand Kit colors.",
+        "talk_track": "Tell your AI assistant to add a registration form or CFP directly to your event page. It drops in a <sb-portal> slot, your Brand Kit colors theme it automatically, and the page won't go live unless it passes accessibility contrast checks — so you get a polished, compliant experience in one step.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should add a section explaining the `<sb-portal kind=\"…\">` tag — the supported kinds, how to ask the AI assistant to insert one, which kinds embed inline vs. link out and why, the 4-portal-per-page limit, and how Brand Kit tokens theme the embedded flow.",
+          "why_use_it": "Agent pages let you describe a page to an AI assistant and have it built and published for you. Adding `<sb-portal>` slots means the assistant can place fully functional Sessionboard flows — registration, CFP, awards, portals — directly inside those pages, so visitors complete the action without leaving your branded experience. Brand Kit tokens theme the embedded flows automatically, and a built-in WCAG 2.2 AA contrast check ensures the result meets accessibility requirements before it goes live.",
+          "at": "2026-11-27T14:12:50.060Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5465"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta",
+      "platform": false
+    },
+    {
+      "id": "quotes-speaker-stills-play-url-dedup",
+      "title": "Quotes library: correct speaker thumbnails, inline playback, and deduplicated clip sizes",
+      "summary": "Three fixes to the **Quotes** library: (1) quote card thumbnails now show the speaker who said the quote rather than whoever the camera happened to cut to; (2) each quote card exposes a playable source URL so the clip can play inline from the quote's start time; (3) when a clip was re-rendered multiple times, only the newest render per aspect ratio (e.g. 9:16, 16:9) is shown instead of duplicate size entries.",
+      "article": "/marketing/quotes",
+      "kind": "fixed",
+      "module": "Marketing",
+      "features": [
+        "marketing_quotes"
+      ],
+      "availability": "limited_release",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Marketing → Media → [Recording] → Quotes"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers reviewing pull quotes from panel recordings will now see the correct speaker's face on each quote card — not a co-panelist who happened to be on camera — and can play the quote in place without leaving the library. Re-rendered clips no longer show duplicate size options, making it easier to pick the right format to share.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer reports wrong thumbnails on quote cards, duplicate clip sizes in the Quotes library, or asks about playing quotes inline.",
+        "who_should_get_it": "Any customer using the Quotes feature on panel or multi-speaker recordings.",
+        "staff_path": "Marketing → Media → [Recording] → Quotes",
+        "gotchas": "Existing stills are not automatically regenerated. To refresh stills for a recording, run makeQuoteStills({ mediaId, redo: true }) in the API environment — this requires a support or engineering action, not a self-serve toggle.",
+        "talk_track": "Quote thumbnails now always show the person who said the quote, even in panel sessions where the camera cuts around. Quotes also play inline from the exact moment they were said, and re-rendered clips no longer show duplicate size options.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that quote card thumbnails are speaker-aware (using diarization and headshots), that cards include an inline play URL seeked to the quote's start time, and that only the newest render per aspect ratio is shown when a clip has been re-rendered.",
+          "why_use_it": "The Quotes library surfaces the most shareable moments from your recordings as ready-to-use pull quotes, each attributed to the right speaker and paired with a still and a clip. Use it to turn a single recording into a stream of speaker-attributed social content without manually scrubbing through video.",
+          "at": "2026-11-27T14:13:11.956Z"
+        }
+      },
+      "product": "platform",
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5471"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": "availability:limited_release",
+      "platform": false
+    },
+    {
+      "id": "agent-page-brand-kit-framed-flows",
+      "title": "Framed registration and embed flows inherit the agent page's Brand Kit",
+      "summary": "When an agent page frames a registration flow or a session/awards guest form embed, the page's **Brand Kit** now drives the colours and fonts inside that frame — buttons, links, focus rings, surfaces, and body text all reflect the kit's primary colour and typeface. The brand background and text colour are contrast-checked at 4.5:1 at publish time, so the framed form stays readable on any section of the page.",
+      "article": "/marketing/brand-kits",
+      "related": [
+        "/sessionboard-marketing/pages/recording-pages",
+        "/sessionboard-marketing/pages/publish-an-event-page"
+      ],
+      "kind": "improved",
+      "module": "Agents",
+      "features": [
+        "marketing_brand"
+      ],
+      "availability": "limited_release",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Agent page → framed registration or session/awards embed"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer",
+        "participant"
+      ],
+      "use_case": "Organizers who embed registration or session/awards forms inside an agent page now get a fully on-brand experience without any extra CSS work — the Brand Kit's colours and fonts flow automatically into every framed form, so visitors see a consistent look from the page header down to the submit button.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer asks why their framed registration or embed form doesn't match the rest of their agent page, or when discussing Brand Kit rollout for agent pages.",
+        "who_should_get_it": "Any customer using agent pages with framed registration or session/awards embeds who has a Brand Kit configured.",
+        "staff_path": "Agent page settings → Brand Kit",
+        "gotchas": "Branding is applied in embed mode only (when the URL carries ?embed=1 or is an /embed/sessions/:id or /embed/awards/:id path). Only hex colours and plain font-family names are accepted from the URL parameter, so a crafted URL can at most recolour a framed form — no script injection risk.",
+        "talk_track": "Your Brand Kit colours and fonts now flow automatically into any registration or embed form that lives inside an agent page. Visitors see a consistent look from the page header all the way through the form — and contrast is checked at publish so it's always readable.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The Brand Kits guide should add a section explaining how kit tokens are passed into framed registration and session/awards embed flows on agent pages, including the contrast-check behaviour at publish time and the embed-mode-only scope.",
+          "why_use_it": "Brand Kits let you define your event's primary colour, typeface, and surface colours in one place and apply them across every Sessionboard surface. When a form or registration flow is framed inside an agent page, the kit's tokens are passed into the frame so buttons, links, and text all match the surrounding page — no custom CSS required. Contrast is checked at publish time, so the form stays legible regardless of which section of the page it sits on.",
+          "at": "2026-11-27T14:13:35.260Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-org-portal#341"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:limited_release",
+      "product": "platform",
+      "platform": false
+    },
+    {
+      "id": "media-clip-recording-fixes",
+      "title": "Clip page headshots fill their circle, Share copies a timestamped link, and slide video shows an intro before generating",
+      "summary": "Three fixes on the Media recording and clip pages: speaker headshots on clip pages now fill their circle correctly (background-size: cover) instead of appearing shrunk. The **Share** icon and **Copy share link** menu item on a recording page now copy a timestamped URL (e.g. `?t=2075`) and confirm with a toast such as \"Link copied — opens at 34:35\". The slide video page now shows an intro — what a slide video is, a static preview with the session title, the deck it will use, and a **Make the slide video** button — instead of starting generation immediately; if something is missing (no session, transcript pending, no deck) the page explains what is needed.",
+      "article": "/marketing/slide-videos",
+      "related": [
+        "/marketing/clips",
+        "/marketing/clip-pages",
+        "/marketing/media-library"
+      ],
+      "kind": "fixed",
+      "module": "Marketing",
+      "features": [
+        "marketing_media",
+        "marketing_clips"
+      ],
+      "availability": "add_on",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Marketing → Media → [Recording] → Clip / Share / Slide Video"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers sharing a specific moment from a recording can now copy a link that opens at the exact playhead position, making it easy to point colleagues or speakers to a precise timestamp. The slide video intro prevents accidental generation and lets organizers confirm the right deck and session are in place before committing.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer reports that speaker headshots look wrong on clip pages, that the Share button on recordings does nothing, or that slide video generation started before they were ready.",
+        "who_should_get_it": "Any Media customer using clips or slide videos.",
+        "staff_path": "Marketing → Media → [Recording] → Clip detail / Share icon / Slide Video tab",
+        "gotchas": "Slide video auto-start is now off by default; the API flag MEDIA_AUTO_SLIDE_VIDEO=true (web-api #5464) must be set explicitly to restore automatic generation. The slide video preview is an illustration — no true first-slide thumbnail yet because deck page thumbnails are not stored server-side.",
+        "talk_track": "The Share button on any recording now copies a link that jumps straight to the moment you're watching — great for async review with your team. And before you kick off a slide video, you'll see exactly which deck and session it will use, so there are no surprises.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should add a section explaining the slide video intro screen — what it shows before generation starts, what the Make the slide video button does, and what messages appear when a prerequisite (session, transcript, deck) is missing. It should also document the timestamped Share link behaviour on recording pages.",
+          "why_use_it": "Sessionboard Media turns session recordings into shareable clips, slide videos, quotes and audiograms without leaving the platform. The slide video feature combines a session's deck and audio into a polished video asset ready to share or embed, while the Share button lets anyone on the team hand off a recording at exactly the right moment — no scrubbing required.",
+          "at": "2026-11-27T14:14:05.324Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1652"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "feature:marketing_clips (limited_release)",
+      "product": "platform",
+      "platform": false
+    },
+    {
+      "id": "marketing-shows-and-episodes",
+      "title": "Model and run a recurring weekly show with Shows and Episodes",
+      "summary": "Organizers can now create a recurring **Show** (name, cadence, hosts, brand kit, linked podcast, newsletter and page) and track individual **Episodes** through a status workflow — **idea → booked → recorded → produced → published → shared**. Running an episode automatically drafts a podcast episode, content items, a newsletter issue and a content-kit dry run from the recording, and is safe to re-run: completed steps return as done without duplicating work.",
+      "article": "/sessionboard-marketing/shows/run-a-weekly-show",
+      "related": [
+        "/sessionboard-marketing/content/make-content-from-a-recording",
+        "/sessionboard-marketing/content/podcast",
+        "/sessionboard-marketing/content/newsletter",
+        "/skills/run-show-week"
+      ],
+      "kind": "new",
+      "module": "Marketing",
+      "features": [
+        "marketing"
+      ],
+      "availability": "beta",
+      "product": "marketing",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "org",
+        "path": "Marketing → Shows"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Teams that produce a recurring show — weekly video, podcast or newsletter — can now model it as a Show with numbered Episodes, track each episode from idea to published, and let Sessionboard draft all downstream content (podcast episode, clips, newsletter issue) from a single recording in one step. This replaces the workaround of faking a show as a one-off event.",
+      "internal": {
+        "cs_action": {
+          "kind": "review_before_customers_see",
+          "note": "The Content › Shows screen (web-ui-v2) and MCP tools are listed as follow-ups in the PR; confirm the UI surface is shipped before telling customers the feature is accessible without the API."
+        },
+        "when_to_bring_up": "When a customer runs a recurring show, podcast or newsletter series and is currently faking it as a one-off event or managing episodes outside Sessionboard.",
+        "who_should_get_it": "Marketing customers who produce weekly or recurring content programs — video shows, podcasts, newsletters — and want a single place to plan, track and publish each episode.",
+        "staff_path": "Marketing → Shows (API / MCP until the web-ui-v2 screen ships)",
+        "gotchas": "The web-ui-v2 Shows screen and MCP tools are listed as follow-ups and may not be live yet; the API and Public API (/v1/marketing/shows) are available. run_show_episode only creates drafts — nothing is published or sent automatically. Org admins can write; members can only read.",
+        "talk_track": "If you run a weekly show or podcast, you can now model it as a Show in Sessionboard Marketing. Add your episodes, attach the recording when it's done, and Sessionboard drafts the podcast episode, clips, newsletter issue and content kit in one step — ready for your review before anything goes out.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should document how to create a Show (cadence, hosts, brand kit, linked podcast/newsletter/page), add and number Episodes, move an episode through the status workflow, attach a recording to trigger the run_show_episode draft step, interpret the done/waiting response on re-run, and the org-admin vs. member permission split.",
+          "why_use_it": "Sessionboard Marketing's Shows feature gives recurring content programs — weekly video shows, podcasts, newsletters — a dedicated home alongside your events. Each Show holds the cadence, hosts, brand kit and linked distribution channels; each Episode tracks the production lifecycle from idea to shared. When a recording is ready, running the episode drafts every downstream asset at once so your team moves from recording to published without rebuilding the same content by hand each week.",
+          "at": "2026-11-27T14:14:33.332Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-api#5461"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:beta",
+      "platform": false
+    },
+    {
+      "id": "quotes-library-card-playback-fixes",
+      "title": "Quotes library cards show a speaker still, play clips in place, and link recordings to the right timestamp",
+      "summary": "Each card in the **Quotes** library now opens with the speaker's still image; a **Play** button appears on hover, keyboard focus, or touch, and plays the clip from the exact quote offset — or the full recording from the quote's start time when no clip exists. The file · timestamp link under the speaker name now carries `?t=<seconds>` so the recording page seeks directly to that moment. Duplicate size chips (9:16, 16:9) are collapsed so each size appears once, linked to the newest render.",
+      "article": "/marketing/quotes",
+      "kind": "fixed",
+      "module": "Marketing",
+      "features": [
+        "marketing_quotes"
+      ],
+      "availability": "limited_release",
+      "product": "platform",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Marketing → Quotes"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers browsing the Quotes library can now preview any quote in place without leaving the library — the clip plays from the exact moment the quote was pulled, and the recording link jumps straight to that second. Duplicate size chips no longer clutter the card.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "When a customer using Quotes reports that clips were not playing, the recording link was not seeking to the right time, or size chips were duplicated.",
+        "who_should_get_it": "Any event team with the Quotes (limited_release) feature enabled.",
+        "staff_path": "Marketing → Quotes",
+        "gotchas": "The inline play button for recordings requires the API change (sessionboard-web-api#5471, which adds source_media.play_url) to be deployed; the button is hidden until that API field is present.",
+        "talk_track": "Quotes cards now behave the way you'd expect — click play and the clip starts right at the quote, or the recording jumps to that second. Size chips are cleaned up so you see each format once.",
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should add a section explaining how the play-on-hover interaction works on quote cards, how the recording timestamp link seeks to the quote's position, and what the size chips represent.",
+          "why_use_it": "The Quotes library surfaces the most shareable moments from your recordings as ready-to-use pull quotes. Each card shows the speaker's headshot, lets you play the underlying clip or recording in place to verify context, and links to the size variants you need for social. Use it to find, review, and share speaker soundbites without scrubbing through full recordings.",
+          "at": "2026-11-27T14:14:56.018Z"
+        }
+      },
+      "related": [
+        "/marketing/clips",
+        "/marketing/media-library"
+      ],
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1654"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "ideas": [],
+      "media": [],
+      "gated": "availability:limited_release",
+      "platform": false
+    },
+    {
+      "id": "ask-wide-table-scroll",
+      "title": "Wide tables in Ask answers now scroll horizontally instead of being clipped",
+      "summary": "Tables returned by the **Ask** Team Lead that are wider than the answer column now scroll horizontally. Previously, columns beyond the visible width were cut off with no way to reach them.",
+      "article": "/agents/team-lead",
+      "kind": "fixed",
+      "module": "Agents",
+      "features": [],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event Home → Ask (What do you want to happen?)"
+      },
+      "permissions": [],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who ask Ask questions that return wide data tables — such as multi-column session or speaker summaries — can now scroll right to see every column instead of losing data off the edge of the panel.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "If a customer reports that Ask answers with tables were showing incomplete data or cut-off columns.",
+        "who_should_get_it": "Any organizer using Ask on event home who receives tabular answers.",
+        "staff_path": "Event Home → Ask panel (expanded view)",
+        "gotchas": "Fix is a CSS grid track change only; no layout or markup change. Not tested at 320 px width or 200% zoom.",
+        "talk_track": null,
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The guide should note that wide tables in Ask answers scroll horizontally within the answer column.",
+          "why_use_it": "Ask is the AI guide built into every event's Home page. You type a question or describe what you want to happen, and Ask reads your event data to answer or walk you through a setup task. When answers include tables — such as a breakdown of sessions by track, or a list of speakers with multiple attributes — the table stays fully readable inside the panel, with a horizontal scrollbar for wide results.",
+          "at": "2026-11-27T13:50:11.077Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1767"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "product": "platform",
+      "platform": false
+    },
+    {
+      "id": "advocacy-dashboard-tile-permission-guard",
+      "title": "Advocacy tile on the event dashboard no longer triggers a 403 error for users without the Advocacy permission",
+      "summary": "Users whose event role does not include **Marketing › Can view Advocacy** no longer see an error toast when opening the event dashboard. The **Advocacy** tile in **Your toolkit** still appears, but the campaign count is omitted when the permission is absent. Users with the permission continue to see the count as before.",
+      "article": "/events/event-dashboard#your-toolkit",
+      "kind": "fixed",
+      "module": "Marketing",
+      "features": [
+        "marketing_advocacy"
+      ],
+      "availability": "everyone",
+      "enable": {
+        "how": "default_on",
+        "path": null
+      },
+      "where": {
+        "scope": "event",
+        "path": "Event Dashboard → Your toolkit → Advocacy"
+      },
+      "permissions": [
+        "event.marketing.advocacy_read"
+      ],
+      "audience": [
+        "organizer"
+      ],
+      "use_case": "Organizers who have restricted team members from viewing Advocacy campaigns will no longer see those users hit a confusing error toast on the event dashboard — the tile renders cleanly without a count for anyone who lacks the Advocacy read permission.",
+      "internal": {
+        "cs_action": {
+          "kind": "none",
+          "note": null
+        },
+        "when_to_bring_up": "If a customer reports that non-admin team members see an error toast on the event dashboard, this fix resolves it — no action needed.",
+        "who_should_get_it": "Any customer with custom event roles that exclude Marketing › Can view Advocacy.",
+        "staff_path": "Event Dashboard → Your toolkit",
+        "gotchas": "The Advocacy tile still renders for all users; only the campaign count is hidden when advocacy_read is absent. Demo mode also suppresses the count request.",
+        "talk_track": null,
+        "draft": {
+          "by": "release-intake",
+          "model": "claude-sonnet-4-6",
+          "confidence": "high",
+          "docs_gap": "The event dashboard guide should note that the Advocacy campaign count in Your toolkit requires the Marketing › Can view Advocacy permission, and that the tile renders without a count when the permission is absent.",
+          "why_use_it": null,
+          "at": "2026-11-27T13:41:04.332Z"
+        }
+      },
+      "shipped": {
+        "prs": [
+          "lennd/sessionboard-web-ui-v2#1766"
+        ],
+        "docs_only": false,
+        "pending": null,
+        "live": {
+          "us": null,
+          "eu": null,
+          "me": null
+        },
+        "announced_at": null,
+        "emailed_at": null
+      },
+      "related": [],
+      "ideas": [],
+      "media": [],
+      "gated": null,
+      "product": "platform",
+      "platform": false
     }
   ]
 }
